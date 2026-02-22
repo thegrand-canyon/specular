@@ -43,21 +43,19 @@ const NETWORKS = {
 // Default network
 const DEFAULT_NETWORK = process.env.DEFAULT_NETWORK || 'arc';
 
-// Load ABIs
+// Load ABIs from committed abis/ folder
 function loadAbi(name) {
-    const basePath = path.join(__dirname, '../../artifacts/contracts');
-    const paths = [
-        path.join(basePath, `${name}.sol/${name}.json`),
-        path.join(basePath, `core/${name}.sol/${name}.json`),
-        path.join(basePath, `tokens/${name}.sol/${name}.json`),
-        path.join(basePath, `bridge/${name}.sol/${name}.json`),
-    ];
-    for (const p of paths) {
-        try {
-            return JSON.parse(fs.readFileSync(p, 'utf8')).abi;
-        } catch {}
+    const abiPath = path.join(__dirname, '../../abis', `${name}.json`);
+    try {
+        const abiFile = JSON.parse(fs.readFileSync(abiPath, 'utf8'));
+        // If it's already just the ABI array, return it
+        if (Array.isArray(abiFile)) return abiFile;
+        // If it's a Hardhat artifact with .abi property, return that
+        if (abiFile.abi) return abiFile.abi;
+        return abiFile;
+    } catch (err) {
+        throw new Error(`Cannot find ABI for ${name}: ${err.message}`);
     }
-    throw new Error(`Cannot find ABI for ${name}`);
 }
 
 const mpAbi = loadAbi('AgentLiquidityMarketplace');
