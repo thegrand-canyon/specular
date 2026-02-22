@@ -16,7 +16,7 @@ const { ethers } = require('ethers');
 const fs = require('fs');
 
 const RPC_URL = 'https://arc-testnet.drpc.org';
-const AGENT1_KEY = 'process.env.PRIVATE_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000'';
+const AGENT1_KEY = process.env.PRIVATE_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000';
 
 async function main() {
     console.log('\n╔══════════════════════════════════════════════════╗');

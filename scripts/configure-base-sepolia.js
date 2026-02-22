@@ -8,7 +8,7 @@ const { ethers } = require('ethers');
 const fs = require('fs');
 
 const RPC_URL = 'https://sepolia.base.org';
-const DEPLOYER_KEY = 'process.env.PRIVATE_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000'';
+const DEPLOYER_KEY = process.env.PRIVATE_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000';
 
 async function main() {
     console.log('\n🔧 CONFIGURING BASE SEPOLIA CONTRACTS\n');

@@ -10,12 +10,12 @@ const RPC_URL = 'https://arc-testnet.drpc.org';
 const AGENTS = [
     {
         name: 'Agent 2',
-        key: '0x41adb1d6ef22647a3de0e7993f4e33ec7bcd5b49359587967750ff8f3faddf67',
+        key: 'process.env.TEST_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000'',
         liquidity: 500, // USDC to supply
     },
     {
         name: 'Agent 3',
-        key: '0xebd981dcdb6f6f4c8744a40a937f7b75de400290c58c2728cfff0d2af2418452',
+        key: 'process.env.TEST_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000'',
         liquidity: 500,
     },
 ];

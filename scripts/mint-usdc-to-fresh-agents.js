@@ -2,7 +2,7 @@ const { ethers } = require('ethers');
 const fs = require('fs');
 
 const MINT_AMOUNT = 50000; // 50,000 USDC each for collateral
-const MINTER_KEY = 'process.env.PRIVATE_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000''; // Main agent
+const MINTER_KEY = process.env.PRIVATE_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000'; // Main agent
 
 async function main() {
     console.log('\n💵 MINTING USDC TO FRESH AGENTS\n');

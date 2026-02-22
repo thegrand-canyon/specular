@@ -10,7 +10,7 @@ async function main() {
     console.log('Strategy: Immediate repayment after each loan\n');
 
     const provider = new ethers.JsonRpcProvider('https://arc-testnet.drpc.org', undefined, { batchMaxCount: 1 });
-    const wallet = new ethers.Wallet('process.env.PRIVATE_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000'', provider);
+    const wallet = new ethers.Wallet(process.env.PRIVATE_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000', provider);
 
     console.log('Agent: ' + wallet.address + '\n');
 

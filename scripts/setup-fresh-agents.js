@@ -11,7 +11,7 @@
 const { ethers } = require('ethers');
 const fs = require('fs');
 
-const AGENT1_KEY = 'process.env.PRIVATE_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000''; // Has 177 ETH
+const AGENT1_KEY = process.env.PRIVATE_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000'; // Has 177 ETH
 const ETH_PER_AGENT = '1.0'; // 1 ETH each for gas
 const USDC_PER_AGENT = '10000'; // 10k USDC each
 

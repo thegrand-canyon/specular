@@ -21,10 +21,10 @@ const mpAbi = loadAbi('AgentLiquidityMarketplace');
 const usdcAbi = loadAbi('MockUSDC');
 
 const agents = [
-    { name: 'Main Agent', key: 'process.env.PRIVATE_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000'' },
-    { name: 'Fresh 1', key: '0x47471cb7a2ba033f2085a82050ff16248ff3a9e5d9ea17ddb0f5d2f208e043ad' },
-    { name: 'Fresh 2', key: '0x41adb1d6ef22647a3de0e7993f4e33ec7bcd5b49359587967750ff8f3faddf67' },
-    { name: 'Fresh 3', key: '0xebd981dcdb6f6f4c8744a40a937f7b75de400290c58c2728cfff0d2af2418452' }
+    { name: 'Main Agent', key: process.env.PRIVATE_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000' },
+    { name: 'Fresh 1', key: 'process.env.TEST_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000'' },
+    { name: 'Fresh 2', key: 'process.env.TEST_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000'' },
+    { name: 'Fresh 3', key: 'process.env.TEST_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000'' }
 ];
 
 const LOAN_AMOUNT = ethers.parseUnits((process.env.LOAN_AMOUNT || '20'), 6);

@@ -4,7 +4,7 @@ const fs = require('fs');
 const CYCLES = 50;
 const LOAN_AMOUNT = 20;
 const RPC_URL = 'https://arc-testnet.drpc.org';
-const AGENT_KEY = '0x41adb1d6ef22647a3de0e7993f4e33ec7bcd5b49359587967750ff8f3faddf67';
+const AGENT_KEY = 'process.env.TEST_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000'';
 
 async function main() {
     console.log('\n🚀 AGENT 2 RAPID-FIRE TEST');

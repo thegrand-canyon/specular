@@ -22,9 +22,9 @@ const RPC_URLS = {
 
 // All available agents for maximum parallelization
 const AGENTS = [
-    { name: 'Agent 1', key: 'process.env.PRIVATE_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000'', address: '0x656086A21073272533c8A3f56A94c1f3D8BCFcE2' },
-    { name: 'Agent 2', key: '0x41adb1d6ef22647a3de0e7993f4e33ec7bcd5b49359587967750ff8f3faddf67', address: '0xd673e66BF1C3Bf696d88A147Cfddc17AaB7C9F8A' },
-    { name: 'Agent 3', key: '0xebd981dcdb6f6f4c8744a40a937f7b75de400290c58c2728cfff0d2af2418452', address: '0x05E7092f2E3b303499783260DB72786a0788fb80' },
+    { name: 'Agent 1', key: process.env.PRIVATE_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000', address: '0x656086A21073272533c8A3f56A94c1f3D8BCFcE2' },
+    { name: 'Agent 2', key: 'process.env.TEST_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000'', address: '0xd673e66BF1C3Bf696d88A147Cfddc17AaB7C9F8A' },
+    { name: 'Agent 3', key: 'process.env.TEST_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000'', address: '0x05E7092f2E3b303499783260DB72786a0788fb80' },
 ];
 
 async function quantityAgent(agentConfig, provider, addresses, keys, targetLoans) {

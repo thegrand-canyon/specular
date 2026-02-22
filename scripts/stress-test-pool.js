@@ -18,7 +18,7 @@ const RPC_URLS = {
     base: 'https://sepolia.base.org',
 };
 
-const AGENT_KEY = 'process.env.PRIVATE_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000'';
+const AGENT_KEY = process.env.PRIVATE_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000';
 const TARGET_UTILIZATION = 90; // Target 90% pool utilization
 
 async function main() {

@@ -7,7 +7,7 @@ async function main() {
     const provider = new ethers.JsonRpcProvider('https://arc-testnet.drpc.org', undefined, { batchMaxCount: 1 });
     const config = JSON.parse(fs.readFileSync('./fresh-agents-config.json', 'utf8'));
 
-    const funderKey = 'process.env.PRIVATE_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000'';
+    const funderKey = process.env.PRIVATE_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000';
     const funder = new ethers.Wallet(funderKey, provider);
 
     console.log('Funder:', funder.address);
