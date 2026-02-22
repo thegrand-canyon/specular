@@ -1,0 +1,17 @@
+{
+  "agentRegistryV2": "0x741C03c0d95d2c15E479CE1c7E69B3196d86faD7",
+  "reputationManagerV3": "0x94F2fa47c4488202a46dAA9038Ed9C9c4c07467F",
+  "mockUSDC": "0xf2807051e292e945751A25616705a9aadfb39895",
+  "agentLiquidityMarketplace": "0x048363A325A5B188b7FF157d725C5e329f0171D3",
+  "depositRouter": "0x5592AaFDdd1f73F5D7547e664f3513C409FB9796",
+  "validationRegistry": "0xD97AeE70866b0feF43A4544475A5De4c061eCcea",
+  "agentLiquidityMarketplace_old": "0xD1cf6E7864Bc4CbBE52aA94369dF08B106927559",
+  "agentLiquidityMarketplace_old_note": "Backed up before [SECURITY-01] upgrade",
+  "upgradedAt": "2026-02-19T18:12:04.186Z",
+  "upgradeReason": "[SECURITY-01] Added concurrent loan limits",
+  "deployerForUpgrade": "0x656086A21073272533c8A3f56A94c1f3D8BCFcE2",
+  "agentLiquidityMarketplace_v2": "0xFBF9509A8ED5cbBEFe14470CC1f6E9AB695E1D7A",
+  "agentLiquidityMarketplace_v2_note": "Backed up before resetPoolAccounting upgrade",
+  "upgradedAt_v3": "2026-02-20T17:13:11.287Z",
+  "upgradeReason_v3": "Added resetPoolAccounting emergency function"
+}

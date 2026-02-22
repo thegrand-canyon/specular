@@ -1,0 +1,50 @@
+{
+  "name": "specular",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "hardhat test",
+    "test:unit": "hardhat test test/unit/**/*.js",
+    "test:integration": "hardhat test test/integration/**/*.js",
+    "compile": "hardhat compile",
+    "node": "hardhat node",
+    "deploy:local": "hardhat run scripts/deploy.js --network localhost",
+    "deploy:sepolia": "hardhat run scripts/deploy.js --network sepolia",
+    "coverage": "hardhat coverage",
+    "frontend": "npx serve frontend/ -p 3000",
+    "deploy:bridges": "node scripts/deploy-all-bridges.js",
+    "deploy:bridge:base": "hardhat run scripts/deploy-cctp-bridge-base.js --network baseSepolia",
+    "deploy:bridge:arbitrum": "hardhat run scripts/deploy-cctp-bridge-arbitrum.js --network arbitrumSepolia",
+    "deploy:bridge:optimism": "hardhat run scripts/deploy-cctp-bridge-optimism.js --network optimismSepolia",
+    "deploy:bridge:polygon": "hardhat run scripts/deploy-cctp-bridge-polygon.js --network polygonAmoy",
+    "x402:server": "node src/x402/CreditAssessmentServer.js",
+    "x402:demo": "node src/x402/demo-credit-check.js",
+    "xmtp:demo": "node src/xmtp/demo-messaging.js",
+    "stack:demo": "node src/x402/demo-credit-check.js",
+    "api:server": "node src/api/SpecularAgentAPI.js",
+    "api:dev": "ARC_TESTNET_RPC_URL=https://arc-testnet.drpc.org node src/api/SpecularAgentAPI.js",
+    "api:multi": "ARC_TESTNET_RPC_URL=https://arc-testnet.drpc.org DEFAULT_NETWORK=arc node src/api/MultiNetworkAPI.js",
+    "sdk:quickstart": "ARC_TESTNET_RPC_URL=https://arc-testnet.drpc.org node src/sdk/examples/quickstart.js",
+    "agent": "ARC_TESTNET_RPC_URL=https://arc-testnet.drpc.org node src/agents/run-agent.js",
+    "agents": "ARC_TESTNET_RPC_URL=https://arc-testnet.drpc.org node src/agents/run-agents.js",
+    "dashboard": "ARC_TESTNET_RPC_URL=https://arc-testnet.drpc.org node src/api/SpecularAgentAPI.js & npx serve frontend/ -p 3000"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "@openzeppelin/contracts": "^5.4.0",
+    "hardhat": "^2.28.4"
+  },
+  "dependencies": {
+    "@xmtp/node-sdk": "^5.3.0",
+    "@xmtp/xmtp-js": "^13.0.4",
+    "cors": "^2.8.6",
+    "dotenv": "^16.6.1",
+    "ethers": "^6.16.0",
+    "express": "^5.2.1"
+  }
+}

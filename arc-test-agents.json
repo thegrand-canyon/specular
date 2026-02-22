@@ -1,0 +1,34 @@
+[
+  {
+    "name": "Alice",
+    "address": "0x05E7092f2E3b303499783260DB72786a0788fb80",
+    "privateKey": "0xebd981dcdb6f6f4c8744a40a937f7b75de400290c58c2728cfff0d2af2418452",
+    "agentId": "5",
+    "reputation": 100,
+    "initialUSDC": "50000"
+  },
+  {
+    "name": "Bob",
+    "address": "0x7d93ED0f36500Eda4422d9557d97B0da65ac9f94",
+    "privateKey": "0x47471cb7a2ba033f2085a82050ff16248ff3a9e5d9ea17ddb0f5d2f208e043ad",
+    "agentId": "6",
+    "reputation": 100,
+    "initialUSDC": "30000"
+  },
+  {
+    "name": "Carol",
+    "address": "0x02528FC1cfF60aafdE5FEe502aFe9CDBe3d6e8b6",
+    "privateKey": "0xaa761abc592f5c3f0fffe320d91b1a0772db1d8b8d83f1426332dca9f60cbcea",
+    "agentId": "7",
+    "reputation": 100,
+    "initialUSDC": "20000"
+  },
+  {
+    "name": "Dave",
+    "address": "0x6cc34B43256467A0B7952DD5927D6206ac030b57",
+    "privateKey": "0x4e65d6e7ca379dba8c3cb15ac6960c7d1847d2cee44410eed53327ffac089b49",
+    "agentId": "8",
+    "reputation": 100,
+    "initialUSDC": "10000"
+  }
+]

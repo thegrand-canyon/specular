@@ -1,0 +1,8 @@
+{
+  "agentRegistryV2": "0x741C03c0d95d2c15E479CE1c7E69B3196d86faD7",
+  "reputationManagerV3": "0x94F2fa47c4488202a46dAA9038Ed9C9c4c07467F",
+  "mockUSDC": "0xf2807051e292e945751A25616705a9aadfb39895",
+  "agentLiquidityMarketplace": "0xD1cf6E7864Bc4CbBE52aA94369dF08B106927559",
+  "depositRouter": "0x5592AaFDdd1f73F5D7547e664f3513C409FB9796",
+  "validationRegistry": "0xD97AeE70866b0feF43A4544475A5De4c061eCcea"
+}

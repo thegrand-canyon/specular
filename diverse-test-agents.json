@@ -1,0 +1,12 @@
+{
+  "agents": [],
+  "created": "2026-02-16T17:02:36.260Z",
+  "network": "sepolia",
+  "totalAgents": 0,
+  "summary": {
+    "elite": 0,
+    "good": 0,
+    "average": 0,
+    "new": 0
+  }
+}

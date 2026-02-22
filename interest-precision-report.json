@@ -1,0 +1,176 @@
+{
+  "results": [
+    {
+      "test": "Small short-term",
+      "status": "PASS",
+      "principal": 100,
+      "rate": 500,
+      "duration": 7,
+      "expected": "0.09589041",
+      "actual": "0.09589",
+      "percentDiff": "0.000429%"
+    },
+    {
+      "test": "Small monthly",
+      "status": "PASS",
+      "principal": 100,
+      "rate": 1500,
+      "duration": 30,
+      "expected": "1.23287671",
+      "actual": "1.232876",
+      "percentDiff": "0.000058%"
+    },
+    {
+      "test": "Small bi-weekly",
+      "status": "PASS",
+      "principal": 500,
+      "rate": 700,
+      "duration": 14,
+      "expected": "1.34246575",
+      "actual": "1.342465",
+      "percentDiff": "0.000056%"
+    },
+    {
+      "test": "Medium 5% 30-day",
+      "status": "PASS",
+      "principal": 1000,
+      "rate": 500,
+      "duration": 30,
+      "expected": "4.10958904",
+      "actual": "4.109589",
+      "percentDiff": "0.000001%"
+    },
+    {
+      "test": "Medium 15% 30-day",
+      "status": "PASS",
+      "principal": 1000,
+      "rate": 1500,
+      "duration": 30,
+      "expected": "12.32876712",
+      "actual": "12.328767",
+      "percentDiff": "0.000001%"
+    },
+    {
+      "test": "Medium 10% 60-day",
+      "status": "PASS",
+      "principal": 5000,
+      "rate": 1000,
+      "duration": 60,
+      "expected": "82.19178082",
+      "actual": "82.19178",
+      "percentDiff": "0.000001%"
+    },
+    {
+      "test": "Large 5% 90-day",
+      "status": "PASS",
+      "principal": 10000,
+      "rate": 500,
+      "duration": 90,
+      "expected": "123.28767123",
+      "actual": "123.287671",
+      "percentDiff": "0.000000%"
+    },
+    {
+      "test": "Large 7% 180-day",
+      "status": "PASS",
+      "principal": 25000,
+      "rate": 700,
+      "duration": 180,
+      "expected": "863.01369863",
+      "actual": "863.013698",
+      "percentDiff": "0.000000%"
+    },
+    {
+      "test": "Large 15% annual",
+      "status": "PASS",
+      "principal": 50000,
+      "rate": 1500,
+      "duration": 365,
+      "expected": "7500.00000000",
+      "actual": "7500.0",
+      "percentDiff": "0.000000%"
+    },
+    {
+      "test": "Minimum amount",
+      "status": "FAIL",
+      "principal": 1,
+      "rate": 1500,
+      "duration": 7,
+      "expected": "0.00287671",
+      "actual": "0.002876",
+      "percentDiff": "0.024762%"
+    },
+    {
+      "test": "Very large amount",
+      "status": "PASS",
+      "principal": 100000,
+      "rate": 500,
+      "duration": 7,
+      "expected": "95.89041096",
+      "actual": "95.89041",
+      "percentDiff": "0.000001%"
+    },
+    {
+      "test": "Maximum rate (20%)",
+      "status": "PASS",
+      "principal": 1000,
+      "rate": 2000,
+      "duration": 7,
+      "expected": "3.83561644",
+      "actual": "3.835616",
+      "percentDiff": "0.000011%"
+    },
+    {
+      "test": "Maximum duration",
+      "status": "PASS",
+      "principal": 1000,
+      "rate": 500,
+      "duration": 365,
+      "expected": "50.00000000",
+      "actual": "50.0",
+      "percentDiff": "0.000000%"
+    },
+    {
+      "test": "Decimal principal",
+      "status": "PASS",
+      "principal": 1234.56,
+      "rate": 789,
+      "duration": 45,
+      "expected": "12.00905556",
+      "actual": "12.009055",
+      "percentDiff": "0.000005%"
+    },
+    {
+      "test": "Odd numbers",
+      "status": "PASS",
+      "principal": 9999,
+      "rate": 1111,
+      "duration": 111,
+      "expected": "337.83196685",
+      "actual": "337.831966",
+      "percentDiff": "0.000000%"
+    },
+    {
+      "test": "Decimal precision",
+      "status": "PASS",
+      "principal": 7777.77,
+      "rate": 555,
+      "duration": 33,
+      "expected": "39.02735823",
+      "actual": "39.027358",
+      "percentDiff": "0.000001%"
+    },
+    {
+      "test": "Platform fee calculation",
+      "status": "PASS",
+      "platformFee": "1.0",
+      "lenderShare": "99.0"
+    }
+  ],
+  "summary": {
+    "passed": 16,
+    "failed": 1,
+    "errors": 0
+  },
+  "timestamp": "2026-02-16T05:13:21.518Z"
+}

@@ -1,0 +1,45 @@
+{
+  "generatedAt": "2026-02-18T20:57:11.350Z",
+  "agentId": 5,
+  "agentAddress": "0x05E7092f2E3b303499783260DB72786a0788fb80",
+  "cycle": 3,
+  "fundedByLoan": "23 USDC (loan #74)",
+  "protocol": {
+    "totalAgents": 43,
+    "totalLoans": 74,
+    "tvlUsdc": 720084.523994
+  },
+  "market": {
+    "totalPools": 38,
+    "activePools": 29,
+    "totalAvailableLiquidityUsdc": 716108.69,
+    "avgUtilizationPct": 1.44,
+    "bestExternalPool": {
+      "id": 18,
+      "availableUsdc": 82000.854385,
+      "utilizationPct": "0.0"
+    }
+  },
+  "agentReputation": {
+    "score": 250,
+    "tier": "HIGH_RISK",
+    "creditLimit": 5000,
+    "interestRate": 15
+  },
+  "creditDueDiligence": {
+    "assessedPool": 18,
+    "agentAddress": "0xbBb72e24a87aF3240E146Ca4b8A86b8411Ec2619",
+    "creditScore": 130,
+    "tier": "UNRATED",
+    "creditLimit": "1,000 USDC",
+    "interestRate": "15.00% APR",
+    "recommendation": "Deny or require full collateral",
+    "autoApprove": true,
+    "assessedAt": "2026-02-18T20:57:11.349Z"
+  },
+  "costs": {
+    "x402SpendUsdc": 3,
+    "fundedByLoanUsdc": 23
+  },
+  "recommendation": "HIGH_RISK → 15 repayments to SUBPRIME | 29 pools available"
+}

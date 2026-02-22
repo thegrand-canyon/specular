@@ -1,0 +1,30 @@
+{
+  "generatedAt": "2026-02-18T18:48:11.558Z",
+  "agentId": 5,
+  "agentAddress": "0x05E7092f2E3b303499783260DB72786a0788fb80",
+  "cycle": 1,
+  "fundedByLoan": "25 USDC (loan #64)",
+  "protocol": {
+    "totalAgents": 43,
+    "totalLoans": 64,
+    "tvlUsdc": 719083.862356
+  },
+  "market": {
+    "totalPools": 38,
+    "activePools": 29,
+    "totalAvailableLiquidityUsdc": 715106.03,
+    "avgUtilizationPct": 1.44,
+    "bestPool": {
+      "id": 18,
+      "availableUsdc": 82000.854385,
+      "utilizationPct": "0.0"
+    }
+  },
+  "agentReputation": {
+    "score": 150,
+    "tier": "UNRATED",
+    "creditLimit": 1000,
+    "interestRate": 15
+  },
+  "recommendation": "Build reputation: 5 more on-time repayments to reach SUBPRIME tier"
+}

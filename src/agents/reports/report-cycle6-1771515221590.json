@@ -1,0 +1,45 @@
+{
+  "generatedAt": "2026-02-19T15:33:41.590Z",
+  "agentId": 43,
+  "agentAddress": "0x656086A21073272533c8A3f56A94c1f3D8BCFcE2",
+  "cycle": 6,
+  "fundedByLoan": "20 USDC (loan #87)",
+  "protocol": {
+    "totalAgents": 44,
+    "totalLoans": 87,
+    "tvlUsdc": 720785.093579
+  },
+  "market": {
+    "totalPools": 39,
+    "activePools": 30,
+    "totalAvailableLiquidityUsdc": 716757.25,
+    "avgUtilizationPct": 1.68,
+    "bestExternalPool": {
+      "id": 18,
+      "availableUsdc": 82000.854385,
+      "utilizationPct": "0.0"
+    }
+  },
+  "agentReputation": {
+    "score": 90,
+    "tier": "UNRATED",
+    "creditLimit": 1000,
+    "interestRate": 15
+  },
+  "creditDueDiligence": {
+    "assessedPool": 18,
+    "agentAddress": "0xbBb72e24a87aF3240E146Ca4b8A86b8411Ec2619",
+    "creditScore": 130,
+    "tier": "UNRATED",
+    "creditLimit": "1,000 USDC",
+    "interestRate": "15.00% APR",
+    "recommendation": "Deny or require full collateral",
+    "autoApprove": true,
+    "assessedAt": "2026-02-19T15:33:41.589Z"
+  },
+  "costs": {
+    "x402SpendUsdc": 6,
+    "fundedByLoanUsdc": 20
+  },
+  "recommendation": "11 more on-time repayments to reach HIGH_RISK tier"
+}

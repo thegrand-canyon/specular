@@ -1,0 +1,19 @@
+{
+  "loansCreated": [],
+  "repayments": [],
+  "reputationChanges": [],
+  "errors": [
+    {
+      "test": "Bob loan",
+      "error": "execution reverted"
+    },
+    {
+      "test": "Carol loan",
+      "error": "execution reverted"
+    },
+    {
+      "test": "Dave loan",
+      "error": "execution reverted"
+    }
+  ]
+}

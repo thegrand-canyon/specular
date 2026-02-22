@@ -1,0 +1,88 @@
+{
+  "tests": [
+    {
+      "name": "Deploy: AgentRegistryV2",
+      "passed": true
+    },
+    {
+      "name": "Deploy: ReputationManagerV3",
+      "passed": true
+    },
+    {
+      "name": "Deploy: AgentLiquidityMarketplace",
+      "passed": true
+    },
+    {
+      "name": "Deploy: MockUSDC",
+      "passed": true
+    },
+    {
+      "name": "Deploy: ValidationRegistry",
+      "passed": true
+    },
+    {
+      "name": "Agent Registration",
+      "passed": true
+    },
+    {
+      "name": "Reputation System",
+      "passed": true
+    },
+    {
+      "name": "Pool Status",
+      "passed": true
+    },
+    {
+      "name": "Loan Query",
+      "passed": true
+    },
+    {
+      "name": "Balance Check",
+      "passed": true
+    },
+    {
+      "name": "Request Loan",
+      "passed": true
+    },
+    {
+      "name": "Repay Loan",
+      "passed": true
+    },
+    {
+      "name": "Reputation Update",
+      "passed": false
+    }
+  ],
+  "network": "Arc Testnet",
+  "chainId": 5042002,
+  "gasUsed": {
+    "requestLoan": 371129,
+    "repayLoan": 185249
+  },
+  "timing": {
+    "requestLoan": 1576,
+    "repayLoan": 5500
+  },
+  "reputationScore": 1000,
+  "creditLimit": "50000.0",
+  "interestRate": 5,
+  "pool": {
+    "totalLiquidity": "1000.0",
+    "available": "1000.0",
+    "totalLoaned": "0.0",
+    "totalEarned": "0.0",
+    "utilization": "0.00"
+  },
+  "activeLoans": [],
+  "balances": {
+    "eth": "152.08071505535912934",
+    "usdc": "3019991.969214"
+  },
+  "newLoan": {
+    "id": 1,
+    "amount": "100",
+    "duration": 7
+  },
+  "reputationScoreAfter": 1000,
+  "reputationChange": 0
+}

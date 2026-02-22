@@ -1,0 +1,26 @@
+{
+  "created": "2026-02-20T21:46:12.034Z",
+  "network": "arc-testnet",
+  "agents": [
+    {
+      "name": "Fresh Agent 1",
+      "id": 45,
+      "address": "0x6Df560f9DFfB9bd97c4aC208FfA5A162D4c03035",
+      "privateKey": "0xe994bedac6bb64a2e7e5333adf836a4ba6a1d193cdc28f402361bdec8a31c05a"
+    },
+    {
+      "name": "Fresh Agent 2",
+      "id": 46,
+      "address": "0xd0A1761bd207c12eF63253943417e64a78D3895a",
+      "privateKey": "0x41923cd76d8bef55bce99d67622a49e0c5bde55bacd1e822a27d00c946cf09c7"
+    },
+    {
+      "name": "Fresh Agent 3",
+      "id": 47,
+      "address": "0xa0983956484D74af695aAE4FB5b1b90914415F37",
+      "privateKey": "0x3cb757a045ba4e4342e303ee40ae845ef1bfa2703037ca7bb86fabbc286169cb"
+    }
+  ],
+  "ethPerAgent": "1.0",
+  "usdcPerAgent": "10000"
+}

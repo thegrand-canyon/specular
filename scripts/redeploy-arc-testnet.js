@@ -1,0 +1,139 @@
+/**
+ * Redeploy to Arc Testnet with AgentRegistryV2
+ * Fixes the agent ID issue
+ */
+
+const { ethers } = require('hardhat');
+const fs = require('fs');
+const path = require('path');
+
+async function main() {
+    console.log('\n🚀 REDEPLOYING TO ARC TESTNET (WITH V2)\n');
+    console.log('═══════════════════════════════════════════════════════\n');
+
+    const [deployer] = await ethers.getSigners();
+
+    console.log(`Deployer: ${deployer.address}`);
+
+    // Check USDC balance (native gas on Arc)
+    const balance = await ethers.provider.getBalance(deployer.address);
+    console.log(`USDC Balance: ${ethers.formatEther(balance)} USDC\n`);
+
+    if (balance < ethers.parseEther('10')) {
+        console.log('⚠️  Warning: Low USDC balance. Get more from https://faucet.circle.com\n');
+    }
+
+    // Deploy contracts
+    console.log('📝 Deploying Contracts...\n');
+
+    // 1. AgentRegistryV2 (ERC-721 based with agent IDs)
+    console.log('1️⃣  Deploying AgentRegistryV2...');
+    const AgentRegistryV2 = await ethers.getContractFactory('AgentRegistryV2');
+    const agentRegistry = await AgentRegistryV2.deploy();
+    await agentRegistry.waitForDeployment();
+    const agentRegistryAddress = await agentRegistry.getAddress();
+    console.log(`   ✅ AgentRegistryV2: ${agentRegistryAddress}\n`);
+
+    // Wait a bit
+    await new Promise(resolve => setTimeout(resolve, 5000));
+
+    // 2. ReputationManagerV3
+    console.log('2️⃣  Deploying ReputationManagerV3...');
+    const ReputationManagerV3 = await ethers.getContractFactory('ReputationManagerV3');
+    const reputationManager = await ReputationManagerV3.deploy(agentRegistryAddress);
+    await reputationManager.waitForDeployment();
+    const reputationManagerAddress = await reputationManager.getAddress();
+    console.log(`   ✅ ReputationManagerV3: ${reputationManagerAddress}\n`);
+
+    await new Promise(resolve => setTimeout(resolve, 5000));
+
+    // 3. USDC Token (ERC20 for testing - Arc has native USDC but we need pool token)
+    console.log('3️⃣  Deploying USDC Token (for pools)...');
+    const MockUSDC = await ethers.getContractFactory('MockUSDC');
+    const usdc = await MockUSDC.deploy();
+    await usdc.waitForDeployment();
+    const usdcAddress = await usdc.getAddress();
+    console.log(`   ✅ USDC Token: ${usdcAddress}\n`);
+
+    await new Promise(resolve => setTimeout(resolve, 5000));
+
+    // Mint initial USDC to deployer
+    console.log('   Minting 2,000,000 USDC to deployer...');
+    await usdc.mint(deployer.address, ethers.parseUnits('2000000', 6));
+    console.log(`   ✅ Minted\n`);
+
+    await new Promise(resolve => setTimeout(resolve, 5000));
+
+    // 4. AgentLiquidityMarketplace
+    console.log('4️⃣  Deploying AgentLiquidityMarketplace...');
+    const AgentLiquidityMarketplace = await ethers.getContractFactory('AgentLiquidityMarketplace');
+    const marketplace = await AgentLiquidityMarketplace.deploy(
+        agentRegistryAddress,
+        reputationManagerAddress,
+        usdcAddress
+    );
+    await marketplace.waitForDeployment();
+    const marketplaceAddress = await marketplace.getAddress();
+    console.log(`   ✅ AgentLiquidityMarketplace: ${marketplaceAddress}\n`);
+
+    await new Promise(resolve => setTimeout(resolve, 5000));
+
+    // 5. Grant permissions
+    console.log('5️⃣  Setting up permissions...');
+    await reputationManager.authorizePool(marketplaceAddress);
+    console.log('   ✅ Marketplace authorized in ReputationManager\n');
+
+    await new Promise(resolve => setTimeout(resolve, 5000));
+
+    // 6. Unpause marketplace
+    console.log('6️⃣  Unpausing marketplace...');
+    await marketplace.unpause();
+    console.log('   ✅ Marketplace is active!\n');
+
+    // Save addresses
+    const addresses = {
+        agentRegistryV2: agentRegistryAddress,
+        reputationManagerV3: reputationManagerAddress,
+        mockUSDC: usdcAddress,
+        agentLiquidityMarketplace: marketplaceAddress
+    };
+
+    const configDir = path.join(__dirname, '..', 'src', 'config');
+    if (!fs.existsSync(configDir)) {
+        fs.mkdirSync(configDir, { recursive: true });
+    }
+
+    const addressesPath = path.join(configDir, 'arc-testnet-addresses.json');
+    fs.writeFileSync(addressesPath, JSON.stringify(addresses, null, 2));
+
+    console.log('═══════════════════════════════════════════════════════\n');
+    console.log('📊 DEPLOYMENT SUMMARY\n');
+    console.log('Network: Arc Testnet');
+    console.log(`Chain ID: 5042002\n`);
+    console.log('Deployed Contracts:');
+    console.log(`  AgentRegistryV2:            ${agentRegistryAddress}`);
+    console.log(`  ReputationManagerV3:        ${reputationManagerAddress}`);
+    console.log(`  MockUSDC:                   ${usdcAddress}`);
+    console.log(`  AgentLiquidityMarketplace:  ${marketplaceAddress}\n`);
+
+    console.log(`📁 Addresses saved to: ${addressesPath}\n`);
+
+    console.log('🔍 View on Arcscan:');
+    console.log(`   https://testnet.arcscan.app/address/${marketplaceAddress}\n`);
+
+    console.log('💡 Special Note:');
+    console.log('   Arc uses USDC as native gas - all gas fees are paid in USDC!');
+    console.log('   AgentRegistryV2 uses ERC-721 NFTs with unique agent IDs.\n');
+
+    console.log('🎯 NEXT STEPS:\n');
+    console.log('1. Create test agents with arc-create-agents-v2.js');
+    console.log('2. Set up agent pools');
+    console.log('3. Test lending functionality\n');
+
+    console.log('✅ Deployment complete! 🚀\n');
+}
+
+main().catch(error => {
+    console.error('Deployment failed:', error);
+    process.exit(1);
+});

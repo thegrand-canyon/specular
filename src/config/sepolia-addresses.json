@@ -1,0 +1,11 @@
+{
+  "agentRegistry": "0xbd8210061bF24917Ca2F8098A1F3A4f76adA31fb",
+  "reputationManager": "0xe4D78A509daa8dc8bFB453cb76d61f1Cb1c4C3fF",
+  "validationRegistry": "0x77f8D49C706A566Eecc9a2C3DD6556D5be54CACE",
+  "mockUSDC": "0x771c293167AeD146EC4f56479056645Be46a0275",
+  "lendingPoolV2": "0xF7077e5bA6B0F3BDa8E22CdD1Fb395e18d7D18F0",
+  "lendingPool": "0x309C6463477aF7bB7dc907840495764168094257",
+  "reputationManagerV2": "0xe4D78A509daa8dc8bFB453cb76d61f1Cb1c4C3fF",
+  "reputationManagerV3": "0x7B0535B5fba88e10b064030943f88FEb4F6Ce715",
+  "agentLiquidityMarketplace": "0xf47620e1b2B33E264013Fad5D77AE9DC2b16B5C8"
+}

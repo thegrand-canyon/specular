@@ -1,0 +1,69 @@
+{
+  "startTime": "2026-02-17T15:25:06.470Z",
+  "network": "Arc Testnet",
+  "agents": [
+    {
+      "privateKey": "0x199d738db265bb092fa5c94026b2b33d4041a1cf233899ce8012da7a523a6807",
+      "address": "0xbBb72e24a87aF3240E146Ca4b8A86b8411Ec2619",
+      "agentId": 18,
+      "reputation": 130,
+      "loansCompleted": 3,
+      "totalBorrowed": 300,
+      "totalRepaid": 300.863013,
+      "errors": []
+    },
+    {
+      "privateKey": "0x1abd07af4de2be2b0f0d73a5dbfbc4c68e13437da9598bd1203d8266cb8754b4",
+      "address": "0x2D80adebCe6f16BC6a9986c5484796FAa298F1C2",
+      "agentId": 19,
+      "reputation": 130,
+      "loansCompleted": 3,
+      "totalBorrowed": 300,
+      "totalRepaid": 300.863013,
+      "errors": []
+    },
+    {
+      "privateKey": "0xaff826ff5a48167c04408c5b028b7a0584cfb4b5ee03c7363bc0a495ebf09ed0",
+      "address": "0x6e229a13315950dA4dc9BbF66e78260b47513d5f",
+      "agentId": 20,
+      "reputation": 130,
+      "loansCompleted": 3,
+      "totalBorrowed": 300,
+      "totalRepaid": 300.863013,
+      "errors": []
+    }
+  ],
+  "summary": {
+    "agentsCreated": 3,
+    "totalLoansCompleted": 9,
+    "totalErrors": 0,
+    "agentDetails": [
+      {
+        "agentId": 18,
+        "finalReputation": 130,
+        "loansCompleted": 3,
+        "totalBorrowed": 300,
+        "totalRepaid": 300.863013,
+        "errors": []
+      },
+      {
+        "agentId": 19,
+        "finalReputation": 130,
+        "loansCompleted": 3,
+        "totalBorrowed": 300,
+        "totalRepaid": 300.863013,
+        "errors": []
+      },
+      {
+        "agentId": 20,
+        "finalReputation": 130,
+        "loansCompleted": 3,
+        "totalBorrowed": 300,
+        "totalRepaid": 300.863013,
+        "errors": []
+      }
+    ]
+  },
+  "endTime": "2026-02-17T17:48:46.592Z",
+  "elapsedSeconds": 8640
+}

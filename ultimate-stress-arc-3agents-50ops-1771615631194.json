@@ -1,0 +1,307 @@
+{
+  "network": "arc",
+  "agents": 3,
+  "totalOperations": 50,
+  "testDuration": 87.061,
+  "totalCreated": 15,
+  "totalRepaid": 13,
+  "totalFailed": 37,
+  "totalBorrowed": 1210,
+  "totalGas": "18200820",
+  "results": [
+    {
+      "agent": "Agent 1",
+      "loansCreated": 8,
+      "loansRepaid": 6,
+      "loansFailed": 10,
+      "totalBorrowed": 645,
+      "totalGas": "13507115",
+      "operations": [
+        {
+          "type": "failed",
+          "amount": 30,
+          "duration": 14,
+          "success": false,
+          "error": "replacement fee too low (transaction=\"0x02f8b5834c"
+        },
+        {
+          "type": "full_cycle",
+          "amount": 150,
+          "duration": 14,
+          "success": true,
+          "gas": 1553894,
+          "time": 2774
+        },
+        {
+          "type": "borrow_only",
+          "amount": 30,
+          "duration": 7,
+          "success": true,
+          "gas": 1558399,
+          "time": 5453
+        },
+        {
+          "type": "borrow_only",
+          "amount": 10,
+          "duration": 30,
+          "success": true,
+          "gas": 1567745,
+          "time": 1478
+        },
+        {
+          "type": "failed",
+          "amount": 200,
+          "duration": 60,
+          "success": false,
+          "error": "replacement fee too low (transaction=\"0x02f894834c"
+        },
+        {
+          "type": "borrow_only",
+          "amount": 150,
+          "duration": 90,
+          "success": true,
+          "gas": 1581708,
+          "time": 1760
+        },
+        {
+          "type": "borrow_only",
+          "amount": 10,
+          "duration": 30,
+          "success": true,
+          "gas": 1586375,
+          "time": 2317
+        },
+        {
+          "type": "borrow_only",
+          "amount": 20,
+          "duration": 14,
+          "success": true,
+          "gas": 1591054,
+          "time": 2089
+        },
+        {
+          "type": "failed",
+          "amount": 10,
+          "duration": 30,
+          "success": false,
+          "error": "replacement fee too low (transaction=\"0x02f8b5834c"
+        },
+        {
+          "type": "borrow_only",
+          "amount": 75,
+          "duration": 90,
+          "success": true,
+          "gas": 1600424,
+          "time": 3093
+        }
+      ],
+      "pendingLoans": [
+        {
+          "id": 313,
+          "amount": 30,
+          "duration": 7
+        },
+        {
+          "id": 315,
+          "amount": 10,
+          "duration": 30
+        },
+        {
+          "id": 319,
+          "amount": 150,
+          "duration": 90
+        },
+        {
+          "id": 321,
+          "amount": 10,
+          "duration": 30
+        },
+        {
+          "id": 322,
+          "amount": 20,
+          "duration": 14
+        },
+        {
+          "id": 324,
+          "amount": 75,
+          "duration": 90
+        }
+      ]
+    },
+    {
+      "agent": "Agent 2",
+      "loansCreated": 7,
+      "loansRepaid": 7,
+      "loansFailed": 10,
+      "totalBorrowed": 565,
+      "totalGas": "4693705",
+      "operations": [
+        {
+          "type": "full_cycle",
+          "amount": 10,
+          "duration": 90,
+          "success": true,
+          "gas": 519747,
+          "time": 5491
+        },
+        {
+          "type": "full_cycle",
+          "amount": 30,
+          "duration": 90,
+          "success": true,
+          "gas": 524350,
+          "time": 5141
+        },
+        {
+          "type": "full_cycle",
+          "amount": 75,
+          "duration": 90,
+          "success": true,
+          "gas": 528942,
+          "time": 2879
+        },
+        {
+          "type": "full_cycle",
+          "amount": 200,
+          "duration": 14,
+          "success": true,
+          "gas": 533521,
+          "time": 5471
+        },
+        {
+          "type": "borrow_only",
+          "amount": 75,
+          "duration": 7,
+          "success": true,
+          "gas": 538124,
+          "time": 5132
+        },
+        {
+          "type": "full_cycle",
+          "amount": 100,
+          "duration": 30,
+          "success": true,
+          "gas": 525690,
+          "time": 5140
+        },
+        {
+          "type": "full_cycle",
+          "amount": 75,
+          "duration": 60,
+          "success": true,
+          "gas": 530294,
+          "time": 6547
+        },
+        {
+          "type": "failed",
+          "amount": 200,
+          "duration": 7,
+          "success": false,
+          "error": "insufficient funds for intrinsic transaction cost "
+        },
+        {
+          "type": "failed",
+          "amount": 200,
+          "duration": 60,
+          "success": false,
+          "error": "insufficient funds for intrinsic transaction cost "
+        },
+        {
+          "type": "failed",
+          "amount": 50,
+          "duration": 14,
+          "success": false,
+          "error": "insufficient funds for intrinsic transaction cost "
+        }
+      ],
+      "pendingLoans": [
+        {
+          "id": 327,
+          "amount": 75,
+          "duration": 7
+        }
+      ]
+    },
+    {
+      "agent": "Agent 3",
+      "loansCreated": 0,
+      "loansRepaid": 0,
+      "loansFailed": 17,
+      "totalBorrowed": 0,
+      "totalGas": "0",
+      "operations": [
+        {
+          "type": "failed",
+          "amount": 10,
+          "duration": 14,
+          "success": false,
+          "error": "insufficient funds for intrinsic transaction cost "
+        },
+        {
+          "type": "failed",
+          "amount": 150,
+          "duration": 7,
+          "success": false,
+          "error": "insufficient funds for intrinsic transaction cost "
+        },
+        {
+          "type": "failed",
+          "amount": 75,
+          "duration": 14,
+          "success": false,
+          "error": "insufficient funds for intrinsic transaction cost "
+        },
+        {
+          "type": "failed",
+          "amount": 200,
+          "duration": 14,
+          "success": false,
+          "error": "insufficient funds for intrinsic transaction cost "
+        },
+        {
+          "type": "failed",
+          "amount": 20,
+          "duration": 7,
+          "success": false,
+          "error": "insufficient funds for intrinsic transaction cost "
+        },
+        {
+          "type": "failed",
+          "amount": 100,
+          "duration": 90,
+          "success": false,
+          "error": "insufficient funds for intrinsic transaction cost "
+        },
+        {
+          "type": "failed",
+          "amount": 10,
+          "duration": 14,
+          "success": false,
+          "error": "insufficient funds for intrinsic transaction cost "
+        },
+        {
+          "type": "failed",
+          "amount": 200,
+          "duration": 30,
+          "success": false,
+          "error": "insufficient funds for intrinsic transaction cost "
+        },
+        {
+          "type": "failed",
+          "amount": 150,
+          "duration": 14,
+          "success": false,
+          "error": "insufficient funds for intrinsic transaction cost "
+        },
+        {
+          "type": "failed",
+          "amount": 200,
+          "duration": 60,
+          "success": false,
+          "error": "insufficient funds for intrinsic transaction cost "
+        }
+      ],
+      "pendingLoans": []
+    }
+  ]
+}

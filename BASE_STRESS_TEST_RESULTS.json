@@ -1,0 +1,107 @@
+{
+  "network": "base-mainnet",
+  "timestamp": "2026-02-22T00:16:55.607Z",
+  "agent": "0x656086A21073272533c8A3f56A94c1f3D8BCFcE2",
+  "config": {
+    "cycles": 15,
+    "loanAmount": "3.0 USDC",
+    "duration": "30 days"
+  },
+  "results": {
+    "successful": 12,
+    "failed": 3,
+    "successRate": 80,
+    "totalTime": 146.5,
+    "totalGasUsed": "6965230",
+    "totalInterestPaid": "0.443832",
+    "initialScore": 10,
+    "finalScore": 130,
+    "scoreDelta": 120,
+    "loans": [
+      {
+        "loanId": 2,
+        "amount": 3,
+        "interest": 0.036986,
+        "gasUsed": 555185,
+        "cycleTime": 9.6
+      },
+      {
+        "loanId": 3,
+        "amount": 3,
+        "interest": 0.036986,
+        "gasUsed": 559776,
+        "cycleTime": 13.8
+      },
+      {
+        "loanId": 4,
+        "amount": 3,
+        "interest": 0.036986,
+        "gasUsed": 564367,
+        "cycleTime": 9.5
+      },
+      {
+        "loanId": 5,
+        "amount": 3,
+        "interest": 0.036986,
+        "gasUsed": 568958,
+        "cycleTime": 13.6
+      },
+      {
+        "loanId": 6,
+        "amount": 3,
+        "interest": 0.036986,
+        "gasUsed": 573549,
+        "cycleTime": 9.3
+      },
+      {
+        "loanId": 7,
+        "amount": 3,
+        "interest": 0.036986,
+        "gasUsed": 578140,
+        "cycleTime": 13.6
+      },
+      {
+        "loanId": 8,
+        "amount": 3,
+        "interest": 0.036986,
+        "gasUsed": 582731,
+        "cycleTime": 9.8
+      },
+      {
+        "loanId": 9,
+        "amount": 3,
+        "interest": 0.036986,
+        "gasUsed": 587322,
+        "cycleTime": 14.2
+      },
+      {
+        "loanId": 10,
+        "amount": 3,
+        "interest": 0.036986,
+        "gasUsed": 591914,
+        "cycleTime": 4.9
+      },
+      {
+        "loanId": 11,
+        "amount": 3,
+        "interest": 0.036986,
+        "gasUsed": 596505,
+        "cycleTime": 13.8
+      },
+      {
+        "loanId": 12,
+        "amount": 3,
+        "interest": 0.036986,
+        "gasUsed": 601096,
+        "cycleTime": 9.4
+      },
+      {
+        "loanId": 13,
+        "amount": 3,
+        "interest": 0.036986,
+        "gasUsed": 605687,
+        "cycleTime": 9.6
+      }
+    ]
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "src/api/MultiNetworkAPI.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "src/api/MultiNetworkAPI.js"
+    }
+  ],
+  "env": {
+    "ARC_TESTNET_RPC_URL": "https://arc-testnet.drpc.org",
+    "DEFAULT_NETWORK": "base"
+  }
+}

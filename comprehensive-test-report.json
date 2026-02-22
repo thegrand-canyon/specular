@@ -1,0 +1,21 @@
+{
+  "timestamp": "2026-02-16T05:00:52.503Z",
+  "totalDuration": "30.52s",
+  "summary": {
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
+    "criticalFailed": 1,
+    "successRate": "0.0%"
+  },
+  "results": [
+    {
+      "name": "Master Test Suite",
+      "file": "master-test-suite.js",
+      "status": "FAIL",
+      "duration": "30.52s",
+      "critical": true,
+      "error": "Command failed: npx hardhat run scripts/master-test-suite.js --network sepolia\n"
+    }
+  ]
+}

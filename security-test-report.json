@@ -1,0 +1,61 @@
+{
+  "results": [
+    {
+      "test": "Pause access control",
+      "status": "SKIP"
+    },
+    {
+      "test": "Fee access control",
+      "status": "SKIP"
+    },
+    {
+      "test": "Fee maximum limit",
+      "status": "PASS"
+    },
+    {
+      "test": "Reputation authorization",
+      "status": "SKIP"
+    },
+    {
+      "test": "Marketplace authorization",
+      "status": "PASS"
+    },
+    {
+      "test": "Owner fund theft protection",
+      "status": "PASS"
+    },
+    {
+      "test": "Platform fee segregation",
+      "status": "PASS"
+    },
+    {
+      "test": "Reentrancy protection",
+      "status": "PASS"
+    },
+    {
+      "test": "Pausable protection",
+      "status": "PARTIAL",
+      "error": "replacement transaction underpriced"
+    },
+    {
+      "test": "Pausable protection",
+      "status": "FAIL",
+      "error": "execution reverted"
+    },
+    {
+      "test": "Unsafe approvals",
+      "status": "PASS"
+    }
+  ],
+  "summary": {
+    "passed": 6,
+    "failed": 1,
+    "warning": 0,
+    "partial": 1,
+    "skipped": 3
+  },
+  "severity": {
+    "critical": 0,
+    "high": 0
+  }
+}

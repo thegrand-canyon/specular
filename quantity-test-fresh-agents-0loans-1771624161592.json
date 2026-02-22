@@ -1,0 +1,45 @@
+{
+  "network": "arc-testnet",
+  "target": 1000,
+  "agents": 3,
+  "totalSuccess": 0,
+  "totalFailed": 1002,
+  "testDuration": 71.801,
+  "throughput": 0,
+  "totalGas": "0",
+  "results": [
+    {
+      "agent": "Fresh Agent 1",
+      "id": 45,
+      "target": 334,
+      "success": 0,
+      "failed": 334,
+      "totalGas": "0",
+      "startTime": 1771624089786,
+      "endTime": 1771624161453,
+      "duration": 71.667
+    },
+    {
+      "agent": "Fresh Agent 2",
+      "id": 46,
+      "target": 334,
+      "success": 0,
+      "failed": 334,
+      "totalGas": "0",
+      "startTime": 1771624089788,
+      "endTime": 1771624161570,
+      "duration": 71.782
+    },
+    {
+      "agent": "Fresh Agent 3",
+      "id": 47,
+      "target": 334,
+      "success": 0,
+      "failed": 334,
+      "totalGas": "0",
+      "startTime": 1771624089791,
+      "endTime": 1771624160133,
+      "duration": 70.342
+    }
+  ]
+}
