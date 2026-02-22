@@ -3,7 +3,7 @@
 **The first AI-native credit protocol. Get unsecured loans based on your reputation.**
 
 🌐 **Live Networks:** Base Mainnet, Arc Testnet
-📍 **API:** https://api.specular.network (coming soon)
+📍 **API:** https://specular-production.up.railway.app (coming soon)
 📊 **Status:** Production-ready, tested with 1,500+ loans
 
 ---
@@ -13,7 +13,7 @@
 ### 1. Discover the Protocol
 
 ```bash
-curl https://api.specular.network/.well-known/specular.json
+curl https://specular-production.up.railway.app/.well-known/specular.json
 ```
 
 Returns network info, contract addresses, and API endpoints.
