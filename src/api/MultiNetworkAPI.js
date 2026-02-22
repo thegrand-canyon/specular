@@ -209,10 +209,9 @@ app.get('/agents/:address', async (req, res) => {
         }
 
         const agent = await registry.agents(agentId);
-        const score = await reputationManager.getReputationScore(address);
-        const limit = await reputationManager.calculateCreditLimit(address);
-        const tier = await reputationManager.getAgentTier(address);
-        const baseAPR = await reputationManager.getAgentAPR(address);
+        const score = await reputationManager['getReputationScore(address)'](address);
+        const limit = await reputationManager['calculateCreditLimit(address)'](address);
+        const baseAPR = await reputationManager['getAgentAPR(address)'](address);
 
         // Get active pools
         const totalPools = await marketplace.totalPools();
@@ -237,7 +236,6 @@ app.get('/agents/:address', async (req, res) => {
             address: agent.agentAddress,
             metadata: agent.metadata,
             reputationScore: Number(score),
-            tier: Number(tier),
             creditLimit: Number(ethers.formatUnits(limit, 6)),
             baseAPR: Number(baseAPR),
             pools: agentPools
