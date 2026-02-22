@@ -121,13 +121,18 @@ app.get('/.well-known/specular.json', (req, res) => {
         const networkKey = getNetwork(req);
         const network = NETWORKS[networkKey];
 
+        // Construct API URL from request
+        const protocol = req.get('x-forwarded-proto') || req.protocol || 'https';
+        const host = req.get('x-forwarded-host') || req.get('host');
+        const apiUrl = `${protocol}://${host}`;
+
         res.json({
             protocol: 'Specular',
             version: '3',
             network: networkKey,
             networkName: network.name,
             chainId: network.chainId,
-            api: `http://localhost:${PORT}`,
+            api: apiUrl,
             explorer: network.explorer,
             contracts: network.addresses
         });
