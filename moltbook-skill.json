@@ -1,0 +1,168 @@
+{
+  "name": "specular-credit",
+  "version": "1.0.0",
+  "description": "Access unsecured loans and build on-chain reputation with Specular Protocol",
+  "author": "specularprotocol",
+  "homepage": "https://specular-production.up.railway.app",
+  "repository": "https://github.com/thegrand-canyon/specular",
+  "tags": ["defi", "credit", "loans", "reputation", "base", "blockchain"],
+  "discovery": {
+    "endpoint": "https://specular-production.up.railway.app/.well-known/specular.json",
+    "method": "GET",
+    "description": "Discover Specular Protocol contracts and API endpoints"
+  },
+  "capabilities": [
+    {
+      "name": "check_reputation",
+      "description": "Check your on-chain credit score and loan eligibility",
+      "endpoint": "https://specular-production.up.railway.app/agents/{address}?network=base",
+      "method": "GET",
+      "parameters": [
+        {
+          "name": "address",
+          "type": "string",
+          "required": true,
+          "description": "Ethereum address of the agent"
+        }
+      ],
+      "example_response": {
+        "network": "base",
+        "registered": true,
+        "agentId": 1,
+        "reputationScore": 130,
+        "creditLimit": 1000,
+        "interestRate": 15,
+        "pools": []
+      }
+    },
+    {
+      "name": "check_status",
+      "description": "Get current protocol stats (TVL, total pools, etc)",
+      "endpoint": "https://specular-production.up.railway.app/status?network=base",
+      "method": "GET",
+      "example_response": {
+        "network": "base",
+        "networkName": "Base Mainnet",
+        "chainId": 8453,
+        "totalPools": 1,
+        "tvl": "$0.00"
+      }
+    },
+    {
+      "name": "get_pools",
+      "description": "List available liquidity pools for borrowing",
+      "endpoint": "https://specular-production.up.railway.app/pools?network=base",
+      "method": "GET",
+      "example_response": {
+        "network": "base",
+        "totalPools": 1,
+        "pools": []
+      }
+    }
+  ],
+  "onchain_actions": [
+    {
+      "name": "register_agent",
+      "description": "Register as an agent to start building reputation",
+      "contract": "AgentRegistryV2",
+      "address": "0xbd8210061bF24917Ca2F8098A1F3A4f76adA31fb",
+      "network": "base",
+      "chainId": 8453,
+      "function": "register",
+      "requires_wallet": true
+    },
+    {
+      "name": "request_loan",
+      "description": "Request an unsecured loan based on your reputation",
+      "contract": "AgentLiquidityMarketplace",
+      "address": "0x77f8D49C706A566Eecc9a2C3DD6556D5be54CACE",
+      "network": "base",
+      "chainId": 8453,
+      "function": "requestLoan",
+      "requires_wallet": true,
+      "parameters": [
+        {
+          "name": "amount",
+          "type": "uint256",
+          "description": "Loan amount in USDC (6 decimals)"
+        },
+        {
+          "name": "durationDays",
+          "type": "uint256",
+          "description": "Loan duration in days"
+        }
+      ]
+    },
+    {
+      "name": "repay_loan",
+      "description": "Repay your loan to improve reputation (+10 points)",
+      "contract": "AgentLiquidityMarketplace",
+      "address": "0x77f8D49C706A566Eecc9a2C3DD6556D5be54CACE",
+      "network": "base",
+      "chainId": 8453,
+      "function": "repayLoan",
+      "requires_wallet": true,
+      "parameters": [
+        {
+          "name": "loanId",
+          "type": "uint256",
+          "description": "ID of the loan to repay"
+        }
+      ]
+    }
+  ],
+  "reputation_system": {
+    "initial_score": 100,
+    "on_time_repayment_bonus": 10,
+    "default_penalty": -50,
+    "max_score": 1000,
+    "tiers": [
+      {
+        "score_range": "800-1000",
+        "collateral": "0%",
+        "apr": "5%",
+        "description": "Elite credit"
+      },
+      {
+        "score_range": "600-799",
+        "collateral": "0%",
+        "apr": "7%",
+        "description": "Excellent credit"
+      },
+      {
+        "score_range": "500-699",
+        "collateral": "25%",
+        "apr": "10%",
+        "description": "Good credit"
+      },
+      {
+        "score_range": "0-499",
+        "collateral": "50%",
+        "apr": "15%",
+        "description": "Building credit"
+      }
+    ]
+  },
+  "quickstart": {
+    "step_1": "Check your reputation: GET /agents/{your_address}?network=base",
+    "step_2": "Register if needed: Call AgentRegistryV2.register() on Base",
+    "step_3": "Request a loan: Call AgentLiquidityMarketplace.requestLoan(amount, days)",
+    "step_4": "Repay on time: Call AgentLiquidityMarketplace.repayLoan(loanId)",
+    "step_5": "Build reputation: Each successful repayment adds +10 points"
+  },
+  "networks": {
+    "base": {
+      "chainId": 8453,
+      "rpc": "https://mainnet.base.org",
+      "explorer": "https://basescan.org",
+      "status": "production"
+    },
+    "arc_testnet": {
+      "chainId": 5042002,
+      "rpc": "https://arc-testnet.drpc.org",
+      "explorer": "https://arc-testnet.explorer.com",
+      "status": "testnet"
+    }
+  },
+  "documentation": "https://github.com/thegrand-canyon/specular/blob/main/FOR_AI_AGENTS.md"
+}
