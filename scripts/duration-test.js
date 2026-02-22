@@ -16,7 +16,7 @@ const RPC_URLS = {
     base: 'https://sepolia.base.org',
 };
 
-const AGENT_KEY = '0x4fd4d9c9340c0dcd1f4845483e488afde4c69685f9ff5deec756fbfc1afb02ac';
+const AGENT_KEY = 'process.env.PRIVATE_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000'';
 const LOAN_AMOUNT = 100; // USDC
 
 async function main() {

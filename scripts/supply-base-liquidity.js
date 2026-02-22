@@ -6,7 +6,7 @@ const { ethers } = require('ethers');
 const fs = require('fs');
 
 const RPC_URL = 'https://sepolia.base.org';
-const LENDER_KEY = '0x4fd4d9c9340c0dcd1f4845483e488afde4c69685f9ff5deec756fbfc1afb02ac';
+const LENDER_KEY = 'process.env.PRIVATE_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000'';
 const AGENT_ID = 1;
 const AMOUNT = 10000; // 10,000 USDC
 

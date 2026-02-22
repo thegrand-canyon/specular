@@ -8,7 +8,7 @@ async function main() {
         process.env.ARC_TESTNET_RPC_URL || 'https://arc-testnet.drpc.org'
     );
     
-    const privateKey = process.env.PRIVATE_KEY || '0x4fd4d9c9340c0dcd1f4845483e488afde4c69685f9ff5deec756fbfc1afb02ac';
+    const privateKey = process.env.PRIVATE_KEY || 'process.env.PRIVATE_KEY || ''';
     const wallet = new ethers.Wallet(privateKey, provider);
 
     const sdk = new SpecularSDK({

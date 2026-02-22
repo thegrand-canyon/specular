@@ -24,7 +24,7 @@ const CHAIN_ID = 5042002;
 
 const DEPLOYER_KEY =
     process.env.PRIVATE_KEY ||
-    '0x4fd4d9c9340c0dcd1f4845483e488afde4c69685f9ff5deec756fbfc1afb02ac';
+    'process.env.PRIVATE_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000'';
 
 const ADDRESSES_FILE = path.join(__dirname, '..', 'src', 'config', 'arc-testnet-addresses.json');
 const RESULTS_FILE = path.join(__dirname, '..', 'patient-test-results.json');

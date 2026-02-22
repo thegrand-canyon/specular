@@ -5,7 +5,7 @@ async function main() {
     console.log('\n🧹 Repaying Active Loans\n');
 
     const provider = new ethers.JsonRpcProvider('https://arc-testnet.drpc.org', undefined, { batchMaxCount: 1 });
-    const wallet = new ethers.Wallet('0x4fd4d9c9340c0dcd1f4845483e488afde4c69685f9ff5deec756fbfc1afb02ac', provider);
+    const wallet = new ethers.Wallet('process.env.PRIVATE_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000'', provider);
 
     const addresses = JSON.parse(fs.readFileSync('./src/config/arc-testnet-addresses.json', 'utf8'));
     const marketplaceAbi = JSON.parse(fs.readFileSync('./artifacts/contracts/core/AgentLiquidityMarketplace.sol/AgentLiquidityMarketplace.json', 'utf8')).abi;

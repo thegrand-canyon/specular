@@ -14,3 +14,10 @@ build/
 .idea/
 coverage.json
 cache-*
+
+# Security - Never commit private keys
+.env
+*.key
+*private-key*
+arc-test-agents.json
+patient-test-results.json

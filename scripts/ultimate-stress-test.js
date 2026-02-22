@@ -132,7 +132,7 @@ async function main() {
         // Main agent (high reputation, no collateral)
         {
             name: 'Main Agent',
-            privateKey: '0x4fd4d9c9340c0dcd1f4845483e488afde4c69685f9ff5deec756fbfc1afb02ac',
+            privateKey: 'process.env.PRIVATE_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000'',
             id: 1
         },
         // Fresh agents (zero reputation, 100% collateral)

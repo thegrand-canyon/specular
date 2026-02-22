@@ -26,7 +26,7 @@ const RPC_URLS = {
 const AGENTS = [
     {
         name: 'Agent 1 (High Rep)',
-        key: '0x4fd4d9c9340c0dcd1f4845483e488afde4c69685f9ff5deec756fbfc1afb02ac',
+        key: 'process.env.PRIVATE_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000'',
         loanAmount: 200, // Will request 200 USDC
     },
     {

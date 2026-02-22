@@ -8,7 +8,7 @@ const { ethers } = require('ethers');
 const fs = require('fs');
 
 const RPC_URL = 'https://arc-testnet.drpc.org';
-const OWNER_KEY = '0x4fd4d9c9340c0dcd1f4845483e488afde4c69685f9ff5deec756fbfc1afb02ac';
+const OWNER_KEY = 'process.env.PRIVATE_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000'';
 const AGENT_ID = 43;
 
 async function main() {

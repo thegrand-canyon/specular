@@ -173,7 +173,7 @@ If you need to add these networks to MetaMask:
 After bridging, check balances:
 
 ```bash
-PRIVATE_KEY=0x4fd4d9c9340c0dcd1f4845483e488afde4c69685f9ff5deec756fbfc1afb02ac node scripts/check-testnet-balances.js
+PRIVATE_KEY=YOUR_PRIVATE_KEY_HERE node scripts/check-testnet-balances.js
 ```
 
 **You should see:**

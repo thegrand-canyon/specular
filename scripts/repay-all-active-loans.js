@@ -8,7 +8,7 @@ const { ethers } = require('ethers');
 const fs = require('fs');
 
 const NETWORK = process.env.NETWORK || 'arc';
-const AGENT_KEY = process.env.AGENT_KEY || '0x4fd4d9c9340c0dcd1f4845483e488afde4c69685f9ff5deec756fbfc1afb02ac'; // Agent 1
+const AGENT_KEY = process.env.AGENT_KEY || 'process.env.PRIVATE_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000''; // Agent 1
 
 const RPC_URLS = {
     arc: 'https://arc-testnet.drpc.org',
