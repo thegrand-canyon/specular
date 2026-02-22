@@ -3,7 +3,10 @@
  * Monitors for mentions, replies to questions, posts updates
  */
 
-const API_KEY = process.env.MOLTBOOK_API_KEY || 'moltbook_sk_26-zGFlgSuzAezVZNqjqK25I23GJg_CB';
+const API_KEY = process.env.MOLTBOOK_API_KEY;
+if (!API_KEY) {
+    throw new Error('MOLTBOOK_API_KEY environment variable is required');
+}
 const BASE_URL = 'https://www.moltbook.com/api/v1';
 const CHECK_INTERVAL = 60000; // Check every minute
 

@@ -18,7 +18,7 @@ const RPC_URL = process.env.ARC_TESTNET_RPC_URL || 'https://arc-testnet.drpc.org
 const API_BASE = 'http://localhost:3001';
 
 const AGENT1_KEY = process.env.PRIVATE_KEY; // Agent #43 (score 1000)
-const LENDER_KEY = '0x41adb1d6ef22647a3de0e7993f4e33ec7bcd5b49359587967750ff8f3faddf67';
+const LENDER_KEY = 'process.env.TEST_KEY_2 || '0x0000000000000000000000000000000000000000000000000000000000000000'';
 
 const addresses = require('../../src/config/arc-testnet-addresses.json');
 
