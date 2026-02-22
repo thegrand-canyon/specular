@@ -7,6 +7,7 @@ const express = require('express');
 const cors = require('cors');
 const { ethers } = require('ethers');
 const fs = require('fs');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -15,9 +16,11 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
-// Serve static frontend
-const frontendPath = '/Users/peterschroeder/Specular/frontend';
-app.use(express.static(frontendPath));
+// Serve static frontend (relative path for Railway deployment)
+const frontendPath = path.join(__dirname, '../../frontend');
+if (fs.existsSync(frontendPath)) {
+    app.use(express.static(frontendPath));
+}
 
 // Network configurations
 const NETWORKS = {
@@ -25,14 +28,14 @@ const NETWORKS = {
         name: 'Arc Testnet',
         chainId: 5042002,
         rpcUrl: process.env.ARC_TESTNET_RPC_URL || 'https://arc-testnet.drpc.org',
-        addresses: JSON.parse(fs.readFileSync('./src/config/arc-testnet-addresses.json', 'utf8')),
+        addresses: JSON.parse(fs.readFileSync(path.join(__dirname, '../config/arc-testnet-addresses.json'), 'utf8')),
         explorer: 'https://arc-testnet.explorer.com'
     },
     base: {
         name: 'Base Mainnet',
         chainId: 8453,
         rpcUrl: 'https://mainnet.base.org',
-        addresses: JSON.parse(fs.readFileSync('./src/config/base-addresses.json', 'utf8')),
+        addresses: JSON.parse(fs.readFileSync(path.join(__dirname, '../config/base-addresses.json'), 'utf8')),
         explorer: 'https://basescan.org'
     }
 };
@@ -42,11 +45,12 @@ const DEFAULT_NETWORK = process.env.DEFAULT_NETWORK || 'arc';
 
 // Load ABIs
 function loadAbi(name) {
+    const basePath = path.join(__dirname, '../../artifacts/contracts');
     const paths = [
-        `./artifacts/contracts/${name}.sol/${name}.json`,
-        `./artifacts/contracts/core/${name}.sol/${name}.json`,
-        `./artifacts/contracts/tokens/${name}.sol/${name}.json`,
-        `./artifacts/contracts/bridge/${name}.sol/${name}.json`,
+        path.join(basePath, `${name}.sol/${name}.json`),
+        path.join(basePath, `core/${name}.sol/${name}.json`),
+        path.join(basePath, `tokens/${name}.sol/${name}.json`),
+        path.join(basePath, `bridge/${name}.sol/${name}.json`),
     ];
     for (const p of paths) {
         try {
@@ -88,7 +92,12 @@ function getContracts(networkKey) {
 // Routes
 
 app.get('/dashboard', (req, res) => {
-    res.sendFile(frontendPath + '/dashboard.html');
+    const dashboardFile = path.join(frontendPath, 'dashboard.html');
+    if (fs.existsSync(dashboardFile)) {
+        res.sendFile(dashboardFile);
+    } else {
+        res.status(404).json({ error: 'Dashboard not available in production' });
+    }
 });
 
 app.get('/', (req, res) => {
