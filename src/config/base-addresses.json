@@ -1,8 +1,11 @@
 {
-  "agentRegistryV2": "0xbd8210061bF24917Ca2F8098A1F3A4f76adA31fb",
-  "reputationManagerV3": "0xe4D78A509daa8dc8bFB453cb76d61f1Cb1c4C3fF",
+  "agentRegistryV2": "0xb9996de05fD514A0cB2B81fa25448EECD4559Aaa",
+  "reputationManagerV3": "0xf19b1780A84668C8dfB6b4E84C08e457dB3B0527",
   "usdc": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-  "agentLiquidityMarketplace": "0x77f8D49C706A566Eecc9a2C3DD6556D5be54CACE",
-  "depositRouter": "0x771c293167AeD146EC4f56479056645Be46a0275",
-  "validationRegistry": "0x5194D976F2f1B59C0500cDe1e54A362d9BB9124B"
+  "agentLiquidityMarketplace": "0xd7b4dEE74C61844DFA75aEbe224e4635463b1C8f",
+  "deployer": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+  "deployedAt": "2026-02-25T00:00:00.000Z",
+  "network": "base-mainnet",
+  "chainId": 8453,
+  "note": "Redeployed ReputationManager and Marketplace on 2026-02-25 to fix authorization issue. Registry unchanged. All contracts now owned by secure wallet with unified ownership."
 }
