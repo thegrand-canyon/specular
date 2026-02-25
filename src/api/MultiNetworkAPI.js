@@ -161,20 +161,22 @@ app.get('/health', async (req, res) => {
 app.get('/status', async (req, res) => {
     try {
         const networkKey = getNetwork(req);
-        const { marketplace, network } = getContracts(networkKey);
+        const { marketplace, provider, addresses, network } = getContracts(networkKey);
 
         const totalPools = await marketplace.totalPools();
 
-        // Calculate TVL
-        let totalTVL = 0n;
-        for (let i = 1; i <= Number(totalPools); i++) {
-            try {
-                const pool = await marketplace.pools(i);
-                totalTVL += pool.totalLiquidity;
-            } catch (e) {
-                // Skip pools that fail
-            }
-        }
+        // Calculate TVL by getting USDC balance of marketplace contract
+        // This is more reliable than summing pool.totalLiquidity
+        console.log(`[DEBUG] Getting TVL for ${networkKey}`);
+        console.log(`[DEBUG] USDC address: ${addresses.usdc}`);
+        console.log(`[DEBUG] Marketplace address: ${addresses.agentLiquidityMarketplace}`);
+
+        const usdcAbi = ['function balanceOf(address) view returns (uint256)'];
+        const usdc = new ethers.Contract(addresses.usdc, usdcAbi, provider);
+        const totalTVL = await usdc.balanceOf(addresses.agentLiquidityMarketplace);
+
+        console.log(`[DEBUG] Total TVL (raw): ${totalTVL.toString()}`);
+        console.log(`[DEBUG] Total TVL (formatted): ${ethers.formatUnits(totalTVL, 6)}`);
 
         res.json({
             network: networkKey,
@@ -187,6 +189,7 @@ app.get('/status', async (req, res) => {
             })
         });
     } catch (error) {
+        console.error(`[ERROR] /status failed:`, error);
         res.status(500).json({ error: error.message });
     }
 });

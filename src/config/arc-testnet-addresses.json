@@ -1,8 +1,13 @@
 {
+  "SECURITY_STATUS": "✅ FULLY SECURED - Ownership transferred 2026-02-22",
+  "network": "arc-testnet",
   "agentRegistryV2": "0x741C03c0d95d2c15E479CE1c7E69B3196d86faD7",
   "reputationManagerV3": "0x94F2fa47c4488202a46dAA9038Ed9C9c4c07467F",
   "mockUSDC": "0xf2807051e292e945751A25616705a9aadfb39895",
+  "usdc": "0xf2807051e292e945751A25616705a9aadfb39895",
   "agentLiquidityMarketplace": "0x048363A325A5B188b7FF157d725C5e329f0171D3",
+  "agentLiquidityMarketplace_v5_WITH_FIX": "0x9EF0DD53F4412B5D5250B6797f6E347912877A2B",
+  "agentLiquidityMarketplace_v5_note": "H-04 security fix (MAX_LENDERS=50) - not authorized yet",
   "depositRouter": "0x5592AaFDdd1f73F5D7547e664f3513C409FB9796",
   "validationRegistry": "0xD97AeE70866b0feF43A4544475A5De4c061eCcea",
   "agentLiquidityMarketplace_old": "0xD1cf6E7864Bc4CbBE52aA94369dF08B106927559",
@@ -10,8 +15,29 @@
   "upgradedAt": "2026-02-19T18:12:04.186Z",
   "upgradeReason": "[SECURITY-01] Added concurrent loan limits",
   "deployerForUpgrade": "0x656086A21073272533c8A3f56A94c1f3D8BCFcE2",
+  "deployerNote": "⚠️ COMPROMISED WALLET - Private key exposed on GitHub",
   "agentLiquidityMarketplace_v2": "0xFBF9509A8ED5cbBEFe14470CC1f6E9AB695E1D7A",
   "agentLiquidityMarketplace_v2_note": "Backed up before resetPoolAccounting upgrade",
   "upgradedAt_v3": "2026-02-20T17:13:11.287Z",
-  "upgradeReason_v3": "Added resetPoolAccounting emergency function"
+  "upgradeReason_v3": "Added resetPoolAccounting emergency function",
+  "OWNERSHIP_TRANSFER": {
+    "date": "2026-02-22",
+    "newOwner": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+    "previousOwner": "0x656086A21073272533c8A3f56A94c1f3D8BCFcE2",
+    "status": "✅ FULLY SECURED",
+    "fundsSecured": "32,019.65 USDC",
+    "marketplacePaused": true,
+    "transferTransactions": {
+      "AgentRegistryV2": "0xa082785e8b20828d398283a7bf1d2c1a70f812b7bed1d3da5f8355ee600a6bd6",
+      "ReputationManagerV3": "0x2f027a0f093ab0ad555ba2c351e1ca1450c3b51e07629b986e63c57c96b53f1b",
+      "AgentLiquidityMarketplace": "0xa73d8ca407817842909d14c0f084a50a6983e6c73b74aed583a8f3a3754f290b",
+      "DepositRouter": "0x80aff3538c402393aaabaf9200dbd5fee3ac18f1bbea3150a425ad08df46d204",
+      "ValidationRegistry": "0xe7c81bffef72f65af135ab89cc7e041878de11dd360e9db0b677f637cdf78cc3"
+    }
+  },
+  "agentLiquidityMarketplace_v4_note": "Backed up before H-04 security fix deployment",
+  "agentLiquidityMarketplace_v4": "0x048363A325A5B188b7FF157d725C5e329f0171D3",
+  "upgradedAt_v5": "2026-02-23T21:48:15.628Z",
+  "upgradeReason_v5": "[H-04 FIX] MAX_LENDERS_PER_POOL reduced from 200 to 50",
+  "deployerForUpgrade_v5": "0x656086A21073272533c8A3f56A94c1f3D8BCFcE2"
 }
