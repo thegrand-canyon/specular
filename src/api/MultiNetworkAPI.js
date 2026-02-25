@@ -16,11 +16,41 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
+// Input validation middleware
+function validateNetwork(req, res, next) {
+    const networkParam = req.query.network || req.headers['x-network'] || DEFAULT_NETWORK;
+    const network = networkParam.toLowerCase();
+
+    if (!NETWORKS[network]) {
+        return res.status(400).json({
+            error: `Invalid network: ${networkParam}`,
+            validNetworks: Object.keys(NETWORKS)
+        });
+    }
+
+    req.validatedNetwork = network;
+    next();
+}
+
 // Serve static frontend (relative path for Railway deployment)
 const frontendPath = path.join(__dirname, '../../frontend');
 if (fs.existsSync(frontendPath)) {
     app.use(express.static(frontendPath));
 }
+
+// Apply validation middleware to API routes that use network parameter
+const validateNetworkRoutes = [
+    '/health',
+    '/status',
+    '/agents',
+    '/agents/:address',
+    '/pools',
+    '/pools/:id',
+    '/.well-known/specular.json'
+];
+validateNetworkRoutes.forEach(route => {
+    app.use(route, validateNetwork);
+});
 
 // Network configurations
 const NETWORKS = {
@@ -64,9 +94,17 @@ const rmAbi = loadAbi('ReputationManagerV3');
 
 // Get network context from request
 function getNetwork(req) {
-    const network = req.query.network || req.headers['x-network'] || DEFAULT_NETWORK;
+    // Use pre-validated network from middleware if available
+    if (req.validatedNetwork) {
+        return req.validatedNetwork;
+    }
+
+    // Fallback for routes without middleware (case-insensitive)
+    const networkParam = req.query.network || req.headers['x-network'] || DEFAULT_NETWORK;
+    const network = networkParam.toLowerCase();
+
     if (!NETWORKS[network]) {
-        throw new Error(`Unknown network: ${network}. Available: ${Object.keys(NETWORKS).join(', ')}`);
+        throw new Error(`Unknown network: ${networkParam}. Available: ${Object.keys(NETWORKS).join(', ')}`);
     }
     return network;
 }
@@ -101,18 +139,21 @@ app.get('/dashboard', (req, res) => {
 app.get('/', (req, res) => {
     res.json({
         name: 'Specular Multi-Network Agent API',
-        version: '2.0.0',
+        version: '2.1.0',
         defaultNetwork: DEFAULT_NETWORK,
         networks: Object.keys(NETWORKS),
         endpoints: {
             discovery: '/.well-known/specular.json?network={arc|base}',
             health: '/health?network={arc|base}',
             status: '/status?network={arc|base}',
-            agents: '/agents/:address?network={arc|base}',
-            pools: '/pools?network={arc|base}',
+            allAgents: '/agents?network={arc|base}',
+            agentByAddress: '/agents/:address?network={arc|base}',
+            allPools: '/pools?network={arc|base}',
+            poolById: '/pools/:id?network={arc|base}',
+            networks: '/networks',
             dashboard: '/dashboard'
         },
-        usage: 'Add ?network=arc or ?network=base to any endpoint. Default: ' + DEFAULT_NETWORK
+        usage: 'Add ?network=arc or ?network=base to any endpoint. Network parameter is case-insensitive. Default: ' + DEFAULT_NETWORK
     });
 });
 
@@ -216,18 +257,21 @@ app.get('/agents/:address', async (req, res) => {
         const limit = await reputationManager['calculateCreditLimit(address)'](address);
         const interestRate = await reputationManager.calculateInterestRate(address);
 
-        // Get active pools
+        // Get active pools for this agent
         const totalPools = await marketplace.totalPools();
         const agentPools = [];
-        for (let i = 1; i <= Number(totalPools); i++) {
+        for (let i = 0; i < Number(totalPools); i++) {
             try {
-                const pool = await marketplace.pools(i);
-                if (pool.agentId === agentId && pool.isActive) {
-                    agentPools.push({
-                        poolId: i,
-                        liquidity: Number(ethers.formatUnits(pool.totalLiquidity, 6)),
-                        lenderCount: Number(pool.lenderCount)
-                    });
+                const poolAgentId = await marketplace.agentPoolIds(i);
+                if (poolAgentId === agentId) {
+                    const pool = await marketplace.agentPools(poolAgentId);
+                    if (pool.isActive) {
+                        agentPools.push({
+                            poolId: i + 1, // Human-readable pool ID
+                            liquidity: Number(ethers.formatUnits(pool.totalLiquidity, 6)),
+                            available: Number(ethers.formatUnits(pool.availableLiquidity, 6))
+                        });
+                    }
                 }
             } catch (e) {}
         }
@@ -236,11 +280,14 @@ app.get('/agents/:address', async (req, res) => {
             network: networkKey,
             registered: true,
             agentId: Number(agentId),
-            address: agent.agentAddress,
-            metadata: agent.metadata,
+            owner: agent.owner,
+            agentWallet: agent.agentWallet,
+            agentURI: agent.agentURI,
             reputationScore: Number(score),
             creditLimit: Number(ethers.formatUnits(limit, 6)),
             interestRate: Number(interestRate) / 100, // Convert basis points to percentage
+            registrationTime: Number(agent.registrationTime),
+            isActive: agent.isActive,
             pools: agentPools
         });
     } catch (error) {
@@ -256,23 +303,25 @@ app.get('/pools', async (req, res) => {
         const totalPools = await marketplace.totalPools();
         const pools = [];
 
-        for (let i = 1; i <= Number(totalPools); i++) {
+        for (let i = 0; i < Number(totalPools); i++) {
             try {
-                const pool = await marketplace.pools(i);
+                const agentId = await marketplace.agentPoolIds(i);
+                const pool = await marketplace.agentPools(agentId);
                 if (!pool.isActive) continue;
 
                 const agent = await registry.agents(pool.agentId);
 
                 pools.push({
-                    poolId: i,
+                    poolId: i + 1, // Human-readable pool ID
                     agentId: Number(pool.agentId),
-                    agentAddress: agent.agentAddress,
+                    agentWallet: agent.agentWallet,
                     totalLiquidity: Number(ethers.formatUnits(pool.totalLiquidity, 6)),
                     availableLiquidity: Number(ethers.formatUnits(pool.availableLiquidity, 6)),
-                    lenderCount: Number(pool.lenderCount)
+                    totalLoaned: Number(ethers.formatUnits(pool.totalLoaned, 6))
                 });
             } catch (e) {
                 // Skip pools that fail
+                console.error(`Error getting pool ${i}:`, e.message);
             }
         }
 
@@ -285,6 +334,98 @@ app.get('/pools', async (req, res) => {
             pools
         });
     } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// List all agents endpoint (NEW)
+app.get('/agents', async (req, res) => {
+    try {
+        const networkKey = getNetwork(req);
+        const { registry, reputationManager, network } = getContracts(networkKey);
+
+        const totalAgents = await registry.totalAgents();
+        const agents = [];
+
+        for (let i = 1; i <= Number(totalAgents); i++) {
+            try {
+                const agent = await registry.agents(i);
+                const score = await reputationManager['getReputationScore(address)'](agent.agentWallet);
+
+                agents.push({
+                    agentId: i,
+                    owner: agent.owner,
+                    agentWallet: agent.agentWallet,
+                    agentURI: agent.agentURI || '',
+                    reputationScore: Number(score),
+                    registrationTime: Number(agent.registrationTime),
+                    isActive: agent.isActive
+                });
+            } catch (e) {
+                // Skip if agent query fails
+                console.error(`Error getting agent ${i}:`, e.message);
+            }
+        }
+
+        // Sort by reputation score (descending)
+        agents.sort((a, b) => b.reputationScore - a.reputationScore);
+
+        res.json({
+            network: networkKey,
+            networkName: network.name,
+            totalAgents: agents.length,
+            agents
+        });
+    } catch (error) {
+        console.error('[ERROR] /agents failed:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get specific pool by ID endpoint (NEW)
+app.get('/pools/:id', async (req, res) => {
+    try {
+        const networkKey = getNetwork(req);
+        const { marketplace, registry, network } = getContracts(networkKey);
+        const poolId = parseInt(req.params.id);
+
+        if (isNaN(poolId) || poolId <= 0) {
+            return res.status(400).json({ error: 'Invalid pool ID - must be a positive integer' });
+        }
+
+        // Get pool data
+        let pool;
+        try {
+            // Pool IDs are stored in agentPoolIds array, indexed from 0
+            // But pool data is stored by agentId in agentPools mapping
+            const agentId = await marketplace.agentPoolIds(poolId - 1); // Convert to 0-indexed
+            pool = await marketplace.agentPools(agentId);
+
+            if (!pool.isActive) {
+                return res.status(404).json({ error: 'Pool not found or inactive' });
+            }
+        } catch (error) {
+            return res.status(404).json({ error: 'Pool not found' });
+        }
+
+        // Get agent details
+        const agent = await registry.agents(pool.agentId);
+
+        res.json({
+            network: networkKey,
+            networkName: network.name,
+            poolId,
+            agentId: Number(pool.agentId),
+            agentWallet: agent.agentWallet,
+            agentOwner: agent.owner,
+            totalLiquidity: Number(ethers.formatUnits(pool.totalLiquidity, 6)),
+            availableLiquidity: Number(ethers.formatUnits(pool.availableLiquidity, 6)),
+            totalLoaned: Number(ethers.formatUnits(pool.totalLoaned, 6)),
+            totalEarned: Number(ethers.formatUnits(pool.totalEarned, 6)),
+            isActive: pool.isActive
+        });
+    } catch (error) {
+        console.error('[ERROR] /pools/:id failed:', error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -318,8 +459,10 @@ app.listen(PORT, () => {
     console.log(`   - GET /.well-known/specular.json?network=arc|base`);
     console.log(`   - GET /health?network=arc|base`);
     console.log(`   - GET /status?network=arc|base`);
-    console.log(`   - GET /agents/:address?network=arc|base`);
-    console.log(`   - GET /pools?network=arc|base`);
+    console.log(`   - GET /agents?network=arc|base - List all agents`);
+    console.log(`   - GET /agents/:address?network=arc|base - Get agent by address`);
+    console.log(`   - GET /pools?network=arc|base - List all pools`);
+    console.log(`   - GET /pools/:id?network=arc|base - Get pool by ID`);
     console.log(`   - GET /networks - List all networks`);
     console.log(`   - GET /dashboard - Web dashboard\n`);
 });
