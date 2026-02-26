@@ -1,6 +1,6 @@
 /**
  * Specular Multi-Network Agent API
- * Supports Arc Testnet and Base Mainnet
+ * Supports Arc Testnet, Base Mainnet, and Arbitrum One
  */
 
 const express = require('express');
@@ -67,6 +67,13 @@ const NETWORKS = {
         rpcUrl: 'https://mainnet.base.org',
         addresses: JSON.parse(fs.readFileSync(path.join(__dirname, '../config/base-addresses.json'), 'utf8')),
         explorer: 'https://basescan.org'
+    },
+    arbitrum: {
+        name: 'Arbitrum One',
+        chainId: 42161,
+        rpcUrl: process.env.ARBITRUM_RPC_URL || 'https://arb1.arbitrum.io/rpc',
+        addresses: JSON.parse(fs.readFileSync(path.join(__dirname, '../config/arbitrum-addresses.json'), 'utf8')),
+        explorer: 'https://arbiscan.io'
     }
 };
 
@@ -139,21 +146,21 @@ app.get('/dashboard', (req, res) => {
 app.get('/', (req, res) => {
     res.json({
         name: 'Specular Multi-Network Agent API',
-        version: '2.1.0',
+        version: '2.2.0',
         defaultNetwork: DEFAULT_NETWORK,
         networks: Object.keys(NETWORKS),
         endpoints: {
-            discovery: '/.well-known/specular.json?network={arc|base}',
-            health: '/health?network={arc|base}',
-            status: '/status?network={arc|base}',
-            allAgents: '/agents?network={arc|base}',
-            agentByAddress: '/agents/:address?network={arc|base}',
-            allPools: '/pools?network={arc|base}',
-            poolById: '/pools/:id?network={arc|base}',
+            discovery: '/.well-known/specular.json?network={arc|base|arbitrum}',
+            health: '/health?network={arc|base|arbitrum}',
+            status: '/status?network={arc|base|arbitrum}',
+            allAgents: '/agents?network={arc|base|arbitrum}',
+            agentByAddress: '/agents/:address?network={arc|base|arbitrum}',
+            allPools: '/pools?network={arc|base|arbitrum}',
+            poolById: '/pools/:id?network={arc|base|arbitrum}',
             networks: '/networks',
             dashboard: '/dashboard'
         },
-        usage: 'Add ?network=arc or ?network=base to any endpoint. Network parameter is case-insensitive. Default: ' + DEFAULT_NETWORK
+        usage: 'Add ?network=arc, ?network=base, or ?network=arbitrum to any endpoint. Network parameter is case-insensitive. Default: ' + DEFAULT_NETWORK
     });
 });
 
@@ -456,13 +463,13 @@ app.listen(PORT, () => {
     });
     console.log(`\n📖 Endpoints:`);
     console.log(`   - GET / - API info`);
-    console.log(`   - GET /.well-known/specular.json?network=arc|base`);
-    console.log(`   - GET /health?network=arc|base`);
-    console.log(`   - GET /status?network=arc|base`);
-    console.log(`   - GET /agents?network=arc|base - List all agents`);
-    console.log(`   - GET /agents/:address?network=arc|base - Get agent by address`);
-    console.log(`   - GET /pools?network=arc|base - List all pools`);
-    console.log(`   - GET /pools/:id?network=arc|base - Get pool by ID`);
+    console.log(`   - GET /.well-known/specular.json?network=arc|base|arbitrum`);
+    console.log(`   - GET /health?network=arc|base|arbitrum`);
+    console.log(`   - GET /status?network=arc|base|arbitrum`);
+    console.log(`   - GET /agents?network=arc|base|arbitrum - List all agents`);
+    console.log(`   - GET /agents/:address?network=arc|base|arbitrum - Get agent by address`);
+    console.log(`   - GET /pools?network=arc|base|arbitrum - List all pools`);
+    console.log(`   - GET /pools/:id?network=arc|base|arbitrum - Get pool by ID`);
     console.log(`   - GET /networks - List all networks`);
     console.log(`   - GET /dashboard - Web dashboard\n`);
 });

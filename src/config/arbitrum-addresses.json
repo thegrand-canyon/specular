@@ -1,0 +1,11 @@
+{
+  "agentRegistryV2": "0x6F1EbF50290f6D4A9947E9EB77f98a683684fBF5",
+  "reputationManagerV3": "0x1577Eb9985CcA859F25ED2EDaeD16A464ADFaE5e",
+  "usdc": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+  "agentLiquidityMarketplace": "0xb9996de05fD514A0cB2B81fa25448EECD4559Aaa",
+  "deployer": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+  "deployedAt": "2026-02-26T23:00:00.000Z",
+  "network": "arbitrum-one",
+  "chainId": 42161,
+  "note": "Deployed to Arbitrum One on 2026-02-26. All contracts verified on Arbiscan. Total gas cost: ~$18. Ready for Arbitrum Trailblazer grant application."
+}

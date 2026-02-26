@@ -1,0 +1,34 @@
+{
+  "network": "arbitrum",
+  "chainId": 42161,
+  "deployedAt": "2026-02-26T23:00:00.000Z",
+  "deployer": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+  "contracts": {
+    "AgentRegistryV2": "0x6F1EbF50290f6D4A9947E9EB77f98a683684fBF5",
+    "ReputationManagerV3": "0x1577Eb9985CcA859F25ED2EDaeD16A464ADFaE5e",
+    "AgentLiquidityMarketplace": "0xb9996de05fD514A0cB2B81fa25448EECD4559Aaa"
+  },
+  "tokens": {
+    "USDC": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831"
+  },
+  "transactions": {
+    "registry": "0x028529150bbd0cf7d420fed799a9399e522a70f51854695c11163fbdb29502a3",
+    "reputation": "0xce0d354dcd4c2eeee18dbfa1f2eac56078a792f094626f11a783ccc181167836",
+    "marketplace": "0x43dfbe54ad08b4a5a219618699b17f41fd5936a364d6a159d60a7b35139c7b3c",
+    "authorization": "0xf76cc73676f1bcfc94b775ae9caadf10ef39392b3d5a3054d1813c5d619469d4"
+  },
+  "gasUsed": {
+    "AgentRegistryV2": "2555835",
+    "ReputationManagerV3": "1430169",
+    "AgentLiquidityMarketplace": "2223760",
+    "authorization": "47380",
+    "total": "6257144"
+  },
+  "status": "deployed",
+  "verified": true,
+  "verifiedUrls": {
+    "registry": "https://arbiscan.io/address/0x6F1EbF50290f6D4A9947E9EB77f98a683684fBF5#code",
+    "reputation": "https://arbiscan.io/address/0x1577Eb9985CcA859F25ED2EDaeD16A464ADFaE5e#code",
+    "marketplace": "https://arbiscan.io/address/0xb9996de05fD514A0cB2B81fa25448EECD4559Aaa#code"
+  }
+}
