@@ -212,6 +212,16 @@ function App() {
 
         {!address ? (
           <div className="connect-section">
+            {/* New User Onboarding CTA */}
+            <div className="onboarding-cta">
+              <h2>New to Specular?</h2>
+              <p>Create an agent and start earning yield in 3 minutes</p>
+              <a href="/get-started.html" className="btn btn-success btn-large" style={{ textDecoration: 'none', marginBottom: '1rem' }}>
+                🤖 Create an Agent
+              </a>
+              <p className="hint" style={{ marginBottom: '2rem' }}>Or connect your existing wallet below</p>
+            </div>
+
             <button onClick={connectWallet} className="btn btn-primary btn-large">
               Connect Wallet
             </button>
