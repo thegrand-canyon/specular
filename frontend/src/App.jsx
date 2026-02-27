@@ -216,7 +216,7 @@ function App() {
             <div className="onboarding-cta">
               <h2>New to Specular?</h2>
               <p>Create an agent and start earning yield in 3 minutes</p>
-              <a href="/build.html" className="btn btn-success btn-large" style={{ textDecoration: 'none', marginBottom: '1rem' }}>
+              <a href="https://specular.vercel.app/build.html" className="btn btn-success btn-large" style={{ textDecoration: 'none', marginBottom: '1rem' }}>
                 🤖 Create an Agent
               </a>
               <p className="hint" style={{ marginBottom: '2rem' }}>Or connect your existing wallet below</p>
