@@ -33,8 +33,15 @@ function validateNetwork(req, res, next) {
 }
 
 // Serve static frontend (relative path for Railway deployment)
+// Try built files first (frontend/dist), fallback to raw files
+const frontendDistPath = path.join(__dirname, '../../frontend/dist');
 const frontendPath = path.join(__dirname, '../../frontend');
-if (fs.existsSync(frontendPath)) {
+
+if (fs.existsSync(frontendDistPath)) {
+    console.log('Serving built frontend from:', frontendDistPath);
+    app.use(express.static(frontendDistPath));
+} else if (fs.existsSync(frontendPath)) {
+    console.log('Serving raw frontend from:', frontendPath);
     app.use(express.static(frontendPath));
 }
 
@@ -135,8 +142,12 @@ function getContracts(networkKey) {
 // Routes
 
 app.get('/dashboard', (req, res) => {
+    const dashboardFileDist = path.join(frontendDistPath, 'dashboard.html');
     const dashboardFile = path.join(frontendPath, 'dashboard.html');
-    if (fs.existsSync(dashboardFile)) {
+
+    if (fs.existsSync(dashboardFileDist)) {
+        res.sendFile(dashboardFileDist);
+    } else if (fs.existsSync(dashboardFile)) {
         res.sendFile(dashboardFile);
     } else {
         res.status(404).json({ error: 'Dashboard not available in production' });
@@ -144,8 +155,12 @@ app.get('/dashboard', (req, res) => {
 });
 
 app.get('/build', (req, res) => {
+    const buildFileDist = path.join(frontendDistPath, 'build.html');
     const buildFile = path.join(frontendPath, 'build.html');
-    if (fs.existsSync(buildFile)) {
+
+    if (fs.existsSync(buildFileDist)) {
+        res.sendFile(buildFileDist);
+    } else if (fs.existsSync(buildFile)) {
         res.sendFile(buildFile);
     } else {
         res.status(404).json({ error: 'Build page not found' });
