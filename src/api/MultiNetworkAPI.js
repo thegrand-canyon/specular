@@ -143,6 +143,15 @@ app.get('/dashboard', (req, res) => {
     }
 });
 
+app.get('/build', (req, res) => {
+    const buildFile = path.join(frontendPath, 'build.html');
+    if (fs.existsSync(buildFile)) {
+        res.sendFile(buildFile);
+    } else {
+        res.status(404).json({ error: 'Build page not found' });
+    }
+});
+
 app.get('/', (req, res) => {
     res.json({
         name: 'Specular Multi-Network Agent API',
@@ -158,7 +167,8 @@ app.get('/', (req, res) => {
             allPools: '/pools?network={arc|base|arbitrum}',
             poolById: '/pools/:id?network={arc|base|arbitrum}',
             networks: '/networks',
-            dashboard: '/dashboard'
+            dashboard: '/dashboard',
+            build: '/build'
         },
         usage: 'Add ?network=arc, ?network=base, or ?network=arbitrum to any endpoint. Network parameter is case-insensitive. Default: ' + DEFAULT_NETWORK
     });
