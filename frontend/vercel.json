@@ -13,6 +13,8 @@
       "destination": "/get-started.html"
     }
   ],
+  "cleanUrls": true,
+  "trailingSlash": false,
   "headers": [
     {
       "source": "/(.*)",
