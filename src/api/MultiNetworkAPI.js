@@ -37,12 +37,21 @@ function validateNetwork(req, res, next) {
 const frontendDistPath = path.join(__dirname, '../../frontend/dist');
 const frontendPath = path.join(__dirname, '../../frontend');
 
+console.log('Checking frontend paths:');
+console.log('  frontendDistPath:', frontendDistPath, 'exists:', fs.existsSync(frontendDistPath));
+console.log('  frontendPath:', frontendPath, 'exists:', fs.existsSync(frontendPath));
+
 if (fs.existsSync(frontendDistPath)) {
-    console.log('Serving built frontend from:', frontendDistPath);
+    console.log('✅ Serving built frontend from:', frontendDistPath);
+    const distFiles = fs.readdirSync(frontendDistPath);
+    console.log('   Files in dist:', distFiles.slice(0, 10));
     app.use(express.static(frontendDistPath));
 } else if (fs.existsSync(frontendPath)) {
-    console.log('Serving raw frontend from:', frontendPath);
+    console.log('⚠️  Serving raw frontend from:', frontendPath);
+    console.log('   (Build may not have completed)');
     app.use(express.static(frontendPath));
+} else {
+    console.log('❌ No frontend directory found!');
 }
 
 // Apply validation middleware to API routes that use network parameter
