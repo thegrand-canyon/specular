@@ -379,47 +379,113 @@ app.get('/pools', async (req, res) => {
     }
 });
 
-// List all agents endpoint (NEW)
+// In-memory cache for agents endpoint (5-minute TTL)
+const agentsCache = new Map();
+const AGENTS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+// List all agents endpoint (NEW - OPTIMIZED)
 app.get('/agents', async (req, res) => {
     try {
         const networkKey = getNetwork(req);
         const { registry, reputationManager, network } = getContracts(networkKey);
 
-        const totalAgents = await registry.totalAgents();
-        const agents = [];
+        // Pagination parameters
+        const limit = Math.min(parseInt(req.query.limit) || 50, 100); // Max 100 per request
+        const offset = parseInt(req.query.offset) || 0;
 
-        for (let i = 1; i <= Number(totalAgents); i++) {
-            try {
-                const agent = await registry.agents(i);
-                const score = await reputationManager['getReputationScore(address)'](agent.agentWallet);
-
-                agents.push({
-                    agentId: i,
-                    owner: agent.owner,
-                    agentWallet: agent.agentWallet,
-                    agentURI: agent.agentURI || '',
-                    reputationScore: Number(score),
-                    registrationTime: Number(agent.registrationTime),
-                    isActive: agent.isActive
-                });
-            } catch (e) {
-                // Skip if agent query fails
-                console.error(`Error getting agent ${i}:`, e.message);
-            }
+        // Check cache first
+        const cacheKey = `${networkKey}:${offset}:${limit}`;
+        const cached = agentsCache.get(cacheKey);
+        if (cached && Date.now() - cached.timestamp < AGENTS_CACHE_TTL) {
+            console.log(`[CACHE HIT] /agents?network=${networkKey}&offset=${offset}&limit=${limit}`);
+            return res.json(cached.data);
         }
 
-        // Sort by reputation score (descending)
-        agents.sort((a, b) => b.reputationScore - a.reputationScore);
+        // Set timeout for this request (10 seconds)
+        const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Request timeout after 10 seconds')), 10000)
+        );
 
-        res.json({
-            network: networkKey,
-            networkName: network.name,
-            totalAgents: agents.length,
-            agents
+        const fetchAgents = async () => {
+            const totalAgents = await registry.totalAgents();
+            const totalCount = Number(totalAgents);
+
+            // Calculate range to fetch
+            const startIdx = Math.max(1, offset + 1); // Agent IDs start at 1
+            const endIdx = Math.min(totalCount, offset + limit);
+
+            // Batch fetch agent data - use Promise.all to parallelize
+            const agentPromises = [];
+            for (let i = startIdx; i <= endIdx; i++) {
+                agentPromises.push(
+                    (async () => {
+                        try {
+                            const agent = await registry.agents(i);
+                            const score = await reputationManager['getReputationScore(address)'](agent.agentWallet);
+
+                            return {
+                                agentId: i,
+                                owner: agent.owner,
+                                agentWallet: agent.agentWallet,
+                                agentURI: agent.agentURI || '',
+                                reputationScore: Number(score),
+                                registrationTime: Number(agent.registrationTime),
+                                isActive: agent.isActive
+                            };
+                        } catch (e) {
+                            console.error(`Error getting agent ${i}:`, e.message);
+                            return null;
+                        }
+                    })()
+                );
+            }
+
+            const agentsResults = await Promise.all(agentPromises);
+            const agents = agentsResults.filter(a => a !== null);
+
+            // Sort by reputation score (descending)
+            agents.sort((a, b) => b.reputationScore - a.reputationScore);
+
+            return {
+                network: networkKey,
+                networkName: network.name,
+                totalAgents: totalCount,
+                returned: agents.length,
+                offset,
+                limit,
+                hasMore: endIdx < totalCount,
+                agents,
+                cached: false
+            };
+        };
+
+        // Race between fetch and timeout
+        const result = await Promise.race([fetchAgents(), timeoutPromise]);
+
+        // Cache the result
+        agentsCache.set(cacheKey, {
+            data: { ...result, cached: false },
+            timestamp: Date.now()
         });
+
+        // Clean old cache entries (keep cache size under control)
+        if (agentsCache.size > 100) {
+            const oldestKey = agentsCache.keys().next().value;
+            agentsCache.delete(oldestKey);
+        }
+
+        res.json(result);
     } catch (error) {
         console.error('[ERROR] /agents failed:', error);
-        res.status(500).json({ error: error.message });
+
+        if (error.message.includes('timeout')) {
+            res.status(504).json({
+                error: 'Request timeout - try reducing limit or using pagination',
+                hint: 'Use ?limit=20&offset=0 for faster responses'
+            });
+        } else {
+            res.status(500).json({ error: error.message });
+        }
     }
 });
 
