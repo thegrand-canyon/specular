@@ -4,7 +4,7 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "node src/api/MultiNetworkAPI.js",
+    "startCommand": "node --max-old-space-size=512 src/api/MultiNetworkAPI.js",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   }
