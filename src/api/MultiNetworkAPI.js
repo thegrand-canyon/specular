@@ -9,12 +9,49 @@ const { ethers } = require('ethers');
 const fs = require('fs');
 const path = require('path');
 
+// Import our custom middleware
+const RequestLimiter = require('./middleware/requestLimiter');
+const CircuitBreaker = require('./middleware/circuitBreaker');
+const CacheManager = require('./middleware/cacheManager');
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middleware
+// Initialize middleware
+const requestLimiter = new RequestLimiter({
+    maxConcurrent: 20,  // Max 20 concurrent requests
+    queueSize: 50,      // Max 50 queued requests
+    timeout: 30000      // 30s timeout
+});
+
+const circuitBreaker = new CircuitBreaker({
+    memoryThreshold: 0.85,  // Open circuit at 85% memory
+    checkInterval: 5000,    // Check every 5s
+    cooldownPeriod: 30000   // 30s cooldown
+});
+
+const agentsCache = new CacheManager({
+    maxSize: 50,           // Max 50 cached responses
+    ttl: 5 * 60 * 1000    // 5-minute TTL
+});
+
+const poolsCache = new CacheManager({
+    maxSize: 30,           // Max 30 cached responses
+    ttl: 3 * 60 * 1000    // 3-minute TTL
+});
+
+// Apply global middleware
 app.use(cors());
 app.use(express.json());
+
+// Apply circuit breaker first (protects against memory exhaustion)
+app.use(circuitBreaker.middleware());
+
+// Apply request limiter to API routes only
+const apiLimiterRoutes = ['/health', '/status', '/agents', '/pools'];
+apiLimiterRoutes.forEach(route => {
+    app.use(route, requestLimiter.middleware());
+});
 
 // Input validation middleware
 function validateNetwork(req, res, next) {
@@ -339,66 +376,114 @@ app.get('/agents/:address', async (req, res) => {
 app.get('/pools', async (req, res) => {
     try {
         const networkKey = getNetwork(req);
-        const { marketplace, registry } = getContracts(networkKey);
 
-        const totalPools = await marketplace.totalPools();
-        const pools = [];
-
-        for (let i = 0; i < Number(totalPools); i++) {
-            try {
-                const agentId = await marketplace.agentPoolIds(i);
-                const pool = await marketplace.agentPools(agentId);
-                if (!pool.isActive) continue;
-
-                const agent = await registry.agents(pool.agentId);
-
-                pools.push({
-                    poolId: i + 1, // Human-readable pool ID
-                    agentId: Number(pool.agentId),
-                    agentWallet: agent.agentWallet,
-                    totalLiquidity: Number(ethers.formatUnits(pool.totalLiquidity, 6)),
-                    availableLiquidity: Number(ethers.formatUnits(pool.availableLiquidity, 6)),
-                    totalLoaned: Number(ethers.formatUnits(pool.totalLoaned, 6))
-                });
-            } catch (e) {
-                // Skip pools that fail
-                console.error(`Error getting pool ${i}:`, e.message);
-            }
+        // Check cache first
+        const cacheKey = `pools:${networkKey}`;
+        const cached = poolsCache.get(cacheKey);
+        if (cached) {
+            console.log(`[CACHE HIT] /pools?network=${networkKey}`);
+            return res.json({ ...cached, cached: true });
         }
 
-        // Sort by available liquidity
-        pools.sort((a, b) => b.availableLiquidity - a.availableLiquidity);
+        const { marketplace, registry } = getContracts(networkKey);
 
-        res.json({
-            network: networkKey,
-            totalPools: pools.length,
-            pools
-        });
+        // Set timeout for this request (30 seconds for pools)
+        const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Request timeout after 30 seconds')), 30000)
+        );
+
+        const fetchPools = async () => {
+            const totalPools = await marketplace.totalPools();
+            const poolCount = Number(totalPools);
+
+            // Pagination: max 20 pools per request
+            const limit = Math.min(parseInt(req.query.limit) || 20, 20);
+            const offset = parseInt(req.query.offset) || 0;
+            const endIdx = Math.min(poolCount, offset + limit);
+
+            // Parallel fetch pool data (limited batch size)
+            const poolPromises = [];
+            for (let i = offset; i < endIdx; i++) {
+                poolPromises.push(
+                    (async () => {
+                        try {
+                            const agentId = await marketplace.agentPoolIds(i);
+                            const pool = await marketplace.agentPools(agentId);
+                            if (!pool.isActive) return null;
+
+                            const agent = await registry.agents(pool.agentId);
+
+                            return {
+                                poolId: i + 1,
+                                agentId: Number(pool.agentId),
+                                agentWallet: agent.agentWallet,
+                                totalLiquidity: Number(ethers.formatUnits(pool.totalLiquidity, 6)),
+                                availableLiquidity: Number(ethers.formatUnits(pool.availableLiquidity, 6)),
+                                totalLoaned: Number(ethers.formatUnits(pool.totalLoaned, 6))
+                            };
+                        } catch (e) {
+                            console.error(`Error getting pool ${i}:`, e.message);
+                            return null;
+                        }
+                    })()
+                );
+            }
+
+            const poolsResults = await Promise.all(poolPromises);
+            const pools = poolsResults.filter(p => p !== null);
+
+            // Sort by available liquidity
+            pools.sort((a, b) => b.availableLiquidity - a.availableLiquidity);
+
+            return {
+                network: networkKey,
+                totalPools: poolCount,
+                returned: pools.length,
+                offset,
+                limit,
+                hasMore: endIdx < poolCount,
+                pools,
+                cached: false
+            };
+        };
+
+        // Race between fetch and timeout
+        const result = await Promise.race([fetchPools(), timeoutPromise]);
+
+        // Cache the result
+        poolsCache.set(cacheKey, { ...result, cached: false });
+
+        res.json(result);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error('[ERROR] /pools failed:', error);
+
+        if (error.message.includes('timeout')) {
+            res.status(504).json({
+                error: 'Request timeout',
+                hint: 'Try reducing limit: ?limit=10'
+            });
+        } else {
+            res.status(500).json({ error: error.message });
+        }
     }
 });
 
-// In-memory cache for agents endpoint (5-minute TTL)
-const agentsCache = new Map();
-const AGENTS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-
-// List all agents endpoint (NEW - OPTIMIZED)
+// List all agents endpoint (OPTIMIZED with CacheManager)
 app.get('/agents', async (req, res) => {
     try {
         const networkKey = getNetwork(req);
         const { registry, reputationManager, network } = getContracts(networkKey);
 
         // Pagination parameters
-        const limit = Math.min(parseInt(req.query.limit) || 50, 100); // Max 100 per request
+        const limit = Math.min(parseInt(req.query.limit) || 25, 50); // Reduced: Max 50 per request (was 100)
         const offset = parseInt(req.query.offset) || 0;
 
         // Check cache first
-        const cacheKey = `${networkKey}:${offset}:${limit}`;
+        const cacheKey = `agents:${networkKey}:${offset}:${limit}`;
         const cached = agentsCache.get(cacheKey);
-        if (cached && Date.now() - cached.timestamp < AGENTS_CACHE_TTL) {
+        if (cached) {
             console.log(`[CACHE HIT] /agents?network=${networkKey}&offset=${offset}&limit=${limit}`);
-            return res.json(cached.data);
+            return res.json({ ...cached, cached: true });
         }
 
         // Set timeout for this request (10 seconds)
@@ -462,17 +547,8 @@ app.get('/agents', async (req, res) => {
         // Race between fetch and timeout
         const result = await Promise.race([fetchAgents(), timeoutPromise]);
 
-        // Cache the result
-        agentsCache.set(cacheKey, {
-            data: { ...result, cached: false },
-            timestamp: Date.now()
-        });
-
-        // Clean old cache entries (keep cache size under control)
-        if (agentsCache.size > 100) {
-            const oldestKey = agentsCache.keys().next().value;
-            agentsCache.delete(oldestKey);
-        }
+        // Cache the result (CacheManager handles size limits automatically)
+        agentsCache.set(cacheKey, { ...result, cached: false });
 
         res.json(result);
     } catch (error) {
@@ -550,6 +626,30 @@ app.get('/networks', (req, res) => {
     });
 });
 
+// Monitoring/stats endpoint
+app.get('/stats', (req, res) => {
+    const memUsage = process.memoryUsage();
+
+    res.json({
+        server: {
+            uptime: process.uptime(),
+            memory: {
+                heapUsed: `${(memUsage.heapUsed / 1024 / 1024).toFixed(2)} MB`,
+                heapTotal: `${(memUsage.heapTotal / 1024 / 1024).toFixed(2)} MB`,
+                rss: `${(memUsage.rss / 1024 / 1024).toFixed(2)} MB`,
+                external: `${(memUsage.external / 1024 / 1024).toFixed(2)} MB`,
+                usagePercent: `${((memUsage.heapUsed / memUsage.heapTotal) * 100).toFixed(1)}%`
+            }
+        },
+        requestLimiter: requestLimiter.getStats(),
+        circuitBreaker: circuitBreaker.getStatus(),
+        caches: {
+            agents: agentsCache.getStats(),
+            pools: poolsCache.getStats()
+        }
+    });
+});
+
 // Start server
 app.listen(PORT, () => {
     console.log(`\n╔══════════════════════════════════════════════════╗`);
@@ -571,5 +671,12 @@ app.listen(PORT, () => {
     console.log(`   - GET /pools?network=arc|base|arbitrum - List all pools`);
     console.log(`   - GET /pools/:id?network=arc|base|arbitrum - Get pool by ID`);
     console.log(`   - GET /networks - List all networks`);
-    console.log(`   - GET /dashboard - Web dashboard\n`);
+    console.log(`   - GET /stats - Server performance metrics`);
+    console.log(`   - GET /dashboard - Web dashboard`);
+
+    console.log(`\n⚡ Performance Optimizations:`);
+    console.log(`   ✅ Request limiter: Max ${requestLimiter.maxConcurrent} concurrent, queue ${requestLimiter.queueSize}`);
+    console.log(`   ✅ Circuit breaker: Opens at ${(circuitBreaker.memoryThreshold * 100).toFixed(0)}% memory`);
+    console.log(`   ✅ Cache: Agents (${agentsCache.maxSize} entries), Pools (${poolsCache.maxSize} entries)`);
+    console.log(``);
 });
