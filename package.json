@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start": "node --max-old-space-size=512 src/api/MultiNetworkAPI.js",
     "test": "hardhat test",
     "test:unit": "hardhat test test/unit/**/*.js",
     "test:integration": "hardhat test test/integration/**/*.js",
@@ -23,11 +24,14 @@
     "xmtp:demo": "node src/xmtp/demo-messaging.js",
     "stack:demo": "node src/x402/demo-credit-check.js",
     "api:server": "node src/api/SpecularAgentAPI.js",
-    "api:dev": "ARC_TESTNET_RPC_URL=https://arc-testnet.drpc.org node src/api/SpecularAgentAPI.js",
+    "api:dev": "ARC_TESTNET_RPC_URL=https://arc-testnet.drpc.org DEFAULT_NETWORK=arc node src/api/SpecularAgentAPI.js",
+    "api:base": "DEFAULT_NETWORK=base node src/api/SpecularAgentAPI.js",
     "api:multi": "ARC_TESTNET_RPC_URL=https://arc-testnet.drpc.org DEFAULT_NETWORK=arc node src/api/MultiNetworkAPI.js",
     "sdk:quickstart": "ARC_TESTNET_RPC_URL=https://arc-testnet.drpc.org node src/sdk/examples/quickstart.js",
     "agent": "ARC_TESTNET_RPC_URL=https://arc-testnet.drpc.org node src/agents/run-agent.js",
     "agents": "ARC_TESTNET_RPC_URL=https://arc-testnet.drpc.org node src/agents/run-agents.js",
+    "demo-agent": "ARC_TESTNET_RPC_URL=https://arc-testnet.drpc.org NETWORK=arc node src/agents/demo-borrower-agent.js",
+    "demo-agent:base": "NETWORK=base node src/agents/demo-borrower-agent.js",
     "dashboard": "ARC_TESTNET_RPC_URL=https://arc-testnet.drpc.org node src/api/SpecularAgentAPI.js & npx serve frontend/ -p 3000"
   },
   "keywords": [],
@@ -45,6 +49,8 @@
     "cors": "^2.8.6",
     "dotenv": "^16.6.1",
     "ethers": "^6.16.0",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.2.1",
+    "helmet": "^8.1.0"
   }
 }
