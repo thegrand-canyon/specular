@@ -11,4 +11,7 @@ cmds = [
 cmds = ["cd frontend && npm run build"]
 
 [start]
-cmd = "npm start"
+cmd = "NODE_OPTIONS='--max-old-space-size=512' npm start"
+
+[variables]
+NODE_OPTIONS = "--max-old-space-size=512"
