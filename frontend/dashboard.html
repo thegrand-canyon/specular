@@ -1,407 +1,699 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Specular Protocol - Dashboard</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Specular</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}html,body{height:100%;overflow:hidden}button{font-family:inherit;cursor:pointer;border:none;background:none}input,select{font-family:inherit}body{font-family:'Inter',-apple-system,sans-serif;-webkit-font-smoothing:antialiased}::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(128,128,128,.18);border-radius:3px}
+[data-theme="dark"]{--bg0:#000;--bg1:#080808;--bg2:#101010;--bg3:#181818;--bg4:#222;--border:rgba(255,255,255,.07);--bh:rgba(255,255,255,.14);--t1:#F0F0EE;--t2:rgba(255,255,255,.50);--t3:rgba(255,255,255,.28);--orange:#FF6A00;--obg:rgba(255,106,0,.10);--green:#34D399;--gbg:rgba(52,211,153,.10);--red:#F87171;--rbg:rgba(248,113,113,.10);--yellow:#FBBF24;--ybg:rgba(251,191,36,.10);--shad:rgba(0,0,0,.5)}
+[data-theme="light"]{--bg0:#F5F5F3;--bg1:#FFF;--bg2:#FAFAFA;--bg3:#F0F0EE;--bg4:#E8E8E4;--border:rgba(0,0,0,.08);--bh:rgba(0,0,0,.15);--t1:#111;--t2:rgba(0,0,0,.55);--t3:rgba(0,0,0,.30);--orange:#E05E00;--obg:rgba(224,94,0,.08);--green:#059669;--gbg:rgba(5,150,105,.08);--red:#DC2626;--rbg:rgba(220,38,38,.08);--yellow:#D97706;--ybg:rgba(217,119,6,.08);--shad:rgba(0,0,0,.08)}
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
-            color: #e0e0e0;
-            min-height: 100vh;
-            padding: 20px;
-        }
+/* Path card animations */
+@keyframes orbit1{0%{transform:rotate(0deg) translateX(22px) rotate(0deg)}100%{transform:rotate(360deg) translateX(22px) rotate(-360deg)}}
+@keyframes orbit2{0%{transform:rotate(120deg) translateX(22px) rotate(-120deg)}100%{transform:rotate(480deg) translateX(22px) rotate(-480deg)}}
+@keyframes orbit3{0%{transform:rotate(240deg) translateX(22px) rotate(-240deg)}100%{transform:rotate(600deg) translateX(22px) rotate(-600deg)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@keyframes nodeGlow{0%,100%{opacity:.4}50%{opacity:.8}}
+@keyframes linePulse{0%{stroke-dashoffset:20}100%{stroke-dashoffset:0}}
+@keyframes ringPulse{0%,100%{r:18;opacity:.15}50%{r:22;opacity:.08}}
+@keyframes dotDrift{0%{opacity:0;transform:translateY(6px)}30%{opacity:1}70%{opacity:1}100%{opacity:0;transform:translateY(-6px)}}
+.pc-anim{position:relative;width:72px;height:72px;margin:0 auto 20px}
+.pcard:hover .orbit-dot{animation-duration:3s}
+.pcard:hover .node-main{filter:drop-shadow(0 0 8px var(--orange))}
+.pcard:hover .earn-ring{animation:ringPulse 2s ease infinite}
 
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
+/* Floating particles */
+.particles{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.particle{position:absolute;border-radius:50%;opacity:0;animation:particleFloat linear infinite}
+@keyframes particleFloat{0%{opacity:0;transform:translateY(100vh) scale(0)}10%{opacity:1}90%{opacity:1}100%{opacity:0;transform:translateY(-10vh) scale(1)}}
 
-        header {
-            text-align: center;
-            margin-bottom: 40px;
-            padding: 30px 0;
-            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
-        }
+/* Page fade-in */
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.pg.on{animation:fadeUp .4s ease}
 
-        h1 {
-            font-size: 3em;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 10px;
-        }
+/* Score count-up animation */
+@keyframes countPop{0%{transform:scale(1)}50%{transform:scale(1.08)}100%{transform:scale(1)}}
+.score-pop{animation:countPop .3s ease}
 
-        .subtitle {
-            color: #999;
-            font-size: 1.1em;
-        }
+/* Confetti */
+.confetti-container{position:fixed;inset:0;pointer-events:none;z-index:999}
+.confetti-piece{position:absolute;width:8px;height:8px;border-radius:2px;opacity:0;animation:confettiFall 2.5s ease-out forwards}
+@keyframes confettiFall{0%{opacity:1;transform:translateY(0) rotate(0deg) scale(1)}25%{opacity:1}100%{opacity:0;transform:translateY(100vh) rotate(720deg) scale(0.3)}}
 
-        .status-badge {
-            display: inline-block;
-            padding: 8px 16px;
-            background: rgba(76, 175, 80, 0.2);
-            border: 1px solid #4caf50;
-            border-radius: 20px;
-            color: #4caf50;
-            font-size: 0.9em;
-            margin-top: 10px;
-        }
+/* Button ripple */
+.ripple-btn{position:relative;overflow:hidden}
+.ripple{position:absolute;border-radius:50%;background:rgba(255,255,255,.2);transform:scale(0);animation:rippleAnim .6s ease-out;pointer-events:none}
+@keyframes rippleAnim{to{transform:scale(4);opacity:0}}
 
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 40px;
-        }
+/* Success check animation */
+.success-overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6);z-index:500;opacity:0;pointer-events:none;transition:opacity .3s}
+.success-overlay.show{opacity:1;pointer-events:auto}
+.success-circle{width:80px;height:80px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;transform:scale(0);transition:transform .4s cubic-bezier(.34,1.56,.64,1)}
+.success-overlay.show .success-circle{transform:scale(1)}
+.success-check{stroke:white;stroke-width:3;fill:none;stroke-dasharray:30;stroke-dashoffset:30;transition:stroke-dashoffset .4s ease .3s}
+.success-overlay.show .success-check{stroke-dashoffset:0}
+.success-label{color:var(--t1);font-size:18px;font-weight:600;margin-top:20px;opacity:0;transform:translateY(10px);transition:all .3s ease .5s}
+.success-overlay.show .success-label{opacity:1;transform:translateY(0)}
 
-        .stat-card {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 25px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: transform 0.3s, box-shadow 0.3s;
-        }
+/* 3D tilt on path cards */
 
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
-        }
 
-        .stat-label {
-            color: #999;
-            font-size: 0.9em;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
+/* Metric value transition */
+.mv,.ms,.val,.val-sm{transition:color .3s}
 
-        .stat-value {
-            font-size: 2.5em;
-            font-weight: bold;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
+/* Glowing active nav indicator */
+.nb.on::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:3px;height:20px;background:var(--orange);border-radius:2px;box-shadow:0 0 8px var(--orange)}
 
-        .stat-change {
-            font-size: 0.85em;
-            color: #4caf50;
-            margin-top: 8px;
-        }
+/* Deploy progress bar */
+.deploy-progress{width:100%;max-width:340px;height:3px;background:var(--bg4);border-radius:2px;margin:16px auto 0;overflow:hidden}
+.deploy-progress-fill{height:100%;background:var(--orange);border-radius:2px;width:0;transition:width 1s ease}
 
-        .section {
-            margin-bottom: 40px;
-        }
+/* Ambient glow that follows mouse on launch */
+.glow-follow{position:fixed;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(255,106,0,.06) 0%,transparent 70%);pointer-events:none;z-index:0;transition:left .3s ease,top .3s ease;transform:translate(-50%,-50%)}
 
-        .section-title {
-            font-size: 1.8em;
-            margin-bottom: 20px;
-            color: #fff;
-        }
+/* Launch layout - logo top-left, content centered */
+.ob-toplogo{position:absolute;top:24px;left:28px;z-index:2;color:var(--t1);cursor:pointer;transition:opacity .2s;opacity:.9}.ob-toplogo:hover{opacity:1}
+body{background:var(--bg0);color:var(--t1);transition:background .3s,color .3s}
 
-        .agent-card, .pool-card {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            margin-bottom: 15px;
-        }
+/* Onboarding */
+.ob{position:fixed;inset:0;background:var(--bg0);display:flex;align-items:center;justify-content:center;z-index:100;transition:opacity .4s}.ob::before{content:"";position:absolute;top:20%;left:50%;transform:translateX(-50%);width:600px;height:400px;background:radial-gradient(ellipse,rgba(255,106,0,.06) 0%,transparent 70%);pointer-events:none}.ob.gone{opacity:0;pointer-events:none}.obi{max-width:680px;width:100%;padding:0 24px;text-align:center}.obn{max-width:440px;width:100%;padding:0 24px;text-align:center}.ob-h{font-size:28px;font-weight:300;line-height:1.3;margin-bottom:8px}.ob-d{font-size:14px;color:var(--t2);line-height:1.7;margin-bottom:36px;max-width:420px;margin-left:auto;margin-right:auto}.ob-line{width:40px;height:1px;background:var(--orange);margin:0 auto 28px;opacity:.4}
+.prow2{display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:680px;margin:0 auto 20px}.pcard{background:linear-gradient(145deg,rgba(255,255,255,.03),rgba(255,255,255,.01));border:1px solid rgba(255,255,255,.08);border-radius:24px;padding:48px 32px 40px;text-align:center;transition:all .4s cubic-bezier(.4,0,.2,1);cursor:pointer;position:relative;overflow:hidden}
+.pcard::before{content:'';position:absolute;inset:-1px;border-radius:24px;padding:1px;background:linear-gradient(145deg,rgba(255,255,255,.1),transparent 50%);-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;opacity:0;transition:opacity .4s}
+.pcard:hover::before{opacity:1}
+.pcard:hover{transform:translateY(-4px);box-shadow:0 12px 40px rgba(0,0,0,.3);border-color:rgba(255,255,255,.12);background:linear-gradient(145deg,rgba(255,255,255,.05),rgba(255,255,255,.02))}
+.pcard:active{transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,0,0,.2)}
+.pcard:hover .pc-t{color:var(--orange)}
+.pcard-glow{position:absolute;width:200px;height:200px;border-radius:50%;filter:blur(60px);opacity:.08;pointer-events:none;transition:opacity .4s}
+.pcard:hover .pcard-glow{opacity:.15}.pc-i{margin-bottom:16px;display:flex;align-items:center;justify-content:center}.pc-t{font-size:20px;font-weight:600;margin-bottom:10px;transition:color .3s;letter-spacing:-.01em}.pc-s{font-size:14px;color:var(--t2);line-height:1.7}
+.wopts{display:flex;flex-direction:column;gap:10px;max-width:340px;margin:0 auto 20px}.wopt{display:flex;align-items:center;gap:14px;padding:16px 20px;background:var(--bg2);border:1px solid var(--border);border-radius:14px;font-size:14px;font-weight:500;color:var(--t1);transition:all .25s ease;text-align:left;width:100%}.wopt:hover{border-color:var(--bh);background:var(--bg3);transform:translateX(4px)}.wopt .wi{width:28px;height:28px;border-radius:8px;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.oinp{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px 20px;color:var(--t1);font-size:16px;font-weight:500;width:100%;max-width:340px;outline:none;text-align:center;margin-bottom:20px;transition:all .25s ease}.oinp:focus{border-color:rgba(255,106,0,.4);box-shadow:0 0 0 3px rgba(255,106,0,.08)}.oinp::placeholder{color:var(--t3)}
+.obtn{background:var(--orange);color:#fff;border-radius:14px;padding:16px 32px;font-weight:600;font-size:15px;width:100%;max-width:340px;display:inline-block;transition:all .25s ease;box-shadow:0 2px 16px rgba(255,106,0,.2)}.obtn:hover{box-shadow:0 4px 24px rgba(255,106,0,.35);transform:translateY(-1px)}.obtn.dis{opacity:.5;pointer-events:none}
+.ogh{color:var(--t3);font-size:13px;margin-top:24px;display:inline-block;padding:8px 16px;border-radius:8px}.ogh:hover{color:var(--t1)}.obk{color:var(--t3);font-size:13px;margin-top:24px;display:inline-flex;align-items:center;gap:6px;padding:8px 12px}.obk:hover{color:var(--t1)}
+.achoice{display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:400px;margin:0 auto 20px}.acc{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:32px 24px;text-align:center;transition:all .3s ease;cursor:pointer}.acc:hover{border-color:rgba(255,106,0,.2);background:var(--bg3);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.15)}.acc:hover .acc-t{color:var(--orange)}.acc-i{margin-bottom:12px;display:flex;align-items:center;justify-content:center}.acc-t{font-size:14px;font-weight:500;margin-bottom:4px;transition:color .2s}.acc-s{font-size:12px;color:var(--t3);line-height:1.5}
+.ostat{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--t3);margin-top:20px;min-height:20px}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--t3);border-top-color:var(--orange);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:8px}@keyframes spin{to{transform:rotate(360deg)}}
 
-        .agent-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
+/* Shell */
+.shell{display:flex;height:100vh;opacity:0;transition:opacity .4s}.shell.vis{opacity:1}
 
-        .agent-id {
-            font-size: 1.2em;
-            font-weight: bold;
-            color: #667eea;
-        }
+/* Sidebar — clean, only 4 items */
+.side{width:220px;min-width:220px;background:var(--bg1);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:28px 0;transition:transform .35s cubic-bezier(.4,0,.2,1)}
+.s-brand{padding:0 24px;margin-bottom:32px}.s-logo{display:flex;align-items:center;gap:10px}.s-logo span{font-size:14px;letter-spacing:5px;font-weight:300}
+.s-nav{flex:1;display:flex;flex-direction:column;gap:2px;padding:0 10px}
+.nb{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:8px;color:var(--t2);font-size:13px;font-weight:400;width:100%;text-align:left;transition:all .15s}.nb:hover{background:rgba(128,128,128,.06);color:var(--t1)}.nb.on{background:var(--obg);color:var(--orange);font-weight:500;position:relative}.nb svg{width:17px;height:17px;flex-shrink:0;opacity:.6}.nb.on svg{opacity:1}
+.s-foot{padding:0 14px}.wc{padding:16px 18px;background:var(--bg2);border-radius:12px;border:1px solid var(--border)}.wd{width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;margin-right:6px;box-shadow:0 0 4px var(--green)}.wl{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--green)}.wa{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--t1);margin-top:6px;cursor:pointer}.wa:hover{opacity:.7}.wn{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--t3);margin-top:3px}
+.rtag{font-family:'JetBrains Mono',monospace;font-size:9px;padding:3px 8px;border-radius:4px;margin-top:8px;display:inline-block}.rtag-l{color:var(--green);background:var(--gbg)}.rtag-a{color:var(--orange);background:var(--obg)}
+.ham{display:none;padding:10px;border-radius:8px;color:var(--t2);position:fixed;top:8px;left:12px;z-index:60;background:var(--bg1);border:1px solid var(--border);align-items:center;justify-content:center}.ham svg{width:20px;height:20px}.sov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:49}
 
-        .reputation-badge {
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.85em;
-            font-weight: bold;
-        }
+/* Main */
+.mn{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.tp{height:56px;min-height:56px;padding:0 32px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:var(--bg1);gap:16px;overflow:hidden}
+.tp-t{font-size:16px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.tp-r{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.chip{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--t2);padding:6px 14px;border-radius:20px;background:var(--bg2);border:1px solid var(--border);white-space:nowrap;transition:all .2s ease}.chip b{color:var(--orange);font-weight:600}
+.tp-ic{width:34px;height:34px;border-radius:10px;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .2s ease;position:relative;color:var(--t2)}.tp-ic:hover{border-color:var(--bh);background:var(--bg3);color:var(--t1)}.tp-dot{position:absolute;top:2px;right:2px;width:6px;height:6px;border-radius:50%;background:var(--red)}
+.vw{flex:1;overflow-y:auto;padding:28px 32px 100px;scroll-behavior:smooth}
+.pg{display:none}.pg.on{display:block}
 
-        .reputation-excellent {
-            background: rgba(76, 175, 80, 0.2);
-            color: #4caf50;
-            border: 1px solid #4caf50;
-        }
+/* Cards & type */
+.cd{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:28px;transition:all .25s ease}.cd:hover{border-color:var(--bh)}
+.lbl{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;color:var(--t3);letter-spacing:1.2px;text-transform:uppercase}
+.mv{font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:600;line-height:1.1;letter-spacing:-.02em}
+.ms{font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:600;line-height:1.1}
+.co{color:var(--orange)}.cg{color:var(--green)}.cr{color:var(--red)}.cy{color:var(--yellow)}.c2{color:var(--t2)}.c3{color:var(--t3)}
 
-        .reputation-good {
-            background: rgba(33, 150, 243, 0.2);
-            color: #2196f3;
-            border: 1px solid #2196f3;
-        }
+/* Context line */
+.ctx{font-size:12px;margin-top:10px;display:flex;align-items:center;gap:7px;line-height:1.4}.ctx-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.ctx-g{color:var(--green)}.ctx-g .ctx-dot{background:var(--green)}.ctx-y{color:var(--yellow)}.ctx-y .ctx-dot{background:var(--yellow)}.ctx-r{color:var(--red)}.ctx-r .ctx-dot{background:var(--red)}.ctx-n{color:var(--t3)}.ctx-n .ctx-dot{background:var(--t3)}
 
-        .reputation-fair {
-            background: rgba(255, 152, 0, 0.2);
-            color: #ff9800;
-            border: 1px solid #ff9800;
-        }
+/* HF visual */
+.hf-v{display:flex;align-items:center;gap:8px}.hf-bar{width:64px;height:5px;border-radius:3px;background:var(--bg4);overflow:hidden}.hf-fill{height:100%;border-radius:3px}.hf-lbl{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500}
 
-        .agent-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-        }
+/* Guided action */
+.act-card{background:linear-gradient(135deg,rgba(255,106,0,.05),rgba(255,106,0,.01));border:1px solid rgba(255,106,0,.12);border-radius:16px;padding:28px 32px;display:flex;align-items:center;gap:24px;margin-bottom:28px;transition:all .25s ease}.act-card:hover{border-color:rgba(255,106,0,.22);box-shadow:0 4px 24px rgba(255,106,0,.06)}
+.act-ic{width:48px;height:48px;border-radius:12px;background:var(--obg);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.act-bd{flex:1;min-width:0}.act-t{font-size:15px;font-weight:600;margin-bottom:4px}.act-d{font-size:13px;color:var(--t2);line-height:1.5}
+.act-btn{background:var(--orange);color:#fff;border-radius:10px;padding:12px 24px;font-weight:600;font-size:13px;white-space:nowrap;flex-shrink:0;transition:opacity .15s}.act-btn:hover{opacity:.88}
 
-        .agent-stat {
-            text-align: center;
-        }
+/* Expandable */
+.exp-btn{font-size:12px;color:var(--t3);display:inline-flex;align-items:center;gap:4px;margin-top:10px;padding:6px 0;transition:color .2s}.exp-btn:hover{color:var(--orange)}
+.det{overflow:hidden;max-height:0;opacity:0;transition:max-height .3s,opacity .2s .1s}.det.open{max-height:600px;opacity:1}
 
-        .agent-stat-label {
-            color: #999;
-            font-size: 0.85em;
-            margin-bottom: 5px;
-        }
+/* Buttons */
+.bp{background:var(--orange);color:#fff;border-radius:12px;padding:14px 24px;font-weight:600;font-size:14px;width:100%;text-align:center;transition:all .25s ease;box-shadow:0 2px 12px rgba(255,106,0,.15)}.bp:hover{box-shadow:0 4px 20px rgba(255,106,0,.3);transform:translateY(-1px)}
+.bg{background:transparent;border:1px solid var(--border);color:var(--t2);border-radius:10px;padding:9px 16px;font-weight:500;font-size:12px;transition:all .2s ease}.bg:hover{border-color:var(--bh);color:var(--t1);background:rgba(128,128,128,.04)}.bg.on{border-color:var(--orange);color:var(--orange);background:var(--obg)}
+.fi{background:var(--bg0);border:1px solid var(--border);border-radius:12px;padding:14px 16px;color:var(--t1);font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:500;width:100%;outline:none;transition:all .25s ease}.fi:focus{border-color:rgba(255,106,0,.4);box-shadow:0 0 0 3px rgba(255,106,0,.08)}
+input[type="range"]{-webkit-appearance:none;width:100%;height:3px;background:rgba(128,128,128,.15);border-radius:2px;outline:none;margin:8px 0}input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;background:var(--orange);border-radius:50%;cursor:pointer}
+.bdg{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;padding:5px 12px;border-radius:8px;display:inline-block;white-space:nowrap}.bdg-g{background:var(--gbg);color:var(--green)}
 
-        .agent-stat-value {
-            font-size: 1.2em;
-            font-weight: bold;
-            color: #fff;
-        }
+/* Position row */
+.pr{display:grid;grid-template-columns:90px 100px 80px 90px 1fr auto;gap:20px;align-items:center;padding:18px 24px;background:var(--bg3);border-radius:14px;border:1px solid var(--border);transition:all .2s ease}.pr:hover{border-color:var(--bh);background:var(--bg4)}.pr+.pr{margin-top:8px}
+.pcl{font-size:10px;color:var(--t3);margin-bottom:4px}.pcv{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:500;white-space:nowrap}
 
-        .pool-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
+/* Table */
+.ct{width:100%;border-collapse:collapse}.ct th{font-size:11px;font-weight:500;color:var(--t3);padding:14px 24px;text-align:left;border-bottom:1px solid var(--border)}.ct td{font-family:'JetBrains Mono',monospace;font-size:13px;padding:16px 24px;border-bottom:1px solid var(--border);transition:background .15s}.ct tr:hover td{background:rgba(128,128,128,.03)}.ct tr:last-child td{border-bottom:none}.ct .tc{text-align:center}
 
-        .pool-id {
-            font-size: 1.1em;
-            color: #764ba2;
-        }
+/* Code */
+.cblk{font-family:'JetBrains Mono',monospace;font-size:12px;line-height:2.2;color:var(--t2);padding:24px 28px;background:var(--bg0);border-radius:14px;border:1px solid var(--border);overflow-x:auto;white-space:pre}
 
-        .pool-liquidity {
-            font-size: 1.3em;
-            font-weight: bold;
-            color: #4caf50;
-        }
+/* Gauge */
+.gw{position:relative;display:inline-flex;align-items:center;justify-content:center}.gc{position:absolute;text-align:center}.gn{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--t1)}.gl{font-size:9px;color:var(--t3);letter-spacing:1.5px;text-transform:uppercase;margin-top:4px}
+@keyframes scorePulse{0%{filter:drop-shadow(0 0 8px var(--orange))}30%{filter:drop-shadow(0 0 28px var(--orange)) drop-shadow(0 0 48px rgba(255,106,0,.2))}100%{filter:drop-shadow(0 0 8px var(--orange))}}.celebrate svg circle:last-child{animation:scorePulse 1.5s cubic-bezier(.4,0,.2,1) 1}
+@keyframes countUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}.count-a{animation:countUp .4s ease}
 
-        .progress-bar {
-            width: 100%;
-            height: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            overflow: hidden;
-            margin-top: 10px;
-        }
+/* Decomp */
+.dr{display:flex;align-items:center;justify-content:space-between;padding:14px 0}.dr+.dr{border-top:1px solid var(--border)}
 
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-            transition: width 0.3s;
-        }
+/* Curve */
+.curv{height:160px;background:var(--bg0);border-radius:14px;position:relative;overflow:hidden;border:1px solid var(--border)}.curv-tag{position:absolute;top:10px;right:14px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--t3)}
 
-        .loading {
-            text-align: center;
-            padding: 50px;
-            color: #999;
-        }
+/* Sim result */
+.sim-r{padding:16px 20px;background:var(--bg0);border-radius:12px;margin-top:12px}.sim-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0}
 
-        .error {
-            background: rgba(244, 67, 54, 0.1);
-            border: 1px solid #f44336;
-            color: #f44336;
-            padding: 15px;
-            border-radius: 10px;
-            margin: 20px 0;
-        }
+/* Empty */
+.empty{text-align:center;padding:40px 24px;color:var(--t3);font-size:13px}
 
-        .refresh-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            border-radius: 25px;
-            font-size: 1em;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            margin: 20px auto;
-            display: block;
-        }
+/* Panels */
+.pov{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;opacity:0;pointer-events:none;transition:opacity .2s}.pov.open{opacity:1;pointer-events:auto}
+.panel{position:fixed;top:0;right:0;bottom:0;width:380px;background:var(--bg1);border-left:1px solid var(--border);z-index:201;transform:translateX(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;box-shadow:-8px 0 32px rgba(0,0,0,.2)}.panel.open{transform:translateX(0)}
+.pan-h{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}.pan-t{font-size:15px;font-weight:600}.pan-x{font-size:18px;color:var(--t3);padding:4px 8px;border-radius:6px}.pan-x:hover{color:var(--t1);background:rgba(128,128,128,.1)}.pan-b{flex:1;overflow-y:auto;padding:20px 24px}
+.fi-item{display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid var(--border)}.fi-item:last-child{border-bottom:none}.fi-ic{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}.fi-bd{flex:1;min-width:0}.fi-t{font-size:13px;font-weight:500}.fi-s{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--t3);margin-top:2px}.fi-tm{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--t3);white-space:nowrap}
 
-        .refresh-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
-        }
+/* Settings modal */
+.mov{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:center;justify-content:center}.mov.open{display:flex}
+.modal{background:var(--bg1);border:1px solid var(--border);border-radius:20px;width:480px;max-width:90vw;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px var(--shad);backdrop-filter:blur(8px)}
+.set-row{display:flex;align-items:center;justify-content:space-between;padding:16px 0;border-bottom:1px solid var(--border)}.set-row:last-child{border-bottom:none}
+.set-l{font-size:14px;font-weight:500}.set-d{font-size:12px;color:var(--t3);margin-top:2px}
+.toggle{width:44px;height:24px;border-radius:12px;background:var(--bg4);border:1px solid var(--border);position:relative;cursor:pointer;transition:all .25s ease;flex-shrink:0}.toggle.on{background:var(--orange);border-color:var(--orange)}.toggle::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .2s}.toggle.on::after{transform:translateX(20px)}
+select.fi{padding:10px 14px;font-size:13px;width:auto;min-width:130px;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23999' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
 
-        .timestamp {
-            text-align: center;
-            color: #666;
-            font-size: 0.9em;
-            margin-top: 20px;
-        }
-    </style>
+/* Net */
+.netsel{position:relative}.ndd{position:absolute;top:calc(100% + 10px);right:0;background:var(--bg1);border:1px solid var(--border);border-radius:14px;padding:8px;min-width:210px;z-index:50;box-shadow:0 12px 40px var(--shad);backdrop-filter:blur(8px)}.ndd.gone{display:none}
+.nopt{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;width:100%;font-size:13px;font-weight:500;color:var(--t2);text-align:left}.nopt:hover{background:rgba(128,128,128,.08);color:var(--t1)}.nopt.on{color:var(--t1)}.nck{font-size:14px;opacity:0;margin-left:auto}.nopt.on .nck{opacity:1}
+.ndot{width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0}
+
+/* Toast */
+.toasts{position:fixed;top:72px;right:24px;z-index:300;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{background:var(--bg1);border:1px solid var(--border);border-radius:14px;padding:14px 18px;display:flex;align-items:center;gap:12px;pointer-events:auto;animation:toastIn .4s cubic-bezier(.4,0,.2,1);box-shadow:0 8px 32px var(--shad);max-width:360px;backdrop-filter:blur(8px)}
+@keyframes toastIn{from{transform:translateX(100px);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* Footer */
+.foot{position:fixed;bottom:0;left:220px;right:0;height:44px;background:var(--bg1);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 32px;z-index:10;display:none}
+.foot a{font-size:12px;color:var(--t3);text-decoration:none;margin-right:20px;transition:color .2s}.foot a:hover{color:var(--t1)}.foot-r{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--t3)}
+
+/* Mobile */
+@media(max-width:768px){.side{position:fixed;top:0;left:0;bottom:0;z-index:50;transform:translateX(-100%);padding-top:8px}.side.open{transform:translateX(0)}.sov.show{display:block;z-index:49}.ham{display:flex}.tp{padding:0 16px 0 76px}.tp-t{font-size:14px;max-width:120px}.chip{font-size:9px;padding:4px 8px}.tp-ic{width:28px;height:28px;font-size:11px}.vw{padding:20px 16px 100px}.foot{left:0;padding:0 16px}.achoice{grid-template-columns:1fr}.pr{grid-template-columns:1fr 1fr;gap:12px;padding:14px 16px}.panel{width:100%}.d-grid,.b-grid,.p-grid{grid-template-columns:1fr!important}.d-grid .cd:first-child{grid-row:auto}.act-card{flex-direction:column;text-align:center;padding:24px 20px;gap:16px}.act-card .act-btn{width:100%}.pcard{padding:28px 20px}.ob-toplogo{top:20px;left:20px;height:36px!important}.ob-h{font-size:20px}.ob-headline{font-size:24px!important}.ob-d{font-size:13px}.prow2{gap:12px}.achoice{gap:12px}.ct td,.ct th{padding:12px 16px;font-size:12px}.toast{max-width:calc(100vw - 32px)}}@media(max-width:520px){.prow2{grid-template-columns:1fr;gap:16px}.pc-anim{width:100px!important;height:100px!important}.pc-anim svg{width:100px;height:100px}}
+</style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Specular Protocol</h1>
-            <p class="subtitle">Decentralized Lending for AI Agents</p>
-            <div class="status-badge" id="statusBadge">● Connecting...</div>
-        </header>
 
-        <div class="stats-grid" id="statsGrid">
-            <div class="stat-card">
-                <div class="stat-label">Total Pools</div>
-                <div class="stat-value" id="totalPools">--</div>
-                <div class="stat-change">Active lending pools</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Total TVL</div>
-                <div class="stat-value" id="totalTVL">--</div>
-                <div class="stat-change">Total value locked</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Loans Processed</div>
-                <div class="stat-value">1,343</div>
-                <div class="stat-change">✓ During testing</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Success Rate</div>
-                <div class="stat-value">99.8%</div>
-                <div class="stat-change">✓ 1,340 successful</div>
-            </div>
-        </div>
+<div class="toasts" id="toasts"></div>
+<div class="confetti-container" id="confetti"></div>
+<div class="success-overlay" id="success"><div style="text-align:center"><div class="success-circle"><svg width="32" height="32" viewBox="0 0 32 32"><path class="success-check" d="M8 16l6 6 10-12"/></svg></div><div class="success-label" id="success-label">Success</div></div></div>
 
-        <button class="refresh-btn" onclick="loadData()">Refresh Data</button>
+<!-- Activity panel -->
+<div class="pov" id="aov" onclick="cAct()"></div>
+<div class="panel" id="apan"><div class="pan-h"><span class="pan-t">Activity</span><button class="pan-x" onclick="cAct()">×</button></div><div class="pan-b" id="abody"></div></div>
 
-        <div class="section">
-            <h2 class="section-title">Featured Agent</h2>
-            <div id="featuredAgent">
-                <div class="loading">Loading agent data...</div>
-            </div>
-        </div>
+<!-- Settings modal -->
+<div class="mov" id="sov" onclick="cSet()"><div class="modal" onclick="event.stopPropagation()"><div class="pan-h"><span class="pan-t">Settings</span><button class="pan-x" onclick="cSet()">×</button></div><div style="padding:24px" id="sbody"></div></div></div>
 
-        <div class="section">
-            <h2 class="section-title">Top Liquidity Pools</h2>
-            <div id="poolsList">
-                <div class="loading">Loading pools...</div>
-            </div>
-        </div>
+<button class="ham" id="ham-btn" style="display:none" onclick="togSide()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 12h18M3 6h18M3 18h18"/></svg></button>
+<div class="sov" id="sovl" onclick="togSide()"></div>
 
-        <div class="timestamp" id="timestamp"></div>
-    </div>
+<!-- ═══ ONBOARDING ═══ -->
+<div class="ob" id="s0"><div class="particles" id="particles"></div><div class="glow-follow" id="glow"></div><svg viewBox="0 0 280 60" class="ob-toplogo" onclick="window.open('https://specular.financial','_blank')" role="link" tabindex="0" style="height:48px;width:auto;cursor:pointer">
+<circle cx="24" cy="18" r="18" fill="#A0522D"/>
+<circle cx="24" cy="42" r="18" fill="#A0522D"/>
+<ellipse cx="24" cy="30" rx="12" ry="8" fill="#E06600"/>
+<text x="60" y="36" fill="currentColor" font-family="Inter,-apple-system,sans-serif" font-size="18" font-weight="300" letter-spacing="8" opacity=".9">SPECULAR</text>
+</svg><div class="obi" style="position:relative;z-index:1"><div class="ob-headline" style="font-size:32px;font-weight:300;line-height:1.35;margin-bottom:16px;letter-spacing:-.02em">Earn yield or borrow capital.<br>Choose how you participate.</div><div class="ob-d" style="margin-bottom:40px">Lend USDC to earn yield from autonomous borrowers. Or deploy an agent to borrow at rates that improve every cycle.</div><div class="prow2"><div class="pcard" onclick="goL()"><div class="pcard-glow" style="background:#34D399;top:-20px;left:50%;transform:translateX(-50%);width:300px;height:300px"></div><div class="pc-anim" style="width:120px;height:120px"><svg width="140" height="140" viewBox="0 0 140 140">
+<defs>
+<radialGradient id="eg1" cx="50%" cy="45%"><stop offset="0%" stop-color="#34D399" stop-opacity=".18"/><stop offset="60%" stop-color="#34D399" stop-opacity=".04"/><stop offset="100%" stop-color="#34D399" stop-opacity="0"/></radialGradient>
+<linearGradient id="eg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#34D399" stop-opacity=".6"/><stop offset="100%" stop-color="#059669" stop-opacity=".3"/></linearGradient>
+<linearGradient id="eg3" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#34D399"/><stop offset="100%" stop-color="#6EE7B7"/></linearGradient>
+</defs>
+<circle cx="70" cy="70" r="68" fill="url(#eg1)"/>
+<!-- Outer breathing ring -->
+<circle cx="70" cy="70" r="56" fill="none" stroke="url(#eg2)" stroke-width=".6" opacity=".4">
+<animate attributeName="r" values="54;58;54" dur="5s" repeatCount="indefinite"/>
+<animate attributeName="opacity" values=".4;.15;.4" dur="5s" repeatCount="indefinite"/>
+</circle>
+<!-- Mid ring -->
+<circle cx="70" cy="70" r="42" fill="none" stroke="#34D399" stroke-width=".4" opacity=".2">
+<animate attributeName="r" values="42;45;42" dur="4s" repeatCount="indefinite" begin=".5s"/>
+</circle>
+<!-- Inner filled circle -->
+<circle cx="70" cy="70" r="30" fill="rgba(52,211,153,.04)" stroke="url(#eg3)" stroke-width="1" opacity=".5"/>
+<!-- Upward arrows showing growth -->
+<g opacity=".7">
+<path d="M58 78 L58 62 M53 67 L58 62 L63 67" fill="none" stroke="#34D399" stroke-width="1.2" stroke-linecap="round" opacity=".3">
+<animate attributeName="opacity" values=".1;.5;.1" dur="3s" repeatCount="indefinite"/>
+<animate attributeName="transform" values="translate(0,4);translate(0,-4);translate(0,4)" dur="3s" repeatCount="indefinite"/>
+</path>
+<path d="M70 82 L70 58 M64 64 L70 58 L76 64" fill="none" stroke="#34D399" stroke-width="1.5" stroke-linecap="round" opacity=".6">
+<animate attributeName="opacity" values=".3;.8;.3" dur="3s" repeatCount="indefinite" begin=".4s"/>
+<animate attributeName="transform" values="translate(0,4);translate(0,-4);translate(0,4)" dur="3s" repeatCount="indefinite" begin=".4s"/>
+</path>
+<path d="M82 78 L82 62 M77 67 L82 62 L87 67" fill="none" stroke="#34D399" stroke-width="1.2" stroke-linecap="round" opacity=".3">
+<animate attributeName="opacity" values=".1;.5;.1" dur="3s" repeatCount="indefinite" begin=".8s"/>
+<animate attributeName="transform" values="translate(0,4);translate(0,-4);translate(0,4)" dur="3s" repeatCount="indefinite" begin=".8s"/>
+</path>
+</g>
+<!-- Orbiting particle -->
+<circle cx="70" cy="70" r="2.5" fill="#6EE7B7">
+<animateMotion dur="8s" repeatCount="indefinite" path="M0,-48 A48,48 0 1,1 -0.1,-48" rotate="auto"/>
+<animate attributeName="opacity" values=".2;.7;.2" dur="8s" repeatCount="indefinite"/>
+</circle>
+<circle cx="70" cy="70" r="1.5" fill="#34D399">
+<animateMotion dur="6s" repeatCount="indefinite" path="M0,38 A38,38 0 1,0 0.1,38" rotate="auto"/>
+<animate attributeName="opacity" values=".3;.6;.3" dur="6s" repeatCount="indefinite"/>
+</circle>
+</svg></div><div class="pc-t">Earn Yield</div><div class="pc-s">Deposit USDC into the lending pool. Earn interest from agent borrowers automatically.</div></div><div class="pcard" onclick="goA()"><div class="pcard-glow" style="background:#FF6A00;top:-20px;left:50%;transform:translateX(-50%);width:300px;height:300px"></div><div class="pc-anim" style="width:120px;height:120px"><svg width="140" height="140" viewBox="0 0 140 140">
+<defs>
+<radialGradient id="ag1" cx="50%" cy="45%"><stop offset="0%" stop-color="#FF6A00" stop-opacity=".15"/><stop offset="60%" stop-color="#FF6A00" stop-opacity=".03"/><stop offset="100%" stop-color="#FF6A00" stop-opacity="0"/></radialGradient>
+<linearGradient id="ag2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#FF6A00"/><stop offset="100%" stop-color="#FFA033"/></linearGradient>
+<linearGradient id="ag3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FF6A00" stop-opacity=".5"/><stop offset="100%" stop-color="#FF8C00" stop-opacity=".2"/></linearGradient>
+</defs>
+<circle cx="70" cy="70" r="68" fill="url(#ag1)"/>
+<!-- Connection lines with flowing dashes -->
+<line x1="70" y1="36" x2="36" y2="88" stroke="url(#ag3)" stroke-width=".8" stroke-dasharray="4,6"><animate attributeName="stroke-dashoffset" values="20;0" dur="3s" repeatCount="indefinite"/></line>
+<line x1="70" y1="36" x2="104" y2="88" stroke="url(#ag3)" stroke-width=".8" stroke-dasharray="4,6"><animate attributeName="stroke-dashoffset" values="20;0" dur="3s" repeatCount="indefinite" begin=".5s"/></line>
+<line x1="36" y1="88" x2="104" y2="88" stroke="url(#ag3)" stroke-width=".8" stroke-dasharray="4,6"><animate attributeName="stroke-dashoffset" values="20;0" dur="3s" repeatCount="indefinite" begin="1s"/></line>
+<!-- Secondary connections -->
+<line x1="70" y1="36" x2="70" y2="100" stroke="#FF6A00" stroke-width=".4" opacity=".1" stroke-dasharray="2,4"><animate attributeName="stroke-dashoffset" values="12;0" dur="4s" repeatCount="indefinite"/></line>
+<line x1="36" y1="88" x2="104" y2="52" stroke="#FF6A00" stroke-width=".3" opacity=".08" stroke-dasharray="2,4"><animate attributeName="stroke-dashoffset" values="12;0" dur="4s" repeatCount="indefinite" begin="1s"/></line>
+<!-- Primary node (top) — agent -->
+<circle cx="70" cy="36" r="18" fill="rgba(255,106,0,.06)" stroke="#FF6A00" stroke-width=".4" opacity=".3">
+<animate attributeName="r" values="18;22;18" dur="4s" repeatCount="indefinite"/>
+<animate attributeName="opacity" values=".3;.1;.3" dur="4s" repeatCount="indefinite"/>
+</circle>
+<circle cx="70" cy="36" r="10" fill="rgba(255,106,0,.1)" stroke="url(#ag2)" stroke-width="1" opacity=".5"/>
+<circle cx="70" cy="36" r="5" fill="url(#ag2)" opacity=".9">
+<animate attributeName="opacity" values=".7;1;.7" dur="2s" repeatCount="indefinite"/>
+</circle>
+<!-- Secondary nodes -->
+<circle cx="36" cy="88" r="10" fill="rgba(255,106,0,.06)" stroke="#FF6A00" stroke-width=".6" opacity=".3">
+<animate attributeName="r" values="10;13;10" dur="4s" repeatCount="indefinite" begin=".5s"/>
+</circle>
+<circle cx="36" cy="88" r="4" fill="#FF6A00" opacity=".6">
+<animate attributeName="opacity" values=".4;.7;.4" dur="3s" repeatCount="indefinite" begin=".5s"/>
+</circle>
+<circle cx="104" cy="88" r="10" fill="rgba(255,106,0,.06)" stroke="#FF6A00" stroke-width=".6" opacity=".3">
+<animate attributeName="r" values="10;13;10" dur="4s" repeatCount="indefinite" begin="1s"/>
+</circle>
+<circle cx="104" cy="88" r="4" fill="#FF6A00" opacity=".6">
+<animate attributeName="opacity" values=".4;.7;.4" dur="3s" repeatCount="indefinite" begin="1s"/>
+</circle>
+<!-- Tertiary detail nodes -->
+<circle cx="104" cy="52" r="2" fill="#FFA033" opacity=".3"><animate attributeName="opacity" values=".15;.4;.15" dur="5s" repeatCount="indefinite"/></circle>
+<circle cx="70" cy="100" r="2" fill="#FFA033" opacity=".3"><animate attributeName="opacity" values=".15;.4;.15" dur="5s" repeatCount="indefinite" begin="1.5s"/></circle>
+<!-- Traveling data particles -->
+<circle r="1.5" fill="#FFA033" opacity=".8"><animateMotion dur="2.5s" repeatCount="indefinite" path="M70,36 L36,88"/><animate attributeName="opacity" values="0;.8;0" dur="2.5s" repeatCount="indefinite"/></circle>
+<circle r="1.5" fill="#FFA033" opacity=".8"><animateMotion dur="2.5s" repeatCount="indefinite" path="M70,36 L104,88" begin="1s"/><animate attributeName="opacity" values="0;.8;0" dur="2.5s" repeatCount="indefinite" begin="1s"/></circle>
+<circle r="1.5" fill="#FFA033" opacity=".8"><animateMotion dur="3s" repeatCount="indefinite" path="M36,88 L104,88" begin="2s"/><animate attributeName="opacity" values="0;.6;0" dur="3s" repeatCount="indefinite" begin="2s"/></circle>
+</svg></div><div class="pc-t">Deploy an Agent</div><div class="pc-s">Register an agent to borrow working capital. Rates improve with every repayment cycle.</div></div></div><button class="ogh" onclick="goD()" style="margin-top:12px;font-size:14px;color:var(--t3);border-bottom:1px solid rgba(255,255,255,.08);padding-bottom:2px;border-radius:0">or explore with demo data</button></div></div>
+<div class="ob gone" id="s1"><div class="obn"><div style="margin-bottom:24px"><svg viewBox="0 0 80 110" width="36" height="50"><circle cx="40" cy="36" r="34" fill="#FF6A00" opacity=".55"/><circle cx="40" cy="72" r="34" fill="#FF6A00" opacity=".55"/></svg></div><div class="ob-h" style="font-size:22px">Connect to Earn Yield</div><div class="ob-d" style="margin-bottom:28px">Connect your wallet to deposit USDC.</div><div class="wopts"><button class="wopt" onclick="cLend()"><div class="wi" style="background:linear-gradient(135deg,#E8821E,#F5A623);border:none"><svg width="14" height="14" viewBox="0 0 14 14" fill="#fff"><path d="M7 1L2 5l2 1.5V10l3 2 3-2V6.5L12 5 7 1z" opacity=".9"/></svg></div>MetaMask</button><button class="wopt" onclick="cLend()"><div class="wi" style="background:linear-gradient(135deg,#3B99FC,#5CB3FF);border:none"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3.5 5.5C5.5 3.5 8.5 3.5 10.5 5.5" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/><path d="M5 7.5C6 6.5 8 6.5 9 7.5" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/></svg></div>WalletConnect</button><button class="wopt" onclick="cLend()"><div class="wi" style="background:#0052FF;border:none"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5" stroke="#fff" stroke-width="1.2"/><path d="M5.5 7h3" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/></svg></div>Coinbase Wallet</button></div><button class="obk" onclick="goB()">← Back</button></div></div>
+<div class="ob gone" id="s2"><div class="obn"><div style="margin-bottom:24px"><svg viewBox="0 0 80 110" width="36" height="50"><circle cx="40" cy="36" r="34" fill="#FF6A00" opacity=".55"/><circle cx="40" cy="72" r="34" fill="#FF6A00" opacity=".55"/></svg></div><div class="ob-h" style="font-size:22px">Set Up Your Agent</div><div class="ob-d" style="margin-bottom:28px">Connect existing or create new.</div><div class="achoice"><div class="acc" onclick="goAE()"><div class="acc-i"><svg width="28" height="28" viewBox="0 0 28 28"><circle cx="14" cy="14" r="13" fill="none" stroke="var(--orange)" stroke-width="1" opacity=".2"/><path d="M10 14h8M15 11l3 3-3 3" stroke="var(--orange)" stroke-width="1.5" stroke-linecap="round" fill="none"/><circle cx="8" cy="14" r="2" fill="var(--orange)" opacity=".4"/></svg></div><div class="acc-t">Connect Existing</div><div class="acc-s">I have an agent wallet</div></div><div class="acc" onclick="goAN()"><div class="acc-i"><svg width="28" height="28" viewBox="0 0 28 28"><circle cx="14" cy="14" r="13" fill="none" stroke="var(--orange)" stroke-width="1" opacity=".2"/><circle cx="14" cy="14" r="6" fill="var(--orange)" opacity=".15"/><path d="M14 10v8M10 14h8" stroke="var(--orange)" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg></div><div class="acc-t">Create New</div><div class="acc-s">Register a new agent</div></div></div><button class="obk" onclick="goB()">← Back</button></div></div>
+<div class="ob gone" id="s3"><div class="obn"><div style="margin-bottom:24px"><svg viewBox="0 0 80 110" width="36" height="50"><circle cx="40" cy="36" r="34" fill="#FF6A00" opacity=".55"/><circle cx="40" cy="72" r="34" fill="#FF6A00" opacity=".55"/></svg></div><div class="ob-h" style="font-size:22px">Connect Your Agent</div><div class="ob-d" style="margin-bottom:28px">We'll pull its score from SpecularIdentity.</div><div class="wopts"><button class="wopt" onclick="cExist()"><div class="wi" style="background:linear-gradient(135deg,#E8821E,#F5A623);border:none"><svg width="14" height="14" viewBox="0 0 14 14" fill="#fff"><path d="M7 1L2 5l2 1.5V10l3 2 3-2V6.5L12 5 7 1z" opacity=".9"/></svg></div>MetaMask</button><button class="wopt" onclick="cExist()"><div class="wi" style="background:linear-gradient(135deg,#3B99FC,#5CB3FF);border:none"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3.5 5.5C5.5 3.5 8.5 3.5 10.5 5.5" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/><path d="M5 7.5C6 6.5 8 6.5 9 7.5" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/></svg></div>WalletConnect</button><button class="wopt" onclick="cExist()"><div class="wi" style="background:#0052FF;border:none"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5" stroke="#fff" stroke-width="1.2"/><path d="M5.5 7h3" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/></svg></div>Coinbase Wallet</button></div><button class="obk" onclick="sh('s2')">← Back</button></div></div>
+<div class="ob gone" id="s4"><div class="obn"><div style="margin-bottom:24px"><svg viewBox="0 0 80 110" width="36" height="50"><circle cx="40" cy="36" r="34" fill="#FF6A00" opacity=".55"/><circle cx="40" cy="72" r="34" fill="#FF6A00" opacity=".55"/></svg></div><div class="ob-h" style="font-size:22px">Connect Wallet</div><div class="ob-d" style="margin-bottom:28px">This wallet becomes your agent.</div><div class="wopts"><button class="wopt" onclick="cNew()"><div class="wi" style="background:linear-gradient(135deg,#E8821E,#F5A623);border:none"><svg width="14" height="14" viewBox="0 0 14 14" fill="#fff"><path d="M7 1L2 5l2 1.5V10l3 2 3-2V6.5L12 5 7 1z" opacity=".9"/></svg></div>MetaMask</button><button class="wopt" onclick="cNew()"><div class="wi" style="background:linear-gradient(135deg,#3B99FC,#5CB3FF);border:none"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3.5 5.5C5.5 3.5 8.5 3.5 10.5 5.5" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/><path d="M5 7.5C6 6.5 8 6.5 9 7.5" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/></svg></div>WalletConnect</button><button class="wopt" onclick="cNew()"><div class="wi" style="background:#0052FF;border:none"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5" stroke="#fff" stroke-width="1.2"/><path d="M5.5 7h3" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/></svg></div>Coinbase Wallet</button></div><button class="obk" onclick="sh('s2')">← Back</button></div></div>
+<div class="ob gone" id="s5"><div class="obn"><div style="margin-bottom:24px"><svg viewBox="0 0 80 110" width="36" height="50"><circle cx="40" cy="36" r="34" fill="#FF6A00" opacity=".55"/><circle cx="40" cy="72" r="34" fill="#FF6A00" opacity=".55"/></svg></div><div class="ob-h" style="font-size:22px">Name Your Agent</div><div class="ob-d" style="margin-bottom:28px">Starting credit score: 500.</div><input class="oinp" type="text" id="an" placeholder="e.g. Agent Alpha-1" maxlength="24"><div><button class="obtn ripple-btn" id="dbtn" onclick="dep()">Deploy Agent</button></div><div class="ostat" id="dst"></div><div class="deploy-progress"><div class="deploy-progress-fill" id="dpf"></div></div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--t3);margin-top:20px">Connected as <b class="co" id="da2"></b></div></div></div>
 
-    <script>
-        const API_URL = 'http://localhost:3001';
+<!-- ═══ APP ═══ -->
+<div class="shell" id="shell">
+<div class="side" id="sidebar">
+  <div class="s-brand"><div style="display:flex;align-items:center;justify-content:space-between"><div class="s-logo"><svg viewBox="0 0 80 110" width="15" height="21"><circle cx="40" cy="36" r="34" fill="#FF6A00" opacity=".55"/><circle cx="40" cy="72" r="34" fill="#FF6A00" opacity=".55"/></svg><span>SPECULAR</span></div><button class="side-close" onclick="togSide()" style="display:none;color:var(--t3);font-size:20px;padding:4px 8px;border-radius:6px;background:none;border:none;cursor:pointer" id="side-x">✕</button></div></div>
+  <nav class="s-nav" id="nav">
+    <button class="nb on" data-p="dash"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Dashboard</button>
+    <button class="nb" data-p="borrow" id="nb-b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>Borrow</button>
+    <button class="nb" data-p="pool"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>Earn</button>
+    <button class="nb" data-p="docs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8M16 17H8"/></svg>Docs</button>
+  </nav>
+  <div class="s-foot"><div class="wc"><div><span class="wd"></span><span class="wl">Connected</span></div><div class="wa" id="sa" onclick="cpA()"><span id="sat"></span> <svg style="opacity:.3" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></div><div class="wn" id="sn"></div><div id="sr"></div></div></div>
+</div>
+<div class="mn">
+  <div class="tp"><div class="tp-t" id="ttl">Dashboard</div><div class="tp-r"><div class="chip" id="sc-c" style="display:none">Score <b id="tsc"></b></div><div class="netsel"><button class="chip" style="cursor:pointer;display:flex;align-items:center;gap:6px" onclick="togN()"><span class="ndot" id="nd"></span><span id="nl">Base</span> <span style="font-size:8px;opacity:.5">▾</span></button><div class="ndd gone" id="ndd"></div></div><button class="tp-ic" onclick="oAct()" title="Activity"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg><span class="tp-dot" id="adot" style="display:none"></span></button><button class="tp-ic" onclick="oSet()" title="Settings"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></button><button class="tp-ic" onclick="togT()" id="tbtn" title="Theme"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg></button></div></div>
+  <div class="vw"><div class="pg on" id="pg-dash"></div><div class="pg" id="pg-borrow"></div><div class="pg" id="pg-pool"></div><div class="pg" id="pg-docs"></div></div>
+</div>
+</div>
+<div class="foot" id="ft"><div><a href="https://github.com/thegrand-canyon/specular" target="_blank">GitHub</a><a href="#">Docs</a><a href="#">Twitter</a><a href="#">Discord</a></div><div class="foot-r">Specular Protocol</div></div>
 
-        async function loadData() {
-            try {
-                document.getElementById('statusBadge').innerHTML = '● Loading...';
-                document.getElementById('statusBadge').style.borderColor = '#ff9800';
-                document.getElementById('statusBadge').style.color = '#ff9800';
+<script>
+// Math
+function cS(a){var R=a.tb===0?0:Math.min(400,Math.floor(400*a.tr/a.tb)),V=Math.min(200,20*a.lc),D=a.tb===0?0:Math.min(300,Math.floor(300*a.td/a.tb)),L=Math.min(100,25*a.al);return Math.max(0,Math.min(1000,500+R+V-D-L))}
+function BK(a){return{R:a.tb===0?0:Math.min(400,Math.floor(400*a.tr/a.tb)),V:Math.min(200,20*a.lc),D:a.tb===0?0:Math.min(300,Math.floor(300*a.td/a.tb)),L:Math.min(100,25*a.al)}}
+function rB(u){if(u<=8000)return 100+Math.floor(300*u/8000);return 400+Math.floor(1600*(u-8000)/2000)}
+function sB(s){return Math.floor(800*(1000-s)/1000)}
+function vR(r){return r<=10000?0:Math.floor(200*(r-10000)/10000)}
+function vC(r){return r<=10000?0:Math.floor(5000*(r-10000)/10000)}
+function tR(s,u,r){return rB(u)+sB(s)+vR(r)}
+function cR(s,r){return 10000+Math.floor(10000*(1000-s)/1000)+vC(r)}
+function f1(b){return(b/100).toFixed(1)}
+function f2(b){return(b/100).toFixed(2)}
+function pctl(s){return s>=900?95:s>=800?85:s>=700?70:s>=600?50:s>=500?30:10}
 
-                // Load protocol status
-                await loadStatus();
+// Data
+var DMO={addr:"0xbd82...31fb",nm:"Agent Nexus-7",tb:2450000,tr:2380000,td:12000,lc:47,al:2};
+var DLN=[{id:"0xa1f3",pr:50000,rt:490,co:"wstETH",hf:13200,st:"active",h:18},{id:"0xb7e2",pr:25000,rt:520,co:"WBTC",hf:11800,st:"active",h:6},{id:"0xc9d4",pr:100000,rt:380,co:"USDC",hf:0,st:"repaid",h:48},{id:"0xd2a8",pr:75000,rt:440,co:"wstETH",hf:0,st:"repaid",h:24}];
+var PO={a:12500000,b:8750000,s:12000000};
+var AS=[{s:"USDC",hc:200,px:1},{s:"wstETH",hc:1500,px:3420},{s:"WBTC",hc:2000,px:67200},{s:"WETH",hc:2000,px:3380},{s:"T-Bill",hc:500,px:100.2}];
+var FEED=[{t:"repay",a:"0x7f2a",am:"$50K",tm:"2m"},{t:"borrow",a:"0xc3d8",am:"$120K",tm:"5m"},{t:"deposit",a:"0xa9f1",am:"$200K",tm:"8m"},{t:"repay",a:"0x5be2",am:"$75K",tm:"12m"},{t:"borrow",a:"0xd4e6",am:"$30K",tm:"15m"},{t:"liquidate",a:"0x8b1c",am:"$18K",tm:"23m"},{t:"deposit",a:"0xf2a7",am:"$500K",tm:"31m"},{t:"repay",a:"0x1c8d",am:"$95K",tm:"44m"}];
 
-                // Load featured agent (main agent)
-                await loadFeaturedAgent();
+var role="",AG=null,LN=[],sc=500,bd={R:0,V:0,D:0,L:0},sA=AS[1],vm="n",sets={slip:50,coll:"wstETH",hfN:true,matN:true};
+var TT={dash:"Dashboard",borrow:"Borrow",pool:"Earn",docs:"Docs"};
+function adr(){return"0x"+Math.random().toString(16).substr(2,4)+"..."+Math.random().toString(16).substr(2,4)}
 
-                // Update timestamp
-                document.getElementById('timestamp').textContent = 
-                    'Last updated: ' + new Date().toLocaleString();
+// Theme
+function togT(){var t=document.documentElement.getAttribute("data-theme")==="dark"?"light":"dark";document.documentElement.setAttribute("data-theme",t);document.getElementById("tbtn").innerHTML=t==="dark"?"<svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"><path d=\"M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z\"/></svg>":"<svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"><circle cx=\"12\" cy=\"12\" r=\"5\"/><path d=\"M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42\"/></svg>"}
+function togSide(){var sb=document.getElementById("sidebar"),ov=document.getElementById("sovl"),hm=document.getElementById("ham-btn"),sx=document.getElementById("side-x");sb.classList.toggle("open");ov.classList.toggle("show");var isOpen=sb.classList.contains("open");if(hm)hm.style.display=isOpen?"none":"flex";if(sx)sx.style.display=isOpen?"block":"none"}
 
-                document.getElementById('statusBadge').innerHTML = '● Online';
-                document.getElementById('statusBadge').style.borderColor = '#4caf50';
-                document.getElementById('statusBadge').style.color = '#4caf50';
+// Screens
+function ha(){document.querySelectorAll('.ob').forEach(function(s){s.classList.add('gone')})}
+function sh(id){ha();document.getElementById(id).classList.remove('gone')}
+function goB(){ha();document.getElementById('s0').classList.remove('gone')}
+function goL(){sh('s1')}
+function goA(){sh('s2')}
+function goAE(){sh('s3')}
+function goAN(){sh('s4')}
+function cLend(){role="lender";AG={addr:adr(),nm:"Lender",tb:0,tr:0,td:0,lc:0,al:0};LN=[];enter("pool")}
+function cExist(){role="agent";AG=JSON.parse(JSON.stringify(DMO));AG.addr=adr();LN=JSON.parse(JSON.stringify(DLN));enter("dash")}
+function cNew(){document.getElementById('da2').textContent=adr();sh('s5');setTimeout(function(){document.getElementById('an').focus()},400)}
+function dep(){
+  var n=document.getElementById('an').value.trim();if(!n){document.getElementById('an').style.borderColor='var(--red)';setTimeout(function(){document.getElementById('an').style.borderColor=''},1500);return}
+  document.getElementById('dbtn').classList.add('dis');var st=document.getElementById('dst');
+  st.innerHTML='<span class="spinner"></span>Connecting to Base...';
+  setTimeout(function(){st.innerHTML='<span class="spinner"></span>Registering on SpecularIdentity...'},1200);
+  setTimeout(function(){st.innerHTML='<span class="spinner"></span>Confirming...'},2400);
+  setTimeout(function(){st.innerHTML='<span style="color:var(--green)">✓</span> Deployed · Score 500';role="agent";AG={addr:document.getElementById('da2').textContent,nm:n,tb:0,tr:0,td:0,lc:0,al:0};LN=[];setTimeout(function(){enter("dash")},800)},3600);
+}
+function goD(){role="demo";AG=JSON.parse(JSON.stringify(DMO));LN=JSON.parse(JSON.stringify(DLN));enter("dash")}
 
-            } catch (error) {
-                console.error('Error loading data:', error);
-                document.getElementById('statusBadge').innerHTML = '● Error';
-                document.getElementById('statusBadge').style.borderColor = '#f44336';
-                document.getElementById('statusBadge').style.color = '#f44336';
-                
-                showError('Failed to connect to API. Make sure the server is running on port 3001.');
-            }
-        }
+function enter(pg){
+  sc=cS(AG);bd=BK(AG);ha();
+  document.getElementById('sat').textContent=AG.addr;
+  document.getElementById('sn').textContent=AG.nm;
+  var isA=role==="agent"||role==="demo";
+  document.getElementById('sr').innerHTML=role==="lender"?'<div class="rtag rtag-l">Lender</div>':role==="agent"?'<div class="rtag rtag-a">Agent</div>':'<div class="rtag" style="color:var(--yellow);background:var(--ybg);cursor:pointer" onclick="exitApp()">Demo · exit</div>';
+  document.getElementById('nb-b').style.display=isA?"flex":"none";
+  document.getElementById('sc-c').style.display=isA?"block":"none";
+  if(isA)document.getElementById('tsc').textContent=sc;
+  document.querySelectorAll('.nb').forEach(function(b){b.classList.remove('on')});
+  document.querySelectorAll('.pg').forEach(function(p){p.classList.remove('on')});
+  var nb=document.querySelector('[data-p="'+pg+'"]');if(nb)nb.classList.add('on');
+  document.getElementById('pg-'+pg).classList.add('on');
+  document.getElementById('ttl').textContent=TT[pg];
+  document.getElementById('ft').style.display='flex';
+  if(window.innerWidth<=768)document.getElementById('ham-btn').style.display='flex';
+  renderAll();document.getElementById('shell').classList.add('vis');
+  document.getElementById('adot').style.display='block';
+  setTimeout(function(){toast("✓","Connected to <b>Base</b>")},500);
+}
+function exitApp(){document.getElementById('shell').classList.remove('vis');document.getElementById('ft').style.display='none';document.getElementById('ham-btn').style.display='none';setTimeout(function(){document.getElementById('s0').classList.remove('gone')},300)}
 
-        async function loadStatus() {
-            const response = await fetch(`${API_URL}/status`);
-            const data = await response.json();
-            
-            document.getElementById('totalPools').textContent = data.totalPools || 0;
-            document.getElementById('totalTVL').textContent = data.tvl || '--';
-        }
+// Nav
+document.getElementById('nav').onclick=function(e){var b=e.target.closest('.nb');if(!b)return;var p=b.dataset.p;document.querySelectorAll('.nb').forEach(function(x){x.classList.remove('on')});b.classList.add('on');document.querySelectorAll('.pg').forEach(function(x){x.classList.remove('on')});document.getElementById('pg-'+p).classList.add('on');document.getElementById('ttl').textContent=TT[p];if(window.innerWidth<768)togSide()};
 
-        async function loadFeaturedAgent() {
-            const agentAddress = '0x656086A21073272533c8A3f56A94c1f3D8BCFcE2';
-            const response = await fetch(`${API_URL}/agents/${agentAddress}`);
-            const agent = await response.json();
+// Helpers
+function G(el,s,sz,cel){var r=sz*.38,ci=2*Math.PI*r,ar=ci*.75,fi=ar*(s/1000);var cl=s>=750?"var(--green)":s>=500?"var(--orange)":s>=300?"var(--yellow)":"var(--red)";el.innerHTML='<div class="gw'+(cel?' celebrate':'')+'" style="width:'+sz+'px;height:'+sz+'px"><svg width="'+sz+'" height="'+sz+'" style="transform:rotate(135deg)"><circle cx="'+sz/2+'" cy="'+sz/2+'" r="'+r+'" fill="none" stroke="var(--border)" stroke-width="'+sz*.03+'" stroke-dasharray="'+ar+' '+ci+'" stroke-linecap="round"/><circle cx="'+sz/2+'" cy="'+sz/2+'" r="'+r+'" fill="none" stroke="'+cl+'" stroke-width="'+sz*.03+'" stroke-dasharray="'+fi+' '+ci+'" stroke-linecap="round" style="transition:stroke-dasharray .8s;filter:drop-shadow(0 0 8px '+cl+')"/></svg><div class="gc"><div class="gn count-a" style="font-size:'+sz*.24+'px">'+s+'</div><div class="gl">Credit Score</div></div></div>'}
+function HFv(hf){var v=hf/10000,pct=Math.min(100,v/1.5*100),col=v>=1.1?"var(--green)":v>=1?"var(--yellow)":"var(--red)",txt=v>=1.1?"Safe":v>=1?"Caution":"At Risk";return'<div class="hf-v"><div class="hf-bar"><div class="hf-fill" style="width:'+pct+'%;background:'+col+'"></div></div><span class="hf-lbl" style="color:'+col+'">'+txt+'</span></div>'}
+function ctx(t,c){return'<div class="ctx ctx-'+c+'"><span class="ctx-dot"></span>'+t+'</div>'}
+function toast(i,t){var c=document.getElementById('toasts'),el=document.createElement('div');el.className='toast';el.innerHTML='<span style="font-size:14px">'+i+'</span><span style="font-size:13px;color:var(--t2)">'+t+'</span><button style="color:var(--t3);font-size:16px;margin-left:auto;cursor:pointer;padding:4px;background:none;border:none" onclick="this.parentElement.remove()">×</button>';c.appendChild(el);setTimeout(function(){if(el.parentElement)el.remove()},4000)}
+function cpA(){if(navigator.clipboard&&AG)navigator.clipboard.writeText(AG.addr);toast("✓","Address copied")}
+function renderAll(){rDash();rBorrow();rPool();rDocs();rAct();rSet()}
 
-            const container = document.getElementById('featuredAgent');
-            
-            if (!agent.registered) {
-                container.innerHTML = '<div class="error">Agent not found</div>';
-                return;
-            }
+// Net
+var NETS=[{id:"base",nm:"Base",c:"#0052FF"},{id:"base-sep",nm:"Base Sepolia",c:"#0052FF"},{id:"eth",nm:"Ethereum",c:"#627EEA"},{id:"arb",nm:"Arbitrum",c:"#28A0F0"},{id:"op",nm:"Optimism",c:"#FF0420"}];var cNet="base";
+function rN(){var h="";NETS.forEach(function(n){h+='<button class="nopt'+(n.id===cNet?" on":"")+'" onclick="pN(\''+n.id+'\')"><span class="ndot" style="background:'+n.c+'"></span><span style="flex:1">'+n.nm+'</span><span class="nck">✓</span></button>'});document.getElementById("ndd").innerHTML=h;var n=NETS.find(function(x){return x.id===cNet});document.getElementById("nl").textContent=n.nm;document.getElementById("nd").style.background=n.c}
+function togN(){document.getElementById("ndd").classList.toggle("gone");rN()}
+function pN(id){cNet=id;rN();document.getElementById("ndd").classList.add("gone");toast("↻","Switched to <b>"+NETS.find(function(n){return n.id===id}).nm+"</b>")}
+document.addEventListener("click",function(e){if(!e.target.closest(".netsel"))document.getElementById("ndd").classList.add("gone")});rN();
 
-            const reputationClass = agent.reputation.score >= 800 ? 'excellent' : 
-                                   agent.reputation.score >= 600 ? 'good' : 'fair';
+// Activity
+function oAct(){document.getElementById('aov').classList.add('open');document.getElementById('apan').classList.add('open');document.getElementById('adot').style.display='none'}
+function cAct(){document.getElementById('aov').classList.remove('open');document.getElementById('apan').classList.remove('open')}
+function rAct(){var ic={borrow:'<svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="var(--orange)" opacity=".2"/><path d="M7 10V4M4.5 6.5L7 4l2.5 2.5" stroke="var(--orange)" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg>',repay:'<svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="var(--green)" opacity=".2"/><path d="M7 4v6M4.5 7.5L7 10l2.5-2.5" stroke="var(--green)" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg>',deposit:'<svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="var(--green)" opacity=".2"/><path d="M7 4v6M4 7h6" stroke="var(--green)" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg>',liquidate:'<svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="var(--red)" opacity=".2"/><path d="M7 4v4M7 10v.5" stroke="var(--red)" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>'},bg={borrow:'var(--obg)',repay:'var(--gbg)',deposit:'var(--gbg)',liquidate:'var(--rbg)'},lb={borrow:'Borrowed',repay:'Repaid',deposit:'Deposited',liquidate:'Liquidated'};var h="";FEED.forEach(function(f){h+='<div class="fi-item"><div class="fi-ic" style="background:'+bg[f.t]+'">'+ic[f.t]+'</div><div class="fi-bd"><div class="fi-t">'+lb[f.t]+' '+f.am+'</div><div class="fi-s">'+f.a+'...</div></div><div class="fi-tm">'+f.tm+'</div></div>'});document.getElementById('abody').innerHTML=h}
 
-            container.innerHTML = `
-                <div class="agent-card">
-                    <div class="agent-header">
-                        <div>
-                            <div class="agent-id">Agent #${agent.agentId}</div>
-                            <div style="color: #999; font-size: 0.85em; margin-top: 5px;">${agentAddress}</div>
-                        </div>
-                        <div class="reputation-badge reputation-${reputationClass}">
-                            ${agent.reputation.tier}
-                        </div>
-                    </div>
-                    <div class="agent-stats">
-                        <div class="agent-stat">
-                            <div class="agent-stat-label">Reputation</div>
-                            <div class="agent-stat-value">${agent.reputation.score}/1000</div>
-                        </div>
-                        <div class="agent-stat">
-                            <div class="agent-stat-label">Credit Limit</div>
-                            <div class="agent-stat-value">${agent.creditLimit}</div>
-                        </div>
-                        <div class="agent-stat">
-                            <div class="agent-stat-label">Interest Rate</div>
-                            <div class="agent-stat-value">${agent.interestRate}</div>
-                        </div>
-                        <div class="agent-stat">
-                            <div class="agent-stat-label">Active Loans</div>
-                            <div class="agent-stat-value">${agent.activeLoans}/${agent.maxActiveLoans}</div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
+// Settings
+function oSet(){document.getElementById('sov').classList.add('open')}
+function cSet(){document.getElementById('sov').classList.remove('open')}
+function rSet(){document.getElementById('sbody').innerHTML='<div class="set-row"><div><div class="set-l">Slippage</div><div class="set-d">Max acceptable slippage</div></div><select class="fi" style="width:auto;min-width:100px;padding:8px 30px 8px 12px;font-size:13px" onchange="sets.slip=+this.value"><option value="25"'+(sets.slip===25?' selected':'')+'>0.25%</option><option value="50"'+(sets.slip===50?' selected':'')+'>0.50%</option><option value="100"'+(sets.slip===100?' selected':'')+'>1.00%</option></select></div><div class="set-row"><div><div class="set-l">Default Collateral</div><div class="set-d">Pre-selected when borrowing</div></div><select class="fi" style="width:auto;min-width:100px;padding:8px 30px 8px 12px;font-size:13px">'+AS.map(function(a){return'<option value="'+a.s+'"'+(sets.coll===a.s?' selected':'')+'>'+a.s+'</option>'}).join('')+'</select></div><div class="set-row"><div><div class="set-l">Health Alerts</div><div class="set-d">Warn when HF drops</div></div><div class="toggle'+(sets.hfN?' on':'')+'" onclick="this.classList.toggle(\'on\');sets.hfN=!sets.hfN"></div></div><div class="set-row"><div><div class="set-l">Maturity Alerts</div></div><div class="toggle'+(sets.matN?' on':'')+'" onclick="this.classList.toggle(\'on\');sets.matN=!sets.matN"></div></div>'}
 
-        function showError(message) {
-            const container = document.getElementById('featuredAgent');
-            container.innerHTML = `<div class="error">${message}</div>`;
-        }
+// ═══ DASHBOARD ═══
+function rDash(){
+  var isA=role==="agent"||role==="demo";
+  var uB=Math.floor(PO.b/PO.a*10000),rt=tR(sc,uB,10000),cl=cR(sc,10000);
+  var h="";
 
-        // Load data on page load
-        loadData();
+  // Action card
+  if(isA&&AG.lc===0)h+='<div class="act-card"><div class="act-ic"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="var(--orange)" opacity=".8"/></svg></div><div class="act-bd"><div class="act-t">Your first move</div><div class="act-d">Borrow USDC against collateral. Repay to build your score and unlock lower rates.</div></div><button class="act-btn" onclick="document.querySelector(\'[data-p=borrow]\').click()">Borrow Now</button></div>';
+  else if(isA&&AG.lc>0&&AG.lc<10)h+='<div class="act-card"><div class="act-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2" stroke-linecap="round"><path d="M23 6l-9.5 9.5-5-5L1 18"/><path d="M17 6h6v6"/></svg></div><div class="act-bd"><div class="act-t">Keep building</div><div class="act-d">'+AG.lc+' loans done. More cycles = lower rates + less collateral.</div></div><button class="act-btn" onclick="document.querySelector(\'[data-p=borrow]\').click()">Next Loan</button></div>';
+  else if(!isA)h+='<div class="act-card"><div class="act-ic"><svg width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="var(--green)" opacity=".15"/><text x="12" y="17" text-anchor="middle" font-family="Inter" font-size="14" font-weight="600" fill="var(--green)">$</text></svg></div><div class="act-bd"><div class="act-t">Start earning</div><div class="act-d">Deposit USDC. Agent borrowers pay interest every cycle — your shares grow automatically.</div></div><button class="act-btn" onclick="document.querySelector(\'[data-p=pool]\').click()">Deposit Now</button></div>';
 
-        // Auto-refresh every 30 seconds
-        setInterval(loadData, 30000);
-    </script>
+  if(isA){
+    h+='<div style="display:grid;grid-template-columns:280px 1fr 1fr;gap:20px;margin-bottom:24px" class="d-grid">';
+    h+='<div class="cd" style="display:flex;flex-direction:column;align-items:center;justify-content:center;grid-row:1/3;padding:32px 24px"><div id="dg" style="margin-bottom:16px"></div>'+ctx("Better than "+pctl(sc)+"% of agents",sc>=700?"g":sc>=500?"y":"r");
+    h+='<button class="exp-btn" onclick="this.nextElementSibling.classList.toggle(\'open\')">Score breakdown ▾</button><div class="det"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;width:100%"><div style="text-align:center"><div style="font-family:\'JetBrains Mono\',monospace;font-size:15px;font-weight:600;color:var(--green)">+'+bd.R+'</div><div style="font-size:10px;color:var(--t3);margin-top:3px">Repay</div></div><div style="text-align:center"><div style="font-family:\'JetBrains Mono\',monospace;font-size:15px;font-weight:600;color:var(--orange)">+'+bd.V+'</div><div style="font-size:10px;color:var(--t3);margin-top:3px">Volume</div></div><div style="text-align:center"><div style="font-family:\'JetBrains Mono\',monospace;font-size:15px;font-weight:600;color:var(--red)">−'+bd.D+'</div><div style="font-size:10px;color:var(--t3);margin-top:3px">Default</div></div><div style="text-align:center"><div style="font-family:\'JetBrains Mono\',monospace;font-size:15px;font-weight:600;color:var(--yellow)">−'+bd.L+'</div><div style="font-size:10px;color:var(--t3);margin-top:3px">Leverage</div></div></div></div>';
+    h+='</div>';
+    h+='<div class="cd" style="padding:28px"><div style="font-size:12px;color:var(--t3);margin-bottom:10px">Your Borrowing Rate</div><div class="mv co">'+f1(rt)+'%</div>'+ctx(rt<=500?"Lower than most agents":"Improves with each repayment",rt<=500?"g":"y")+'</div>';
+    var collPlain=(cl/10000).toFixed(2);
+    h+='<div class="cd" style="padding:28px"><div style="font-size:12px;color:var(--t3);margin-bottom:10px">Collateral</div><div class="mv">'+(cl/100).toFixed(0)+'%</div>'+ctx("You lock $"+collPlain+" per $1 borrowed",cl<=12500?"g":"n")+'</div>';
+    h+='</div>';
+  } else {
+    h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-bottom:24px" class="d-grid">';
+    h+='<div class="cd" style="padding:28px;text-align:center"><div style="font-size:12px;color:var(--t3);margin-bottom:10px">Current APY</div><div class="mv co">8.4%</div>'+ctx("From "+342+" active agents","g")+'</div>';
+    h+='<div class="cd" style="padding:28px"><div style="font-size:12px;color:var(--t3);margin-bottom:10px">Your Deposits</div><div class="mv cg">$0</div>'+ctx("Deposit to start earning","n")+'</div>';
+    h+='<div class="cd" style="padding:28px"><div style="font-size:12px;color:var(--t3);margin-bottom:10px">Your Earnings</div><div class="mv">$0</div>'+ctx("Accrues automatically","n")+'</div>';
+    h+='</div>';
+  }
+
+  // Stats
+  h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px">';
+  [["Deposits","$"+(PO.a/1e6).toFixed(1)+"M"],["Utilization",((PO.b/PO.a)*100).toFixed(1)+"%"],["Yield","8.4%"]].forEach(function(s){h+='<div class="cd" style="padding:18px 24px;text-align:center"><div style="font-size:11px;color:var(--t3);margin-bottom:6px">'+s[0]+'</div><div class="ms">'+s[1]+'</div></div>'});
+  h+='</div>';
+
+  // Positions (merged in dashboard)
+  if(isA){
+    var actives=LN.filter(function(l){return l.st==="active"});
+    if(actives.length){
+      h+='<div class="lbl" style="margin-bottom:14px">Active Positions</div>';
+      actives.forEach(function(l){h+='<div class="pr"><div><div class="pcl">Loan</div><div class="pcv co">'+l.id+'</div></div><div><div class="pcl">Principal</div><div class="pcv">$'+(l.pr/1000).toFixed(0)+'K</div></div><div><div class="pcl">Rate</div><div class="pcv">'+f1(l.rt)+'%</div></div><div><div class="pcl">Collateral</div><div class="pcv">'+l.co+'</div></div><div><div class="pcl">Health</div>'+HFv(l.hf)+'</div><div><button class="bg" style="padding:8px 16px">Repay</button></div></div>'});
+    }
+    var past=LN.filter(function(l){return l.st==="repaid"});
+    if(past.length){
+      h+='<button class="exp-btn" style="margin-top:20px" onclick="this.nextElementSibling.classList.toggle(\'open\')">'+past.length+' completed loans ▾</button><div class="det">';
+      past.forEach(function(l){h+='<div class="pr" style="margin-top:8px"><div><div class="pcl">Loan</div><div class="pcv co">'+l.id+'</div></div><div><div class="pcl">Principal</div><div class="pcv">$'+(l.pr/1000).toFixed(0)+'K</div></div><div><div class="pcl">Rate</div><div class="pcv">'+f1(l.rt)+'%</div></div><div><div class="pcl">Collateral</div><div class="pcv">'+l.co+'</div></div><div><div class="pcl">Duration</div><div class="pcv c3">'+l.h+'h</div></div><div><span class="bdg bdg-g">Repaid</span></div></div>'});
+      h+='</div>';
+    }
+  }
+  document.getElementById('pg-dash').innerHTML=h;
+  if(isA&&document.getElementById('dg'))G(document.getElementById('dg'),sc,160,sc>500);
+}
+
+// ═══ BORROW ═══
+function rBorrow(){
+  var el=document.getElementById('pg-borrow');
+  el.innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:32px" class="b-grid"><div class="cd" style="padding:32px"><div class="lbl" style="margin-bottom:24px">Borrow USDC</div><div style="margin-bottom:24px"><div style="font-size:12px;color:var(--t2);margin-bottom:10px">Amount</div><input class="fi" type="number" id="bp" value="10000"></div><div style="margin-bottom:24px"><div style="font-size:12px;color:var(--t2);margin-bottom:10px">Collateral</div><div style="display:flex;gap:8px;flex-wrap:wrap" id="ba"></div></div><button class="bp ripple-btn" id="bbtn" style="margin-bottom:12px">Borrow $10,000</button><button class="exp-btn" onclick="document.getElementById(\'adv\').classList.toggle(\'open\')">Advanced options ▾</button><div class="det" id="adv"><div style="margin-top:16px"><div style="font-size:12px;color:var(--t2);margin-bottom:10px">Utilization — <span id="buv">70</span>%</div><input type="range" min="10" max="95" value="70" id="bu"></div><div style="margin-top:16px"><div style="font-size:12px;color:var(--t2);margin-bottom:10px">Volatility</div><div style="display:flex;gap:8px"><button class="bg on" id="bvn" onclick="sV(\'n\')">Normal</button><button class="bg" id="bvh" onclick="sV(\'h\')">Stressed</button></div></div></div></div><div style="display:flex;flex-direction:column;gap:20px"><div class="cd" style="padding:28px" id="bt"></div><div class="cd" style="padding:28px" id="bd2"></div><div class="cd" style="padding:28px"><div class="lbl" style="margin-bottom:12px">If You Repay This Loan</div><div id="bsim"></div></div></div></div>';
+  document.getElementById('ba').innerHTML=AS.map(function(a){return'<button class="bg'+(a.s===sA.s?' on':'')+'" onclick="pA(\''+a.s+'\')">'+a.s+'</button>'}).join('');
+  document.getElementById('bp').oninput=uB;document.getElementById('bu').oninput=uB;uB();
+}
+function uB(){
+  var pr=parseInt(document.getElementById('bp').value)||0,up=parseInt(document.getElementById('bu').value),sr=vm==="h"?15000:10000,uBps=up*100;
+  var rt=tR(sc,uBps,sr),cl=cR(sc,sr),rq=pr*cl/10000,un=rq/sA.px,hr=pr*rt/(10000*8760);
+  document.getElementById('buv').textContent=up;document.getElementById('bbtn').textContent="Borrow $"+pr.toLocaleString();
+  var collPlain=(cl/10000).toFixed(2);
+  document.getElementById('bt').innerHTML='<div style="font-size:12px;color:var(--t3);margin-bottom:10px">Your Rate</div><div class="mv co" style="margin-bottom:4px">'+f2(rt)+'%</div>'+ctx("$"+hr.toFixed(2)+"/hour · $"+(hr*24).toFixed(2)+"/day",rt<=600?"g":"y")+'<div style="margin-top:20px;font-size:12px;color:var(--t3);margin-bottom:10px">Collateral</div><div class="ms">'+(cl/100).toFixed(0)+'%</div>'+ctx("Lock $"+collPlain+" per $1 → $"+rq.toLocaleString(undefined,{maximumFractionDigits:0})+" total","n");
+  document.getElementById('bd2').innerHTML='<button class="exp-btn" onclick="this.nextElementSibling.classList.toggle(\'open\')" style="margin:0">Rate breakdown ▾</button><div class="det"><div class="dr" style="margin-top:8px"><span style="font-family:\'JetBrains Mono\',monospace;font-size:12px;color:var(--t3)">Base (U='+up+'%)</span><span style="font-family:\'JetBrains Mono\',monospace;font-size:13px;color:var(--t3)">'+f2(rB(uBps))+'%</span></div><div class="dr"><span style="font-family:\'JetBrains Mono\',monospace;font-size:12px;color:var(--orange)">Spread (S='+sc+')</span><span style="font-family:\'JetBrains Mono\',monospace;font-size:13px;color:var(--orange)">'+f2(sB(sc))+'%</span></div><div class="dr"><span style="font-family:\'JetBrains Mono\',monospace;font-size:12px;color:var(--yellow)">Volatility</span><span style="font-family:\'JetBrains Mono\',monospace;font-size:13px;color:var(--yellow)">'+f2(vR(sr))+'%</span></div><div class="dr" style="border-top:2px solid var(--border);padding-top:14px;margin-top:4px"><span style="font-weight:600">Total</span><span style="font-family:\'JetBrains Mono\',monospace;font-size:16px;color:var(--orange);font-weight:700">'+f2(rt)+'%</span></div></div>';
+  // Inline sim
+  var fk={tb:AG.tb+pr,tr:AG.tr+pr,td:AG.td,lc:AG.lc+1,al:AG.al},ns=cS(fk),dlt=ns-sc,nrt=tR(ns,uBps,sr),ncl=cR(ns,sr),dc=dlt>=0?"cg":"cr",sg=dlt>=0?"+":"";
+  document.getElementById('bsim').innerHTML='<div class="sim-r"><div class="sim-row"><span style="font-size:13px;color:var(--t2)">Score</span><span style="font-family:\'JetBrains Mono\',monospace;font-size:14px"><span class="c3">'+sc+'</span> → <span class="'+dc+'" style="font-weight:600">'+ns+'</span> <span class="'+dc+'" style="font-size:12px">('+sg+dlt+')</span></span></div><div class="sim-row"><span style="font-size:13px;color:var(--t2)">Rate</span><span style="font-family:\'JetBrains Mono\',monospace;font-size:14px"><span class="c3">'+f2(rt)+'%</span> → <span class="'+(nrt<=rt?"cg":"cr")+'" style="font-weight:600">'+f2(nrt)+'%</span></span></div><div class="sim-row"><span style="font-size:13px;color:var(--t2)">Collateral</span><span style="font-family:\'JetBrains Mono\',monospace;font-size:14px"><span class="c3">'+(cl/100).toFixed(0)+'%</span> → <span class="'+(ncl<=cl?"cg":"cr")+'" style="font-weight:600">'+(ncl/100).toFixed(0)+'%</span></span></div></div>';
+}
+function pA(s){sA=AS.find(function(a){return a.s===s});rBorrow()}
+function sV(m){vm=m;document.getElementById('bvn').className="bg"+(m==="n"?" on":"");document.getElementById('bvh').className="bg"+(m==="h"?" on":"");uB()}
+
+// ═══ POOL ═══
+function rPool(){
+  var sp=PO.a/PO.s,ut=((PO.b/PO.a)*100).toFixed(1);
+  var el=document.getElementById('pg-pool');
+  el.innerHTML='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px"><div class="cd" style="padding:18px 24px"><div style="font-size:11px;color:var(--t3);margin-bottom:6px">Total Assets</div><div class="ms">$'+(PO.a/1e6).toFixed(1)+'M</div></div><div class="cd" style="padding:18px 24px"><div style="font-size:11px;color:var(--t3);margin-bottom:6px">Utilization</div><div class="ms co">'+ut+'%</div></div><div class="cd" style="padding:18px 24px"><div style="font-size:11px;color:var(--t3);margin-bottom:6px">Share Price</div><div class="ms cg">$'+sp.toFixed(4)+'</div></div></div><div style="display:grid;grid-template-columns:1fr 320px;gap:24px" class="p-grid"><div style="display:flex;flex-direction:column;gap:24px"><div class="cd" style="padding:32px"><div class="lbl" style="margin-bottom:20px">Interest Rate Curve</div><div class="curv"><svg id="csvg" width="100%" height="100%" viewBox="0 0 400 160" preserveAspectRatio="none"></svg><div class="curv-tag">U* = 80%</div></div></div><div class="cd" style="padding:32px"><div class="lbl" style="margin-bottom:14px">How It Works</div><div style="font-size:13px;color:var(--t2);line-height:1.9">Deposit USDC and receive pool shares. As borrowers pay interest, pool assets grow while share count stays constant — each share appreciates. No lockups. Withdraw anytime.</div></div></div><div style="display:flex;flex-direction:column;gap:24px"><div class="cd" style="padding:32px"><div class="lbl" style="margin-bottom:20px">Deposit</div><input class="fi" type="number" id="damt" value="1000" style="margin-bottom:12px"><div style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--t3);margin-bottom:24px" id="dsh">You receive '+(1000/sp).toFixed(2)+' shares</div><button class="bp ripple-btn" style="margin-bottom:10px">Deposit USDC</button><button class="bg" style="width:100%;padding:14px">Withdraw</button></div><div class="cd" style="padding:32px"><div class="lbl" style="margin-bottom:20px">Your Position</div><div style="display:flex;flex-direction:column;gap:16px"><div><div style="font-size:11px;color:var(--t3);margin-bottom:4px">Shares</div><div class="ms">4,200</div></div><div><div style="font-size:11px;color:var(--t3);margin-bottom:4px">Value</div><div class="ms cg">$'+(4200*sp).toFixed(2)+'</div></div><div><div style="font-size:11px;color:var(--t3);margin-bottom:4px">Earning</div><div class="ms cg">8.4% APY</div></div></div></div></div></div>';
+  setTimeout(function(){var svg=document.getElementById('csvg');if(!svg)return;var li="";for(var g=0;g<4;g++)li+='<line x1="0" y1="'+(150-g*40)+'" x2="400" y2="'+(150-g*40)+'" stroke="rgba(128,128,128,.06)" stroke-width="0.5"/>';var pa="";for(var u=0;u<=100;u++){var r=rB(u*100);pa+=(u===0?"M":"L")+(u/100*400)+","+(150-r/2200*140)}li+='<path d="'+pa+'" fill="none" stroke="var(--orange)" stroke-width="2"/><line x1="320" y1="0" x2="320" y2="160" stroke="var(--orange)" stroke-width="0.5" stroke-dasharray="4,4" opacity=".25"/>';var cx=parseFloat(ut)/100*400,cy=150-rB(Math.floor(parseFloat(ut)*100))/2200*140;li+='<circle cx="'+cx+'" cy="'+cy+'" r="4" fill="var(--orange)"/><circle cx="'+cx+'" cy="'+cy+'" r="8" fill="none" stroke="var(--orange)" opacity=".25"/>';svg.innerHTML=li;var di=document.getElementById('damt');if(di)di.oninput=function(){document.getElementById('dsh').textContent="You receive "+((parseInt(this.value)||0)/sp).toFixed(2)+" shares"}},50);
+}
+
+// ═══ DOCS ═══
+function rDocs(){
+  var ct=[["SpecularIdentity","0x7a2F...e4B1","Score computation"],["SpecularPool","0x3cD8...91aF","ERC-4626 vault"],["SpecularLending","0xb5E2...c7D3","Loan lifecycle"],["SpecularCollateral","0x9fA1...28eC","Baskets & liquidation"]];
+  var rg=[["Calm (U=50%)",5000,10000],["Active (U=80%)",8000,10000],["Stressed (U=90%)",9000,15000]];
+  var pp=[["Base Score","500"],["Score Range","0 – 1000"],["Utilization","80%"],["Min Duration","1 hour"],["Liquidation","HF < 0.95"],["Liq. Bonus","up to 5%"],["Concentration","40%"],["Rate Range","1.0% – 20.0%"]];
+  document.getElementById('pg-docs').innerHTML='<div style="display:flex;flex-direction:column;gap:24px"><div class="cd" style="padding:32px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px"><div><div class="lbl" style="margin-bottom:6px">Specular</div><div style="font-size:18px;font-weight:400">Developer Docs</div></div><div style="display:flex;gap:8px"><a href="https://github.com/thegrand-canyon/specular" target="_blank" class="bg" style="text-decoration:none;display:inline-block">GitHub</a><button class="bp ripple-btn" style="width:auto;padding:10px 20px;font-size:13px">API</button></div></div><div style="font-size:13px;color:var(--t2);line-height:1.8;max-width:560px">Four contracts implement the complete credit stack on any EVM chain.</div></div><div class="cd" style="padding:32px"><div class="lbl" style="margin-bottom:20px">Contracts</div><table class="ct"><tbody>'+ct.map(function(c){return'<tr><td style="font-family:Inter,sans-serif;color:var(--t1);font-weight:500">'+c[0]+'</td><td class="co" style="cursor:pointer" onclick="if(navigator.clipboard)navigator.clipboard.writeText(\''+c[1]+'\');toast(\'✓\',\'Copied\')">'+c[1]+' <svg style="opacity:.3" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></td><td style="color:var(--t2)">'+c[2]+'</td></tr>'}).join('')+'</tbody></table></div><div class="cd" style="padding:32px"><div class="lbl" style="margin-bottom:20px">Regime Table</div><table class="ct"><thead><tr><th>Regime</th><th class="tc">S=1000</th><th class="tc">S=500</th><th class="tc">S=0</th></tr></thead><tbody>'+rg.map(function(r){return'<tr><td class="c2" style="font-family:Inter,sans-serif">'+r[0]+'</td>'+[1000,500,0].map(function(s){return'<td class="tc"><span class="co">'+f1(tR(s,r[1],r[2]))+'%</span> <span class="c3">/</span> '+(cR(s,r[2])/100).toFixed(0)+'%</td>'}).join('')+'</tr>'}).join('')+'</tbody></table></div><div class="cd" style="padding:32px"><div class="lbl" style="margin-bottom:20px">Quick Start</div><pre class="cblk">// 1. Query score\nuint256 score = identity.getScore(agent);\n\n// 2. Get terms\n(uint256 rate, uint256 coll) = lending.getTerms(\n    agent, principal, asset\n);\n\n// 3. Borrow\nlending.borrow(principal, assets, amounts);\n\n// 4. Repay (min 1hr)\nlending.repay(loanId);\n\n// 5. Score improves \u2192 better terms</pre></div><div class="cd" style="padding:32px"><div class="lbl" style="margin-bottom:20px">Parameters</div><table class="ct"><tbody>'+pp.map(function(p){return'<tr><td style="font-family:Inter,sans-serif;color:var(--t2)">'+p[0]+'</td><td class="co" style="font-weight:600">'+p[1]+'</td></tr>'}).join('')+'</tbody></table></div></div>';
+}
+
+
+
+// ═══ PARTICLES ═══
+function initParticles(){
+  var el=document.getElementById('particles');if(!el)return;
+  var colors=['#FF6A00','#34D399','#FBBF24','#FF6A00','#FF6A00'];
+  for(var i=0;i<20;i++){
+    var p=document.createElement('div');p.className='particle';
+    var size=Math.random()*3+1;
+    p.style.cssText='width:'+size+'px;height:'+size+'px;left:'+Math.random()*100+'%;background:'+colors[Math.floor(Math.random()*colors.length)]+';animation-duration:'+(Math.random()*12+8)+'s;animation-delay:'+(Math.random()*10)+'s';
+    el.appendChild(p);
+  }
+}
+initParticles();
+
+// ═══ MOUSE GLOW ON LAUNCH ═══
+document.addEventListener('mousemove',function(e){
+  var g=document.getElementById('glow');
+  if(g&&!document.getElementById('s0').classList.contains('gone')){
+    g.style.left=e.clientX+'px';g.style.top=e.clientY+'px';g.style.display='block';
+  }
+});
+
+// ═══ BUTTON RIPPLE ═══
+document.addEventListener('click',function(e){
+  var btn=e.target.closest('.ripple-btn');
+  if(!btn)return;
+  var r=document.createElement('span');r.className='ripple';
+  var rect=btn.getBoundingClientRect();
+  r.style.left=(e.clientX-rect.left)+'px';
+  r.style.top=(e.clientY-rect.top)+'px';
+  btn.appendChild(r);
+  setTimeout(function(){r.remove()},600);
+});
+
+// ═══ SCORE COUNT-UP ═══
+function animateScore(el,target,duration){
+  if(!el)return;
+  var start=0,startTime=null;
+  function step(timestamp){
+    if(!startTime)startTime=timestamp;
+    var progress=Math.min((timestamp-startTime)/duration,1);
+    var eased=1-Math.pow(1-progress,3); // ease-out cubic
+    var current=Math.floor(eased*target);
+    el.textContent=current;
+    if(progress<1)requestAnimationFrame(step);
+    else{el.textContent=target;el.classList.add('score-pop');setTimeout(function(){el.classList.remove('score-pop')},300)}
+  }
+  requestAnimationFrame(step);
+}
+
+// ═══ CONFETTI ═══
+function fireConfetti(){
+  var container=document.getElementById('confetti');
+  if(!container)return;
+  var colors=['#FF6A00','#FF8C00','#FFA033','#34D399','#FBBF24','#F87171','#fff'];
+  for(var i=0;i<60;i++){
+    var piece=document.createElement('div');
+    piece.className='confetti-piece';
+    piece.style.cssText='left:'+((Math.random()*60)+20)+'%;top:-10px;background:'+colors[Math.floor(Math.random()*colors.length)]+';animation-delay:'+(Math.random()*.8)+'s;animation-duration:'+(Math.random()*1.5+2)+'s;width:'+(Math.random()*6+4)+'px;height:'+(Math.random()*6+4)+'px;border-radius:'+(Math.random()>0.5?'50%':'2px');transform:rotate('+(Math.random()*360)+'deg)';
+    container.appendChild(piece);
+  }
+  setTimeout(function(){container.innerHTML=''},4000);
+}
+
+// ═══ SUCCESS OVERLAY ═══
+function showSuccess(label,callback){
+  var el=document.getElementById('success');
+  document.getElementById('success-label').textContent=label||'Success';
+  el.classList.add('show');
+  setTimeout(function(){el.classList.remove('show');if(callback)callback()},1800);
+}
+
+// ═══ ENHANCED DEPLOY ═══
+var _origDep=dep;
+dep=function(){
+  var n=document.getElementById('an').value.trim();
+  if(!n){document.getElementById('an').style.borderColor='var(--red)';setTimeout(function(){document.getElementById('an').style.borderColor=''},1500);return}
+  document.getElementById('dbtn').classList.add('dis');
+  var st=document.getElementById('dst');
+  var pf=document.getElementById('dpf');
+  
+  st.innerHTML='<span class="spinner"></span>Connecting to Base...';
+  pf.style.width='20%';
+  setTimeout(function(){
+    st.innerHTML='<span class="spinner"></span>Registering on SpecularIdentity...';
+    pf.style.width='55%';
+  },1200);
+  setTimeout(function(){
+    st.innerHTML='<span class="spinner"></span>Confirming...';
+    pf.style.width='85%';
+  },2400);
+  setTimeout(function(){
+    pf.style.width='100%';
+    st.innerHTML='';
+    fireConfetti();
+    role="agent";
+    AG={addr:document.getElementById('da2').textContent,nm:n,tb:0,tr:0,td:0,lc:0,al:0};
+    LN=[];
+    showSuccess('Agent Deployed',function(){
+      enter("dash");
+      // Animate the score counting up
+      setTimeout(function(){
+        var scoreEl=document.querySelector('#dg .gn');
+        if(scoreEl)animateScore(scoreEl,500,1200);
+      },600);
+    });
+  },3600);
+};
+
+// ═══ ENHANCED BORROW BUTTON ═══
+document.addEventListener('click',function(e){
+  var btn=e.target.closest('#bbtn');
+  if(!btn)return;
+  e.preventDefault();
+  showSuccess('Loan Originated');
+});
+
+// ═══ ENHANCED DEPOSIT BUTTON ═══
+document.addEventListener('click',function(e){
+  var btn=e.target;
+  if(btn.textContent==='Deposit USDC'){
+    e.preventDefault();
+    showSuccess('USDC Deposited');
+  }
+});
+
+// ═══ ANIMATE METRICS ON PAGE SWITCH ═══
+var _origNav=document.getElementById('nav').onclick;
+document.getElementById('nav').onclick=function(e){
+  var b=e.target.closest('.nb');if(!b)return;
+  _origNav.call(this,e);
+  // Animate visible metrics
+  document.querySelectorAll('.pg.on .mv, .pg.on .ms').forEach(function(el){
+    el.style.opacity='0';el.style.transform='translateY(8px)';
+    setTimeout(function(){el.style.transition='all .4s ease';el.style.opacity='1';el.style.transform='translateY(0)'},50);
+    setTimeout(function(){el.style.transition=''},500);
+  });
+};
+
+// ═══ HIDE GLOW WHEN LEAVING LAUNCH ═══
+var _origHa=ha;
+ha=function(){
+  _origHa();
+  var g=document.getElementById('glow');if(g)g.style.display='none';
+};
+
+// ═══ ANIMATE SCORE ON DASHBOARD LOAD ═══
+var _origEnter=enter;
+enter=function(pg){
+  _origEnter(pg);
+  // Count up the score in the gauge if agent
+  if((role==='agent'||role==='demo')&&sc>0){
+    setTimeout(function(){
+      var scoreEl=document.querySelector('#dg .gn');
+      if(scoreEl)animateScore(scoreEl,sc,1000);
+      // Also animate topbar score
+      var topScore=document.getElementById('tsc');
+      if(topScore)animateScore(topScore,sc,1000);
+    },400);
+  }
+};
+
+document.getElementById('an').onkeydown=function(e){if(e.key==="Enter")dep()};
+</script>
 </body>
 </html>
