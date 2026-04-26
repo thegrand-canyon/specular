@@ -7,7 +7,7 @@
 class BlockchainCache {
     constructor(options = {}) {
         this.enabled = options.enabled !== false; // Default: enabled
-        this.ttl = options.ttl || 60000; // Default: 60 seconds
+        this.ttl = options.ttl || 600000; // Default: 10 minutes (must be >= sync intervals)
 
         // Cache storage
         this.cache = {

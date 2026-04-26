@@ -193,7 +193,7 @@ function getContracts(networkKey) {
 const ENABLE_CACHE = process.env.ENABLE_CACHE !== 'false'; // Default: enabled
 const blockchainCache = new BlockchainCache({
     enabled: ENABLE_CACHE,
-    ttl: 60000 // 60 seconds
+    ttl: 600000 // 10 minutes (must be >= Arc sync interval of 5 min)
 });
 
 const syncWorker = new SyncWorker(blockchainCache, NETWORKS, getContracts, {
