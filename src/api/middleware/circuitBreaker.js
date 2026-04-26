@@ -3,6 +3,8 @@
  * Protects server from crashing due to high memory usage
  */
 
+const v8 = require('v8');
+
 class CircuitBreaker {
     constructor(options = {}) {
         this.memoryThreshold = options.memoryThreshold || 0.85; // 85% memory usage
@@ -20,7 +22,8 @@ class CircuitBreaker {
     startMonitoring() {
         setInterval(() => {
             const memUsage = process.memoryUsage();
-            const heapUsedPercent = memUsage.heapUsed / memUsage.heapTotal;
+            const heapStats = v8.getHeapStatistics();
+            const heapUsedPercent = memUsage.heapUsed / heapStats.heap_size_limit;
 
             // Open circuit if memory is too high
             if (heapUsedPercent > this.memoryThreshold) {
@@ -50,16 +53,17 @@ class CircuitBreaker {
         return (req, res, next) => {
             if (this.isOpen) {
                 const memUsage = process.memoryUsage();
+                const heapStats = v8.getHeapStatistics();
                 const heapUsedMB = (memUsage.heapUsed / 1024 / 1024).toFixed(2);
-                const heapTotalMB = (memUsage.heapTotal / 1024 / 1024).toFixed(2);
+                const heapLimitMB = (heapStats.heap_size_limit / 1024 / 1024).toFixed(2);
 
                 return res.status(503).json({
                     error: 'Service temporarily unavailable',
                     message: 'Server is under high memory pressure. Please try again in a moment.',
                     memoryUsage: {
                         used: `${heapUsedMB} MB`,
-                        total: `${heapTotalMB} MB`,
-                        percent: `${((memUsage.heapUsed / memUsage.heapTotal) * 100).toFixed(1)}%`
+                        limit: `${heapLimitMB} MB`,
+                        percent: `${((memUsage.heapUsed / heapStats.heap_size_limit) * 100).toFixed(1)}%`
                     },
                     retryAfter: Math.ceil((this.cooldownPeriod - (Date.now() - this.lastCheck)) / 1000)
                 });
@@ -70,15 +74,16 @@ class CircuitBreaker {
 
     getStatus() {
         const memUsage = process.memoryUsage();
+        const heapStats = v8.getHeapStatistics();
         return {
             isOpen: this.isOpen,
             tripCount: this.tripCount,
             memory: {
                 heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024), // MB
-                heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024), // MB
+                heapLimit: Math.round(heapStats.heap_size_limit / 1024 / 1024), // MB
                 rss: Math.round(memUsage.rss / 1024 / 1024), // MB
                 external: Math.round(memUsage.external / 1024 / 1024), // MB
-                usagePercent: ((memUsage.heapUsed / memUsage.heapTotal) * 100).toFixed(1)
+                usagePercent: ((memUsage.heapUsed / heapStats.heap_size_limit) * 100).toFixed(1)
             }
         };
     }
