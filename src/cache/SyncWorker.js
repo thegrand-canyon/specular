@@ -16,7 +16,24 @@ class SyncWorker {
         this.intervalId = null;
         this.isSyncing = false;
 
-        console.log(`⚡ SyncWorker initialized (enabled: ${this.enabled}, interval: ${this.syncInterval}ms)`);
+        // Per-network sync intervals (in milliseconds)
+        this.networkIntervals = {
+            arc: 300000,      // 5 minutes (49 agents = slow)
+            base: 60000,      // 1 minute (1 agent = fast)
+            arbitrum: 60000   // 1 minute (0 agents = fast)
+        };
+
+        // Track last sync time per network
+        this.lastSyncTime = {
+            arc: 0,
+            base: 0,
+            arbitrum: 0
+        };
+
+        // Sync timeout (3 minutes max)
+        this.syncTimeout = 180000;
+
+        console.log(`⚡ SyncWorker initialized (enabled: ${this.enabled}, intervals:`, this.networkIntervals, ')');
     }
 
     /**
@@ -33,25 +50,28 @@ class SyncWorker {
             return;
         }
 
-        console.log(`🚀 Starting SyncWorker (syncing every ${this.syncInterval / 1000}s)`);
+        console.log(`🚀 Starting SyncWorker (check interval: 30s, network intervals:`, this.networkIntervals, ')');
 
         // Run first sync immediately
         this.syncAll().catch(err => {
             console.error('❌ Initial sync failed:', err.message);
+            this.isSyncing = false; // Reset flag on error
         });
 
-        // Then sync periodically
+        // Then check for syncs periodically (every 30 seconds)
+        // Each network will only sync when its specific interval has passed
         this.intervalId = setInterval(async () => {
             if (!this.isSyncing) {
                 try {
                     await this.syncAll();
                 } catch (error) {
                     console.error('❌ Sync cycle failed:', error.message);
+                    this.isSyncing = false; // Reset flag on error
                 }
             } else {
-                console.log('⏭️  Skipping sync (previous sync still in progress)');
+                console.log('⏭️  Skipping sync check (previous sync still in progress)');
             }
-        }, this.syncInterval);
+        }, 30000); // Check every 30 seconds
 
         console.log('✅ SyncWorker started successfully');
     }
@@ -78,10 +98,30 @@ class SyncWorker {
 
         const networkKeys = Object.keys(this.networks);
         const results = [];
+        const now = Date.now();
 
         for (const networkKey of networkKeys) {
             try {
-                await this.syncNetwork(networkKey);
+                // Check if enough time has passed since last sync
+                const interval = this.networkIntervals[networkKey] || this.syncInterval;
+                const timeSinceLastSync = now - this.lastSyncTime[networkKey];
+
+                if (timeSinceLastSync < interval) {
+                    const timeRemaining = Math.ceil((interval - timeSinceLastSync) / 1000);
+                    console.log(`  ⏭️  Skipping ${networkKey} (next sync in ${timeRemaining}s)`);
+                    results.push({ network: networkKey, skipped: true });
+                    continue;
+                }
+
+                // Sync with timeout
+                await Promise.race([
+                    this.syncNetwork(networkKey),
+                    new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error(`Sync timeout after ${this.syncTimeout / 1000}s`)), this.syncTimeout)
+                    )
+                ]);
+
+                this.lastSyncTime[networkKey] = Date.now();
                 results.push({ network: networkKey, success: true });
             } catch (error) {
                 console.error(`❌ Failed to sync ${networkKey}:`, error.message);
@@ -92,8 +132,9 @@ class SyncWorker {
 
         const duration = Date.now() - startTime;
         const successCount = results.filter(r => r.success).length;
+        const skippedCount = results.filter(r => r.skipped).length;
 
-        console.log(`✅ Sync cycle complete (${successCount}/${networkKeys.length} networks, ${duration}ms)`);
+        console.log(`✅ Sync cycle complete (${successCount} synced, ${skippedCount} skipped, ${duration}ms)`);
         this.isSyncing = false;
     }
 
