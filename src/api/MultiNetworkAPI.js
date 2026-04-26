@@ -491,9 +491,6 @@ app.get('/pools', async (req, res) => {
         // Race between fetch and timeout
         const result = await Promise.race([fetchPools(), timeoutPromise]);
 
-        // Cache the result
-        poolsCache.set(cacheKey, { ...result, cached: false });
-
         res.json(result);
     } catch (error) {
         console.error('[ERROR] /pools failed:', error);
@@ -602,9 +599,6 @@ app.get('/agents', async (req, res) => {
 
         // Race between fetch and timeout
         const result = await Promise.race([fetchAgents(), timeoutPromise]);
-
-        // Cache the result (CacheManager handles size limits automatically)
-        agentsCache.set(cacheKey, { ...result, cached: false });
 
         res.json(result);
     } catch (error) {
