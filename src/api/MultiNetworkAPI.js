@@ -708,7 +708,7 @@ app.get('/agent/:id/loans', validateNetwork, async (req, res) => {
         }
 
         const agentAddress = agent.agentWallet;
-        const totalLoans = await marketplace.loanIdCounter();
+        const totalLoans = await marketplace.nextLoanId();
         const loans = [];
 
         // Get all loans involving this agent (as borrower or lender)
