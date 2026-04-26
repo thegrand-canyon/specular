@@ -23,5 +23,5 @@ ENV PORT=3001
 # Expose port
 EXPOSE 3001
 
-# Start with explicit memory allocation (512 MB)
-CMD ["node", "--max-old-space-size=512", "src/api/MultiNetworkAPI.js"]
+# Start with memory diagnostic, then run app
+CMD ["node", "--max-old-space-size=512", "check-memory.js"]
