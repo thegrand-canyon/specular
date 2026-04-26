@@ -14,6 +14,10 @@ const RequestLimiter = require('./middleware/requestLimiter');
 const CircuitBreaker = require('./middleware/circuitBreaker');
 const CacheManager = require('./middleware/cacheManager');
 
+// Import blockchain cache (NEW - Performance optimization)
+const BlockchainCache = require('../cache/BlockchainCache');
+const SyncWorker = require('../cache/SyncWorker');
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -184,6 +188,21 @@ function getContracts(networkKey) {
         network
     };
 }
+
+// Initialize blockchain cache and background sync worker
+const ENABLE_CACHE = process.env.ENABLE_CACHE !== 'false'; // Default: enabled
+const blockchainCache = new BlockchainCache({
+    enabled: ENABLE_CACHE,
+    ttl: 60000 // 60 seconds
+});
+
+const syncWorker = new SyncWorker(blockchainCache, NETWORKS, getContracts, {
+    enabled: ENABLE_CACHE,
+    syncInterval: 30000 // Sync every 30 seconds
+});
+
+// Start background sync worker
+syncWorker.start();
 
 // Routes
 
@@ -381,13 +400,31 @@ app.get('/pools', async (req, res) => {
     try {
         const networkKey = getNetwork(req);
 
-        // Check cache first
-        const cacheKey = `pools:${networkKey}`;
-        const cached = poolsCache.get(cacheKey);
-        if (cached) {
-            console.log(`[CACHE HIT] /pools?network=${networkKey}`);
-            return res.json({ ...cached, cached: true });
+        // Pagination parameters
+        const limit = Math.min(parseInt(req.query.limit) || 20, 50);
+        const offset = parseInt(req.query.offset) || 0;
+
+        // Check blockchain cache first (1-10ms response)
+        const cachedPools = blockchainCache.getPools(networkKey);
+        if (cachedPools) {
+            // Apply pagination to cached data
+            const paginatedPools = cachedPools.slice(offset, offset + limit);
+
+            return res.json({
+                network: networkKey,
+                totalPools: cachedPools.length,
+                returned: paginatedPools.length,
+                offset,
+                limit,
+                hasMore: (offset + limit) < cachedPools.length,
+                pools: paginatedPools,
+                cached: true,
+                lastSync: blockchainCache.getLastSync(networkKey)
+            });
         }
+
+        // Cache miss - fall back to direct RPC call (slower, 1-10s response)
+        console.log(`[CACHE MISS] /pools?network=${networkKey} - Fetching from RPC...`);
 
         const { marketplace, registry } = getContracts(networkKey);
 
@@ -472,23 +509,38 @@ app.get('/pools', async (req, res) => {
     }
 });
 
-// List all agents endpoint (OPTIMIZED with CacheManager)
+// List all agents endpoint (OPTIMIZED with BlockchainCache)
 app.get('/agents', async (req, res) => {
     try {
         const networkKey = getNetwork(req);
         const { registry, reputationManager, network } = getContracts(networkKey);
 
         // Pagination parameters
-        const limit = Math.min(parseInt(req.query.limit) || 25, 50); // Reduced: Max 50 per request (was 100)
+        const limit = Math.min(parseInt(req.query.limit) || 25, 50); // Max 50 per request
         const offset = parseInt(req.query.offset) || 0;
 
-        // Check cache first
-        const cacheKey = `agents:${networkKey}:${offset}:${limit}`;
-        const cached = agentsCache.get(cacheKey);
-        if (cached) {
-            console.log(`[CACHE HIT] /agents?network=${networkKey}&offset=${offset}&limit=${limit}`);
-            return res.json({ ...cached, cached: true });
+        // Check blockchain cache first (1-10ms response)
+        const cachedAgents = blockchainCache.getAgents(networkKey);
+        if (cachedAgents) {
+            // Apply pagination to cached data
+            const paginatedAgents = cachedAgents.slice(offset, offset + limit);
+
+            return res.json({
+                network: networkKey,
+                networkName: network.name,
+                totalAgents: cachedAgents.length,
+                returned: paginatedAgents.length,
+                offset,
+                limit,
+                hasMore: (offset + limit) < cachedAgents.length,
+                agents: paginatedAgents,
+                cached: true,
+                lastSync: blockchainCache.getLastSync(networkKey)
+            });
         }
+
+        // Cache miss - fall back to direct RPC call (slower, 1-10s response)
+        console.log(`[CACHE MISS] /agents?network=${networkKey} - Fetching from RPC...`);
 
         // Set timeout for this request (10 seconds)
         const timeoutPromise = new Promise((_, reject) =>
@@ -569,16 +621,31 @@ app.get('/agents', async (req, res) => {
     }
 });
 
-// Get specific pool by ID endpoint (NEW)
+// Get specific pool by ID endpoint (OPTIMIZED with BlockchainCache)
 app.get('/pools/:id', async (req, res) => {
     try {
         const networkKey = getNetwork(req);
-        const { marketplace, registry, network } = getContracts(networkKey);
         const poolId = parseInt(req.params.id);
 
         if (isNaN(poolId) || poolId <= 0) {
             return res.status(400).json({ error: 'Invalid pool ID - must be a positive integer' });
         }
+
+        // Check blockchain cache first (1-10ms response)
+        const cachedPool = blockchainCache.getPool(networkKey, poolId);
+        if (cachedPool) {
+            return res.json({
+                ...cachedPool,
+                network: networkKey,
+                cached: true,
+                lastSync: blockchainCache.getLastSync(networkKey)
+            });
+        }
+
+        // Cache miss - fall back to direct RPC call (slower, 1-10s response)
+        console.log(`[CACHE MISS] /pools/${poolId}?network=${networkKey} - Fetching from RPC...`);
+
+        const { marketplace, registry, network } = getContracts(networkKey);
 
         // Get pool data
         let pool;
@@ -630,21 +697,37 @@ app.get('/networks', (req, res) => {
     });
 });
 
-// Get agent by numeric ID (convenience endpoint)
+// Get agent by numeric ID (convenience endpoint - OPTIMIZED with BlockchainCache)
 app.get('/agent/:id', validateNetwork, async (req, res) => {
     try {
         const networkKey = getNetwork(req);
+        const agentId = Number(req.params.id);
+
+        // Check blockchain cache first (1-10ms response)
+        const cachedAgent = blockchainCache.getAgent(networkKey, agentId);
+        if (cachedAgent) {
+            return res.json({
+                ...cachedAgent,
+                network: networkKey,
+                cached: true,
+                lastSync: blockchainCache.getLastSync(networkKey)
+            });
+        }
+
+        // Cache miss - fall back to direct RPC call (slower, 1-10s response)
+        console.log(`[CACHE MISS] /agent/${agentId}?network=${networkKey} - Fetching from RPC...`);
+
         const { registry, reputationManager, marketplace } = getContracts(networkKey);
-        const agentId = BigInt(req.params.id);
+        const agentIdBigInt = BigInt(agentId);
 
         // Get agent data
-        const agent = await registry.agents(agentId);
+        const agent = await registry.agents(agentIdBigInt);
 
         if (!agent.isActive && agent.owner === ethers.ZeroAddress) {
             return res.status(404).json({
                 error: 'Agent not found',
                 network: networkKey,
-                agentId: Number(agentId)
+                agentId
             });
         }
 
@@ -659,7 +742,7 @@ app.get('/agent/:id', validateNetwork, async (req, res) => {
         for (let i = 0; i < Number(totalPools); i++) {
             try {
                 const poolAgentId = await marketplace.agentPoolIds(i);
-                if (poolAgentId === agentId) {
+                if (poolAgentId === agentIdBigInt) {
                     const pool = await marketplace.agentPools(poolAgentId);
                     if (pool.isActive) {
                         agentPools.push({
@@ -793,7 +876,9 @@ app.get('/stats', (req, res) => {
         },
         requestLimiter: requestLimiter.getStats(),
         circuitBreaker: circuitBreaker.getStatus(),
-        caches: {
+        blockchainCache: blockchainCache.getStats(),
+        cacheHealth: blockchainCache.getHealth(),
+        legacyCaches: {
             agents: agentsCache.getStats(),
             pools: poolsCache.getStats()
         }
