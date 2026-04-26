@@ -216,7 +216,7 @@ app.get('/build', (req, res) => {
 app.get('/', (req, res) => {
     res.json({
         name: 'Specular Multi-Network Agent API',
-        version: '2.2.0',
+        version: '2.3.0',
         defaultNetwork: DEFAULT_NETWORK,
         networks: Object.keys(NETWORKS),
         endpoints: {
@@ -225,11 +225,15 @@ app.get('/', (req, res) => {
             status: '/status?network={arc|base|arbitrum}',
             allAgents: '/agents?network={arc|base|arbitrum}',
             agentByAddress: '/agents/:address?network={arc|base|arbitrum}',
+            agentById: '/agent/:id?network={arc|base|arbitrum}',
+            agentLoans: '/agent/:id/loans?network={arc|base|arbitrum}',
             allPools: '/pools?network={arc|base|arbitrum}',
             poolById: '/pools/:id?network={arc|base|arbitrum}',
-            networks: '/networks',
+            allNetworks: '/networks',
+            networkInfo: '/network/:network',
             dashboard: '/dashboard',
-            build: '/build'
+            build: '/build',
+            stats: '/stats'
         },
         usage: 'Add ?network=arc, ?network=base, or ?network=arbitrum to any endpoint. Network parameter is case-insensitive. Default: ' + DEFAULT_NETWORK
     });
@@ -626,6 +630,152 @@ app.get('/networks', (req, res) => {
     });
 });
 
+// Get agent by numeric ID (convenience endpoint)
+app.get('/agent/:id', validateNetwork, async (req, res) => {
+    try {
+        const networkKey = getNetwork(req);
+        const { registry, reputationManager, marketplace } = getContracts(networkKey);
+        const agentId = BigInt(req.params.id);
+
+        // Get agent data
+        const agent = await registry.agents(agentId);
+
+        if (!agent.isActive && agent.owner === ethers.ZeroAddress) {
+            return res.status(404).json({
+                error: 'Agent not found',
+                network: networkKey,
+                agentId: Number(agentId)
+            });
+        }
+
+        const agentAddress = agent.agentWallet;
+        const score = await reputationManager['getReputationScore(address)'](agentAddress);
+        const limit = await reputationManager['calculateCreditLimit(address)'](agentAddress);
+        const interestRate = await reputationManager.calculateInterestRate(agentAddress);
+
+        // Get active pools for this agent
+        const totalPools = await marketplace.totalPools();
+        const agentPools = [];
+        for (let i = 0; i < Number(totalPools); i++) {
+            try {
+                const poolAgentId = await marketplace.agentPoolIds(i);
+                if (poolAgentId === agentId) {
+                    const pool = await marketplace.agentPools(poolAgentId);
+                    if (pool.isActive) {
+                        agentPools.push({
+                            poolId: i + 1,
+                            liquidity: Number(ethers.formatUnits(pool.totalLiquidity, 6)),
+                            available: Number(ethers.formatUnits(pool.availableLiquidity, 6))
+                        });
+                    }
+                }
+            } catch (e) {}
+        }
+
+        res.json({
+            network: networkKey,
+            agentId: Number(agentId),
+            owner: agent.owner,
+            agentWallet: agent.agentWallet,
+            agentURI: agent.agentURI,
+            reputationScore: Number(score),
+            creditLimit: Number(ethers.formatUnits(limit, 6)),
+            interestRate: Number(interestRate) / 100,
+            registrationTime: Number(agent.registrationTime),
+            isActive: agent.isActive,
+            pools: agentPools
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get loan history for an agent by ID
+app.get('/agent/:id/loans', validateNetwork, async (req, res) => {
+    try {
+        const networkKey = getNetwork(req);
+        const { registry, marketplace } = getContracts(networkKey);
+        const agentId = BigInt(req.params.id);
+
+        // Verify agent exists
+        const agent = await registry.agents(agentId);
+        if (!agent.isActive && agent.owner === ethers.ZeroAddress) {
+            return res.status(404).json({
+                error: 'Agent not found',
+                network: networkKey,
+                agentId: Number(agentId)
+            });
+        }
+
+        const agentAddress = agent.agentWallet;
+        const totalLoans = await marketplace.loanIdCounter();
+        const loans = [];
+
+        // Get all loans involving this agent (as borrower or lender)
+        for (let i = 1n; i <= totalLoans; i++) {
+            try {
+                const loan = await marketplace.loans(i);
+
+                // Check if this agent is involved (as borrower)
+                if (loan.borrower.toLowerCase() === agentAddress.toLowerCase()) {
+                    loans.push({
+                        loanId: Number(i),
+                        borrower: loan.borrower,
+                        lender: loan.lender,
+                        amount: Number(ethers.formatUnits(loan.amount, 6)),
+                        interestRate: Number(loan.interestRate) / 100,
+                        duration: Number(loan.duration),
+                        startTime: Number(loan.startTime),
+                        endTime: Number(loan.endTime),
+                        repaid: loan.repaid,
+                        defaulted: loan.defaulted,
+                        role: 'borrower'
+                    });
+                }
+            } catch (e) {
+                // Loan might not exist
+            }
+        }
+
+        res.json({
+            network: networkKey,
+            agentId: Number(agentId),
+            agentWallet: agentAddress,
+            totalLoans: loans.length,
+            loans: loans.sort((a, b) => b.startTime - a.startTime) // Most recent first
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get specific network info
+app.get('/network/:network', (req, res) => {
+    const networkKey = req.params.network.toLowerCase();
+    const network = NETWORKS[networkKey];
+
+    if (!network) {
+        return res.status(404).json({
+            error: `Network not found: ${req.params.network}`,
+            availableNetworks: Object.keys(NETWORKS)
+        });
+    }
+
+    res.json({
+        key: networkKey,
+        name: network.name,
+        chainId: network.chainId,
+        rpcUrl: network.rpcUrl,
+        explorer: network.explorer,
+        contracts: {
+            agentRegistryV2: network.addresses.agentRegistryV2,
+            agentLiquidityMarketplace: network.addresses.agentLiquidityMarketplace,
+            reputationManagerV3: network.addresses.reputationManagerV3,
+            usdc: network.addresses.usdc
+        }
+    });
+});
+
 // Monitoring/stats endpoint
 app.get('/stats', (req, res) => {
     const memUsage = process.memoryUsage();
@@ -668,9 +818,12 @@ app.listen(PORT, () => {
     console.log(`   - GET /status?network=arc|base|arbitrum`);
     console.log(`   - GET /agents?network=arc|base|arbitrum - List all agents`);
     console.log(`   - GET /agents/:address?network=arc|base|arbitrum - Get agent by address`);
+    console.log(`   - GET /agent/:id?network=arc|base|arbitrum - Get agent by numeric ID`);
+    console.log(`   - GET /agent/:id/loans?network=arc|base|arbitrum - Get agent loan history`);
     console.log(`   - GET /pools?network=arc|base|arbitrum - List all pools`);
     console.log(`   - GET /pools/:id?network=arc|base|arbitrum - Get pool by ID`);
     console.log(`   - GET /networks - List all networks`);
+    console.log(`   - GET /network/:network - Get specific network info`);
     console.log(`   - GET /stats - Server performance metrics`);
     console.log(`   - GET /dashboard - Web dashboard`);
 
