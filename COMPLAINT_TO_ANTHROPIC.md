@@ -36,7 +36,7 @@ This is a **critical security failure** that should never occur when using AI co
 
 ### Compromised Information
 
-**Exposed Private Key:** `0x4fd4d9c9340c0dcd1f4845483e488afde4c69685f9ff5deec756fbfc1afb02ac`
+**Exposed Private Key:** `0x4fd4d9c9...` (masked - this key was compromised and drained)
 **Associated Wallet:** `0x656086A21073272533c8A3f56A94c1f3D8BCFcE2`
 **Exposure Location:** 47+ files in repository
 **Git Commits:** 48+ commits containing exposed key
@@ -101,7 +101,7 @@ if (!PRIVATE_KEY) {
 }
 
 // WRONG (what Claude Code did):
-const PRIVATE_KEY = '0x4fd4d9c9340c0dcd1f4845483e488afde4c69685f9ff5deec756fbfc1afb02ac';
+const PRIVATE_KEY = '0x4fd4d9c9...'; // Compromised key - masked for security
 ```
 
 **Before GitHub push:**
