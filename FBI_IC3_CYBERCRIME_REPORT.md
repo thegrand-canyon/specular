@@ -88,7 +88,7 @@ I am reporting the theft of $327 in USDC cryptocurrency from my digital wallet. 
 
 **Suspect Identity:** Unknown
 **Known Information:**
-- Has access to private key: 0x4fd4d9c9340c0dcd1f4845483e488afde4c69685f9ff5deec756fbfc1afb02ac
+- Has access to private key: 0x4fd4d9c9... (masked - compromised key)
 - Controls wallet: 0x656086A21073272533c8A3f56A94c1f3D8BCFcE2
 - Operates automated bots that scan GitHub for exposed keys
 - Has sent 61 transactions from compromised wallet

@@ -13,7 +13,7 @@ A private key was inadvertently exposed in the Specular Protocol codebase, leadi
 ## Compromised Wallet
 
 **Address:** `0x656086A21073272533c8A3f56A94c1f3D8BCFcE2`
-**Private Key:** `0x4fd4d9c9340c0dcd1f4845483e488afde4c69685f9ff5deec756fbfc1afb02ac` (COMPROMISED - DO NOT USE)
+**Private Key:** `0x4fd4d9c9...` (masked - COMPROMISED - DO NOT USE)
 
 ## Timeline of Events
 

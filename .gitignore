@@ -21,3 +21,7 @@ cache-*
 *private-key*
 arc-test-agents.json
 patient-test-results.json
+test-agents.json
+fresh-agents-config.json
+*-agents-config.json
+*-agents.json
