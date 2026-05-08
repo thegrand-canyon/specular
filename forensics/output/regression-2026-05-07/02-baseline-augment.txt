@@ -1,0 +1,116 @@
+
+======================================================================
+  ARC AUGMENTATION
+======================================================================
+
+[A] Pause + owner
+  paused(): false
+  owner(): 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+
+[B] Bytecode keccak hash
+  keccak: 0x6c5b78377df3aa1ed87d8f26985c3bab893f40afc91096e2e1b293f85c5d6048
+  len:    9254 bytes
+
+[C] §B1 duplicate poolLenders enumeration
+  pool agentId=43: 3 entries, 2 unique, dups=0x656086a2...×2
+  pools with duplicate entries: 1 / 47
+  total entries: 45, unique: 44, dup overhead: 1
+
+[D] §S5 agentLoans depth on known high-volume agents
+  scanned 94 wallets
+    0x656086a21073272533c8a3f56a94c1f3d8bcfce2 → 777 loans
+    0x6df560f9dffb9bd97c4ac208ffa5a162d4c03035 → 279 loans
+    0xd0a1761bd207c12ef63253943417e64a78d3895a → 268 loans
+    0xa0983956484d74af695aae4fb5b1b90914415f37 → 268 loans
+    0xd673e66bf1c3bf696d88a147cfddc17aab7c9f8a → 140 loans
+    0x05e7092f2e3b303499783260db72786a0788fb80 → 135 loans
+    0x96b5d3e4b05013d1d56581dad6c6abfbdf9d2ebd → 10 loans
+    0x30e57e9a9857bf2e409d3764a8183cd9c06d23c0 → 10 loans
+    0xf408ecbd8fc97ece90f11ed927999556d2ee306d → 10 loans
+    0x4bc2a7c0c689671487246e3c89b517826683fda7 → 10 loans
+
+[E] Per-pool lender positions (top by earnedInterest)
+  pool 12: error server response 410 Gone (request={  }, response={  }, error=null, info={ "requestUrl": "https://arc-testnet.drpc.org", "responseBody": "{\"id\":1417,\"jsonrpc\":\"2.0\",\"error\":{\"message\":\"GRPC Context cancellation\",\"code\":14}}", "responseStatus": "410 Gone" }, code=SERVER_ERROR, version=6.16.0)
+  pool 13: error server response 410 Gone (request={  }, response={  }, error=null, info={ "requestUrl": "https://arc-testnet.drpc.org", "responseBody": "{\"id\":1420,\"jsonrpc\":\"2.0\",\"error\":{\"message\":\"GRPC Context cancellation\",\"code\":14}}", "responseStatus": "410 Gone" }, code=SERVER_ERROR, version=6.16.0)
+  pool 14: error server response 410 Gone (request={  }, response={  }, error=null, info={ "requestUrl": "https://arc-testnet.drpc.org", "responseBody": "{\"id\":1422,\"jsonrpc\":\"2.0\",\"error\":{\"message\":\"GRPC Context cancellation\",\"code\":14}}", "responseStatus": "410 Gone" }, code=SERVER_ERROR, version=6.16.0)
+  pool 15: error server response 410 Gone (request={  }, response={  }, error=null, info={ "requestUrl": "https://arc-testnet.drpc.org", "responseBody": "{\"id\":1425,\"jsonrpc\":\"2.0\",\"error\":{\"message\":\"GRPC Context cancellation\",\"code\":14}}", "responseStatus": "410 Gone" }, code=SERVER_ERROR, version=6.16.0)
+  pool 16: error server response 410 Gone (request={  }, response={  }, error=null, info={ "requestUrl": "https://arc-testnet.drpc.org", "responseBody": "{\"id\":1427,\"jsonrpc\":\"2.0\",\"error\":{\"message\":\"GRPC Context cancellation\",\"code\":14}}", "responseStatus": "410 Gone" }, code=SERVER_ERROR, version=6.16.0)
+  pool 17: error server response 410 Gone (request={  }, response={  }, error=null, info={ "requestUrl": "https://arc-testnet.drpc.org", "responseBody": "{\"id\":1432,\"jsonrpc\":\"2.0\",\"error\":{\"message\":\"GRPC Context cancellation\",\"code\":14}}", "responseStatus": "410 Gone" }, code=SERVER_ERROR, version=6.16.0)
+  pool 18: error server response 410 Gone (request={  }, response={  }, error=null, info={ "requestUrl": "https://arc-testnet.drpc.org", "responseBody": "{\"id\":1433,\"jsonrpc\":\"2.0\",\"error\":{\"message\":\"GRPC Context cancellation\",\"code\":14}}", "responseStatus": "410 Gone" }, code=SERVER_ERROR, version=6.16.0)
+  pool 19: error server response 410 Gone (request={  }, response={  }, error=null, info={ "requestUrl": "https://arc-testnet.drpc.org", "responseBody": "{\"id\":1437,\"jsonrpc\":\"2.0\",\"error\":{\"message\":\"GRPC Context cancellation\",\"code\":14}}", "responseStatus": "410 Gone" }, code=SERVER_ERROR, version=6.16.0)
+  pool 20: error server response 410 Gone (request={  }, response={  }, error=null, info={ "requestUrl": "https://arc-testnet.drpc.org", "responseBody": "{\"id\":1443,\"jsonrpc\":\"2.0\",\"error\":{\"message\":\"GRPC Context cancellation\",\"code\":14}}", "responseStatus": "410 Gone" }, code=SERVER_ERROR, version=6.16.0)
+  pool 22: error server response 410 Gone (request={  }, response={  }, error=null, info={ "requestUrl": "https://arc-testnet.drpc.org", "responseBody": "{\"id\":1458,\"jsonrpc\":\"2.0\",\"error\":{\"message\":\"GRPC Context cancellation\",\"code\":14}}", "responseStatus": "410 Gone" }, code=SERVER_ERROR, version=6.16.0)
+  pool 23: error server response 410 Gone (request={  }, response={  }, error=null, info={ "requestUrl": "https://arc-testnet.drpc.org", "responseBody": "{\"id\":1462,\"jsonrpc\":\"2.0\",\"error\":{\"message\":\"GRPC Context cancellation\",\"code\":14}}", "responseStatus": "410 Gone" }, code=SERVER_ERROR, version=6.16.0)
+  pool 24: error server response 410 Gone (request={  }, response={  }, error=null, info={ "requestUrl": "https://arc-testnet.drpc.org", "responseBody": "{\"id\":1464,\"jsonrpc\":\"2.0\",\"error\":{\"message\":\"GRPC Context cancellation\",\"code\":14}}", "responseStatus": "410 Gone" }, code=SERVER_ERROR, version=6.16.0)
+  pool 25: error server response 410 Gone (request={  }, response={  }, error=null, info={ "requestUrl": "https://arc-testnet.drpc.org", "responseBody": "{\"id\":1471,\"jsonrpc\":\"2.0\",\"error\":{\"message\":\"GRPC Context cancellation\",\"code\":14}}", "responseStatus": "410 Gone" }, code=SERVER_ERROR, version=6.16.0)
+  pool 26: error server response 410 Gone (request={  }, response={  }, error=null, info={ "requestUrl": "https://arc-testnet.drpc.org", "responseBody": "{\"id\":1473,\"jsonrpc\":\"2.0\",\"error\":{\"message\":\"GRPC Context cancellation\",\"code\":14}}", "responseStatus": "410 Gone" }, code=SERVER_ERROR, version=6.16.0)
+  pool 27: error server response 410 Gone (request={  }, response={  }, error=null, info={ "requestUrl": "https://arc-testnet.drpc.org", "responseBody": "{\"id\":1474,\"jsonrpc\":\"2.0\",\"error\":{\"message\":\"GRPC Context cancellation\",\"code\":14}}", "responseStatus": "410 Gone" }, code=SERVER_ERROR, version=6.16.0)
+  pool 28: error server response 410 Gone (request={  }, response={  }, error=null, info={ "requestUrl": "https://arc-testnet.drpc.org", "responseBody": "{\"id\":1480,\"jsonrpc\":\"2.0\",\"error\":{\"message\":\"GRPC Context cancellation\",\"code\":14}}", "responseStatus": "410 Gone" }, code=SERVER_ERROR, version=6.16.0)
+  pool 29: error server response 410 Gone (request={  }, response={  }, error=null, info={ "requestUrl": "https://arc-testnet.drpc.org", "responseBody": "{\"id\":1486,\"jsonrpc\":\"2.0\",\"error\":{\"message\":\"GRPC Context cancellation\",\"code\":14}}", "responseStatus": "410 Gone" }, code=SERVER_ERROR, version=6.16.0)
+  pool 30: error server response 410 Gone (request={  }, response={  }, error=null, info={ "requestUrl": "https://arc-testnet.drpc.org", "responseBody": "{\"id\":1488,\"jsonrpc\":\"2.0\",\"error\":{\"message\":\"GRPC Context cancellation\",\"code\":14}}", "responseStatus": "410 Gone" }, code=SERVER_ERROR, version=6.16.0)
+  pool 31: error server response 410 Gone (request={  }, response={  }, error=null, info={ "requestUrl": "https://arc-testnet.drpc.org", "responseBody": "{\"id\":1489,\"jsonrpc\":\"2.0\",\"error\":{\"message\":\"GRPC Context cancellation\",\"code\":14}}", "responseStatus": "410 Gone" }, code=SERVER_ERROR, version=6.16.0)
+  pool 32: error server response 410 Gone (request={  }, response={  }, error=null, info={ "requestUrl": "https://arc-testnet.drpc.org", "responseBody": "{\"id\":1491,\"jsonrpc\":\"2.0\",\"error\":{\"message\":\"GRPC Context cancellation\",\"code\":14}}", "responseStatus": "410 Gone" }, code=SERVER_ERROR, version=6.16.0)
+  pool 33: error server response 410 Gone (request={  }, response={  }, error=null, info={ "requestUrl": "https://arc-testnet.drpc.org", "responseBody": "{\"id\":1495,\"jsonrpc\":\"2.0\",\"error\":{\"message\":\"GRPC Context cancellation\",\"code\":14}}", "responseStatus": "410 Gone" }, code=SERVER_ERROR, version=6.16.0)
+  pool 34: error server response 410 Gone (request={  }, response={  }, error=null, info={ "requestUrl": "https://arc-testnet.drpc.org", "responseBody": "{\"id\":1498,\"jsonrpc\":\"2.0\",\"error\":{\"message\":\"GRPC Context cancellation\",\"code\":14}}", "responseStatus": "410 Gone" }, code=SERVER_ERROR, version=6.16.0)
+  pool 35: error server response 410 Gone (request={  }, response={  }, error=null, info={ "requestUrl": "https://arc-testnet.drpc.org", "responseBody": "{\"id\":1501,\"jsonrpc\":\"2.0\",\"error\":{\"message\":\"GRPC Context cancellation\",\"code\":14}}", "responseStatus": "410 Gone" }, code=SERVER_ERROR, version=6.16.0)
+  pool 36: error server response 410 Gone (request={  }, response={  }, error=null, info={ "requestUrl": "https://arc-testnet.drpc.org", "responseBody": "{\"id\":1503,\"jsonrpc\":\"2.0\",\"error\":{\"message\":\"GRPC Context cancellation\",\"code\":14}}", "responseStatus": "410 Gone" }, code=SERVER_ERROR, version=6.16.0)
+  pool 37: error server response 410 Gone (request={  }, response={  }, error=null, info={ "requestUrl": "https://arc-testnet.drpc.org", "responseBody": "{\"id\":1507,\"jsonrpc\":\"2.0\",\"error\":{\"message\":\"GRPC Context cancellation\",\"code\":14}}", "responseStatus": "410 Gone" }, code=SERVER_ERROR, version=6.16.0)
+  pool 38: error server response 410 Gone (request={  }, response={  }, error=null, info={ "requestUrl": "https://arc-testnet.drpc.org", "responseBody": "{\"id\":1508,\"jsonrpc\":\"2.0\",\"error\":{\"message\":\"GRPC Context cancellation\",\"code\":14}}", "responseStatus": "410 Gone" }, code=SERVER_ERROR, version=6.16.0)
+  pool 39: error server response 410 Gone (request={  }, response={  }, error=null, info={ "requestUrl": "https://arc-testnet.drpc.org", "responseBody": "{\"id\":1513,\"jsonrpc\":\"2.0\",\"error\":{\"message\":\"GRPC Context cancellation\",\"code\":14}}", "responseStatus": "410 Gone" }, code=SERVER_ERROR, version=6.16.0)
+  pool 40: error server response 410 Gone (request={  }, response={  }, error=null, info={ "requestUrl": "https://arc-testnet.drpc.org", "responseBody": "{\"id\":1514,\"jsonrpc\":\"2.0\",\"error\":{\"message\":\"GRPC Context cancellation\",\"code\":14}}", "responseStatus": "410 Gone" }, code=SERVER_ERROR, version=6.16.0)
+  pool 41: error server response 410 Gone (request={  }, response={  }, error=null, info={ "requestUrl": "https://arc-testnet.drpc.org", "responseBody": "{\"id\":1519,\"jsonrpc\":\"2.0\",\"error\":{\"message\":\"GRPC Context cancellation\",\"code\":14}}", "responseStatus": "410 Gone" }, code=SERVER_ERROR, version=6.16.0)
+  pool 42: error server response 410 Gone (request={  }, response={  }, error=null, info={ "requestUrl": "https://arc-testnet.drpc.org", "responseBody": "{\"id\":1523,\"jsonrpc\":\"2.0\",\"error\":{\"message\":\"GRPC Context cancellation\",\"code\":14}}", "responseStatus": "410 Gone" }, code=SERVER_ERROR, version=6.16.0)
+  pool 43: error server response 410 Gone (request={  }, response={  }, error=null, info={ "requestUrl": "https://arc-testnet.drpc.org", "responseBody": "{\"id\":1525,\"jsonrpc\":\"2.0\",\"error\":{\"message\":\"GRPC Context cancellation\",\"code\":14}}", "responseStatus": "410 Gone" }, code=SERVER_ERROR, version=6.16.0)
+  pool 44: error server response 410 Gone (request={  }, response={  }, error=null, info={ "requestUrl": "https://arc-testnet.drpc.org", "responseBody": "{\"id\":1526,\"jsonrpc\":\"2.0\",\"error\":{\"message\":\"GRPC Context cancellation\",\"code\":14}}", "responseStatus": "410 Gone" }, code=SERVER_ERROR, version=6.16.0)
+  pool 45: error server response 410 Gone (request={  }, response={  }, error=null, info={ "requestUrl": "https://arc-testnet.drpc.org", "responseBody": "{\"id\":1532,\"jsonrpc\":\"2.0\",\"error\":{\"message\":\"GRPC Context cancellation\",\"code\":14}}", "responseStatus": "410 Gone" }, code=SERVER_ERROR, version=6.16.0)
+  pool 46: error server response 410 Gone (request={  }, response={  }, error=null, info={ "requestUrl": "https://arc-testnet.drpc.org", "responseBody": "{\"id\":1533,\"jsonrpc\":\"2.0\",\"error\":{\"message\":\"GRPC Context cancellation\",\"code\":14}}", "responseStatus": "410 Gone" }, code=SERVER_ERROR, version=6.16.0)
+  top earnedInterest positions:
+    pool 44 / 0xd673e66b... → 22.936141 USDC
+    pool 5 / 0x05e7092f... → 14.170581 USDC
+    pool 45 / 0x6df560f9... → 7.157983 USDC
+    pool 47 / 0xa0983956... → 7.120009 USDC
+    pool 46 / 0xd0a1761b... → 7.101022 USDC
+    pool 43 / 0xd673e66b... → 6.221853 USDC
+    pool 64 / 0xc9af8de0... → 0.427190 USDC
+    pool 53 / 0xba76fa98... → 0.085440 USDC
+    pool 43 / 0x656086a2... → 0.028978 USDC
+    pool 43 / 0x656086a2... → 0.028978 USDC
+
+======================================================================
+  BASE AUGMENTATION
+======================================================================
+
+[A] Pause + owner
+  paused(): false
+  owner(): 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+
+[B] Bytecode keccak hash
+  keccak: 0x95b0d1ac40336b9fbaa7040dd9b1f5120c18d70b7e3ffff17a70c76f69c750c7
+  len:    9254 bytes
+
+[C] §B1 duplicate poolLenders enumeration
+  pool agentId=1: 2 entries, 1 unique, dups=0x800e305a...×2
+  pools with duplicate entries: 1 / 1
+  total entries: 2, unique: 1, dup overhead: 1
+
+[D] §S5 agentLoans depth on known high-volume agents
+  scanned 3 wallets
+    0x800e305a0cadde6289dfdfedf38218f45c06f72c → 4 loans
+
+[E] Per-pool lender positions (top by earnedInterest)
+  (no positions with earnedInterest > 0)
+
+======================================================================
+  CROSS-NETWORK SUMMARY
+======================================================================
+                                Arc                    Base
+  paused()                    : false                  false
+  owner()                     : 0x800e305A0caDdE6289dF 0x800e305A0caDdE6289dF
+  totalPools                  : 47                     1
+  pools w/ dup poolLenders    : 1                      1
+  dup overhead (entries-uniq) : 1                      1
+  bytecode keccak             : 0x6c5b78377df3aa1ed87d 0x95b0d1ac40336b9fbaa7
+  bytecode len                : 9254                   9254
+  max agentLoans depth        : 777                    4
+
+Saved: ./forensics/output/regression-2026-05-07/02-baseline-augment.json

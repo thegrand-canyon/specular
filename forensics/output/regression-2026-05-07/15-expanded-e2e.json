@@ -1,0 +1,121 @@
+{
+  "generatedAt": "2026-05-07T19:53:22.661Z",
+  "duration_tests": [
+    {
+      "durationDays": 0,
+      "result": "revert",
+      "msg": "execution reverted: \"Invalid duration\""
+    },
+    {
+      "durationDays": 1,
+      "result": "revert",
+      "msg": "execution reverted: \"Invalid duration\""
+    },
+    {
+      "durationDays": 6,
+      "result": "revert",
+      "msg": "execution reverted: \"Invalid duration\""
+    },
+    {
+      "durationDays": 7,
+      "result": "would_succeed"
+    },
+    {
+      "durationDays": 8,
+      "result": "would_succeed"
+    },
+    {
+      "durationDays": 30,
+      "result": "would_succeed"
+    },
+    {
+      "durationDays": 100,
+      "result": "would_succeed"
+    },
+    {
+      "durationDays": 365,
+      "result": "would_succeed"
+    },
+    {
+      "durationDays": 366,
+      "result": "revert",
+      "msg": "execution reverted: \"Invalid duration\""
+    },
+    {
+      "durationDays": 1000,
+      "result": "revert",
+      "msg": "execution reverted: \"Invalid duration\""
+    },
+    {
+      "durationDays": 86400,
+      "result": "revert",
+      "msg": "execution reverted: \"Invalid duration\""
+    },
+    {
+      "durationDays": 604800,
+      "result": "revert",
+      "msg": "execution reverted: \"Invalid duration\""
+    }
+  ],
+  "liquidate_preflight": [
+    {
+      "id": 2,
+      "state": 1,
+      "endTime": 1778526609,
+      "remaining": 343002,
+      "action": "wait",
+      "reason": "95.28h remaining",
+      "staticCallResult": "execution reverted: \"Loan not overdue\""
+    },
+    {
+      "id": 3,
+      "state": 1,
+      "endTime": 1778526615,
+      "remaining": 343008,
+      "action": "wait",
+      "reason": "95.28h remaining",
+      "staticCallResult": "execution reverted: \"Loan not overdue\""
+    },
+    {
+      "id": 4,
+      "state": 1,
+      "endTime": 1778526629,
+      "remaining": 343022,
+      "action": "wait",
+      "reason": "95.28h remaining",
+      "staticCallResult": "execution reverted: \"Loan not overdue\""
+    }
+  ],
+  "state_snapshot": {
+    "arc_pool_49": {
+      "totalLiq": 0,
+      "avail": 0.008544,
+      "totalEarned": 0.008544,
+      "lenderCount": 2,
+      "poolLenders": [
+        "0x800e305a0cadde6289dfdfedf38218f45c06f72c",
+        "0x800e305a0cadde6289dfdfedf38218f45c06f72c"
+      ],
+      "myPosition": {
+        "supplied": 0,
+        "earnedInt": 0
+      },
+      "sigma_phantom": 0.008544
+    },
+    "base_pool_1": {
+      "totalLiq": 1.5,
+      "avail": 1.200002,
+      "totalEarned": 0.000002,
+      "lenderCount": 2,
+      "poolLenders": [
+        "0x800e305a0cadde6289dfdfedf38218f45c06f72c",
+        "0x800e305a0cadde6289dfdfedf38218f45c06f72c"
+      ],
+      "myPosition": {
+        "supplied": 1.5,
+        "earnedInt": 0
+      },
+      "duplicate_count": 1
+    }
+  }
+}

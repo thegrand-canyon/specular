@@ -1,0 +1,38 @@
+
+===== A. §S5 LIVE GAS MEASUREMENT (Arc) =====
+  agent 43 (777 loans): 3939066 gas
+  agent ?? (279 loans): estimate failed — bad address checksum
+  agent ?? (268 loans): estimate failed — bad address checksum
+  agent ?? (268 loans): estimate failed — bad address checksum
+  agent ?? (140 loans): estimate failed — bad address checksum
+  → top agent has 26060934 gas headroom = 5665 more loans before DoS
+
+===== B. §S1 CUMULATIVE LEAK PROJECTION (Arc) =====
+  Σ unclaimed interest: 74.865743 USDC across 40 lenders
+  if all claimInterest: pool.availableLiquidity overstated by 74.865743 USDC
+  Top 5 by exposure:
+    pool 44 / 0xd673e66B... → 22.936141 USDC
+    pool 5 / 0x05E7092f... → 14.170581 USDC
+    pool 45 / 0x6Df560f9... → 7.157983 USDC
+    pool 47 / 0xa0983956... → 7.120009 USDC
+    pool 46 / 0xd0A1761b... → 7.101022 USDC
+
+===== C. §B1 PANIC EVIDENCE — Base loans 2/3/4 already proven =====
+
+===== D. DURATION FOOTGUN VERIFICATION (Arc) =====
+  durationDays=7: revert — execution reverted: "Insufficient pool liquidity"
+  durationDays=6: revert — execution reverted: "Insufficient pool liquidity"
+  durationDays=366: revert — execution reverted: "Insufficient pool liquidity"
+  durationDays=604800: revert — execution reverted: "Insufficient pool liquidity"
+  durationDays=86400: revert — execution reverted: "Insufficient pool liquidity"
+  durationDays=30: revert — execution reverted: "Insufficient pool liquidity"
+
+===== E. FUNCTION SELECTOR DIFF (Arc vs Base bytecode) =====
+  Arc PUSH4 selectors: 73, Base: 73
+  Intersection: 73
+  Only-Arc selectors (0): []
+  Only-Base selectors (0): []
+  Only-Arc named:  (none in ABI)
+  Only-Base named: (none in ABI)
+
+Saved: ./forensics/output/regression-2026-05-07/11-new-scenarios.json

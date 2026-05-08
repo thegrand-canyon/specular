@@ -1,0 +1,37 @@
+Wallet: 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+V6: 0xCeF77E14dB17aE0272510ddbDa97075e7Eb6EbF3
+approved 5 USDC
+pool avail before: 0
+supplying 1.2 USDC to seed pool
+
+=== Phase A: 10 sequential loans, gas measurement ===
+  loan 1/10  activeBefore=0  estGas=412413
+  loan 2/10  activeBefore=1  estGas=377805
+  loan 3/10  activeBefore=2  estGas=377805
+  loan 4/10  activeBefore=3  estGas=377805
+  loan 5/10  activeBefore=4  estGas=377805
+  loan 6/10  activeBefore=5  estGas=377805
+  loan 7/10  activeBefore=6  estGas=377805
+  loan 8/10  activeBefore=7  estGas=377805
+  loan 9/10  activeBefore=8  estGas=377805
+  loan 10/10  activeBefore=9  estGas=377805
+
+=== Phase B: 11th loan attempt — should revert ===
+  activeLoanCount: 10
+  ✅ revert: execution reverted: "Too many active loans"
+  ✅ MAX_ACTIVE_LOANS=10 cap correctly enforced
+
+=== Phase C: repay 1 loan, then re-test cap ===
+  activeLoanCount after repay: 9
+  ✅ static-call would succeed — cap correctly recomputed via O(1) counter
+
+=== Phase D: gas analysis ===
+  loan 1 gas: 399505
+  loan 10 gas: 365305
+  ratio: 0.914× ✅ acceptable (no O(N) growth)
+
+=== Phase E: cleanup — repay remaining loans ===
+  cleanup done. activeLoanCount: 0
+withdrew 1.2 USDC
+
+Saved.

@@ -1,0 +1,270 @@
+--- contracts/core/AgentLiquidityMarketplace.sol	2026-03-23 18:36:31
++++ contracts/core/AgentLiquidityMarketplaceV6.sol	2026-05-07 13:03:31
+@@ -10,11 +10,25 @@
+ import "./ReputationManagerV3.sol";
+ 
+ /**
+- * @title AgentLiquidityMarketplace
+- * @notice P2P lending marketplace where users can supply liquidity to specific agents
+- * @dev Allows direct agent funding instead of pooled liquidity
++ * @title AgentLiquidityMarketplaceV6
++ * @notice P2P lending marketplace — v6 with §B1, §S1, §S5 fixes + migration helpers.
++ * @dev Drop-in successor to v4. Storage layout intentionally NOT compatible — fresh deploy + migrate.
++ *
++ * Fixes vs v4:
++ *   §B1 — `isInPoolLenders` flag prevents duplicate poolLenders entries on supply→withdraw→supply.
++ *         Added `compactPoolLenders(agentId)` admin to dedup any state seeded from v4.
++ *   §S1 — `claimInterest` decrements `pool.availableLiquidity` to match the USDC leaving the contract.
++ *   §S5 — `activeLoanCount` mapping replaces `_countActiveLoans` array walk (O(N) → O(1)).
++ *
++ * Admin migration helpers (owner-only, locked once setMigrationFinalized() called):
++ *   - `seedPool(agentId, agentAddress, totalLiquidity, availableLiquidity, totalEarned)`
++ *   - `seedPosition(agentId, lender, amount, earnedInterest, depositTimestamp)`
++ *   - `compactPoolLenders(agentId)` — dedup any state seeded from v4
++ *   - `setMigrationFinalized()` — irreversibly disables seed* and unlocks normal operation
++ *
++ * NOT independently audited. Do not deploy to Base mainnet without external review.
+  */
+-contract AgentLiquidityMarketplace is Ownable, ReentrancyGuard, Pausable {
++contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
+     using SafeERC20 for IERC20;
+ 
+     // State variables
+@@ -75,12 +89,21 @@
+     // Discovery: ordered list of all agent IDs that have created pools
+     uint256[] public agentPoolIds;
+ 
++    // §S5 fix: O(1) active-loan counter — replaces _countActiveLoans array walk
++    mapping(address => uint256) public activeLoanCount;
++
++    // §B1 fix: presence flag — gates poolLenders.push(), prevents duplicate entries
++    mapping(uint256 => mapping(address => bool)) public isInPoolLenders;
++
++    // Migration phase — owner can seed* state until finalized; irreversible after finalization
++    bool public migrationFinalized;
++
+     // Constants
+     uint256 public constant MAX_INTEREST_RATE = 2000; // 20% max
+     uint256 public constant MIN_LOAN_DURATION = 7 days;
+     uint256 public constant MAX_LOAN_DURATION = 365 days;
+     // [H-04 mitigation] Cap lenders per pool to bound _distributeInterest gas cost
+-    uint256 public constant MAX_LENDERS_PER_POOL = 200;
++    uint256 public constant MAX_LENDERS_PER_POOL = 50;
+     // [SECURITY-01] Limit concurrent active loans per agent to prevent credit limit bypass
+     uint256 public constant MAX_ACTIVE_LOANS_PER_AGENT = 10;
+ 
+@@ -93,6 +116,11 @@
+     event LoanRepaid(uint256 indexed loanId, uint256 principal, uint256 interest);
+     event LoanDefaulted(uint256 indexed loanId);
+     event InterestDistributed(uint256 indexed agentId, uint256 totalInterest);
++    event InterestClaimed(uint256 indexed agentId, address indexed lender, uint256 amount);
++    event PoolLendersCompacted(uint256 indexed agentId, uint256 removed);
++    event MigrationFinalized();
++    event PoolSeeded(uint256 indexed agentId, address indexed agentAddress);
++    event PositionSeeded(uint256 indexed agentId, address indexed lender, uint256 amount, uint256 earnedInterest);
+ 
+     constructor(
+         address _agentRegistry,
+@@ -151,14 +179,15 @@
+         pool.totalLiquidity += amount;
+         pool.availableLiquidity += amount;
+ 
+-        // Update or create position
+-        if (position.amount == 0) {
+-            // [H-04 mitigation] Enforce lender cap to bound _distributeInterest gas cost
++        // §B1 FIX: gate push on isInPoolLenders flag instead of `position.amount == 0`.
++        // This ensures that supply→withdraw→supply does NOT create a duplicate entry.
++        if (!isInPoolLenders[agentId][msg.sender]) {
+             require(
+                 poolLenders[agentId].length < MAX_LENDERS_PER_POOL,
+                 "Pool lender capacity reached"
+             );
+             poolLenders[agentId].push(msg.sender);
++            isInPoolLenders[agentId][msg.sender] = true;
+             position.depositTimestamp = block.timestamp;
+         }
+         position.amount += amount;
+@@ -268,6 +297,9 @@
+         loan.startTime = block.timestamp;
+         loan.endTime = block.timestamp + loan.duration;
+ 
++        // §S5 FIX: increment counter on transition to ACTIVE
++        activeLoanCount[loan.borrower]++;
++
+         // Transfer funds to borrower
+         usdcToken.safeTransfer(loan.borrower, loan.amount);
+ 
+@@ -304,6 +336,9 @@
+         // EFFECTS: update state only after funds confirmed received
+         loan.state = LoanState.REPAID;
+ 
++        // §S5 FIX: decrement counter on transition out of ACTIVE
++        activeLoanCount[loan.borrower]--;
++
+         // Update pool
+         AgentPool storage pool = agentPools[loan.agentId];
+         pool.availableLiquidity += loan.amount + lenderInterest;
+@@ -387,6 +422,9 @@
+         // Mark as defaulted
+         loan.state = LoanState.DEFAULTED;
+ 
++        // §S5 FIX: decrement counter on transition out of ACTIVE
++        activeLoanCount[loan.borrower]--;
++
+         // Record default with reputation manager
+         reputationManager.recordDefault(loan.borrower, loan.amount);
+ 
+@@ -473,12 +511,21 @@
+      */
+     function claimInterest(uint256 agentId) external nonReentrant whenNotPaused {
+         LenderPosition storage position = positions[agentId][msg.sender];
++        AgentPool storage pool = agentPools[agentId];
+         uint256 interest = position.earnedInterest;
+ 
+         require(interest > 0, "No interest to claim");
+ 
+         position.earnedInterest = 0;
++
++        // §S1 FIX: decrement pool.availableLiquidity to match the USDC leaving the contract.
++        // Without this, claimed interest is double-counted as both "withdrawn USDC" and "still
++        // available", producing the phantom liquidity drift documented in the audit.
++        require(pool.availableLiquidity >= interest, "Drain underflow");
++        pool.availableLiquidity -= interest;
++
+         usdcToken.safeTransfer(msg.sender, interest);
++        emit InterestClaimed(agentId, msg.sender, interest);
+     }
+ 
+     /**
+@@ -502,9 +549,112 @@
+      */
+     function unpause() external onlyOwner {
+         _unpause();
++    }
++
++    // ===================================================================================
++    // Migration helpers (owner-only, locked once `setMigrationFinalized()` is called).
++    // Used to seed state from a v4 snapshot. After finalization, normal operation only.
++    // ===================================================================================
++
++    modifier whileMigrating() {
++        require(!migrationFinalized, "Migration finalized");
++        _;
++    }
++
++    /**
++     * @notice Seed an agent pool from a v4 snapshot.
++     * @dev Owner only, while migrating. Marks pool active. Adds to agentPoolIds if new.
++     */
++    function seedPool(
++        uint256 agentId,
++        address agentAddress,
++        uint256 totalLiquidity,
++        uint256 availableLiquidity,
++        uint256 totalEarned
++    ) external onlyOwner whileMigrating {
++        require(agentId != 0, "Invalid agentId");
++        require(agentAddress != address(0), "Invalid agentAddress");
++        AgentPool storage pool = agentPools[agentId];
++        bool isNew = (pool.agentId == 0);
++
++        pool.agentId = agentId;
++        pool.agentAddress = agentAddress;
++        pool.totalLiquidity = totalLiquidity;
++        pool.availableLiquidity = availableLiquidity;
++        pool.totalLoaned = 0; // active loans not migrated; assume freshly loaned out is 0
++        pool.totalEarned = totalEarned;
++        pool.isActive = true;
++
++        if (isNew) {
++            agentPoolIds.push(agentId);
++            emit PoolCreated(agentId, agentAddress);
++        }
++        emit PoolSeeded(agentId, agentAddress);
+     }
+ 
+     /**
++     * @notice Seed a lender's position. Pushes to poolLenders[] if not already present.
++     * @dev §B1-fix-aware: uses isInPoolLenders flag. No duplicates created.
++     */
++    function seedPosition(
++        uint256 agentId,
++        address lender,
++        uint256 amount,
++        uint256 earnedInterest,
++        uint256 depositTimestamp
++    ) external onlyOwner whileMigrating {
++        require(lender != address(0), "Invalid lender");
++        require(agentPools[agentId].agentId == agentId, "Pool not seeded");
++
++        positions[agentId][lender] = LenderPosition({
++            amount: amount,
++            earnedInterest: earnedInterest,
++            depositTimestamp: depositTimestamp
++        });
++
++        if (!isInPoolLenders[agentId][lender]) {
++            require(poolLenders[agentId].length < MAX_LENDERS_PER_POOL, "Lender cap");
++            poolLenders[agentId].push(lender);
++            isInPoolLenders[agentId][lender] = true;
++        }
++        emit PositionSeeded(agentId, lender, amount, earnedInterest);
++    }
++
++    /**
++     * @notice Dedup poolLenders[] in-place. Useful for sanitizing state if a malformed
++     *         seed was pushed before finalization.
++     */
++    function compactPoolLenders(uint256 agentId) external onlyOwner {
++        address[] storage list = poolLenders[agentId];
++        // Reset flags
++        for (uint256 i = 0; i < list.length; i++) {
++            isInPoolLenders[agentId][list[i]] = false;
++        }
++        // Rebuild deduped list in-place
++        uint256 writeIdx = 0;
++        for (uint256 i = 0; i < list.length; i++) {
++            address lender = list[i];
++            if (!isInPoolLenders[agentId][lender]) {
++                isInPoolLenders[agentId][lender] = true;
++                list[writeIdx] = lender;
++                writeIdx++;
++            }
++        }
++        uint256 removed = list.length - writeIdx;
++        while (list.length > writeIdx) list.pop();
++        emit PoolLendersCompacted(agentId, removed);
++    }
++
++    /**
++     * @notice Finalize migration. After this is called, seed* functions revert.
++     * @dev Irreversible. Call only after all v4 state has been transferred.
++     */
++    function setMigrationFinalized() external onlyOwner whileMigrating {
++        migrationFinalized = true;
++        emit MigrationFinalized();
++    }
++
++    /**
+      * @notice Update platform fee rate
+      */
+     function setPlatformFeeRate(uint256 newRate) external onlyOwner {
+@@ -542,9 +692,17 @@
+ 
+     /**
+      * @notice Count active loans for an agent
+-     * @dev [SECURITY-01] Internal helper to enforce concurrent loan limits
++     * @dev §S5 FIX: O(1) lookup via activeLoanCount counter, replaces array walk.
++     *      The counter is maintained at requestLoan (++), repayLoan (--), liquidateLoan (--).
+      */
+     function _countActiveLoans(address agent) internal view returns (uint256) {
++        return activeLoanCount[agent];
++    }
++
++    /**
++     * @notice Legacy O(N) implementation, retained for verifying counter integrity in tests.
++     */
++    function _countActiveLoansFromArray(address agent) internal view returns (uint256) {
+         uint256[] memory loanIds = agentLoans[agent];
+         uint256 activeCount = 0;
+ 

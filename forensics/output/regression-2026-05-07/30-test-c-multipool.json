@@ -1,0 +1,50 @@
+{
+  "n_agents": 5,
+  "n_lenders_per": 3,
+  "agentIds": [
+    95,
+    96,
+    97,
+    98,
+    99
+  ],
+  "poolSnapshots": [
+    {
+      "agentId": 95,
+      "agentAddress": "0x681cF4C0E83A11e043E38c81774da3c9A6d422Eb",
+      "totalLiquidity": 600,
+      "availableLiquidity": 600,
+      "lenderCount": 3
+    },
+    {
+      "agentId": 96,
+      "agentAddress": "0x08225a8311F835dfaDAa28c9748E149a2750Abbe",
+      "totalLiquidity": 600,
+      "availableLiquidity": 600,
+      "lenderCount": 3
+    },
+    {
+      "agentId": 97,
+      "agentAddress": "0x37945FA595F0347EC7aC43b24097D7dC7203590e",
+      "totalLiquidity": 600,
+      "availableLiquidity": 600,
+      "lenderCount": 3
+    },
+    {
+      "agentId": 98,
+      "agentAddress": "0x3667D38D6c58B0884eada11f21Ac6c233Ed800Af",
+      "totalLiquidity": 600,
+      "availableLiquidity": 600,
+      "lenderCount": 3
+    },
+    {
+      "agentId": 99,
+      "agentAddress": "0x54ACd7Bc0109A6bBa69716c54ff1c75577D8D953",
+      "totalLiquidity": 600,
+      "availableLiquidity": 600,
+      "lenderCount": 3
+    }
+  ],
+  "total_interest_claimed": 0,
+  "invariants_hold": true
+}

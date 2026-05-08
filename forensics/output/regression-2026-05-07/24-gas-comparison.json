@@ -1,0 +1,27 @@
+{
+  "generatedAt": "2026-05-07T23:03:45.149Z",
+  "networks": {
+    "arc_v4": {
+      "address": "0x048363A325A5B188b7FF157d725C5e329f0171D3",
+      "bytecodeSize": 9254,
+      "requestLoan_freshAgent_gas": "revert: execution reverted: \"Insufficient pool liquidity\"",
+      "requestLoan_777loanAgent_gas": "3939066"
+    },
+    "arc_v6": {
+      "address": "0xCeF77E14dB17aE0272510ddbDa97075e7Eb6EbF3",
+      "bytecodeSize": 11026,
+      "requestLoan_freshAgent_gas": "revert: execution reverted: \"Insufficient pool liquidity\"",
+      "note": "V6 has agent #49 with no historical loans on V6 (separate state from v4)"
+    },
+    "base_v4": {
+      "address": "0xd7b4dEE74C61844DFA75aEbe224e4635463b1C8f",
+      "bytecodeSize": 9254,
+      "requestLoan_gas": "408426",
+      "note": "Base has agent #1 (secure wallet) with prior loans + duplicate poolLenders + 3 stuck active loans"
+    }
+  },
+  "summary": {
+    "bytecode_growth": 1772,
+    "bytecode_growth_pct": "19.1%"
+  }
+}

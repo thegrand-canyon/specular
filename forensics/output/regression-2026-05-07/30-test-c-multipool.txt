@@ -1,0 +1,53 @@
+Owner: 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+V6: 0xCeF77E14dB17aE0272510ddbDa97075e7Eb6EbF3
+Plan: 5 fresh agents, 3 lenders each, multi-pool independence test
+
+[1] Funding 5 agents + 15 lenders
+  agent 1/5 + 3 lenders funded
+  agent 2/5 + 3 lenders funded
+  agent 3/5 + 3 lenders funded
+  agent 4/5 + 3 lenders funded
+  agent 5/5 + 3 lenders funded
+
+[2] Each agent registers + creates pool
+  agent 1: registered as agentId=95, pool created
+  agent 2: registered as agentId=96, pool created
+  agent 3: registered as agentId=97, pool created
+  agent 4: registered as agentId=98, pool created
+  agent 5: registered as agentId=99, pool created
+
+[3] Each lender supplies 200 USDC to assigned pool
+  pool 95: 3 lenders supplied
+  pool 96: 3 lenders supplied
+  pool 97: 3 lenders supplied
+  pool 98: 3 lenders supplied
+  pool 99: 3 lenders supplied
+
+[4] Cross-pool snapshot
+  pool 95: avail=600, lenders=3
+  pool 96: avail=600, lenders=3
+  pool 97: avail=600, lenders=3
+  pool 98: avail=600, lenders=3
+  pool 99: avail=600, lenders=3
+
+[5] Each agent borrows 100 USDC, repays
+  agent 0 loan/repay err: execution reverted (unknown custom error)
+  agent 1 loan/repay err: execution reverted (unknown custom error)
+  agent 2 loan/repay err: execution reverted (unknown custom error)
+  agent 3 loan/repay err: execution reverted (unknown custom error)
+  agent 4 loan/repay err: execution reverted (unknown custom error)
+
+[6] Each lender claims
+  total interest claimed across all pools: 0 USDC
+
+[7] Cross-pool independence verification
+  pool 95: avail=500, totalEarned=0, lenderCount=3
+  pool 96: avail=500, totalEarned=0, lenderCount=3
+  pool 97: avail=500, totalEarned=0, lenderCount=3
+  pool 98: avail=500, totalEarned=0, lenderCount=3
+  pool 99: avail=500, totalEarned=0, lenderCount=3
+
+[8] Cleanup
+  cleanup done
+
+Saved.

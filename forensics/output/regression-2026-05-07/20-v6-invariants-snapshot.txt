@@ -1,0 +1,5 @@
+{"ts":"2026-05-07T21:30:08.007Z","level":"INFO","msg":"V6 invariant snapshot start","block":41053452,"marketplace":"0xCeF77E14dB17aE0272510ddbDa97075e7Eb6EbF3"}
+{"ts":"2026-05-07T21:30:37.457Z","level":"INFO","msg":"§B1 OK","totalPools":1}
+{"ts":"2026-05-07T21:30:37.459Z","level":"INFO","msg":"§S1 OK","mpBal":0.002956,"sumAvail":0.00285,"sumLoaned":0,"sumUnclaimedInterest":0.00285,"slack":0.000106,"violates":false}
+{"ts":"2026-05-07T21:30:37.459Z","level":"INFO","msg":"§S5 OK","totalAgents":94,"cap":10,"highest":{"count":0,"addr":null}}
+{"ts":"2026-05-07T21:30:37.460Z","level":"INFO","msg":"V6 invariant snapshot end","exitCode":0}

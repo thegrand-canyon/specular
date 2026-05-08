@@ -1,0 +1,208 @@
+{
+  "pre": {
+    "label": "pre",
+    "ts": "2026-05-07T20:28:00.462Z",
+    "wallet_usdc": 19.999914,
+    "mp_usdc": 0,
+    "pool_49": {
+      "totalLiq": 0,
+      "avail": 0,
+      "totalLoaned": 0,
+      "totalEarned": 0,
+      "lenderCount": 0
+    },
+    "poolLenders": [],
+    "isInList": false,
+    "activeLoanCount": 0,
+    "my_position": {
+      "supplied": 0,
+      "earnedInterest": 0
+    }
+  },
+  "afterSupply": {
+    "label": "after_supply",
+    "ts": "2026-05-07T20:28:10.570Z",
+    "wallet_usdc": 14.999914,
+    "mp_usdc": 5,
+    "pool_49": {
+      "totalLiq": 5,
+      "avail": 5,
+      "totalLoaned": 0,
+      "totalEarned": 0,
+      "lenderCount": 1
+    },
+    "poolLenders": [
+      "0x800e305a0cadde6289dfdfedf38218f45c06f72c"
+    ],
+    "isInList": true,
+    "activeLoanCount": 0,
+    "my_position": {
+      "supplied": 5,
+      "earnedInterest": 0
+    }
+  },
+  "afterLoan": {
+    "label": "after_loan",
+    "ts": "2026-05-07T20:28:17.003Z",
+    "wallet_usdc": 14.999914,
+    "mp_usdc": 5,
+    "pool_49": {
+      "totalLiq": 5,
+      "avail": 2,
+      "totalLoaned": 3,
+      "totalEarned": 0,
+      "lenderCount": 1
+    },
+    "poolLenders": [
+      "0x800e305a0cadde6289dfdfedf38218f45c06f72c"
+    ],
+    "isInList": true,
+    "activeLoanCount": 1,
+    "my_position": {
+      "supplied": 5,
+      "earnedInterest": 0
+    }
+  },
+  "afterRepay": {
+    "label": "after_repay",
+    "ts": "2026-05-07T20:28:23.472Z",
+    "wallet_usdc": 14.991284,
+    "mp_usdc": 5.00863,
+    "pool_49": {
+      "totalLiq": 5,
+      "avail": 5.008544,
+      "totalLoaned": 0,
+      "totalEarned": 0.008544,
+      "lenderCount": 1
+    },
+    "poolLenders": [
+      "0x800e305a0cadde6289dfdfedf38218f45c06f72c"
+    ],
+    "isInList": true,
+    "activeLoanCount": 0,
+    "my_position": {
+      "supplied": 5,
+      "earnedInterest": 0.008544
+    }
+  },
+  "afterWithdraw": {
+    "label": "after_withdraw",
+    "ts": "2026-05-07T20:28:31.938Z",
+    "wallet_usdc": 19.999828,
+    "mp_usdc": 0.000086,
+    "pool_49": {
+      "totalLiq": 0,
+      "avail": 0,
+      "totalLoaned": 0,
+      "totalEarned": 0.008544,
+      "lenderCount": 1
+    },
+    "poolLenders": [
+      "0x800e305a0cadde6289dfdfedf38218f45c06f72c"
+    ],
+    "isInList": true,
+    "activeLoanCount": 0,
+    "my_position": {
+      "supplied": 0,
+      "earnedInterest": 0
+    }
+  },
+  "afterReSupply": {
+    "label": "after_re_supply",
+    "ts": "2026-05-07T20:28:38.204Z",
+    "wallet_usdc": 18.999828,
+    "mp_usdc": 1.000086,
+    "pool_49": {
+      "totalLiq": 1,
+      "avail": 1,
+      "totalLoaned": 0,
+      "totalEarned": 0.008544,
+      "lenderCount": 1
+    },
+    "poolLenders": [
+      "0x800e305a0cadde6289dfdfedf38218f45c06f72c"
+    ],
+    "isInList": true,
+    "activeLoanCount": 0,
+    "my_position": {
+      "supplied": 1,
+      "earnedInterest": 0
+    }
+  },
+  "post": {
+    "label": "post",
+    "ts": "2026-05-07T20:28:40.984Z",
+    "wallet_usdc": 19.999828,
+    "mp_usdc": 0.000086,
+    "pool_49": {
+      "totalLiq": 0,
+      "avail": 0,
+      "totalLoaned": 0,
+      "totalEarned": 0.008544,
+      "lenderCount": 1
+    },
+    "poolLenders": [
+      "0x800e305a0cadde6289dfdfedf38218f45c06f72c"
+    ],
+    "isInList": true,
+    "activeLoanCount": 0,
+    "my_position": {
+      "supplied": 0,
+      "earnedInterest": 0
+    }
+  },
+  "events": [
+    "Wallet: 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+    "V6 marketplace: 0xCeF77E14dB17aE0272510ddbDa97075e7Eb6EbF3",
+    "\n[0] V6 status check",
+    "  owner: 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+    "  paused: false",
+    "  migrationFinalized: false",
+    "PRE: {\n  \"label\": \"pre\",\n  \"ts\": \"2026-05-07T20:28:00.462Z\",\n  \"wallet_usdc\": 19.999914,\n  \"mp_usdc\": 0,\n  \"pool_49\": {\n    \"totalLiq\": 0,\n    \"avail\": 0,\n    \"totalLoaned\": 0,\n    \"totalEarned\": 0,\n    \"lenderCount\": 0\n  },\n  \"poolLenders\": [],\n  \"isInList\": false,\n  \"activeLoanCount\": 0,\n  \"my_position\": {\n    \"supplied\": 0,\n    \"earnedInterest\": 0\n  }\n}",
+    "  V6 pool 49 isActive: false",
+    "\n[1] createAgentPool on V6",
+    "  tx: 0x5e9f87edd00a6d1bc51ed9bc55e2b419972000209f5c7f76183a42160d97dea4",
+    "  mined block 41046147 gas 151919",
+    "\n[2a] approve 15 USDC to V6",
+    "  tx: 0xb31c1506740ff6f66759ff6389f60f0951378efdcd31c984f38a3eba0d75fe0d",
+    "\n[2b] supplyLiquidity 5 USDC to own pool 49",
+    "  tx: 0x37ca60e768406c7aa23e95e16742b486efb9911694ec82c70961839078bff24c",
+    "  mined block 41046161 gas 227287",
+    "  poolLenders: 0x800e305a0cadde6289dfdfedf38218f45c06f72c",
+    "  isInPoolLenders: true",
+    "\n[3] requestLoan(3 USDC, 7 days)",
+    "  tx: 0xe18c0576b599635ec1de1e9482bda219edf073571ad20cd2e38f8df87f488a17",
+    "  mined block 41046166 gas 416605",
+    "  loanId: 1",
+    "  activeLoanCount: 1",
+    "\n[4] repayLoan(1)",
+    "  tx: 0x2c285b0708ac09f930343dcc09c13d602e50bad60076f21e7250afa90ff82edd",
+    "  mined block 41046179 gas 192329",
+    "  earnedInterest: 0.008544 USDC",
+    "  pool totalEarned: 0.008544",
+    "  activeLoanCount: 0 (should be 0)",
+    "\n[5] claimInterest(49) — §S1 test",
+    "  tx: 0x2241e94cfe47c7281539223032e27c37bad3c6a88e3a8b57e08ed4ae4fba2c73",
+    "  pool avail: 5.008544 → 5 Δ -0.008544",
+    "  ✅ §S1 FIX VERIFIED: availableLiquidity correctly decremented by claimed amount",
+    "\n[6] withdrawLiquidity (full)",
+    "  tx: 0x1f028ab0be01a4c8746b6d01ec4beabca82f66873f4a3045a431e342959e555a",
+    "\n[7] §B1 TEST: supply 1 USDC AGAIN after full withdraw",
+    "  pre-supply lenderCount: 1",
+    "  pre-supply isInPoolLenders: true",
+    "  tx: 0x37714ac2eda3c845e2b717af9b1eedd56d33a706424342c049fe7a8be557e473",
+    "  post-supply lenderCount: 1",
+    "  post-supply poolLenders: 0x800e305a0cadde6289dfdfedf38218f45c06f72c",
+    "  ✅ §B1 FIX VERIFIED: re-supply did NOT create a duplicate poolLenders entry",
+    "\n[8] final cleanup withdraw",
+    "  tx: 0xd4141144a5dc75e233d729143bf19ade462983f42f0d00cc07b4d9f44cd7113f",
+    "\n--- POST ---",
+    "{\n  \"label\": \"post\",\n  \"ts\": \"2026-05-07T20:28:40.984Z\",\n  \"wallet_usdc\": 19.999828,\n  \"mp_usdc\": 0.000086,\n  \"pool_49\": {\n    \"totalLiq\": 0,\n    \"avail\": 0,\n    \"totalLoaned\": 0,\n    \"totalEarned\": 0.008544,\n    \"lenderCount\": 1\n  },\n  \"poolLenders\": [\n    \"0x800e305a0cadde6289dfdfedf38218f45c06f72c\"\n  ],\n  \"isInList\": true,\n  \"activeLoanCount\": 0,\n  \"my_position\": {\n    \"supplied\": 0,\n    \"earnedInterest\": 0\n  }\n}",
+    "\n=== COMPARISON: V6 vs v4 (recall: v4 left ghost lender + 0.008544 USDC phantom on pool 49) ===",
+    "V6 final pool.availableLiquidity: 0 USDC",
+    "V6 final lenderCount:             1",
+    "V6 final isInPoolLenders:         true",
+    "v4 (from 09-arc-e2e-full.json):   avail=0.008544, lenderCount=1 (ghost), totalEarned=0.008544 (phantom)",
+    "Net wallet change:                -0.000086 USDC"
+  ]
+}

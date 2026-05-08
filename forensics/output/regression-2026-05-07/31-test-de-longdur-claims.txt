@@ -1,0 +1,60 @@
+Owner: 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+approved 5000 USDC
+
+=== TEST D — Maximum-duration loan (365 days) ===
+pre-pool avail: 0.178464
+seeded 499.821536 USDC
+Requesting loan 500 USDC, 365 days
+  loan tx: 0x14723ab6967ede5a2cd4c1d5bc09eeff2c99f6276c757709b7bcd4b289e2bedd, gas: 371358
+  loanId: 120
+  expected interest: 75 USDC (= 500 × 15% × 365/365)
+  Repaying...
+  repay tx: 0xb63c94143ffee77bef816a1550ca772d92cef8fa15aa6422cd460a65f03b9cc7, gas: 387240
+  expected total interest: 75
+  expected platform fee:    0.75
+  expected to lender:       74.25
+  actual earnedInterest:    24.92845
+  ⚠ interest formula match
+  pool avail decrement: 24.92845 (expected: 24.92845)
+  ✅ §S1 decrement exact
+
+=== TEST E — 30 cycles of supply/loan/repay/claim ===
+  pre-cleanup withdrew 499.821536
+  cycle 5/30: claimed 0.203425, avail=0.000014, mpBal=1000.323847
+  cycle 10/30: claimed 0.203425, avail=0.000014, mpBal=1000.334117
+  cycle 15/30: claimed 0.203425, avail=0.000014, mpBal=1000.344387
+  cycle 20/30: claimed 0.203425, avail=0.000014, mpBal=1000.354657
+  cycle 25/30: claimed 0.203425, avail=0.000014, mpBal=1000.364927
+FATAL: Error: execution reverted (unknown custom error) (action="estimateGas", data="0xfb8f41b2000000000000000000000000cef77e14db17ae0272510ddbda97075e7eb6ebf30000000000000000000000000000000000000000000000000000000004299cea0000000000000000000000000000000000000000000000000000000005f5e100", reason=null, transaction={ "data": "0xf9dbb69f00000000000000000000000000000000000000000000000000000000000000310000000000000000000000000000000000000000000000000000000005f5e100", "from": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C", "to": "0xCeF77E14dB17aE0272510ddbDa97075e7Eb6EbF3" }, invocation=null, revert=null, code=CALL_EXCEPTION, version=6.16.0)
+    at makeError (/Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/utils/errors.js:137:21)
+    at getBuiltinCallException (/Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/abi/abi-coder.js:105:37)
+    at AbiCoder.getBuiltinCallException (/Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/abi/abi-coder.js:206:16)
+    at JsonRpcProvider.getRpcError (/Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/providers/provider-jsonrpc.js:695:43)
+    at /Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/providers/provider-jsonrpc.js:302:45
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  code: 'CALL_EXCEPTION',
+  action: 'estimateGas',
+  data: '0xfb8f41b2000000000000000000000000cef77e14db17ae0272510ddbda97075e7eb6ebf30000000000000000000000000000000000000000000000000000000004299cea0000000000000000000000000000000000000000000000000000000005f5e100',
+  reason: null,
+  transaction: {
+    to: '0xCeF77E14dB17aE0272510ddbDa97075e7Eb6EbF3',
+    data: '0xf9dbb69f00000000000000000000000000000000000000000000000000000000000000310000000000000000000000000000000000000000000000000000000005f5e100',
+    from: '0x800e305A0caDdE6289dFDFEDF38218f45C06F72C'
+  },
+  invocation: null,
+  revert: null,
+  shortMessage: 'execution reverted (unknown custom error)',
+  info: {
+    error: {
+      message: 'execution reverted',
+      code: 3,
+      data: '0xfb8f41b2000000000000000000000000cef77e14db17ae0272510ddbda97075e7eb6ebf30000000000000000000000000000000000000000000000000000000004299cea0000000000000000000000000000000000000000000000000000000005f5e100'
+    },
+    payload: {
+      method: 'eth_estimateGas',
+      params: [Array],
+      id: 2635,
+      jsonrpc: '2.0'
+    }
+  }
+}

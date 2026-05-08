@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.specular.v6-invariants</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>-c</string>
+        <string>cd /Users/peterschroeder/Specular &amp;&amp; export PATH="/opt/homebrew/opt/node@22/bin:$PATH" &amp;&amp; node forensics/monitor/v6-invariants.js --quiet</string>
+    </array>
+
+    <key>StartInterval</key>
+    <integer>1800</integer>
+
+    <key>StandardOutPath</key>
+    <string>/Users/peterschroeder/Specular/forensics/monitor/v6-invariants-stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/peterschroeder/Specular/forensics/monitor/v6-invariants-stderr.log</string>
+
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/peterschroeder/Specular</string>
+</dict>
+</plist>
