@@ -203,8 +203,7 @@ contract AgentLiquidityMarketplaceV6_Patch is Ownable, ReentrancyGuard, Pausable
         require(activeLoanCount[msg.sender] < MAX_ACTIVE_LOANS_PER_AGENT, "too many active");
 
         uint256 loanId = nextLoanId++;
-        // For test simplicity: 0% collateral, 15% interest
-        uint256 interest = (amount * 1500 * duration) / (365 days * 10000);
+        // For test simplicity: 0% collateral, 15% interest (computed at repay time)
 
         loans[loanId] = Loan({
             loanId: loanId, borrower: msg.sender, agentId: agentId,

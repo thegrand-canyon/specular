@@ -56,14 +56,10 @@ contract ReentrancyAttacker {
         if (attackMode == AttackMode.NONE || attackCount > 0) return;
         attackCount++;
         // Try to re-enter target — should be blocked by nonReentrant
-        (bool ok, bytes memory data) = target.call(attackPayload);
+        (bool ok, ) = target.call(attackPayload);
         emit ReentryAttempted(msg.sender, ok);
-        // Re-record success (note: a successful re-entry is the bug we're testing for)
+        // Successful re-entry is the bug we're testing for; outer call must still succeed
         if (ok) reentered = true;
-        else {
-            // Capture revert reason for diagnostic
-            // (we don't bubble up — the outer call should still succeed)
-        }
     }
 
     function transfer(address to, uint256 value) external returns (bool) {

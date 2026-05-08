@@ -3,6 +3,8 @@
   "reputationManagerV3": "0xf19b1780A84668C8dfB6b4E84C08e457dB3B0527",
   "usdc": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
   "agentLiquidityMarketplace": "0xd7b4dEE74C61844DFA75aEbe224e4635463b1C8f",
+  "agentLiquidityMarketplace_v6": null,
+  "agentLiquidityMarketplace_v6_note": "V6 not yet deployed to Base. Gated on external audit. Run scripts/deploy-v6-base-mainnet.js with DEPLOY_CONFIRM=I_HAVE_AUDITED_V6 after audit.",
   "deployer": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
   "deployedAt": "2026-02-25T00:00:00.000Z",
   "network": "base-mainnet",
