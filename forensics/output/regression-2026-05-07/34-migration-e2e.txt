@@ -1,0 +1,53 @@
+=== v4→V6 MIGRATION SIMULATION ===
+Owner: 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+
+[setup] fresh test agent: 0x14ad33D4a9cEecfB0e9857D81F58F9985845dc28
+[setup] fresh test lender: 0x18991a6c1795C8DB674192B8a93EF17c19744386
+
+[1] funding wallets
+
+[2] register test agent in AgentRegistryV2
+  test agent registered as agentId=100
+
+=== STEP A: agent creates pool + lender supplies to v4 ===
+  v4 pool created for agentId=100
+  lender supplied 200 USDC to v4
+
+=== STEP B: owner snapshots v4 state ===
+  snapshot: {
+  "agentId": 100,
+  "agentAddress": "0x14ad33D4a9cEecfB0e9857D81F58F9985845dc28",
+  "totalLiquidity": "200000000",
+  "availableLiquidity": "200000000",
+  "totalEarned": "0",
+  "lender": "0x18991a6c1795C8DB674192B8a93EF17c19744386",
+  "amount": "200000000",
+  "earnedInterest": "0",
+  "depositTimestamp": "1778273206"
+}
+
+=== STEP C: lender withdraws from v4 ===
+  withdrawn
+  lender USDC balance: 200
+
+=== STEP D: owner seeds V6 ===
+  seedPool tx: 0x5b16850fdeec0baf176eb5526d8a4be4cdcd8ecbd45da890c8ddeed2afa952d9
+  seedPosition tx: 0x0c3bca45b80fef2138eb44fd1fd9f14e723683420d4a071d081c991c5ae994ea
+  V6 pool: totalLiq=200000000, avail=200000000, lenders=1
+  V6 pos:  amount=200000000, earnedInt=0
+  ✅ V6 state matches v4 snapshot
+
+=== STEP E: lender supplies USDC to V6 ===
+  decision: choosing path (b) — fresh supply, NO seed (cleaner)
+  but we already seeded, so reset by overwriting seedPosition with zero values
+  position reset to 0 via seedPosition with zeros
+  pool liquidity reset to 0
+  lender supplied 200 USDC to V6
+  V6 final: totalLiq=200, avail=200, lenderCount=1, lender supplied=200
+  ✅ V6 state matches expected after fresh supply
+
+=== STEP F: cleanup ===
+  lender returned 200 USDC
+  agent returned 110 USDC
+
+Saved.

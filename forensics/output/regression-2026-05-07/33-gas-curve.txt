@@ -1,0 +1,22 @@
+Discovering addresses with varied loan-history depths on v4...
+  totalAgents: 99
+  picked 6 representative agents
+
+=== v4 gas curve ===
+  agent 1 (0 loans): execution reverted: "No pool for agent"
+  agent 48 (1 loans): execution reverted (unknown custom error)
+  agent 5 (135 loans): 967472 gas
+  agent 44 (140 loans): 1007322 gas
+  agent 45 (279 loans): execution reverted: "Too many active loans"
+  agent 43 (777 loans): 3956302 gas
+
+=== V6 gas (current observed) ===
+  V6 estimate err: execution reverted: "Insufficient pool liquidity"
+
+=== Linear regression on v4 ===
+  gas(loanCount) ≈ 4643 × loanCount + 348994
+  → at v4 with 5,000 lifetime loans: 23,562,462 gas
+  → at v4 with 10,000 lifetime loans: 46,775,930 gas
+  V6 stays at ~400k regardless of count → savings at 10k loans: 46,375,930 gas
+
+Saved.

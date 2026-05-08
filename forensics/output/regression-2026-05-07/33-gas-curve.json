@@ -1,0 +1,35 @@
+{
+  "v4Curve": [
+    {
+      "agentId": 1,
+      "loanCount": 0,
+      "error": "execution reverted: \"No pool for agent\""
+    },
+    {
+      "agentId": 48,
+      "loanCount": 1,
+      "error": "execution reverted (unknown custom error)"
+    },
+    {
+      "agentId": 5,
+      "loanCount": 135,
+      "gas": "967472"
+    },
+    {
+      "agentId": 44,
+      "loanCount": 140,
+      "gas": "1007322"
+    },
+    {
+      "agentId": 45,
+      "loanCount": 279,
+      "error": "execution reverted: \"Too many active loans\""
+    },
+    {
+      "agentId": 43,
+      "loanCount": 777,
+      "gas": "3956302"
+    }
+  ],
+  "generatedAt": "2026-05-08T20:43:48.573Z"
+}

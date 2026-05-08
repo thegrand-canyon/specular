@@ -1,0 +1,15 @@
+{
+  "snapshot": {
+    "agentId": 100,
+    "agentAddress": "0x14ad33D4a9cEecfB0e9857D81F58F9985845dc28",
+    "totalLiquidity": "200000000",
+    "availableLiquidity": "200000000",
+    "totalEarned": "0",
+    "lender": "0x18991a6c1795C8DB674192B8a93EF17c19744386",
+    "amount": "200000000",
+    "earnedInterest": "0",
+    "depositTimestamp": "1778273206"
+  },
+  "stateMatchAfterSeed": true,
+  "finalMatchAfterFreshSupply": true
+}
