@@ -1,0 +1,13 @@
+{
+  "n_lenders": 5,
+  "n_borrowers": 3,
+  "supply_per_lender": 100000,
+  "total_pool": 500000,
+  "loans_completed": 0,
+  "invariant_checks_passed": 6,
+  "b1_stress_lender_count": 5,
+  "b1_stress_unique": 5,
+  "b1_holds": true,
+  "eth_delta": "-4.011573817381762456",
+  "usdc_delta": -99999.99999900023
+}
