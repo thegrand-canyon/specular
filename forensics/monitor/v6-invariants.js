@@ -132,6 +132,30 @@ async function checkS5(mp, reg) {
     return { totalAgents, cap, violations, highest };
 }
 
+async function alert(severity, title, details) {
+    const webhook = process.env.WEBHOOK_URL;
+    if (!webhook) return; // no-op when unset
+    const payload = {
+        text: `🚨 Specular V6 invariant alert [${severity}]: ${title}`,
+        attachments: [{
+            color: severity === 'CRITICAL' ? 'danger' : 'warning',
+            title,
+            text: '```' + JSON.stringify(details, null, 2) + '```',
+            ts: Math.floor(Date.now() / 1000),
+        }],
+    };
+    try {
+        const r = await fetch(webhook, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        if (!r.ok) log('WARN', 'Webhook returned non-ok', { status: r.status });
+    } catch (e) {
+        log('WARN', 'Webhook delivery failed', { error: e.message });
+    }
+}
+
 (async () => {
     if (!V6) { log('ERROR', 'V6 address missing in addresses.json'); process.exit(1); }
     const provider = new ethers.JsonRpcProvider(RPC, undefined, { batchMaxCount: 1 });
@@ -152,6 +176,7 @@ async function checkS5(mp, reg) {
 
         if (b1.violations.length > 0) {
             log('ERROR', '§B1 VIOLATION: duplicate poolLenders detected', { violations: b1.violations });
+            await alert('CRITICAL', '§B1 duplicate poolLenders detected on V6', { marketplace: V6, violations: b1.violations });
             exitCode = 1;
         } else {
             log('INFO', '§B1 OK', { totalPools: b1.totalPools });
@@ -159,6 +184,7 @@ async function checkS5(mp, reg) {
 
         if (s1.violates) {
             log('ERROR', '§S1 VIOLATION: sumAvail > mpBal', s1);
+            await alert('CRITICAL', '§S1 sumAvail > mpBal on V6', { marketplace: V6, ...s1 });
             exitCode = 1;
         } else {
             log('INFO', '§S1 OK', s1);
@@ -166,6 +192,7 @@ async function checkS5(mp, reg) {
 
         if (s5.violations.length > 0) {
             log('ERROR', '§S5 VIOLATION: agent over MAX_ACTIVE_LOANS', { violations: s5.violations });
+            await alert('CRITICAL', '§S5 agent over MAX_ACTIVE_LOANS on V6', { marketplace: V6, violations: s5.violations });
             exitCode = 1;
         } else {
             log('INFO', '§S5 OK', { totalAgents: s5.totalAgents, cap: s5.cap, highest: s5.highest });

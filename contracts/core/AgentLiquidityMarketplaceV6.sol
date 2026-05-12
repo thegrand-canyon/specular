@@ -164,7 +164,14 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
     }
 
     /**
-     * @notice Supply liquidity to a specific agent's pool
+     * @notice Supply USDC liquidity to a specific agent's pool.
+     * @dev §B1-fix: a sender is added to `poolLenders[agentId]` AT MOST ONCE via the
+     *      `isInPoolLenders` flag. Subsequent supplies (after any withdrawal pattern)
+     *      do not push duplicate entries, eliminating the v4 panic risk in
+     *      `_distributeInterest`. Reverts if `amount == 0`, if the pool is inactive,
+     *      or if the pool's lender count is already at `MAX_LENDERS_PER_POOL`.
+     * @param agentId The agent whose pool to supply.
+     * @param amount  USDC amount in base units (6 decimals).
      */
     function supplyLiquidity(uint256 agentId, uint256 amount) external nonReentrant whenNotPaused {
         require(amount > 0, "Amount must be > 0");
@@ -508,7 +515,14 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
     }
 
     /**
-     * @notice Claim earned interest
+     * @notice Claim accrued interest as a lender of `agentId`'s pool.
+     * @dev §S1-fix: `pool.availableLiquidity` is decremented by `interest` so that
+     *      the contract's accounting matches the USDC custody movement. v4 omitted
+     *      this decrement and accumulated phantom availableLiquidity over time.
+     *      Reverts if there is no interest to claim. The `Drain underflow` require
+     *      should never trip under correct state but is a defense in depth.
+     *      Emits `InterestClaimed(agentId, msg.sender, amount)`.
+     * @param agentId The pool to claim from.
      */
     function claimInterest(uint256 agentId) external nonReentrant whenNotPaused {
         LenderPosition storage position = positions[agentId][msg.sender];
@@ -564,8 +578,18 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
     }
 
     /**
-     * @notice Seed an agent pool from a v4 snapshot.
-     * @dev Owner only, while migrating. Marks pool active. Adds to agentPoolIds if new.
+     * @notice Seed an agent pool from a v4 snapshot during migration.
+     * @dev Owner-only; reverts after `setMigrationFinalized()`. Overwrites existing
+     *      pool state for the given agentId (intentional — migration may need to
+     *      reset). Sets `totalLoaned = 0` because active loans are not migrated
+     *      (they remain on v4 to be repaid or liquidated there). Adds agentId to
+     *      `agentPoolIds` array on first seed only. Emits `PoolCreated` (if new)
+     *      and always `PoolSeeded`.
+     * @param agentId            Agent's ID from AgentRegistryV2.
+     * @param agentAddress       Wallet associated with the agent (matches v4 pool).
+     * @param totalLiquidity     v4 snapshot total (USDC base units).
+     * @param availableLiquidity v4 snapshot available (USDC base units).
+     * @param totalEarned        v4 snapshot lifetime interest earned.
      */
     function seedPool(
         uint256 agentId,
@@ -595,8 +619,16 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
     }
 
     /**
-     * @notice Seed a lender's position. Pushes to poolLenders[] if not already present.
-     * @dev §B1-fix-aware: uses isInPoolLenders flag. No duplicates created.
+     * @notice Seed a lender's position from a v4 snapshot during migration.
+     * @dev Owner-only; reverts after `setMigrationFinalized()`. Overwrites position.
+     *      §B1-fix-aware: uses `isInPoolLenders` flag to push to `poolLenders[]`
+     *      AT MOST ONCE per lender per pool — operator error cannot create
+     *      duplicates. Requires the pool to have been `seedPool`-ed first.
+     * @param agentId          Pool agentId.
+     * @param lender           Lender address.
+     * @param amount           v4 snapshot supplied amount.
+     * @param earnedInterest   v4 snapshot unclaimed interest.
+     * @param depositTimestamp v4 snapshot deposit timestamp (preserve for analytics).
      */
     function seedPosition(
         uint256 agentId,
@@ -623,8 +655,14 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
     }
 
     /**
-     * @notice Dedup poolLenders[] in-place. Useful for sanitizing state if a malformed
-     *         seed was pushed before finalization.
+     * @notice Dedup the `poolLenders[agentId]` array in place. NOT gated by
+     *         migration phase — admin can run this post-finalization as a sanity
+     *         tool. Removes any duplicate addresses while preserving the first
+     *         occurrence. Caps at `MAX_LENDERS_PER_POOL` iterations, so gas is
+     *         bounded. Emits `PoolLendersCompacted(agentId, removed)`.
+     * @dev Algorithm: reset all `isInPoolLenders` flags, then walk the list and
+     *      re-mark each first-seen address. Pop tail entries. O(N) in pool size.
+     * @param agentId Pool to compact.
      */
     function compactPoolLenders(uint256 agentId) external onlyOwner {
         address[] storage list = poolLenders[agentId];
@@ -648,8 +686,12 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
     }
 
     /**
-     * @notice Finalize migration. After this is called, seed* functions revert.
-     * @dev Irreversible. Call only after all v4 state has been transferred.
+     * @notice Mark migration as complete. After this is called, `seedPool`,
+     *         `seedPosition`, and `setMigrationFinalized` itself all revert with
+     *         "Migration finalized". This is intentionally IRREVERSIBLE — recovery
+     *         from an incorrect finalization requires deploying a new contract.
+     *         `compactPoolLenders` remains available post-finalization for sanity.
+     * @dev Owner-only. Emits `MigrationFinalized()`.
      */
     function setMigrationFinalized() external onlyOwner whileMigrating {
         migrationFinalized = true;
