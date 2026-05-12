@@ -1,0 +1,15 @@
+{
+  "total": 500,
+  "concurrent": 50,
+  "ok": 500,
+  "errors": 0,
+  "throughput_req_per_sec": 4424.778761061947,
+  "elapsed_sec": 0.113,
+  "latency_ms": {
+    "p50": 5.228124999999977,
+    "p95": 24.421041999999943,
+    "p99": 26.870083000000022,
+    "max": 0
+  },
+  "all_valid": true
+}

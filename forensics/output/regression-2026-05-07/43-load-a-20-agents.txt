@@ -1,0 +1,41 @@
+=== TRACK A: 20 AGENTS × 3 LENDERS ON V6 ===
+V6: 0x05f359D663fa8E70C49b3D69f65dA7C059b0cC7a
+Owner: 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+Start ETH: 332.881954796894390069, USDC: 3009165.213985
+
+[1] Generating 20 agents + 60 lenders
+
+[2] Funding wallets
+  funded 5/20
+  funded 10/20
+  funded 15/20
+  funded 20/20
+  funding done in 694s
+
+[3] Each agent: register + createPool + approve
+  setup 5/20
+  setup 10/20
+/Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/utils/errors.js:137
+            error = new Error(message);
+                    ^
+
+Error: server response 408 Request Timeout (request={  }, response={  }, error=null, info={ "requestUrl": "https://arc-testnet.drpc.org", "responseBody": "{\"id\":4081,\"jsonrpc\":\"2.0\",\"error\":{\"message\":\"Request timeout on the free tier, please upgrade your tier to the paid one\",\"code\":30}}", "responseStatus": "408 Request Timeout" }, code=SERVER_ERROR, version=6.16.0)
+    at makeError (/Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/utils/errors.js:137:21)
+    at assert (/Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/utils/errors.js:157:15)
+    at FetchResponse.assertOk (/Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/utils/fetch.js:839:32)
+    at JsonRpcProvider._send (/Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/providers/provider-jsonrpc.js:917:18)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async /Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/providers/provider-jsonrpc.js:281:40 {
+  code: 'SERVER_ERROR',
+  request: FetchRequest {},
+  response: FetchResponse {},
+  error: undefined,
+  info: {
+    requestUrl: 'https://arc-testnet.drpc.org',
+    responseBody: '{"id":4081,"jsonrpc":"2.0","error":{"message":"Request timeout on the free tier, please upgrade your tier to the paid one","code":30}}',
+    responseStatus: '408 Request Timeout'
+  },
+  shortMessage: 'server response 408 Request Timeout'
+}
+
+Node.js v22.22.0

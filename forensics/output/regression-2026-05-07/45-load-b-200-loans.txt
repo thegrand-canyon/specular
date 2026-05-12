@@ -1,0 +1,42 @@
+=== TRACK B: 200 LOAN CHURN ON V6 (with 300ms inter-tx delay) ===
+Seeding pool with 500 USDC
+  20/200 loans (0.09/s)  last-batch gas 337526..371726
+  40/200 loans (0.10/s)  last-batch gas 337526..371726
+  60/200 loans (0.09/s)  last-batch gas 337526..371726
+FATAL: Error: execution reverted: "Loan not active" (action="estimateGas", data="0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000f4c6f616e206e6f74206163746976650000000000000000000000000000000000", reason="Loan not active", transaction={ "data": "0xab7b1c89000000000000000000000000000000000000000000000000000000000000004b", "from": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C", "to": "0x05f359D663fa8E70C49b3D69f65dA7C059b0cC7a" }, invocation=null, revert={ "args": [ "Loan not active" ], "name": "Error", "signature": "Error(string)" }, code=CALL_EXCEPTION, version=6.16.0)
+    at makeError (/Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/utils/errors.js:137:21)
+    at getBuiltinCallException (/Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/abi/abi-coder.js:105:37)
+    at AbiCoder.getBuiltinCallException (/Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/abi/abi-coder.js:206:16)
+    at JsonRpcProvider.getRpcError (/Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/providers/provider-jsonrpc.js:695:43)
+    at /Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/providers/provider-jsonrpc.js:302:45
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  code: 'CALL_EXCEPTION',
+  action: 'estimateGas',
+  data: '0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000f4c6f616e206e6f74206163746976650000000000000000000000000000000000',
+  reason: 'Loan not active',
+  transaction: {
+    to: '0x05f359D663fa8E70C49b3D69f65dA7C059b0cC7a',
+    data: '0xab7b1c89000000000000000000000000000000000000000000000000000000000000004b',
+    from: '0x800e305A0caDdE6289dFDFEDF38218f45C06F72C'
+  },
+  invocation: null,
+  revert: {
+    signature: 'Error(string)',
+    name: 'Error',
+    args: [ 'Loan not active' ]
+  },
+  shortMessage: 'execution reverted: "Loan not active"',
+  info: {
+    error: {
+      message: 'execution reverted: Loan not active',
+      code: 3,
+      data: '0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000f4c6f616e206e6f74206163746976650000000000000000000000000000000000'
+    },
+    payload: {
+      method: 'eth_estimateGas',
+      params: [Array],
+      id: 2858,
+      jsonrpc: '2.0'
+    }
+  }
+}
