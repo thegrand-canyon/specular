@@ -1,0 +1,22 @@
+=== Quick loan cycle on new V6 ===
+Pool 49 active on new V6? false
+Creating pool 49 on new V6...
+  tx: 0xc4ffc91920cb3e194f89c5af26be6cdb728ef6fb40f3bdfb7f0afeed1fd4d1a3
+approved 15 USDC
+supply tx: 0x4dfbad1fbe4a1e562e921ae9f0a30168f0f36d270843a5a836353f13baaeec2d gas: 225163
+loan tx: 0x8906f3fb19763939fcb115e173df4390826b9fa3e9763144955a4e4bda75c9c8 gas: 388826
+  loanId: 1
+repay tx: 0x2b3023516723f5151bd6437ef0925d51076b9dd2c4253ac024100b81080f6d3c gas: 181566 — ✅ no panic on new V6
+claim tx: 0x05c9bf0eda351339d21a7d0b38c741803a05a1103b29e7d2defabea216280f96
+
+Pool 49 after cycle:
+  totalLiq: 5.0
+  avail: 5.0
+  totalEarned: 0.002848
+  lenderCount: 1
+  accumulatedFees: 0.000028
+
+Testing FeesWithdrawn event...
+  withdrawFees tx: 0x4781fec23b307e371c3bb2d8f3dfaef586d3c10ea47da91c7c33c09541daf949 gas: 43717
+  ✅ FeesWithdrawn emitted: to=0x800e305A0caDdE6289dFDFEDF38218f45C06F72C, amount=0.000028
+cleanup withdraw tx: 0x03ffe5d96694cf6ee4461c92c5217a3abfd6efa90d8dc354cdc70fd2cc6c32ed

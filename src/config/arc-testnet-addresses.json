@@ -40,7 +40,9 @@
   "upgradedAt_v5": "2026-02-23T21:48:15.628Z",
   "upgradeReason_v5": "[H-04 FIX] MAX_LENDERS_PER_POOL reduced from 200 to 50",
   "deployerForUpgrade_v5": "0x656086A21073272533c8A3f56A94c1f3D8BCFcE2",
-  "agentLiquidityMarketplace_v6": "0xCeF77E14dB17aE0272510ddbDa97075e7Eb6EbF3",
-  "agentLiquidityMarketplace_v6_deployedAt": "2026-05-07T20:09:42.719Z",
+  "agentLiquidityMarketplace_v6_archive_2026_05_07": "0xCeF77E14dB17aE0272510ddbDa97075e7Eb6EbF3",
+  "agentLiquidityMarketplace_v6_archive_2026_05_07_note": "Pre-slither-fix V6 deployment 2026-05-07. Replaced 2026-05-12.",
+  "agentLiquidityMarketplace_v6": "0x05f359D663fa8E70C49b3D69f65dA7C059b0cC7a",
+  "agentLiquidityMarketplace_v6_deployedAt": "2026-05-12T14:12:11.513Z",
   "agentLiquidityMarketplace_v6_note": "V6 with §B1 + §S1 + §S5 fixes. Migration not started. Not yet canonical."
 }

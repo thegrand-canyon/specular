@@ -31,10 +31,10 @@ import "./ReputationManagerV3.sol";
 contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
     using SafeERC20 for IERC20;
 
-    // State variables
-    AgentRegistryV2 public agentRegistry;
-    ReputationManagerV3 public reputationManager;
-    IERC20 public usdcToken;
+    // State variables (set in constructor, immutable for gas savings — slither finding)
+    AgentRegistryV2 public immutable agentRegistry;
+    ReputationManagerV3 public immutable reputationManager;
+    IERC20 public immutable usdcToken;
 
     // Agent liquidity pools
     struct AgentPool {
@@ -121,6 +121,7 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
     event MigrationFinalized();
     event PoolSeeded(uint256 indexed agentId, address indexed agentAddress);
     event PositionSeeded(uint256 indexed agentId, address indexed lender, uint256 amount, uint256 earnedInterest);
+    event FeesWithdrawn(address indexed to, uint256 amount);
 
     constructor(
         address _agentRegistry,
@@ -535,6 +536,7 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
         require(amount <= accumulatedFees, "Insufficient fees");
         accumulatedFees -= amount;
         usdcToken.safeTransfer(owner(), amount);
+        emit FeesWithdrawn(owner(), amount);
     }
 
     /**

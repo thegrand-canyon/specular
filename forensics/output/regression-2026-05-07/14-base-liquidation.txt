@@ -1,0 +1,29 @@
+Wallet: 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+Base ETH: 0.010356656600751442
+block.timestamp: 2026-05-12T13:57:53.000Z
+
+--- Loan #2 ---
+  state: ACTIVE, amount: 0.1, endTime: 2026-05-11T19:10:09.000Z
+  static-call liquidateLoan...
+  staticCall OK — broadcasting...
+  tx: 0x653024145f25aa0c7ccff082c8e5d90989b98f18f42fc88717f236cc05230c49
+  mined block 45902465, gas 101051
+  final state: DEFAULTED
+
+--- Loan #3 ---
+  state: ACTIVE, amount: 0.1, endTime: 2026-05-11T19:10:15.000Z
+  static-call liquidateLoan...
+  staticCall OK — broadcasting...
+  tx: 0xc69a343e60a8d46d7cf81b8104deb32a7e76ce9848d2422abda54b203e670abb
+  mined block 45902469, gas 85951
+  final state: DEFAULTED
+
+--- Loan #4 ---
+  state: ACTIVE, amount: 0.1, endTime: 2026-05-11T19:10:29.000Z
+  static-call liquidateLoan...
+  staticCall OK — broadcasting...
+  tx: 0x62600197e1ec53d27d0eb5d3118c594a6800741780181460385572bc8fbe4462
+  mined block 45902475, gas 81151
+  final state: DEFAULTED
+
+Saved: forensics/output/regression-2026-05-07/14-base-liquidation-result.json

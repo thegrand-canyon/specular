@@ -1,0 +1,26 @@
+{
+  "ranAt": "2026-05-12T13:58:20.436Z",
+  "results": [
+    {
+      "id": 2,
+      "action": "liquidated",
+      "tx": "0x653024145f25aa0c7ccff082c8e5d90989b98f18f42fc88717f236cc05230c49",
+      "finalState": "DEFAULTED",
+      "gas": "101051"
+    },
+    {
+      "id": 3,
+      "action": "liquidated",
+      "tx": "0xc69a343e60a8d46d7cf81b8104deb32a7e76ce9848d2422abda54b203e670abb",
+      "finalState": "DEFAULTED",
+      "gas": "85951"
+    },
+    {
+      "id": 4,
+      "action": "liquidated",
+      "tx": "0x62600197e1ec53d27d0eb5d3118c594a6800741780181460385572bc8fbe4462",
+      "finalState": "DEFAULTED",
+      "gas": "81151"
+    }
+  ]
+}

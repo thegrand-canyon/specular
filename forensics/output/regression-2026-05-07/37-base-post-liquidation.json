@@ -1,0 +1,16 @@
+{
+  "pool": {
+    "totalLiq": 1.5,
+    "avail": 1.500002,
+    "lenderCount": 2
+  },
+  "poolLenders": [
+    "0x800e305a0cadde6289dfdfedf38218f45c06f72c",
+    "0x800e305a0cadde6289dfdfedf38218f45c06f72c"
+  ],
+  "duplicateCount": 1,
+  "requestLoanStaticCall": "would succeed",
+  "b1_still_active": true,
+  "expected_interest_base_units": "143",
+  "conclusion": "Pool #1 borrowing is DoS-ed by §B1 until V6 migration. Liquidation cleared loans but not the structural duplicate."
+}
