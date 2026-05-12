@@ -1,0 +1,35 @@
+{
+  "supply_per_lender": 50000,
+  "n_lenders": 3,
+  "total_pool": 150000,
+  "loan": {
+    "amount": 1000,
+    "duration_days": 365,
+    "gas": 371738,
+    "id": "82"
+  },
+  "repay_gas": 206841,
+  "expected_interest": 150,
+  "platform_fee": 1.5,
+  "lender_interest": 148.5,
+  "sum_earned": 49.5,
+  "interest_match": "mismatch",
+  "positions": [
+    {
+      "lender": "0x03CCd8BbcfBB9B4E272305975B4F0439c4163334",
+      "supplied": 50000,
+      "earned": 16.5
+    },
+    {
+      "lender": "0x5CC518135dB56f4A145E29F566B45223694083C0",
+      "supplied": 50000,
+      "earned": 16.5
+    },
+    {
+      "lender": "0xe7a1a2A2B5af0f09475D3B1171cfF25e5D1a4ca7",
+      "supplied": 50000,
+      "earned": 16.5
+    }
+  ],
+  "s1_invariant_holds": true
+}
