@@ -207,6 +207,8 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
      * @notice Withdraw liquidity from an agent's pool
      */
     function withdrawLiquidity(uint256 agentId, uint256 amount) external nonReentrant whenNotPaused {
+        // CLAUDE_REVIEW Finding 4: reject zero-amount withdrawals (prevents wasted-gas no-op)
+        require(amount > 0, "Amount must be > 0");
         LenderPosition storage position = positions[agentId][msg.sender];
         AgentPool storage pool = agentPools[agentId];
 
@@ -230,6 +232,8 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
      * @notice Agent requests a loan from their dedicated pool
      */
     function requestLoan(uint256 amount, uint256 durationDays) external nonReentrant whenNotPaused returns (uint256) {
+        // CLAUDE_REVIEW Finding 3: reject zero-amount loans (prevents self-griefing fill of MAX_ACTIVE_LOANS)
+        require(amount > 0, "Amount must be > 0");
         uint256 agentId = agentRegistry.addressToAgentId(msg.sender);
         require(agentId != 0, "Not a registered agent");
         require(agentPools[agentId].isActive, "No pool for agent");
@@ -600,6 +604,11 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
     ) external onlyOwner whileMigrating {
         require(agentId != 0, "Invalid agentId");
         require(agentAddress != address(0), "Invalid agentAddress");
+        // CLAUDE_REVIEW Finding 1: validate agentAddress matches registry mapping
+        require(
+            agentRegistry.addressToAgentId(agentAddress) == agentId,
+            "agentAddress/agentId mismatch"
+        );
         AgentPool storage pool = agentPools[agentId];
         bool isNew = (pool.agentId == 0);
 
@@ -651,6 +660,21 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
             poolLenders[agentId].push(lender);
             isInPoolLenders[agentId][lender] = true;
         }
+
+        // CLAUDE_REVIEW Finding 2: enforce Σ positions ≤ pool.totalLiquidity.
+        // Bounded by MAX_LENDERS_PER_POOL = 50 → ≤ 50 SLOAD ops per call. Acceptable.
+        // Without this, operator could seed positions summing more than totalLiquidity,
+        // breaking _distributeInterest's share formula (denominator-too-small → overflow).
+        address[] storage lendersList = poolLenders[agentId];
+        uint256 sumPositions = 0;
+        for (uint256 i = 0; i < lendersList.length; i++) {
+            sumPositions += positions[agentId][lendersList[i]].amount;
+        }
+        require(
+            sumPositions <= agentPools[agentId].totalLiquidity,
+            "Position sum exceeds totalLiquidity"
+        );
+
         emit PositionSeeded(agentId, lender, amount, earnedInterest);
     }
 

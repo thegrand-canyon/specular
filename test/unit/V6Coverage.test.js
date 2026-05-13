@@ -134,9 +134,11 @@ describe("V6 coverage gap-fillers", function () {
         });
 
         it("seedPool works before finalization", async () => {
-            // Use a different agent ID that doesn't conflict with the registered one
-            await v6.seedPool(99, owner.address, USDC(100), USDC(100), 0);
-            const pool = await v6.getAgentPool(99);
+            // Register a new agent first (post-fix #1: seedPool validates agentAddress in registry)
+            await registry.connect(lender).register("ipfs://seed-pool-test", []);
+            const aid = await registry.addressToAgentId(lender.address);
+            await v6.seedPool(aid, lender.address, USDC(100), USDC(100), 0);
+            const pool = await v6.getAgentPool(aid);
             expect(pool.totalLiquidity).to.equal(USDC(100));
         });
 
@@ -175,8 +177,10 @@ describe("V6 coverage gap-fillers", function () {
     describe("legacy helpers retained from v4", () => {
         it("totalPools returns correct count", async () => {
             expect(await v6.totalPools()).to.equal(1);
-            // Register another agent + create pool
-            await v6.seedPool(99, owner.address, 0, 0, 0);
+            // Register another agent + seedPool (post-fix #1: seedPool validates registry)
+            await registry.connect(lender).register("ipfs://totalPools-test", []);
+            const aid = await registry.addressToAgentId(lender.address);
+            await v6.seedPool(aid, lender.address, 0, 0, 0);
             expect(await v6.totalPools()).to.equal(2);
         });
 
