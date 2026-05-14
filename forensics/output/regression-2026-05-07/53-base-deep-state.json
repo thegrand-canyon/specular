@@ -1,0 +1,121 @@
+{
+  "timestamp": "2026-05-13T17:19:21.919Z",
+  "block": 45951707,
+  "marketplace": "0xd7b4dEE74C61844DFA75aEbe224e4635463b1C8f",
+  "topLevel": {
+    "paused": false,
+    "totalAgents": "3",
+    "totalPools": "1",
+    "mpUsdc": "1500000",
+    "accFees": "0",
+    "nextLoanId": "5"
+  },
+  "pools": [
+    {
+      "agentId": 1,
+      "agentAddress": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+      "totalLiquidity": "1500000",
+      "availableLiquidity": "1500002",
+      "totalLoaned": "0",
+      "totalEarned": "2",
+      "utilizationRate": 0,
+      "lenderCount": 2,
+      "lenders": [
+        "0x800e305a0cadde6289dfdfedf38218f45c06f72c",
+        "0x800e305a0cadde6289dfdfedf38218f45c06f72c"
+      ],
+      "uniqueLenders": 1,
+      "duplicates": [
+        {
+          "addr": "0x800e305a0cadde6289dfdfedf38218f45c06f72c",
+          "count": 2
+        }
+      ],
+      "positions": [
+        {
+          "lender": "0x800e305a0cadde6289dfdfedf38218f45c06f72c",
+          "amount": "1500000",
+          "earnedInterest": "0"
+        }
+      ],
+      "sumPositionAmts": "1500000",
+      "positionVsTotal": "0"
+    }
+  ],
+  "loans": [
+    {
+      "id": 1,
+      "borrower": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+      "amount": "1000",
+      "interest": "1500",
+      "duration": "604800",
+      "startTime": "1777829393",
+      "endTime": "1778434193",
+      "collateralAmount": "1000",
+      "state": "REPAID",
+      "agentId": 1
+    },
+    {
+      "id": 2,
+      "borrower": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+      "amount": "100000",
+      "interest": "1500",
+      "duration": "604800",
+      "startTime": "1777921809",
+      "endTime": "1778526609",
+      "collateralAmount": "100000",
+      "state": "DEFAULTED",
+      "agentId": 1
+    },
+    {
+      "id": 3,
+      "borrower": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+      "amount": "100000",
+      "interest": "1500",
+      "duration": "604800",
+      "startTime": "1777921815",
+      "endTime": "1778526615",
+      "collateralAmount": "100000",
+      "state": "DEFAULTED",
+      "agentId": 1
+    },
+    {
+      "id": 4,
+      "borrower": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+      "amount": "100000",
+      "interest": "1500",
+      "duration": "604800",
+      "startTime": "1777921829",
+      "endTime": "1778526629",
+      "collateralAmount": "100000",
+      "state": "DEFAULTED",
+      "agentId": 1
+    }
+  ],
+  "invariants": {
+    "B1": {
+      "violations": 1,
+      "details": [
+        {
+          "aid": 1,
+          "dups": [
+            {
+              "addr": "0x800e305a0cadde6289dfdfedf38218f45c06f72c",
+              "count": 2
+            }
+          ]
+        }
+      ]
+    },
+    "S1": {
+      "deficit": "0",
+      "violated": false,
+      "claimedLiabilities": "1500000",
+      "mpBal": "1500000"
+    },
+    "S5": {
+      "active": 0,
+      "defaulted": 3
+    }
+  }
+}

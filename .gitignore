@@ -25,3 +25,14 @@ test-agents.json
 fresh-agents-config.json
 *-agents-config.json
 *-agents.json
+
+# Scratch / forensics scripts that may pull keys from env at runtime — keep local-only
+forensics/scripts/tmp_*.js
+forensics/scripts/tmp_*.ts
+scripts/security-audit.js
+
+# Forensics output that contains generated test-wallet private keys (testnet but still)
+forensics/output/**/*wallets*.json
+forensics/output/**/*-extras*.json
+forensics/output/**/*-agent.json
+forensics/output/**/*-lender.json

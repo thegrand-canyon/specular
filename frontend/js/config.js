@@ -1,7 +1,7 @@
 // Contract addresses and network config for Arc Testnet
 //
 // Marketplace migration history (newest first):
-//   V6 — 0xCeF77E14dB17aE0272510ddbDa97075e7Eb6EbF3 (deployed 2026-05-07, §B1+§S1+§S5 fixed, EMPTY)
+//   V6 — 0x56ecCB27D953a3c84463Df97e18b4E596462CbdE (deployed 2026-05-13, post-Claude-review, §B1+§S1+§S5 + 4 self-found fixes, EMPTY)
 //   v4 — 0x048363A325A5B188b7FF157d725C5e329f0171D3 (CURRENT canonical, ~36k USDC liquidity)
 //   v3 — 0xD1cf6E7864Bc4CbBE52aA94369dF08B106927559 (deprecated, frontend pointed here pre-fix)
 //

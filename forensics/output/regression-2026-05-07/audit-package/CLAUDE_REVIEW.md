@@ -1,8 +1,12 @@
 # Claude Security Review — `AgentLiquidityMarketplaceV6.sol`
 
-**Date**: 2026-05-12
+**Original review date**: 2026-05-12
+**Update date**: 2026-05-13 — all 4 findings now RESOLVED (commit `3bb7c27`)
 **Reviewer**: Claude (Sonnet 4) — an AI assistant that helped author V6
-**Commit**: `bd6f20c` (also tagged `v6-pre-audit-2026-05-12`)
+**Commit (original review)**: `bd6f20c` (tagged `v6-pre-audit-2026-05-12`)
+**Commit (fixes applied)**: `3bb7c27`
+**Commit (Arc redeploy with fixes)**: `a706c48`
+**Live V6 address (post-fix)**: `0x56ecCB27D953a3c84463Df97e18b4E596462CbdE` (verified on Arcscan)
 **Target**: `contracts/core/AgentLiquidityMarketplaceV6.sol` only
 
 ---
@@ -35,18 +39,26 @@ If this review reports zero critical findings, that does not mean V6 is safe to 
 
 ## Findings Summary
 
-| # | Severity | Title | Recommendation |
-|---|----------|-------|----------------|
-| 1 | Low | `seedPool` does not validate `agentAddress` against the registry | Add `require(agentAddress == agentRegistry.agents(agentId).agentWallet)` |
-| 2 | Low | `seedPosition` does not validate that `Σ amount ≤ pool.totalLiquidity` | Add invariant check or accept-with-rationale (operator burden) |
-| 3 | Low | `requestLoan(amount=0)` creates a useless active loan slot | Add `require(amount > 0)` |
-| 4 | Low | `withdrawLiquidity(amount=0)` is a no-op that succeeds | Add `require(amount > 0)` |
-| 5 | Informational | `liquidateLoan` does not write down lender position records proportionally | Working as designed; consider documenting |
-| 6 | Informational | `agentLoans[]` array grows unbounded | Not exploitable on V6 (counter not array walk); could grow storage indefinitely |
-| 7 | Informational | `Drain underflow` revert in `claimInterest` is recovery-blocking | Owner can fix via seedPool; documented |
-| 8 | Defensive | Reputation manager return values not bounds-checked in V6 | Trust assumption in threat model |
+| # | Severity | Title | Resolution |
+|---|----------|-------|-----------|
+| 1 | Low | `seedPool` does not validate `agentAddress` against the registry | ✅ **RESOLVED** in `3bb7c27` — `require(agentRegistry.addressToAgentId(agentAddress) == agentId)`. Verified live on Arc V6. |
+| 2 | Low | `seedPosition` does not validate that `Σ amount ≤ pool.totalLiquidity` | ✅ **RESOLVED** in `3bb7c27` — iterates `poolLenders[agentId]` (bounded by MAX_LENDERS_PER_POOL=50) and asserts `Σ ≤ totalLiquidity`. |
+| 3 | Low | `requestLoan(amount=0)` creates a useless active loan slot | ✅ **RESOLVED** in `3bb7c27` — `require(amount > 0)` at function entry. Verified live on Arc V6. |
+| 4 | Low | `withdrawLiquidity(amount=0)` is a no-op that succeeds | ✅ **RESOLVED** in `3bb7c27` — `require(amount > 0)` at function entry. Verified live on Arc V6. |
+| 5 | Informational | `liquidateLoan` does not write down lender position records proportionally | 📝 ACCEPTED — working as designed (positions are claims-against-pool, not 1:1 with USDC). Documented for migration runbook. |
+| 6 | Informational | `agentLoans[]` array grows unbounded | 📝 ACCEPTED — not exploitable on V6 (uses O(1) counter, not array walk). Storage growth is bounded by gas-pricing economics. |
+| 7 | Informational | `Drain underflow` revert in `claimInterest` is recovery-blocking | 📝 ACCEPTED — owner can fix via `seedPool` during migration phase; defense-in-depth is the right tradeoff. |
+| 8 | Defensive | Reputation manager return values not bounds-checked in V6 | 📝 ACCEPTED — trust assumption documented in threat model; reputation manager is in same trust domain as V6 owner. |
 
-No high or critical findings.
+**Resolution: 4/4 actionable findings fixed and verified live. 4 informational findings accepted with documented rationale.**
+
+Test coverage for fixes:
+- 15 new tests in `tests/V6ClaudeReviewFixes.test.js` (all passing)
+- Full hardhat suite: 378 passing (up from 363)
+- Foundry invariants: 5/5 still pass across 10,240 random sequences
+- Slither V6-specific findings: 5 (down from 9; all remaining are accept-with-rationale items in the table above)
+
+No high or critical findings before or after fixes.
 
 ---
 
@@ -54,7 +66,7 @@ No high or critical findings.
 
 ### Finding 1 — `seedPool` does not validate `agentAddress` against `AgentRegistryV2`
 
-**Severity**: Low
+**Severity**: Low — ✅ **RESOLVED** in `3bb7c27`, redeployed to Arc in `a706c48`
 **Location**: lines 594-619
 
 ```solidity
@@ -80,9 +92,18 @@ require(agentRegistry.addressToAgentId(agentAddress) == agentId, "agentId mismat
 ```
 Or document explicitly that the migration operator is responsible for matching consistency.
 
+**Fix applied** (`3bb7c27`):
+```solidity
+require(
+    agentRegistry.addressToAgentId(agentAddress) == agentId,
+    "agentAddress/agentId mismatch"
+);
+```
+Verified live on Arc V6 (`0x56ecCB27...`): seeding with mismatched address reverts with the expected message. Test coverage: 4 tests in `test/unit/V6ClaudeReviewFixes.test.js` plus 2 updated tests in `test/unit/V6Coverage.test.js`.
+
 ### Finding 2 — `seedPosition` doesn't enforce position-sum-≤-pool-liquidity invariant
 
-**Severity**: Low
+**Severity**: Low — ✅ **RESOLVED** in `3bb7c27`, redeployed to Arc in `a706c48`
 **Location**: lines 633-655
 
 ```solidity
@@ -104,9 +125,24 @@ This would give each lender more than their fair share when `Σ positions > tota
 
 **Recommendation**: Track `Σ positions[agentId]` in a separate counter and assert `≤ pool.totalLiquidity` in `seedPosition`. Or accept-with-rationale that this is an operator-trust issue.
 
+**Fix applied** (`3bb7c27`):
+```solidity
+// After position update in seedPosition:
+address[] storage lendersList = poolLenders[agentId];
+uint256 sumPositions = 0;
+for (uint256 i = 0; i < lendersList.length; i++) {
+    sumPositions += positions[agentId][lendersList[i]].amount;
+}
+require(
+    sumPositions <= agentPools[agentId].totalLiquidity,
+    "Position sum exceeds totalLiquidity"
+);
+```
+Loop is bounded by `MAX_LENDERS_PER_POOL = 50` and only runs during owner-only migration window, so gas cost is acceptable. Test coverage: 5 tests in `test/unit/V6ClaudeReviewFixes.test.js` covering the boundary cases (single = total, two summing to total, third position breaks invariant, position-reduction frees room, single position alone exceeds).
+
 ### Finding 3 — `requestLoan(amount=0)` is accepted
 
-**Severity**: Low (already noted in edge-case bombardment, 35-edge-cases.txt)
+**Severity**: Low — ✅ **RESOLVED** in `3bb7c27`, redeployed to Arc in `a706c48` (already noted in edge-case bombardment, 35-edge-cases.txt)
 **Location**: lines 232-288
 
 `requestLoan(0, 7)` passes all checks: `0 ≤ availableLiquidity`, `0 ≤ creditLimit`, duration valid, `0 < cap`. Creates a Loan record, increments `nextLoanId`, increments `activeLoanCount`, pushes to `agentLoans[]`. Requires nothing transferred. Borrower can fill their MAX_ACTIVE_LOANS=10 cap with 10 zero-amount loans, blocking real borrowing until they repay each (zero-amount repays are also free).
@@ -115,14 +151,26 @@ This would give each lender more than their fair share when `Σ positions > tota
 
 **Recommendation**: `require(amount > 0, "Amount must be > 0")` at line 233 (matches `supplyLiquidity`'s pattern).
 
+**Fix applied** (`3bb7c27`):
+```solidity
+require(amount > 0, "Amount must be > 0");
+```
+Verified live on Arc V6: `requestLoan(0, 7)` reverts. Test coverage: 3 tests in `test/unit/V6ClaudeReviewFixes.test.js` (rejects zero, accepts nonzero, can't fill slot cap with zero loans).
+
 ### Finding 4 — `withdrawLiquidity(amount=0)` is a no-op that succeeds
 
-**Severity**: Low
+**Severity**: Low — ✅ **RESOLVED** in `3bb7c27`, redeployed to Arc in `a706c48`
 **Location**: lines 209-227
 
 A 0-amount withdraw passes all `require` checks (>= 0 is always true), updates nothing material, transfers 0 USDC, emits the event. Wastes gas. Not exploitable.
 
 **Recommendation**: `require(amount > 0)` matches the supply-side pattern; rejects accidental wasted-gas calls.
+
+**Fix applied** (`3bb7c27`):
+```solidity
+require(amount > 0, "Amount must be > 0");
+```
+Verified live on Arc V6: `withdrawLiquidity(_, 0)` reverts. Test coverage: 3 tests in `test/unit/V6ClaudeReviewFixes.test.js`.
 
 ### Finding 5 — `liquidateLoan` doesn't reduce lender position records on partial-collateral default
 
@@ -206,11 +254,11 @@ My new findings (#1-2) are migration-helper concerns slither didn't flag because
 
 ## My subjective confidence
 
-If pressed for a single number: I think V6 is in solid shape. The fixes for §B1, §S1, §S5 are correct, well-tested, and reflect a clear understanding of what went wrong in v4. The migration helpers are reasonable.
+If pressed for a single number: I think V6 is in solid shape. The fixes for §B1, §S1, §S5 are correct, well-tested, and reflect a clear understanding of what went wrong in v4. The migration helpers are reasonable. After the 4 fixes in `3bb7c27`, the migration helpers no longer permit operator footguns I had previously rationalized as "trust the operator."
 
 **But** — and this is critical — my confidence comes from having co-built the contract. An auditor coming in fresh will see things I have rationalized as fine. **Estimate**: external audit will surface 0-3 medium findings I missed; 0-1 critical (unlikely given coverage); some informational items.
 
-Translating: I think V6 is ready for external review and the auditor is unlikely to come back with "this needs major rework." But "ready for external review" is the actual statement — not "ready to deploy without external review."
+Translating: I think V6 is ready for external review and the auditor is unlikely to come back with "this needs major rework." But "ready for external review" is the actual statement — not "ready to deploy without external review." The 4 self-found issues being fixed before audit handoff is exactly what this review is for — freeing the auditor's time for things I can't see.
 
 ---
 

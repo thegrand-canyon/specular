@@ -1,0 +1,72 @@
+========================================================================
+   MEGA STRESS — Arc V6 post-fix (0x56ecCB27D953a3c84463Df97e18b4E596462CbdE)
+========================================================================
+Owner: 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+Start: 298.413392211635094529 ETH, 1771963.527557 USDC
+
+[1] Generate 10 lenders + 5 borrowers
+  generated 15 wallets
+
+[2] Fund wallets with ETH + USDC
+  funded 15 wallets
+
+[3] Register borrowers + create pools, approve MaxUint256
+  borrower 1: agentId=124 reputation=0
+  borrower 2: agentId=125 reputation=0
+  borrower 3: agentId=126 reputation=0
+  borrower 4: agentId=127 reputation=0
+  borrower 5: agentId=128 reputation=0
+
+[4] Each lender supplies 20000 USDC to each pool
+  3/10 lenders supplied
+  6/10 lenders supplied
+  9/10 lenders supplied
+  ✅ [post-supply] §B1 OK, §S1 OK (Σavail=1000000.00, mpBal=1100001.11, slack=100001.109789)
+
+[5] MAX_LENDERS=50 boundary test on pool 124
+  added 10/40 extra lenders (pool now 20/50)
+  added 20/40 extra lenders (pool now 30/50)
+  added 30/40 extra lenders (pool now 40/50)
+  added 40/40 extra lenders (pool now 50/50)
+  pool 124 now has lenderCount=50 (cap=50)
+  ✓ 51st lender REJECTED: "execution reverted: "Pool lender capacity reached""
+  ✅ [post-boundary] §B1 OK, §S1 OK (Σavail=1000400.00, mpBal=1100401.11, slack=100001.109789)
+
+[6] 100 cycles × 5 borrowers = 500 loans, mixed durations
+  cycle 25/100: 125 loans completed
+  ✅ [cycle-25] §B1 OK, §S1 OK (Σavail=1000468.46, mpBal=1100473.02, slack=100004.561814)
+  cycle 35 borrower 1 (365d): server response 408 Request Timeout
+  cycle 35 borrower 2 (365d): server response 408 Request Timeout
+  cycle 46 borrower 1 (7d): insufficient funds for intrinsic transaction cost
+  cycle 47 borrower 1 (30d): insufficient funds for intrinsic transaction cost
+  cycle 48 borrower 1 (90d): insufficient funds for intrinsic transaction cost
+  cycle 49 borrower 1 (180d): insufficient funds for intrinsic transaction cost
+  cycle 50 borrower 1 (365d): insufficient funds for intrinsic transaction cost
+  cycle 50/100: 243 loans completed
+  ✅ [cycle-50] §B1 OK, §S1 OK (Σavail=1000200.24, mpBal=1100407.62, slack=100207.386977)
+  cycle 51 borrower 1 (7d): insufficient funds for intrinsic transaction cost
+  cycle 52 borrower 1 (30d): insufficient funds for intrinsic transaction cost
+/Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/utils/errors.js:137
+            error = new Error(message);
+                    ^
+
+Error: server response 408 Request Timeout (request={  }, response={  }, error=null, info={ "requestUrl": "https://arc-testnet.drpc.org", "responseBody": "{\"id\":20044,\"jsonrpc\":\"2.0\",\"error\":{\"message\":\"Request timeout on the free tier, please upgrade your tier to the paid one\",\"code\":30}}", "responseStatus": "408 Request Timeout" }, code=SERVER_ERROR, version=6.16.0)
+    at makeError (/Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/utils/errors.js:137:21)
+    at assert (/Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/utils/errors.js:157:15)
+    at FetchResponse.assertOk (/Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/utils/fetch.js:839:32)
+    at JsonRpcProvider._send (/Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/providers/provider-jsonrpc.js:917:18)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async /Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/providers/provider-jsonrpc.js:281:40 {
+  code: 'SERVER_ERROR',
+  request: FetchRequest {},
+  response: FetchResponse {},
+  error: undefined,
+  info: {
+    requestUrl: 'https://arc-testnet.drpc.org',
+    responseBody: '{"id":20044,"jsonrpc":"2.0","error":{"message":"Request timeout on the free tier, please upgrade your tier to the paid one","code":30}}',
+    responseStatus: '408 Request Timeout'
+  },
+  shortMessage: 'server response 408 Request Timeout'
+}
+
+Node.js v22.22.0

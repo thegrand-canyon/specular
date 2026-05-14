@@ -1,0 +1,47 @@
+============================================================
+   BASE V4 DEEP STATE PROBE — 2026-05-13T17:18:54.968Z
+============================================================
+Marketplace: 0xd7b4dEE74C61844DFA75aEbe224e4635463b1C8f
+Block: 45951694
+
+[1] Top-level state
+  paused: false
+  totalAgents: 3
+  totalPools: 1
+  MP USDC balance: 1.5
+  accumulatedFees: 0
+  platformFeeRate: 100 bps
+  nextLoanId: 5
+
+[2] Per-pool deep dump
+  pool[1]: totalLiq=1.5, avail=1.500002, loaned=0, earned=0.000002, lenders=2 (unique=1, dups=1)
+    DUP §B1: 0x800e305a0cadde6289dfdfedf38218f45c06f72c appears 2×
+
+[3] §S1 accounting
+  Σ totalLiquidity:    1.5 USDC
+  + accumulatedFees:   0 USDC
+  = claimedLiabilities 1.5 USDC
+  actual MP USDC bal:  1.5 USDC
+  deficit (claim - actual): 0 USDC
+  §S1 status: ✅ OK
+
+[4] All loans
+  loan[1]: state=REPAID, amt=0.001, agentId=1, borrower=0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+  loan[2]: state=DEFAULTED, amt=0.1, agentId=1, borrower=0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+  loan[3]: state=DEFAULTED, amt=0.1, agentId=1, borrower=0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+  loan[4]: state=DEFAULTED, amt=0.1, agentId=1, borrower=0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+
+[5] §B1 aggregate
+  pools with duplicates: 1 / 1
+    pool 1: 1 duplicate addresses
+      0x800e305a0cadde6289dfdfedf38218f45c06f72c appears 2×
+
+============================================================
+   SUMMARY
+============================================================
+pools: 1, loans: 4, lenders (unique union): 1
+§B1 violations: 1 pool(s)
+§S1 deficit:    0 USDC (OK)
+§S5: total active loans = 0, defaulted = 3
+Total duration: 27.0s
+Saved.

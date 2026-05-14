@@ -1,0 +1,67 @@
+=== COMPREHENSIVE V6 STRESS SIMULATION ===
+Owner: 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+Start: 317.446662635073094529 ETH, 2797964.637347 USDC
+
+[1] Generate 5 lenders + 3 borrowers
+
+[2] Fund wallets
+  funded 8 wallets
+
+[3] Each borrower registers + creates own V6 pool
+  borrower 1: agentId=120
+  borrower 2: agentId=121
+  borrower 3: agentId=122
+
+[4] Each lender supplies 33333.333333333336 USDC to each borrower's pool
+  per-pool supply per lender: 33333.333333 USDC
+  lender 1 supplied to all 3 pools
+  L1→pool122: execution reverted (unknown custom error)
+  lender 2 supplied to all 3 pools
+  lender 3 supplied to all 3 pools
+  lender 4 supplied to all 3 pools
+  lender 5 supplied to all 3 pools
+  ✅ [post-supply] §B1 OK, §S1 OK (Σavail=500000.00, mpBal=600000.00, slack=99999.999999)
+
+[5] Each borrower does 30 loan/repay cycles concurrently (round-robin)
+  cycle 5/30: 15 loans completed; first 5 loan gas 422673, last 5 391893
+  ✅ [cycle 5] §B1 OK, §S1 OK (Σavail=500018.31, mpBal=600018.49, slack=100000.184919)
+  cycle 10/30: 30 loans completed; first 5 loan gas 422673, last 5 391893
+  ✅ [cycle 10] §B1 OK, §S1 OK (Σavail=500036.62, mpBal=600036.99, slack=100000.369839)
+  cycle 15/30: 45 loans completed; first 5 loan gas 422673, last 5 391893
+  ✅ [cycle 15] §B1 OK, §S1 OK (Σavail=500054.92, mpBal=600055.48, slack=100000.554759)
+  cycle 20/30: 60 loans completed; first 5 loan gas 422673, last 5 391893
+  ✅ [cycle 20] §B1 OK, §S1 OK (Σavail=500073.23, mpBal=600073.97, slack=100000.739679)
+  cycle 25/30: 75 loans completed; first 5 loan gas 422673, last 5 391894
+  ✅ [cycle 25] §B1 OK, §S1 OK (Σavail=500091.54, mpBal=600092.47, slack=100000.924599)
+  cycle 30/30: 90 loans completed; first 5 loan gas 422673, last 5 391894
+  ✅ [cycle 30] §B1 OK, §S1 OK (Σavail=500109.85, mpBal=600110.96, slack=100001.109519)
+
+  Total loans completed: 90
+
+[6] Each lender claims interest from each pool
+  total interest claimed: 109.84905 USDC
+  ✅ [post-claim] §B1 OK, §S1 OK (Σavail=500000.00, mpBal=600001.11, slack=100001.109519)
+
+[7] §B1 stress: each lender does supply→withdraw 5× on borrower 0's pool
+  L0 cycle 0: execution reverted (unknown custom error)
+  lender 1: 5 supply→withdraw cycles done
+  L1 cycle 0: execution reverted (unknown custom error)
+  lender 2: 5 supply→withdraw cycles done
+  L2 cycle 0: execution reverted (unknown custom error)
+  lender 3: 5 supply→withdraw cycles done
+  L3 cycle 0: execution reverted (unknown custom error)
+  lender 4: 5 supply→withdraw cycles done
+  L4 cycle 0: execution reverted (unknown custom error)
+  lender 5: 5 supply→withdraw cycles done
+  pool 120 lenderCount: 5, unique: 5 ✅ §B1 holds
+
+Loan gas: first10=407283, last10=391894, ratio=0.962 ✅ §S5 OK
+
+[8] Cleanup
+  cleanup done
+
+End: 313.435090856513094529 ETH (Δ -4.01157177856)
+USDC: 2797963.527557 (Δ -1.11)
+Invariant checks during run: 6
+
+Saved.

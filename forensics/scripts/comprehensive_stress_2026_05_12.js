@@ -28,7 +28,7 @@ const LOAN_AMT = ethers.parseUnits('100', 6); // 100 USDC per loan
 const DURATION = 30;
 const FUND_ETH = ethers.parseEther('0.5'); // covers tons of tx
 const FUND_USDC_LENDER = ethers.parseUnits('100100', 6);
-const FUND_USDC_BORROWER = ethers.parseUnits('110', 6); // collateral buffer (low rep = 100% collateral)
+const FUND_USDC_BORROWER = ethers.parseUnits('1000', 6); // 100 USDC collateral + interest buffer across 30 cycles (~60 USDC interest at low rep)
 const INTER_TX_DELAY = 500;
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -92,7 +92,8 @@ const log = (...a) => console.log(...a);
             const aid = await withRetry(() => reg.addressToAgentId(borrowers[i].address));
             borrowerAgentIds.push(Number(aid));
             await withRetry(() => m.createAgentPool().then(t => t.wait()));
-            await withRetry(() => u.approve(V6, FUND_USDC_BORROWER).then(t => t.wait()));
+            // Approve MaxUint256 so allowance never depletes across 30 cycles (each cycle consumes ~200 USDC from allowance: 100 collateral + ~102 repay).
+            await withRetry(() => u.approve(V6, ethers.MaxUint256).then(t => t.wait()));
             log(`  borrower ${i + 1}: agentId=${aid}`);
             await sleep(INTER_TX_DELAY);
         } catch (e) { log(`  borrower ${i}: ${(e.shortMessage || e.message).slice(0, 60)}`); }

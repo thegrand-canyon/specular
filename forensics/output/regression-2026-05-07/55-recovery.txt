@@ -1,0 +1,70 @@
+Loaded 55 wallets to scan
+Master USDC before: 21655.774756
+  [1/55] 0x2F3F7071... withdrew 250 from pool 129
+  [1/55] 0x2F3F7071... withdrew 185.625 from pool 130
+  [2/55] 0x36a6721b... withdrew 642 from pool 129
+  [2/55] 0x36a6721b... withdrew 1056 from pool 130
+  [3/55] 0x05c0BA10... withdrew 663 from pool 129
+  [3/55] 0x05c0BA10... withdrew 1084 from pool 130
+  [4/55] 0xE9e67a83... withdrew 250 from pool 129
+  [4/55] 0xE9e67a83... withdrew 44.6875 from pool 130
+  [5/55] 0xB9Ab6175... withdrew 343 from pool 129
+  [5/55] 0xB9Ab6175... withdrew 450.25 from pool 130
+  [6/55] 0xC65Aa4E4... withdrew 1000 from pool 129
+  [6/55] 0xC65Aa4E4... withdrew 1000 from pool 130
+  [7/55] 0xD8A4fd28... withdrew 6 from pool 131
+  [7/55] 0xD8A4fd28... withdrew 119 from pool 132
+  [8/55] 0xCB1645E1... withdrew 130.5 from pool 131
+  [8/55] 0xCB1645E1... withdrew 150 from pool 133
+  [9/55] 0x06A643C8... withdrew 14.5 from pool 130
+  [9/55] 0x06A643C8... withdrew 89 from pool 131
+  [12/55] 0xd80Bb9b6... withdrew 10 from pool 129
+  [13/55] 0xd52dc6E2... withdrew 10 from pool 129
+  [14/55] 0x77E99C87... withdrew 10 from pool 129
+  [15/55] 0x0EE6ead6... withdrew 10 from pool 129
+  [16/55] 0xc0f6D563... withdrew 10 from pool 129
+  [17/55] 0x38CdE26c... withdrew 10 from pool 129
+  [18/55] 0x6FdFB8Ce... withdrew 10 from pool 129
+  [19/55] 0x14764d04... withdrew 10 from pool 129
+  [20/55] 0x9b3D6327... withdrew 10 from pool 129
+  [21/55] 0x7d8C48fe... withdrew 10 from pool 129
+  [22/55] 0x865a1641... withdrew 10 from pool 129
+  [23/55] 0x425f3933... withdrew 10 from pool 129
+  [24/55] 0x9Db8Df05... withdrew 10 from pool 129
+  [25/55] 0x36686C01... withdrew 10 from pool 129
+  [26/55] 0x7336D3D5... withdrew 10 from pool 129
+  [27/55] 0x347402B6... withdrew 10 from pool 129
+  [28/55] 0x52017248... withdrew 10 from pool 129
+  [29/55] 0xf323E06f... withdrew 10 from pool 129
+  [30/55] 0xcC1C5657... withdrew 10 from pool 129
+  [31/55] 0x81b7bD06... withdrew 10 from pool 129
+  [32/55] 0x4995C815... withdrew 10 from pool 129
+  [33/55] 0x7a1B6787... withdrew 10 from pool 129
+  [34/55] 0x78397A2F... withdrew 10 from pool 129
+  [35/55] 0xa080bb21... withdrew 10 from pool 129
+  [36/55] 0x25fA7E92... withdrew 10 from pool 129
+  [37/55] 0x99703b77... withdrew 10 from pool 129
+  [38/55] 0xdF5abdb7... withdrew 10 from pool 129
+  [39/55] 0xa139a900... withdrew 10 from pool 129
+  [40/55] 0x67a205db... withdrew 10 from pool 129
+  [41/55] 0x1E38C42D... withdrew 10 from pool 129
+  [42/55] 0x380AE5c8... withdrew 10 from pool 129
+  [43/55] 0x593174A5... withdrew 10 from pool 129
+  [44/55] 0xC800c566... withdrew 10 from pool 129
+  [45/55] 0x64d2ff77... withdrew 10 from pool 129
+  [46/55] 0xf8752c61... withdrew 10 from pool 129
+  [47/55] 0x53e82236... withdrew 10 from pool 129
+  [48/55] 0x2c4C9078... withdrew 10 from pool 129
+  [49/55] 0x3ad33c24... withdrew 10 from pool 129
+  [50/55] 0x63320fa0... withdrew 10 from pool 129
+  [51/55] 0x7b1659e1... withdrew 10 from pool 129
+  [52/55] 0x1cc93C20... withdrew 10 from pool 129
+  [53/55] 0x28A053Fa... withdrew 10 from pool 129
+  [54/55] 0x7E6c5066... withdrew 10 from pool 129
+  [55/55] 0xe1f20e20... withdrew 10 from pool 129
+
+=== RECOVERY DONE ===
+Position withdraws: 62
+USDC drained from wallet balances: 7917.5625
+ETH drained: 0.0
+Master USDC delta: 7817.5625 (after: 29473.337256)

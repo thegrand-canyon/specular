@@ -1,0 +1,87 @@
+========================================================================
+   MEGA STRESS — Arc V6 post-fix (0x56ecCB27D953a3c84463Df97e18b4E596462CbdE)
+========================================================================
+Owner: 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+Start: 255.221847914649094529 ETH, 41163.527557 USDC
+
+[1] Generate 6 lenders + 5 borrowers
+  generated 11 wallets (persisted to ./forensics/output/regression-2026-05-07/52-mega-stress-wallets.json)
+
+[2] Fund wallets with ETH + USDC
+  funded 11 wallets
+
+[3] Register borrowers + create pools, approve MaxUint256
+  borrower 1: agentId=129 reputation=0
+  borrower 2: agentId=130 reputation=0
+  borrower 3: agentId=131 reputation=0
+  borrower 4: agentId=132 reputation=0
+  borrower 5: agentId=133 reputation=0
+
+[4] Each lender supplies 1000 USDC to each pool
+  3/6 lenders supplied
+  6/6 lenders supplied
+  ✅ [post-supply] §B1 OK, §S1 OK (Σavail=30000.00, mpBal=1130408.83, slack=1100408.829953)
+
+[5] MAX_LENDERS=50 boundary test on pool 129
+  pool already has 6 lenders; adding 44 extras to fill cap (50)
+  added 10/44 extra lenders (pool now 16/50)
+  added 20/44 extra lenders (pool now 26/50)
+  added 30/44 extra lenders (pool now 36/50)
+  added 40/44 extra lenders (pool now 46/50)
+  pool 129 now has lenderCount=50 (cap=50)
+  ✓ 51st lender REJECTED: "execution reverted: "Pool lender capacity reached""
+  ✅ [post-boundary] §B1 OK, §S1 OK (Σavail=30440.00, mpBal=1130848.83, slack=1100408.829953)
+
+[6] 100 cycles × 5 borrowers = 500 loans, mixed durations
+  cycle 25/100: 125 loans completed
+  ✅ [cycle-25] §B1 OK, §S1 OK (Σavail=30454.42, mpBal=1130863.94, slack=1100409.520303)
+  cycle 50/100: 250 loans completed
+  ✅ [cycle-50] §B1 OK, §S1 OK (Σavail=30441.74, mpBal=1130851.86, slack=1100410.118593)
+  cycle 75/100: 375 loans completed
+  ✅ [cycle-75] §B1 OK, §S1 OK (Σavail=30448.55, mpBal=1130859.04, slack=1100410.495978)
+[unhandledRejection caught]: server response 408 Request Timeout
+  cycle 100/100: 500 loans completed
+  ✅ [cycle-100] §B1 OK, §S1 OK (Σavail=30442.59, mpBal=1130853.34, slack=1100410.744453)
+  Total loans: 500/500
+  Loan gas: first10=417543, last10=371781, ratio=0.890 ✅ §S5
+
+[7] Random op fuzz: 300 ops on random pools by random actors
+  50/300: ok=28 fail=22
+  ✅ [fuzz-50] §B1 OK, §S1 OK (Σavail=27858.62, mpBal=1128269.36, slack=1100410.744781)
+  100/300: ok=66 fail=34
+  ✅ [fuzz-100] §B1 OK, §S1 OK (Σavail=26566.65, mpBal=1126977.39, slack=1100410.745068)
+  150/300: ok=99 fail=51
+  ✅ [fuzz-150] §B1 OK, §S1 OK (Σavail=24268.03, mpBal=1124678.79, slack=1100410.759163)
+  200/300: ok=138 fail=62
+  ✅ [fuzz-200] §B1 OK, §S1 OK (Σavail=20871.95, mpBal=1121282.74, slack=1100410.784354)
+  250/300: ok=167 fail=83
+  ✅ [fuzz-250] §B1 OK, §S1 OK (Σavail=19122.04, mpBal=1119532.83, slack=1100410.794686)
+  300/300: ok=203 fail=97
+  ✅ [fuzz-300] §B1 OK, §S1 OK (Σavail=19505.79, mpBal=1119916.58, slack=1100410.796329)
+  Fuzz done: 203 ok, 97 fail
+
+[8] §B1 high-churn: 100 supply→withdraw cycles by 5 lenders on pool 130
+  churn 25/100: pool 130 lenderCount=8 unique=8 ✅ §B1
+  churn 50/100: pool 130 lenderCount=8 unique=8 ✅ §B1
+  churn 75/100: pool 130 lenderCount=8 unique=8 ✅ §B1
+  churn 100/100: pool 130 lenderCount=8 unique=8 ✅ §B1
+
+[9] Reputation deltas
+  borrower 1 (agentId 129): 0 → 1000 (Δ +1000)
+  borrower 2 (agentId 130): 0 → 1000 (Δ +1000)
+  borrower 3 (agentId 131): 0 → 1000 (Δ +1000)
+  borrower 4 (agentId 132): 0 → 1000 (Δ +1000)
+  borrower 5 (agentId 133): 0 → 1000 (Δ +1000)
+
+[10] Final invariants
+  ✅ [final] §B1 OK, §S1 OK (Σavail=19505.79, mpBal=1119916.58, slack=1100410.796329)
+
+[11] Cleanup — return residual USDC + ETH to owner
+  Drained back 14192.247199 USDC, 26.954056183271 ETH
+
+Final: 21655.774756 USDC, 246.844907888312094529 ETH
+Total ops: 2047, invariant snapshots: 13
+Duration: 203.1 min
+Invariant violations: 0 / 13
+   ✅ ALL INVARIANTS HELD
+Saved to forensics/output/regression-2026-05-07/52-mega-stress.json
