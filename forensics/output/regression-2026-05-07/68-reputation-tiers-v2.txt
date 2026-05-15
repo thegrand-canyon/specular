@@ -1,0 +1,52 @@
+=== REPUTATION TIER TRANSITIONS ===
+borrower=0x7ed80A8c06F2214f742C6Fce99b5aE6dE77fcE34 agentId=156
+  initial: score=0, creditLimit=1000 USDC, collateralRate=100%, interestRate=15% APR
+  cycle-1: score=10, creditLimit=1000 USDC, collateralRate=100%, interestRate=15% APR
+  *** TIER TRANSITION at cycle 1: score=10, new tier=0
+  cycle-5: score=50, creditLimit=1000 USDC, collateralRate=100%, interestRate=15% APR
+  cycle-10: score=100, creditLimit=1000 USDC, collateralRate=100%, interestRate=15% APR
+  cycle-15: score=150, creditLimit=1000 USDC, collateralRate=100%, interestRate=15% APR
+  cycle-20: score=200, creditLimit=5000 USDC, collateralRate=100%, interestRate=15% APR
+  cycle-25: score=250, creditLimit=5000 USDC, collateralRate=100%, interestRate=15% APR
+  cycle-30: score=300, creditLimit=5000 USDC, collateralRate=100%, interestRate=15% APR
+  *** TIER TRANSITION at cycle 30: score=300, new tier=1
+  cycle-35: score=350, creditLimit=5000 USDC, collateralRate=100%, interestRate=15% APR
+  cycle-40: score=400, creditLimit=10000 USDC, collateralRate=100%, interestRate=10% APR
+  cycle-45: score=450, creditLimit=10000 USDC, collateralRate=100%, interestRate=10% APR
+FATAL: Error: execution reverted: "Not the borrower" (action="estimateGas", data="0x08c379a0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000104e6f742074686520626f72726f77657200000000000000000000000000000000", reason="Not the borrower", transaction={ "data": "0xab7b1c8900000000000000000000000000000000000000000000000000000000000005f1", "from": "0x7ed80A8c06F2214f742C6Fce99b5aE6dE77fcE34", "to": "0x56ecCB27D953a3c84463Df97e18b4E596462CbdE" }, invocation=null, revert={ "args": [ "Not the borrower" ], "name": "Error", "signature": "Error(string)" }, code=CALL_EXCEPTION, version=6.16.0)
+    at makeError (/Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/utils/errors.js:137:21)
+    at getBuiltinCallException (/Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/abi/abi-coder.js:105:37)
+    at AbiCoder.getBuiltinCallException (/Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/abi/abi-coder.js:206:16)
+    at JsonRpcProvider.getRpcError (/Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/providers/provider-jsonrpc.js:695:43)
+    at /Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/providers/provider-jsonrpc.js:302:45
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  code: 'CALL_EXCEPTION',
+  action: 'estimateGas',
+  data: '0x08c379a0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000104e6f742074686520626f72726f77657200000000000000000000000000000000',
+  reason: 'Not the borrower',
+  transaction: {
+    to: '0x56ecCB27D953a3c84463Df97e18b4E596462CbdE',
+    data: '0xab7b1c8900000000000000000000000000000000000000000000000000000000000005f1',
+    from: '0x7ed80A8c06F2214f742C6Fce99b5aE6dE77fcE34'
+  },
+  invocation: null,
+  revert: {
+    signature: 'Error(string)',
+    name: 'Error',
+    args: [ 'Not the borrower' ]
+  },
+  shortMessage: 'execution reverted: "Not the borrower"',
+  info: {
+    error: {
+      message: 'execution reverted: Not the borrower',
+      code: 3,
+      data: '0x08c379a0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000104e6f742074686520626f72726f77657200000000000000000000000000000000'
+    },
+    payload: {
+      method: 'eth_estimateGas',
+      params: [Array],
+      id: 2115,
+      jsonrpc: '2.0'
+    }
+  }
+}

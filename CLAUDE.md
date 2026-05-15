@@ -99,15 +99,19 @@ Website: specular.financial | GitHub: thegrand-canyon/specular | Deploy: specula
 
 ## Reputation & Loan Model
 
+Verified live on Arc V6 — 95-cycle progression mapped score 0 → 950 (see `forensics/output/regression-2026-05-07/64-reputation-tiers.json`):
+
 | Score | Collateral | Interest | Credit Limit |
 |-------|-----------|----------|-------------|
-| 800–1000 | 0% | 5% APR | 100,000 USDC |
-| 600–799 | 0% | 7% APR | 50,000 USDC |
-| 500–699 | 25% | 10% APR | 25,000 USDC |
-| 300–499 | 50% | 15% APR | 10,000 USDC |
-| <300 | 100% | 20% APR | 5,000 USDC |
+| 800–999 | 0% | 5% APR | 50,000 USDC |
+| 600–799 | 0% | 7% APR | 25,000 USDC |
+| 500–599 | 25% | 10% APR | 10,000 USDC |
+| 400–499 | 100% | 10% APR | 10,000 USDC |
+| 200–399 | 100% | 15% APR | 5,000 USDC |
+| 1–199 | 100% | 15% APR | 1,000 USDC |
+| 0 | 100% | 15% APR | 1,000 USDC |
 
-Initial score: 100. On-time repayment: +10. Default: −50 (scaled by loan size). Max: 1000.
+Initial score: 0 (uninitialized agent). On-time repayment: +10. Default: −50 (scaled by loan size). Max: 1000 (score-1000 tier not yet observed live — borrower ran out of gas at score 950).
 
 ## Brand
 

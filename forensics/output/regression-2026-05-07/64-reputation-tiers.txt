@@ -1,0 +1,43 @@
+=== REPUTATION TIER TRANSITIONS ===
+borrower=0xc581d853E282D6a7187272227929856F709F4459 agentId=155
+  initial: score=0, creditLimit=1000 USDC, collateralRate=100%, interestRate=15% APR
+  cycle-1: score=10, creditLimit=1000 USDC, collateralRate=100%, interestRate=15% APR
+  *** TIER TRANSITION at cycle 1: score=10, new tier=0
+  cycle-5: score=50, creditLimit=1000 USDC, collateralRate=100%, interestRate=15% APR
+  cycle-10: score=100, creditLimit=1000 USDC, collateralRate=100%, interestRate=15% APR
+  cycle-15: score=150, creditLimit=1000 USDC, collateralRate=100%, interestRate=15% APR
+  cycle-20: score=200, creditLimit=5000 USDC, collateralRate=100%, interestRate=15% APR
+  cycle-25: score=250, creditLimit=5000 USDC, collateralRate=100%, interestRate=15% APR
+  cycle-30: score=300, creditLimit=5000 USDC, collateralRate=100%, interestRate=15% APR
+  *** TIER TRANSITION at cycle 30: score=300, new tier=1
+  cycle-35: score=350, creditLimit=5000 USDC, collateralRate=100%, interestRate=15% APR
+  cycle-40: score=400, creditLimit=10000 USDC, collateralRate=100%, interestRate=10% APR
+  cycle-45: score=450, creditLimit=10000 USDC, collateralRate=100%, interestRate=10% APR
+  cycle-50: score=500, creditLimit=10000 USDC, collateralRate=25%, interestRate=10% APR
+  *** TIER TRANSITION at cycle 50: score=500, new tier=2
+  cycle-55: score=550, creditLimit=10000 USDC, collateralRate=25%, interestRate=10% APR
+  cycle-60: score=600, creditLimit=25000 USDC, collateralRate=0%, interestRate=7% APR
+  *** TIER TRANSITION at cycle 60: score=600, new tier=3
+  cycle-65: score=650, creditLimit=25000 USDC, collateralRate=0%, interestRate=7% APR
+  cycle-70: score=700, creditLimit=25000 USDC, collateralRate=0%, interestRate=7% APR
+  cycle-75: score=750, creditLimit=25000 USDC, collateralRate=0%, interestRate=7% APR
+  cycle-80: score=800, creditLimit=50000 USDC, collateralRate=0%, interestRate=5% APR
+  *** TIER TRANSITION at cycle 80: score=800, new tier=4
+  cycle-85: score=850, creditLimit=50000 USDC, collateralRate=0%, interestRate=5% APR
+  cycle-90: score=900, creditLimit=50000 USDC, collateralRate=0%, interestRate=5% APR
+  cycle-95: score=950, creditLimit=50000 USDC, collateralRate=0%, interestRate=5% APR
+FATAL: Error: insufficient funds for intrinsic transaction cost (transaction="0x02f8b4834cef5281c1830f42408509503ed2408305c1e39456eccb27d953a3c84463df97e18b4e596462cbde80b844aa452fa600000000000000000000000000000000000000000000000000000000004c4b400000000000000000000000000000000000000000000000000000000000000007c001a0e73ffffa2355da59aa96ccd607e0d94bdf1c3f072ded542897243db39b8d9703a07d23555f8e8082092ea99b9b75041f379a0da241de7bf0c0c83105b891942c24", info={ "error": { "code": -32003, "message": "insufficient funds for gas * price + value: have 5849574964000000 want 15092977315000000" } }, code=INSUFFICIENT_FUNDS, version=6.16.0)
+    at makeError (/Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/utils/errors.js:137:21)
+    at JsonRpcProvider.getRpcError (/Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/providers/provider-jsonrpc.js:721:49)
+    at /Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/providers/provider-jsonrpc.js:302:45
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  code: 'INSUFFICIENT_FUNDS',
+  transaction: '0x02f8b4834cef5281c1830f42408509503ed2408305c1e39456eccb27d953a3c84463df97e18b4e596462cbde80b844aa452fa600000000000000000000000000000000000000000000000000000000004c4b400000000000000000000000000000000000000000000000000000000000000007c001a0e73ffffa2355da59aa96ccd607e0d94bdf1c3f072ded542897243db39b8d9703a07d23555f8e8082092ea99b9b75041f379a0da241de7bf0c0c83105b891942c24',
+  info: {
+    error: {
+      message: 'insufficient funds for gas * price + value: have 5849574964000000 want 15092977315000000',
+      code: -32003
+    }
+  },
+  shortMessage: 'insufficient funds for intrinsic transaction cost'
+}

@@ -1,0 +1,48 @@
+====================================================================
+  TEST SUITE 4 — MAX_ACTIVE_LOANS cap + §B1 forensic
+====================================================================
+
+### TEST A: MAX_ACTIVE_LOANS=10 cap enforcement live ###
+=== V6 MAX_ACTIVE_LOANS=10 LIVE CAP TEST ===
+borrower aid=159
+
+[1] Open 10 sequential loans (without repaying)
+  loan 1: id=1528, gas=443193, activeLoanCount=1 ✓
+  loan 2: id=1529, gas=357693, activeLoanCount=2 ✓
+  loan 3: id=1530, gas=357693, activeLoanCount=3 ✓
+  loan 4: id=1531, gas=357693, activeLoanCount=4 ✓
+  loan 5: id=1532, gas=357693, activeLoanCount=5 ✓
+  loan 6: id=1533, gas=357693, activeLoanCount=6 ✓
+  loan 7: id=1534, gas=357693, activeLoanCount=7 ✓
+  loan 8: id=1535, gas=357693, activeLoanCount=8 ✓
+  loan 9: id=1536, gas=357693, activeLoanCount=9 ✓
+  loan 10: id=1537, gas=357693, activeLoanCount=10 ✓
+
+[2] Attempt 11th loan — expect rejection
+  ✓ 11th loan: execution reverted: "Too many active loans"
+
+[3] Repay loan #5 → counter should drop, new loan should succeed
+  after repay: activeLoanCount=9 ✓
+  ✓ new loan accepted. activeLoanCount=10
+
+[4] Repay remaining loans, verify counter drops to 0
+  final activeLoanCount=0 ✓
+
+Saved.
+
+### TEST B: §B1 forensic trace on Arc v4 ###
+=== Arc v4 §B1 FORENSIC TRACE ===
+Block: 42342376 MP: 0x048363A325A5B188b7FF157d725C5e329f0171D3
+
+--- Pool 43 ---
+  totalLiq=501, avail=534.286047, lenderCount=3
+  duplicate addresses: 1
+    0x656086a21073272533c8a3f56a94c1f3d8bcfce2 (×2)
+  scanning events 42292376 → 42342376
+
+  Tracing 0x656086a21073272533c8a3f56a94c1f3d8bcfce2 on pool 43:
+FATAL: server response 400 Bad Request
+
+====================================================================
+  TEST SUITE 4 COMPLETE
+====================================================================

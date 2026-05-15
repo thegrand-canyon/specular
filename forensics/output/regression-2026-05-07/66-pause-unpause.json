@@ -1,0 +1,22 @@
+{
+  "timestamp": "2026-05-15T03:18:07.473Z",
+  "agentId": 148,
+  "results": [
+    {
+      "fn": "supplyLiquidity",
+      "paused": "OTHER:execution reverted (unknown custom error)"
+    },
+    {
+      "fn": "withdrawLiquidity",
+      "paused": "OTHER:execution reverted (unknown custom error)"
+    },
+    {
+      "fn": "requestLoan",
+      "paused": "OTHER:execution reverted (unknown custom error)"
+    },
+    {
+      "fn": "claimInterest",
+      "paused": "OTHER:execution reverted (unknown custom error)"
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "timestamp": "2026-05-15T13:41:47.122Z",
+  "agentId": 159,
+  "gasOpened": [
+    443193,
+    357693,
+    357693,
+    357693,
+    357693,
+    357693,
+    357693,
+    357693,
+    357693,
+    357693
+  ],
+  "cap11Result": "execution reverted: \"Too many active loans\"",
+  "cap11Passed": true,
+  "counterAfterRepay": 9,
+  "postRepayResult": "SUCCESS",
+  "finalCounter": 0
+}
