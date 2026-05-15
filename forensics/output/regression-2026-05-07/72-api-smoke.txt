@@ -1,0 +1,31 @@
+=== API tx-builder smoke test ===
+
+[1] Starting API server (src/api/MultiNetworkAPI.js)
+  ✓ API ready at http://localhost:3001
+
+[2] Read endpoints
+  ✓ GET /health: HTTP 200
+  ✓ GET /status: HTTP 200
+  ✓ GET /networks: HTTP 200
+  ✗ GET /pools: HTTP 400 — {"error":"Invalid network: arc-testnet","validNetworks":["arc","base","arbitrum"]}
+  ✗ GET /agents: HTTP 400 — {"error":"Invalid network: arc-testnet","validNetworks":["arc","base","arbitrum"]}
+
+[3] Tx-builder endpoints (return unsigned tx data, do not sign or broadcast)
+  ✗ POST /tx/register: HTTP 400 — {"error":"agentURI must be a non-empty string"}
+  ✓ POST /tx/create-agent-pool: HTTP 200
+  ✓ POST /tx/supply-liquidity: HTTP 200
+  ✓ POST /tx/withdraw-liquidity: HTTP 200
+  ✓ POST /tx/request-loan: HTTP 200
+  ✓ POST /tx/repay-loan: HTTP 200
+  ✓ POST /tx/claim-interest: HTTP 200
+
+[4] Validation edge cases (expect 4xx)
+  ✗ POST /tx/request-loan with invalid duration: HTTP 400 — {"error":"durationDays must be 7-365 (got 5). If you passed seconds (e.g. 604800), pass days instead
+  ✗ POST /tx/request-loan with duration too big: HTTP 400 — {"error":"durationDays must be 7-365 (got 500). If you passed seconds (e.g. 604800), pass days inste
+  ✗ POST /tx/request-loan with no body: HTTP 400 — {"error":"amount must be a non-negative integer (number or numeric string), got undefined"}
+
+[5] End-to-end: take /tx/supply-liquidity response, sign + broadcast
+  /tx/supply-liquidity response: to=0x048363A325A5B188b7FF157d725C5e329f0171D3, data=0xf9dbb69f00000000...
+  ✗ tx submission/exec failed: execution reverted: "Pool not active"
+
+=== 9/16 endpoint checks passed ===
