@@ -196,8 +196,14 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
             );
             poolLenders[agentId].push(msg.sender);
             isInPoolLenders[agentId][msg.sender] = true;
-            position.depositTimestamp = block.timestamp;
         }
+        // CLAUDE_AUDIT_WORLDCLASS W1 mitigation: depositTimestamp updated on EVERY supply
+        // (not just first). _distributeInterest uses this to qualify lenders against a
+        // specific loan's startTime — only lenders whose deposits predate the loan share
+        // its interest. Blocks the mempool-sandwich attack pattern where an attacker
+        // front-runs repayLoan to capture interest they didn't earn.
+        // Side effect: also addresses CLAUDE_AUDIT_DEEP F12 (depositTimestamp staleness).
+        position.depositTimestamp = block.timestamp;
         position.amount += amount;
 
         emit LiquiditySupplied(agentId, msg.sender, amount);
@@ -357,8 +363,9 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
         pool.totalLoaned -= loan.amount;
         pool.totalEarned += lenderInterest;
 
-        // Distribute interest to lenders proportionally
-        _distributeInterest(loan.agentId, lenderInterest);
+        // Distribute interest to lenders proportionally — pass loan.startTime so
+        // only lenders who supplied BEFORE this loan started qualify (W1 sandwich fix).
+        _distributeInterest(loan.agentId, lenderInterest, loan.startTime);
 
         // Accumulate platform fees
         accumulatedFees += platformFee;
@@ -376,28 +383,52 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
     }
 
     /**
-     * @notice Distribute interest to lenders proportionally
+     * @notice Distribute interest to lenders proportionally — only to lenders who
+     *         supplied BEFORE this specific loan started. Blocks mempool-sandwich
+     *         attacks where an attacker front-runs `repayLoan` with a large supply
+     *         to capture proportional interest they didn't earn.
+     * @dev CLAUDE_AUDIT_WORLDCLASS W1 fix: each lender's `position.depositTimestamp`
+     *      (now updated on EVERY supply, not just first) is compared to `loanStartTime`.
+     *      Lenders whose deposit is at or before loan start qualify; later supplies don't.
+     *      Two-pass loop: first compute qualified total (denominator), then distribute.
+     *      Bounded at MAX_LENDERS_PER_POOL = 50 → ≤100 SLOADs per call. Acceptable.
+     *      If no lenders qualify (edge: pool had no pre-loan deposits, e.g., loan
+     *      requested in same block as the only supply), the interest goes to fees.
      */
-    function _distributeInterest(uint256 agentId, uint256 totalInterest) internal {
-        AgentPool storage pool = agentPools[agentId];
+    function _distributeInterest(uint256 agentId, uint256 totalInterest, uint256 loanStartTime) internal {
         address[] storage lenders = poolLenders[agentId];
 
-        // [H-01 FIX] Track distributed amount to credit rounding dust to platform fees
-        uint256 distributed = 0;
-
+        // First pass: compute qualified-total (lenders supplied at or before loanStartTime)
+        uint256 qualifiedTotal = 0;
         for (uint256 i = 0; i < lenders.length; i++) {
-            address lender = lenders[i];
-            LenderPosition storage position = positions[agentId][lender];
+            LenderPosition storage p = positions[agentId][lenders[i]];
+            if (p.amount > 0 && p.depositTimestamp <= loanStartTime) {
+                qualifiedTotal += p.amount;
+            }
+        }
 
-            if (position.amount > 0) {
-                // Calculate lender's share based on their proportion of the pool
-                uint256 share = (totalInterest * position.amount) / pool.totalLiquidity;
-                position.earnedInterest += share;
+        if (qualifiedTotal == 0) {
+            // No qualified lenders — interest goes to fees rather than being trapped.
+            // This can happen for new pools where the only lender supplied after the
+            // loan was already in REQUESTED state, or for sandwich attempts where
+            // attackers supplied after loan start.
+            accumulatedFees += totalInterest;
+            emit InterestDistributed(agentId, totalInterest);
+            return;
+        }
+
+        // Second pass: distribute to qualified lenders proportionally
+        uint256 distributed = 0;
+        for (uint256 i = 0; i < lenders.length; i++) {
+            LenderPosition storage p = positions[agentId][lenders[i]];
+            if (p.amount > 0 && p.depositTimestamp <= loanStartTime) {
+                uint256 share = (totalInterest * p.amount) / qualifiedTotal;
+                p.earnedInterest += share;
                 distributed += share;
             }
         }
 
-        // Credit any remainder (rounding dust) as platform fees rather than trapping it
+        // [H-01 FIX preserved] Rounding dust → platform fees rather than trapped
         uint256 dust = totalInterest - distributed;
         if (dust > 0) {
             accumulatedFees += dust;
