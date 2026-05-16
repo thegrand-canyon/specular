@@ -114,7 +114,11 @@ contract V6InvariantTest is Test {
         for (uint256 i = 0; i < borrowers.length; i++) {
             uint256 counter = v6.activeLoanCount(borrowers[i]);
             uint256 actual = 0;
-            for (uint256 j = 0; j < 100; j++) {
+            // Bounded for gas, but high enough that ultra-fuzz can't exhaust the
+            // agentLoans[] array within a single 512-depth run (each requestLoan
+            // pushes one entry; the cap of 10 ACTIVE loans limits how many can be
+            // active at any moment but the lifetime array grows unbounded).
+            for (uint256 j = 0; j < 5000; j++) {
                 try v6.agentLoans(borrowers[i], j) returns (uint256 lid) {
                     (, , , , , , , , , AgentLiquidityMarketplaceV6.LoanState st) = v6.loans(lid);
                     if (st == AgentLiquidityMarketplaceV6.LoanState.ACTIVE) actual++;

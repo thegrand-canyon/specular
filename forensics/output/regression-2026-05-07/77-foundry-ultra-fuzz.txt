@@ -1,0 +1,487 @@
+No files changed, compilation skipped
+{"timestamp":1778951725,"event":"failure","invariant":"invariant_S5_counter_matches_array","target":"test/foundry/V6Invariants.t.sol:V6InvariantTest","reason":"S5: counter mismatch with array walk"}
+
+Ran 5 tests for test/foundry/V6Invariants.t.sol:V6InvariantTest
+[PASS] invariant_B1_flag_consistent() (runs: 1024, calls: 524288, reverts: 0)
+
+╭----------+-------------+--------+---------+----------╮
+| Contract | Selector    | Calls  | Reverts | Discards |
++======================================================+
+| Handler  | claim       | 104833 | 0       | 0        |
+|----------+-------------+--------+---------+----------|
+| Handler  | repayLoan   | 104977 | 0       | 0        |
+|----------+-------------+--------+---------+----------|
+| Handler  | requestLoan | 104366 | 0       | 0        |
+|----------+-------------+--------+---------+----------|
+| Handler  | supply      | 104820 | 0       | 0        |
+|----------+-------------+--------+---------+----------|
+| Handler  | withdraw    | 105292 | 0       | 0        |
+╰----------+-------------+--------+---------+----------╯
+
+[PASS] invariant_B1_no_duplicate_lenders() (runs: 1024, calls: 524288, reverts: 0)
+
+╭----------+-------------+--------+---------+----------╮
+| Contract | Selector    | Calls  | Reverts | Discards |
++======================================================+
+| Handler  | claim       | 104833 | 0       | 0        |
+|----------+-------------+--------+---------+----------|
+| Handler  | repayLoan   | 104977 | 0       | 0        |
+|----------+-------------+--------+---------+----------|
+| Handler  | requestLoan | 104366 | 0       | 0        |
+|----------+-------------+--------+---------+----------|
+| Handler  | supply      | 104820 | 0       | 0        |
+|----------+-------------+--------+---------+----------|
+| Handler  | withdraw    | 105292 | 0       | 0        |
+╰----------+-------------+--------+---------+----------╯
+
+[PASS] invariant_S1_solvency() (runs: 1024, calls: 524288, reverts: 0)
+
+╭----------+-------------+--------+---------+----------╮
+| Contract | Selector    | Calls  | Reverts | Discards |
++======================================================+
+| Handler  | claim       | 104833 | 0       | 0        |
+|----------+-------------+--------+---------+----------|
+| Handler  | repayLoan   | 104977 | 0       | 0        |
+|----------+-------------+--------+---------+----------|
+| Handler  | requestLoan | 104366 | 0       | 0        |
+|----------+-------------+--------+---------+----------|
+| Handler  | supply      | 104820 | 0       | 0        |
+|----------+-------------+--------+---------+----------|
+| Handler  | withdraw    | 105292 | 0       | 0        |
+╰----------+-------------+--------+---------+----------╯
+
+[PASS] invariant_S5_cap_respected() (runs: 1024, calls: 524288, reverts: 0)
+
+╭----------+-------------+--------+---------+----------╮
+| Contract | Selector    | Calls  | Reverts | Discards |
++======================================================+
+| Handler  | claim       | 104833 | 0       | 0        |
+|----------+-------------+--------+---------+----------|
+| Handler  | repayLoan   | 104977 | 0       | 0        |
+|----------+-------------+--------+---------+----------|
+| Handler  | requestLoan | 104366 | 0       | 0        |
+|----------+-------------+--------+---------+----------|
+| Handler  | supply      | 104820 | 0       | 0        |
+|----------+-------------+--------+---------+----------|
+| Handler  | withdraw    | 105292 | 0       | 0        |
+╰----------+-------------+--------+---------+----------╯
+
+[FAIL: S5: counter mismatch with array walk]
+	[Sequence] (original: 482, shrunk: 193)
+		sender=0x0A35687C97C307907BE2fB5f2f2C231fB1b6Ee7f addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=supply(uint8,uint8) args=[105, 222]
+		sender=0x00000000000000000000000000000000000000B1 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[1, 81]
+		sender=0x0000000000000000000000000000000000002cb2 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[144]
+		sender=0x00000000000000000000000000000000152052b1 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[24, 50]
+		sender=0x194782FA165c312556076e59aa30BFFcbb2147C8 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[178]
+		sender=0x6B5252a0a67dfE18305d823dBE7467860Fc407CC addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[48, 0]
+		sender=0x0000000000000000000000000000000000000B61 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[249, 10]
+		sender=0x00000000000000000000000000000000F5ff5c75 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[9]
+		sender=0x00000000000000000000000000000000000002b9 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[136]
+		sender=0x000000000000000000000000000000000000099b addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[16, 0]
+		sender=0x00000000000000000000000000000000e816B393 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[1]
+		sender=0x0000000000000000000000000000000000000e65 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[77, 3]
+		sender=0x0000000000000000000000000000000000000e21 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[8]
+		sender=0x000000000000000000000000000000000000220C addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[179, 10]
+		sender=0x00000000000000000000000000000000000019b2 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[39]
+		sender=0x0000000000000000000000000000000000001014 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[3, 0]
+		sender=0x00000000000000000000000000000000000001D9 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[200, 87]
+		sender=0x0000000000000000000000000000000000000cb5 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[178, 0]
+		sender=0x000000000000000000000000000000000000054F addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[127]
+		sender=0x000000000000000000000000000000000000aaaa addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[15, 2]
+		sender=0x0000000000000000000000000000000000000183 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[53, 0]
+		sender=0x000000000000000000000000000000000000050A addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[20, 252]
+		sender=0x1E77d968363eb2D4b124C75e1AeeD01650AB76ec addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[1, 1]
+		sender=0x0000000000000000000000000000000000000246 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[1]
+		sender=0x0000000000000000000000000000000000002630 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[30]
+		sender=0x124E5Aeb43340c22DD6562699bf196FC101C7CF9 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[7, 215]
+		sender=0x94F9d26E4581036894DfE6F5b1c148A330b955d0 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[0, 17]
+		sender=0x000000000000000000000000000000007196133F addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[13, 10]
+		sender=0x0000000000000000000000000000000000001733 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[0, 3]
+		sender=0x0000000000000000000000000000000000001235 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[15, 55]
+		sender=0x000000000000000000000000000000000000074b addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[30]
+		sender=0x0000000042313A20666c6167206d697373696e68 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[134]
+		sender=0x000000000000000000000000000000000000036e addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[0]
+		sender=0xb4571d58682c0d66212eC634D495F33de3f77Ab9 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[177]
+		sender=0x0000000000000000000000000000000000093a7F addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[0]
+		sender=0x00000000000000000000000000000000000010a2 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[1, 62]
+		sender=0x0000000000000000000000000000000000001Eef addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[10, 22]
+		sender=0x000000000000000000000000000000000000026F addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[1, 7]
+		sender=0x752B8ddB67D8e23ac4583c9029D2e2d1DBe6C98f addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[2]
+		sender=0x0000000000000000000000000000000000001237 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[100]
+		sender=0x0000000000000000000000000000000000000bB7 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[27]
+		sender=0xcAD83923C12eB17C0BE81A2f43c1326049e067E3 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[24, 163]
+		sender=0x0000000000000000000000000000000000000Dd7 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[253, 16]
+		sender=0x9CC19ECBE441c8f6609Efe7c6Fa65BE007A4732b addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[0, 249]
+		sender=0xe75acD054D32264130C2b610B3eDB463f31BECf9 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[0, 37]
+		sender=0x0D9F60077f6aF931a8bbF590DA0223DAcf75C7Ae addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[2, 217]
+		sender=0x0000000000000000000000000000000000002822 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[1, 126]
+		sender=0x000000000000000000000000000000000000015F addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[109]
+		sender=0xe469aFc91FA741502C6cb40bdcD40D277e9e418f addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[0, 30]
+		sender=0x0DD9603cEC36C987eD5EE1D89ed81769C1493500 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[0]
+		sender=0x00000000000000000000000000000000000007f5 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[252, 41]
+		sender=0x0000000000000000000004c656e6465722063618 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[190]
+		sender=0x0000000000000000000000000000000001f985F3 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[136]
+		sender=0x0000000000000000000000000000000000001Fb6 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[21]
+		sender=0x000000000000000000000000000000000000281F addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[55, 9]
+		sender=0x0F87f554301B8311Ec55cFF2a592283667698bbD addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[56, 2]
+		sender=0x0000000000000000000000000000000000002aF7 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[81]
+		sender=0xd7a3A8308D6E7BF267d3E6298D70d204ac241b0D addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[254]
+		sender=0x000000000000000000000000000000000000179e addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[51]
+		sender=0x000000000000000000000000000000000000079e addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[2]
+		sender=0x0000000000000000000000000000000000001d22 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[50, 135]
+		sender=0x0000000000000000000000000000000000001DC0 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[16]
+		sender=0x0000000000000000000000000000000000000384 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[52, 8]
+		sender=0x00000000000000000000000000000000000003Bb addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[4, 0]
+		sender=0xa32660F525F5FFeAA17d2a98a924a82f19F465dD addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[126]
+		sender=0x0000000000000000000000000000000000001b73 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[0, 2]
+		sender=0x0000000000000000000000000000000000001536 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[0, 0]
+		sender=0xfbAf3b181Cf2aD1E4248467c3dD30B13Fe3E1953 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[1, 0]
+		sender=0x00000000000000000000000000000000000075EF addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[25]
+		sender=0x000000000000000000000000000000000000121e addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[6]
+		sender=0x9EA9F42c7214841471908cF5A9F128be160d4B88 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[7, 1]
+		sender=0x6e6E6f7420626520656D70747900000000000001 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[86]
+		sender=0x00000000000000000000000000000000000011C3 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[75]
+		sender=0x00000000000000000000000000000000000011D0 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[136]
+		sender=0x7452bc3cacFbD9254Cd26948469B794194a922BB addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[169, 50]
+		sender=0xa67102E311f9858cb15A479b2d10826423D26FE3 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[238, 24]
+		sender=0x000000000000000000000000000000000000156a addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[5]
+		sender=0x938E60cd0081042813B6817516783DF15d990124 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[2]
+		sender=0x00000000000000000000000000000000000006C6 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[2]
+		sender=0x0000000000000000000000000000000009FF97DD addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[6, 8]
+		sender=0x000000000000000000000000000000000000058E addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[0]
+		sender=0x00000000000000000000000000000000025fF7A5 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[1, 1]
+		sender=0x0000000000000000000000000000000000000759 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[1]
+		sender=0xb4571d58682c0D66212eC634d495f33de3f77Ab7 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[244]
+		sender=0xE4575f602EE25cf3715Bc05C291701fE9e258f99 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[6]
+		sender=0x524FC3c64d193B81d8E5F9a9B5e87D78b45816Ef addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[2]
+		sender=0x0000000000000000000000000000000000001314 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[0, 10]
+		sender=0x94766A7198c1E153Ffc9c0f0208CcD2f9345eBc3 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[169]
+		sender=0x00000000000000000000000000000000000027b6 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[50, 200]
+		sender=0x0000000000000000000000000000000000002961 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[59, 192]
+		sender=0x717E6a320cF44B4AFaC2B0732d9fCBe2B7fA0cF5 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[5]
+		sender=0x0000000000000000000000000000000000e00a64 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[0]
+		sender=0x00000000000000000000000000000000000016bD addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[0]
+		sender=0x0000000000000000000000000000000000001103 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[0, 253]
+		sender=0x2aCd848ebf8a6d5fE05218338B9E04Eb71e37c98 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[100]
+		sender=0x0000000000000000000000000000000000000876 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[0, 0]
+		sender=0x0000000000000000000000000000000000000cfD addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[180, 232]
+		sender=0x0000000000000000000000000000000000000211 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[3]
+		sender=0x0000000000000000000000000000000000000fB0 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[5]
+		sender=0x000000000000000000000000000000000038751F addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[3, 3]
+		sender=0x00000000000000000000000000000000000013e7 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[8, 2]
+		sender=0x79D5E95c62bBD7F8EB71df9719e959A57374F929 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[3]
+		sender=0x0000000000000000000000000000000009FF9F68 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[175, 110]
+		sender=0x226E68Ce2baFDDe51915d3a7e01b48478e273Adb addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[0]
+		sender=0x0000000000000000000000000000000003f45945 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[253]
+		sender=0x1A5648029fBaDB662360d6a2a4AEeB3266D483d4 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[225, 2]
+		sender=0x00000000000000000000000000000000002Dc6C0 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[180, 7]
+		sender=0x91D52d05294C1241896988337F2FBf86203b8b89 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[137]
+		sender=0x000000000000000000000000000000000000127E addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[4, 0]
+		sender=0x0000000000000000000000000000000000000623 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[115]
+		sender=0x0000000000000000000000000000000000A7d8c0 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[205, 133]
+		sender=0x00000000000000000000000000000000000024Cd addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[2]
+		sender=0x0000000000000000000000000000000000000950 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[128, 181]
+		sender=0x000000000000000000000000000000e8d4a4F159 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[6, 0]
+		sender=0x0000000000000000000000000000000000002548 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[0, 0]
+		sender=0x00000000000000000000000000000000000019fF addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[8]
+		sender=0x0000000000000000000000000000000000001700 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[178, 100]
+		sender=0x0000000000000000000000000000000000002a3E addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[1]
+		sender=0x000000000000000000000000000000000000212F addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[255]
+		sender=0x00000000000000000000000000000000000015B1 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[179]
+		sender=0xa6Ea563F6Ac451Dc794912eD27738ef6001E3933 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[200, 177]
+		sender=0x00000000000000000000000000000000053945Dc addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[222, 10]
+		sender=0x00000000000000000000000000000000049C3206 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[0]
+		sender=0x000000000000000000000000000000000000090C addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[84, 5]
+		sender=0xf37B8E91D7bD8CFbBCA15f1e24BEA9FE814a6FA8 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[0, 6]
+		sender=0x66e99544eD8De9ae3062c48DdACaCF766193Ca8c addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[102]
+		sender=0x094F3412428A53816B6AbaA6849E8dF1cf7f20Af addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[1, 0]
+		sender=0x00000000000000000000000000000000000015B4 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[212]
+		sender=0xB920779EE9D69A7f5b1044e11388c41117767296 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[4, 1]
+		sender=0x0000000000000000000000000000000000000185 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[0, 6]
+		sender=0x00000000000000000000000000000000000011E1 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[1]
+		sender=0x000000000000000000000000000000E8D413A08e addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[5, 2]
+		sender=0x0000000000000000000000000000000000000E42 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[95, 24]
+		sender=0xEfD871c0AB25E1533DB7d8B11A194fc740B9CD28 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[24, 2]
+		sender=0x00000000000000000000000000000000013Ce8FA addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[178, 10]
+		sender=0x0000000000000000000000000000000008bE761E addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[1]
+		sender=0x000000000000000000000000000000000523018B addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[28]
+		sender=0x889929C8D88E2Fa85aBf737C2D141fcDAC1DFc24 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[1, 1]
+		sender=0xbA466ac630d710A62F476917BaF729dD510fe056 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[3, 14]
+		sender=0x0000000000000000000000000000000009c8ab31 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[1, 7]
+		sender=0x0B6716EeC4a2fC23C0D46f2bdE86aD3FeE8b3Da9 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[228, 10]
+		sender=0x0000000000000000000000000000000000000335 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[15]
+		sender=0x487790cd7104074De29a6E5345deC427E8535cBE addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[0, 2]
+		sender=0x0000000000000000000000000000000004467630 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[1]
+		sender=0x000000000000000000000000000000000000089a addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[121]
+		sender=0x000000000000000000000000000000000076D7f1 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[1, 7]
+		sender=0x000000000000000000000000000000000b94A1BD addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[204]
+		sender=0x1160D0A984F6bCb43E7A9Da69cFb168d1476336D addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[3, 15]
+		sender=0x0000000000000000000000000000000000000a55 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[4, 3]
+		sender=0x00000000000000000000000000000000000025e2 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[200]
+		sender=0x00000000000000000000000000000000000007B6 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[1]
+		sender=0x40965757AEBa87E939970CB59a34102cA74cA176 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[45, 6]
+		sender=0x00000000000000000000000000000000049B4C7A addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[81, 216]
+		sender=0x0000000000000000000000000000000000000F4A addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[9]
+		sender=0x000000000000000000000000000000000000127C addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[202]
+		sender=0xaAE0Af9887852F7c67B46CD43e3D7254fD6b15CB addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[1, 12]
+		sender=0x00000000000000000000000000000000003D0901 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[40, 177]
+		sender=0x0000000000000000000000000000000000000E25 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[100]
+		sender=0x00000000000000000000000000000000015C4FE7 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[63]
+		sender=0x0000000000000000000000000000000000001958 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[224, 48]
+		sender=0x00000000000000000000000000000000000016A3 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[255]
+		sender=0x0000000000000000000000000000000000000e20 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[0, 110]
+		sender=0x0000000000000000000000000000000000000117 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[200]
+		sender=0x0000000000000000000000000000000000000184 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[10, 33]
+		sender=0x1517c26d946B77544a784BF192E193671367AC57 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[7]
+		sender=0x0000000000000000000000000000000008d52Be5 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[25]
+		sender=0x6d69736d6174636820776974682061727261791f addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[251]
+		sender=0x0000000000000000000000000000000006b53fCc addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[7, 1]
+		sender=0xeAb965e0a0d72591fc62D66cC5d77f5D6d5AD162 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[147, 79]
+		sender=0x000000000000000000000000000000003E413beF addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[23]
+		sender=0x756fE66Be581AE956E499c58aa9c488772068280 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[255, 102]
+		sender=0xD3cFeE3901116f5C0281c91b30B04f6d53b52B13 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[5]
+		sender=0xdFb18815282fE989326fBfF903d13cF0e03aCE2b addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[75, 0]
+		sender=0x00000000000000000000000000000000002f75Ff addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[190, 125]
+		sender=0x3Cdc5915233F1a7570c935115db0aCf533B649BE addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[191, 30]
+		sender=0x00000000000000000000000000000000000005B3 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[1]
+		sender=0x0000000000000000000000000000000000001f80 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[1]
+		sender=0x2F12dB2869C3395A3b0502D05e2516446F71f85c addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[15, 0]
+		sender=0x0000000000000000000000000000000000005800 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[0, 182]
+		sender=0xB520a200D9490885bb9B7b741aB89B39AB58a61F addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[1]
+		sender=0xAD2076141E3C722fBa974bC58099f3D479E958c3 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[6]
+		sender=0x540389d3886C70f864180Db8ffafEC90fA3AeA74 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[100, 14]
+		sender=0x000000000000000000000000000000000000dbf7 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[107]
+		sender=0xAca9C64A4D5A7Ab93b6168C34ed9e53ae9950FdF addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[18, 15]
+		sender=0x000000000000000000000000000000000905179D addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[182, 31]
+		sender=0x0000000000000000000000000000000002D32Cd4 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[6]
+		sender=0x08dCD8BA92136BB43C5d220f888db184A5f07285 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[100, 184]
+		sender=0x000000000000000000000000000000000000211A addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[2]
+		sender=0x0000000000000000000000000000000000001716 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[28, 14]
+		sender=0x0000000000000000000000000000000000002998 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[0]
+		sender=0x0000000000000000000000000000000005178BC7 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[0]
+		sender=0xAF4F3C74323e9a7c3b79af8Ec8d0f3ff1157d28f addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[200, 135]
+		sender=0xbCd880CF3CD846EeAaaB57d3E0fd93e5Bfa15b50 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[0, 252]
+ invariant_S5_counter_matches_array() (runs: 0, calls: 0, reverts: 0)
+
+╭----------+-------------+-------+---------+----------╮
+| Contract | Selector    | Calls | Reverts | Discards |
++=====================================================+
+| Handler  | claim       | 86    | 0       | 0        |
+|----------+-------------+-------+---------+----------|
+| Handler  | repayLoan   | 96    | 0       | 0        |
+|----------+-------------+-------+---------+----------|
+| Handler  | requestLoan | 116   | 0       | 0        |
+|----------+-------------+-------+---------+----------|
+| Handler  | supply      | 89    | 0       | 0        |
+|----------+-------------+-------+---------+----------|
+| Handler  | withdraw    | 95    | 0       | 0        |
+╰----------+-------------+-------+---------+----------╯
+
+Suite result: FAILED. 4 passed; 1 failed; 0 skipped; finished in 62.80s (266.48s CPU time)
+
+Ran 1 test suite in 62.82s (62.80s CPU time): 4 tests passed, 1 failed, 0 skipped (5 total tests)
+
+Failing tests:
+Encountered 1 failing test in test/foundry/V6Invariants.t.sol:V6InvariantTest
+[FAIL: S5: counter mismatch with array walk]
+	[Sequence] (original: 482, shrunk: 193)
+		sender=0x0A35687C97C307907BE2fB5f2f2C231fB1b6Ee7f addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=supply(uint8,uint8) args=[105, 222]
+		sender=0x00000000000000000000000000000000000000B1 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[1, 81]
+		sender=0x0000000000000000000000000000000000002cb2 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[144]
+		sender=0x00000000000000000000000000000000152052b1 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[24, 50]
+		sender=0x194782FA165c312556076e59aa30BFFcbb2147C8 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[178]
+		sender=0x6B5252a0a67dfE18305d823dBE7467860Fc407CC addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[48, 0]
+		sender=0x0000000000000000000000000000000000000B61 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[249, 10]
+		sender=0x00000000000000000000000000000000F5ff5c75 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[9]
+		sender=0x00000000000000000000000000000000000002b9 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[136]
+		sender=0x000000000000000000000000000000000000099b addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[16, 0]
+		sender=0x00000000000000000000000000000000e816B393 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[1]
+		sender=0x0000000000000000000000000000000000000e65 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[77, 3]
+		sender=0x0000000000000000000000000000000000000e21 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[8]
+		sender=0x000000000000000000000000000000000000220C addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[179, 10]
+		sender=0x00000000000000000000000000000000000019b2 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[39]
+		sender=0x0000000000000000000000000000000000001014 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[3, 0]
+		sender=0x00000000000000000000000000000000000001D9 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[200, 87]
+		sender=0x0000000000000000000000000000000000000cb5 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[178, 0]
+		sender=0x000000000000000000000000000000000000054F addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[127]
+		sender=0x000000000000000000000000000000000000aaaa addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[15, 2]
+		sender=0x0000000000000000000000000000000000000183 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[53, 0]
+		sender=0x000000000000000000000000000000000000050A addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[20, 252]
+		sender=0x1E77d968363eb2D4b124C75e1AeeD01650AB76ec addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[1, 1]
+		sender=0x0000000000000000000000000000000000000246 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[1]
+		sender=0x0000000000000000000000000000000000002630 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[30]
+		sender=0x124E5Aeb43340c22DD6562699bf196FC101C7CF9 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[7, 215]
+		sender=0x94F9d26E4581036894DfE6F5b1c148A330b955d0 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[0, 17]
+		sender=0x000000000000000000000000000000007196133F addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[13, 10]
+		sender=0x0000000000000000000000000000000000001733 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[0, 3]
+		sender=0x0000000000000000000000000000000000001235 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[15, 55]
+		sender=0x000000000000000000000000000000000000074b addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[30]
+		sender=0x0000000042313A20666c6167206d697373696e68 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[134]
+		sender=0x000000000000000000000000000000000000036e addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[0]
+		sender=0xb4571d58682c0d66212eC634D495F33de3f77Ab9 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[177]
+		sender=0x0000000000000000000000000000000000093a7F addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[0]
+		sender=0x00000000000000000000000000000000000010a2 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[1, 62]
+		sender=0x0000000000000000000000000000000000001Eef addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[10, 22]
+		sender=0x000000000000000000000000000000000000026F addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[1, 7]
+		sender=0x752B8ddB67D8e23ac4583c9029D2e2d1DBe6C98f addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[2]
+		sender=0x0000000000000000000000000000000000001237 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[100]
+		sender=0x0000000000000000000000000000000000000bB7 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[27]
+		sender=0xcAD83923C12eB17C0BE81A2f43c1326049e067E3 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[24, 163]
+		sender=0x0000000000000000000000000000000000000Dd7 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[253, 16]
+		sender=0x9CC19ECBE441c8f6609Efe7c6Fa65BE007A4732b addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[0, 249]
+		sender=0xe75acD054D32264130C2b610B3eDB463f31BECf9 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[0, 37]
+		sender=0x0D9F60077f6aF931a8bbF590DA0223DAcf75C7Ae addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[2, 217]
+		sender=0x0000000000000000000000000000000000002822 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[1, 126]
+		sender=0x000000000000000000000000000000000000015F addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[109]
+		sender=0xe469aFc91FA741502C6cb40bdcD40D277e9e418f addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[0, 30]
+		sender=0x0DD9603cEC36C987eD5EE1D89ed81769C1493500 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[0]
+		sender=0x00000000000000000000000000000000000007f5 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[252, 41]
+		sender=0x0000000000000000000004c656e6465722063618 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[190]
+		sender=0x0000000000000000000000000000000001f985F3 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[136]
+		sender=0x0000000000000000000000000000000000001Fb6 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[21]
+		sender=0x000000000000000000000000000000000000281F addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[55, 9]
+		sender=0x0F87f554301B8311Ec55cFF2a592283667698bbD addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[56, 2]
+		sender=0x0000000000000000000000000000000000002aF7 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[81]
+		sender=0xd7a3A8308D6E7BF267d3E6298D70d204ac241b0D addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[254]
+		sender=0x000000000000000000000000000000000000179e addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[51]
+		sender=0x000000000000000000000000000000000000079e addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[2]
+		sender=0x0000000000000000000000000000000000001d22 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[50, 135]
+		sender=0x0000000000000000000000000000000000001DC0 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[16]
+		sender=0x0000000000000000000000000000000000000384 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[52, 8]
+		sender=0x00000000000000000000000000000000000003Bb addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[4, 0]
+		sender=0xa32660F525F5FFeAA17d2a98a924a82f19F465dD addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[126]
+		sender=0x0000000000000000000000000000000000001b73 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[0, 2]
+		sender=0x0000000000000000000000000000000000001536 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[0, 0]
+		sender=0xfbAf3b181Cf2aD1E4248467c3dD30B13Fe3E1953 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[1, 0]
+		sender=0x00000000000000000000000000000000000075EF addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[25]
+		sender=0x000000000000000000000000000000000000121e addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[6]
+		sender=0x9EA9F42c7214841471908cF5A9F128be160d4B88 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[7, 1]
+		sender=0x6e6E6f7420626520656D70747900000000000001 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[86]
+		sender=0x00000000000000000000000000000000000011C3 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[75]
+		sender=0x00000000000000000000000000000000000011D0 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[136]
+		sender=0x7452bc3cacFbD9254Cd26948469B794194a922BB addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[169, 50]
+		sender=0xa67102E311f9858cb15A479b2d10826423D26FE3 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[238, 24]
+		sender=0x000000000000000000000000000000000000156a addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[5]
+		sender=0x938E60cd0081042813B6817516783DF15d990124 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[2]
+		sender=0x00000000000000000000000000000000000006C6 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[2]
+		sender=0x0000000000000000000000000000000009FF97DD addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[6, 8]
+		sender=0x000000000000000000000000000000000000058E addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[0]
+		sender=0x00000000000000000000000000000000025fF7A5 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[1, 1]
+		sender=0x0000000000000000000000000000000000000759 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[1]
+		sender=0xb4571d58682c0D66212eC634d495f33de3f77Ab7 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[244]
+		sender=0xE4575f602EE25cf3715Bc05C291701fE9e258f99 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[6]
+		sender=0x524FC3c64d193B81d8E5F9a9B5e87D78b45816Ef addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[2]
+		sender=0x0000000000000000000000000000000000001314 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[0, 10]
+		sender=0x94766A7198c1E153Ffc9c0f0208CcD2f9345eBc3 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[169]
+		sender=0x00000000000000000000000000000000000027b6 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[50, 200]
+		sender=0x0000000000000000000000000000000000002961 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[59, 192]
+		sender=0x717E6a320cF44B4AFaC2B0732d9fCBe2B7fA0cF5 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[5]
+		sender=0x0000000000000000000000000000000000e00a64 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[0]
+		sender=0x00000000000000000000000000000000000016bD addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[0]
+		sender=0x0000000000000000000000000000000000001103 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[0, 253]
+		sender=0x2aCd848ebf8a6d5fE05218338B9E04Eb71e37c98 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[100]
+		sender=0x0000000000000000000000000000000000000876 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[0, 0]
+		sender=0x0000000000000000000000000000000000000cfD addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[180, 232]
+		sender=0x0000000000000000000000000000000000000211 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[3]
+		sender=0x0000000000000000000000000000000000000fB0 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[5]
+		sender=0x000000000000000000000000000000000038751F addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[3, 3]
+		sender=0x00000000000000000000000000000000000013e7 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[8, 2]
+		sender=0x79D5E95c62bBD7F8EB71df9719e959A57374F929 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[3]
+		sender=0x0000000000000000000000000000000009FF9F68 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[175, 110]
+		sender=0x226E68Ce2baFDDe51915d3a7e01b48478e273Adb addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[0]
+		sender=0x0000000000000000000000000000000003f45945 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[253]
+		sender=0x1A5648029fBaDB662360d6a2a4AEeB3266D483d4 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[225, 2]
+		sender=0x00000000000000000000000000000000002Dc6C0 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[180, 7]
+		sender=0x91D52d05294C1241896988337F2FBf86203b8b89 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[137]
+		sender=0x000000000000000000000000000000000000127E addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[4, 0]
+		sender=0x0000000000000000000000000000000000000623 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[115]
+		sender=0x0000000000000000000000000000000000A7d8c0 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[205, 133]
+		sender=0x00000000000000000000000000000000000024Cd addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[2]
+		sender=0x0000000000000000000000000000000000000950 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[128, 181]
+		sender=0x000000000000000000000000000000e8d4a4F159 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[6, 0]
+		sender=0x0000000000000000000000000000000000002548 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[0, 0]
+		sender=0x00000000000000000000000000000000000019fF addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[8]
+		sender=0x0000000000000000000000000000000000001700 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[178, 100]
+		sender=0x0000000000000000000000000000000000002a3E addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[1]
+		sender=0x000000000000000000000000000000000000212F addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[255]
+		sender=0x00000000000000000000000000000000000015B1 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[179]
+		sender=0xa6Ea563F6Ac451Dc794912eD27738ef6001E3933 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[200, 177]
+		sender=0x00000000000000000000000000000000053945Dc addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[222, 10]
+		sender=0x00000000000000000000000000000000049C3206 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[0]
+		sender=0x000000000000000000000000000000000000090C addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[84, 5]
+		sender=0xf37B8E91D7bD8CFbBCA15f1e24BEA9FE814a6FA8 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[0, 6]
+		sender=0x66e99544eD8De9ae3062c48DdACaCF766193Ca8c addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[102]
+		sender=0x094F3412428A53816B6AbaA6849E8dF1cf7f20Af addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[1, 0]
+		sender=0x00000000000000000000000000000000000015B4 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[212]
+		sender=0xB920779EE9D69A7f5b1044e11388c41117767296 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[4, 1]
+		sender=0x0000000000000000000000000000000000000185 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[0, 6]
+		sender=0x00000000000000000000000000000000000011E1 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[1]
+		sender=0x000000000000000000000000000000E8D413A08e addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[5, 2]
+		sender=0x0000000000000000000000000000000000000E42 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[95, 24]
+		sender=0xEfD871c0AB25E1533DB7d8B11A194fc740B9CD28 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[24, 2]
+		sender=0x00000000000000000000000000000000013Ce8FA addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[178, 10]
+		sender=0x0000000000000000000000000000000008bE761E addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[1]
+		sender=0x000000000000000000000000000000000523018B addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[28]
+		sender=0x889929C8D88E2Fa85aBf737C2D141fcDAC1DFc24 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[1, 1]
+		sender=0xbA466ac630d710A62F476917BaF729dD510fe056 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[3, 14]
+		sender=0x0000000000000000000000000000000009c8ab31 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[1, 7]
+		sender=0x0B6716EeC4a2fC23C0D46f2bdE86aD3FeE8b3Da9 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[228, 10]
+		sender=0x0000000000000000000000000000000000000335 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[15]
+		sender=0x487790cd7104074De29a6E5345deC427E8535cBE addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[0, 2]
+		sender=0x0000000000000000000000000000000004467630 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[1]
+		sender=0x000000000000000000000000000000000000089a addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[121]
+		sender=0x000000000000000000000000000000000076D7f1 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[1, 7]
+		sender=0x000000000000000000000000000000000b94A1BD addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[204]
+		sender=0x1160D0A984F6bCb43E7A9Da69cFb168d1476336D addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[3, 15]
+		sender=0x0000000000000000000000000000000000000a55 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[4, 3]
+		sender=0x00000000000000000000000000000000000025e2 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[200]
+		sender=0x00000000000000000000000000000000000007B6 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[1]
+		sender=0x40965757AEBa87E939970CB59a34102cA74cA176 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[45, 6]
+		sender=0x00000000000000000000000000000000049B4C7A addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[81, 216]
+		sender=0x0000000000000000000000000000000000000F4A addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[9]
+		sender=0x000000000000000000000000000000000000127C addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[202]
+		sender=0xaAE0Af9887852F7c67B46CD43e3D7254fD6b15CB addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[1, 12]
+		sender=0x00000000000000000000000000000000003D0901 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[40, 177]
+		sender=0x0000000000000000000000000000000000000E25 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[100]
+		sender=0x00000000000000000000000000000000015C4FE7 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[63]
+		sender=0x0000000000000000000000000000000000001958 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[224, 48]
+		sender=0x00000000000000000000000000000000000016A3 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[255]
+		sender=0x0000000000000000000000000000000000000e20 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[0, 110]
+		sender=0x0000000000000000000000000000000000000117 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[200]
+		sender=0x0000000000000000000000000000000000000184 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[10, 33]
+		sender=0x1517c26d946B77544a784BF192E193671367AC57 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[7]
+		sender=0x0000000000000000000000000000000008d52Be5 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[25]
+		sender=0x6d69736d6174636820776974682061727261791f addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[251]
+		sender=0x0000000000000000000000000000000006b53fCc addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[7, 1]
+		sender=0xeAb965e0a0d72591fc62D66cC5d77f5D6d5AD162 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[147, 79]
+		sender=0x000000000000000000000000000000003E413beF addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[23]
+		sender=0x756fE66Be581AE956E499c58aa9c488772068280 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[255, 102]
+		sender=0xD3cFeE3901116f5C0281c91b30B04f6d53b52B13 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[5]
+		sender=0xdFb18815282fE989326fBfF903d13cF0e03aCE2b addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[75, 0]
+		sender=0x00000000000000000000000000000000002f75Ff addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[190, 125]
+		sender=0x3Cdc5915233F1a7570c935115db0aCf533B649BE addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[191, 30]
+		sender=0x00000000000000000000000000000000000005B3 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[1]
+		sender=0x0000000000000000000000000000000000001f80 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[1]
+		sender=0x2F12dB2869C3395A3b0502D05e2516446F71f85c addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[15, 0]
+		sender=0x0000000000000000000000000000000000005800 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[0, 182]
+		sender=0xB520a200D9490885bb9B7b741aB89B39AB58a61F addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[1]
+		sender=0xAD2076141E3C722fBa974bC58099f3D479E958c3 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[6]
+		sender=0x540389d3886C70f864180Db8ffafEC90fA3AeA74 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[100, 14]
+		sender=0x000000000000000000000000000000000000dbf7 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[107]
+		sender=0xAca9C64A4D5A7Ab93b6168C34ed9e53ae9950FdF addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[18, 15]
+		sender=0x000000000000000000000000000000000905179D addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[182, 31]
+		sender=0x0000000000000000000000000000000002D32Cd4 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[6]
+		sender=0x08dCD8BA92136BB43C5d220f888db184A5f07285 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[100, 184]
+		sender=0x000000000000000000000000000000000000211A addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[2]
+		sender=0x0000000000000000000000000000000000001716 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[28, 14]
+		sender=0x0000000000000000000000000000000000002998 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[0]
+		sender=0x0000000000000000000000000000000005178BC7 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=repayLoan(uint8) args=[0]
+		sender=0xAF4F3C74323e9a7c3b79af8Ec8d0f3ff1157d28f addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[200, 135]
+		sender=0xbCd880CF3CD846EeAaaB57d3E0fd93e5Bfa15b50 addr=[test/foundry/V6Invariants.t.sol:Handler]0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f calldata=requestLoan(uint8,uint8) args=[0, 252]
+ invariant_S5_counter_matches_array() (runs: 0, calls: 0, reverts: 0)
+
+Encountered a total of 1 failing tests, 4 tests succeeded
+
+Tip: Run `forge test --rerun` to retry only the 1 failed test
+
+Fuzz seed: 0x4660ead6f9199450a3d3bacb50b4d762b2b3c3a894452be13ec29e6630742cee (use `--fuzz-seed` to reproduce)
