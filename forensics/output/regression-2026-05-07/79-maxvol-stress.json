@@ -1,0 +1,67 @@
+{
+  "v6": "0x56ecCB27D953a3c84463Df97e18b4E596462CbdE",
+  "startedAt": "2026-05-16T18:38:21.225Z",
+  "completedAt": "2026-05-16T19:19:27.394Z",
+  "totalOps": 385,
+  "totalLoans": 100,
+  "volumeMoved": "5600142397000",
+  "masterUsdcDelta": "-1438600",
+  "invariantSnapshots": [
+    {
+      "label": "post-supply-500k",
+      "sumAvail": 500000,
+      "mpBal": 732523.53222,
+      "s1": false,
+      "b1": false,
+      "dupsCount": 0
+    },
+    {
+      "label": "post-churn-5M",
+      "sumAvail": 500000,
+      "mpBal": 732523.53222,
+      "s1": false,
+      "b1": false,
+      "dupsCount": 0
+    },
+    {
+      "label": "loan-cycle-5",
+      "sumAvail": 500035.599325,
+      "mpBal": 732559.49112,
+      "s1": false,
+      "b1": false,
+      "dupsCount": 0
+    },
+    {
+      "label": "loan-cycle-10",
+      "sumAvail": 500071.19865,
+      "mpBal": 732595.45002,
+      "s1": false,
+      "b1": false,
+      "dupsCount": 0
+    },
+    {
+      "label": "loan-cycle-15",
+      "sumAvail": 500106.797975,
+      "mpBal": 732631.40892,
+      "s1": false,
+      "b1": false,
+      "dupsCount": 0
+    },
+    {
+      "label": "loan-cycle-20",
+      "sumAvail": 500142.3973,
+      "mpBal": 732667.36782,
+      "s1": false,
+      "b1": false,
+      "dupsCount": 0
+    },
+    {
+      "label": "post-claims",
+      "sumAvail": 500000.0003,
+      "mpBal": 732524.97082,
+      "s1": false,
+      "b1": false,
+      "dupsCount": 0
+    }
+  ]
+}
