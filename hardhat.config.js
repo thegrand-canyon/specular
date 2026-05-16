@@ -33,7 +33,11 @@ module.exports = {
         enabled: true,
         runs: 200
       },
-      viaIR: true
+      viaIR: true,
+      // CLAUDE_AUDIT_WORLDCLASS W4: pin evm target explicitly. Without this, future
+      // compiler/Hardhat upgrades could silently emit PUSH0 (Shanghai) bytecode that
+      // breaks deployment on chains without that opcode.
+      evmVersion: "paris"
     }
   },
   networks: {

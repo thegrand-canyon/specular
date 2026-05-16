@@ -534,13 +534,15 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
         uint256 interest = position.earnedInterest;
 
         require(interest > 0, "No interest to claim");
+        // CLAUDE_AUDIT_WORLDCLASS W3: validate before writing state. Even though EVM atomicity
+        // makes the prior ordering safe, validate-before-write is the clearer convention.
+        require(pool.availableLiquidity >= interest, "Drain underflow");
 
         position.earnedInterest = 0;
 
         // §S1 FIX: decrement pool.availableLiquidity to match the USDC leaving the contract.
         // Without this, claimed interest is double-counted as both "withdrawn USDC" and "still
         // available", producing the phantom liquidity drift documented in the audit.
-        require(pool.availableLiquidity >= interest, "Drain underflow");
         pool.availableLiquidity -= interest;
 
         usdcToken.safeTransfer(msg.sender, interest);
@@ -727,7 +729,9 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
      */
     function setPlatformFeeRate(uint256 newRate) external onlyOwner {
         require(newRate <= 500, "Fee too high"); // Max 5%
+        uint256 oldRate = platformFeeRate;
         platformFeeRate = newRate;
+        emit PlatformFeeRateChanged(oldRate, newRate);
     }
 
     /**
@@ -811,4 +815,7 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
         uint256 newTotalLoaned,
         uint256 newAvailableLiquidity
     );
+
+    // CLAUDE_AUDIT_WORLDCLASS W2: emit on platform fee changes for off-chain monitoring
+    event PlatformFeeRateChanged(uint256 oldRate, uint256 newRate);
 }
