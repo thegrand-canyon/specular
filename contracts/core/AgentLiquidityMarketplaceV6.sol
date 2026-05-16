@@ -732,17 +732,28 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
 
     /**
      * @notice Emergency function to recalculate and fix pool accounting
-     * @dev Recalculates totalLoaned by summing active loans for agent
+     * @dev Recalculates totalLoaned by summing active loans for agent.
+     *      Recalculates availableLiquidity from totalLiquidity + Σ unclaimed
+     *      interest − totalLoaned. CLAUDE_AUDIT_DEEP fixes #1 + #2 applied.
      * @param agentId The agent ID whose pool to fix
      */
     function resetPoolAccounting(uint256 agentId) external onlyOwner {
         AgentPool storage pool = agentPools[agentId];
         require(pool.agentId == agentId, "Pool does not exist");
 
+        // CLAUDE_AUDIT_DEEP Finding 1: detect NFT transfer that would invalidate
+        // agentLoans[pool.agentAddress] lookup. After an agent NFT is transferred,
+        // new loans go to agentLoans[NEW_owner] but pool.agentAddress is still the
+        // OLD owner — walking only one would undercount totalLoaned. Force admin to
+        // use seedPool/seedPosition (migration helpers) for transferred agents.
+        require(
+            agentRegistry.ownerOf(agentId) == pool.agentAddress,
+            "Agent transferred; resync via migration helpers"
+        );
+
         // Recalculate totalLoaned from active loans
         uint256 actualLoaned = 0;
         uint256[] memory loanIds = agentLoans[pool.agentAddress];
-
         for (uint256 i = 0; i < loanIds.length; i++) {
             Loan storage loan = loans[loanIds[i]];
             if (loan.state == LoanState.ACTIVE) {
@@ -750,10 +761,20 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
             }
         }
 
+        // CLAUDE_AUDIT_DEEP Finding 2: use Σ position.earnedInterest (unclaimed)
+        // instead of pool.totalEarned (lifetime). totalEarned never decrements on
+        // claimInterest, so the prior formula double-counted already-claimed
+        // interest. Bounded loop: MAX_LENDERS_PER_POOL = 50.
+        uint256 unclaimedInterest = 0;
+        address[] storage lenders = poolLenders[agentId];
+        for (uint256 i = 0; i < lenders.length; i++) {
+            unclaimedInterest += positions[agentId][lenders[i]].earnedInterest;
+        }
+
         // Update pool state
         uint256 oldLoaned = pool.totalLoaned;
         pool.totalLoaned = actualLoaned;
-        pool.availableLiquidity = pool.totalLiquidity + pool.totalEarned - actualLoaned;
+        pool.availableLiquidity = pool.totalLiquidity + unclaimedInterest - actualLoaned;
 
         emit PoolAccountingReset(agentId, oldLoaned, actualLoaned, pool.availableLiquidity);
     }
