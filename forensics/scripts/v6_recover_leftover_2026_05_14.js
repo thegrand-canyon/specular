@@ -37,7 +37,15 @@ function loadKnownWallets() {
         './forensics/output/regression-2026-05-07/56-migration-helpers-lender.json',
         './forensics/output/regression-2026-05-07/59-s5-extreme-wallets.json',
         './forensics/output/regression-2026-05-07/60-concurrent-wallets.json',
-        './forensics/output/regression-2026-05-07/58-b1-differential-wallets.json'
+        './forensics/output/regression-2026-05-07/58-b1-differential-wallets.json',
+        './forensics/output/regression-2026-05-07/64-rep-wallets.json',
+        './forensics/output/regression-2026-05-07/65-multiborrower-wallets.json',
+        './forensics/output/regression-2026-05-07/66-pause-wallets.json',
+        './forensics/output/regression-2026-05-07/69-edge-wallets.json',
+        './forensics/output/regression-2026-05-07/70-cap-wallets.json',
+        './forensics/output/regression-2026-05-07/72-api-wallet.json',
+        './forensics/output/regression-2026-05-07/73-mega-v2-wallets.json',
+        './forensics/output/regression-2026-05-07/73-mega-v2-extras.json'
     ];
     for (const f of candidates) {
         if (!fs.existsSync(f)) continue;
