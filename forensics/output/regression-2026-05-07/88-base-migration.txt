@@ -1,0 +1,46 @@
+
+🔄 BASE v4 → V6 MIGRATION
+═══════════════════════════════════════════════════════
+Deployer: 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+v4: 0xd7b4dEE74C61844DFA75aEbe224e4635463b1C8f
+V6: 0x0a4e3C745aB95aceb45B05C28D89fe4Db8815F9a
+Pre: ETH=0.010337656691497071, USDC=283.511268
+
+[1] v4.withdrawLiquidity(1, 1.5 USDC)
+    secure wallet position on v4 pool 1: 1.5 USDC
+    tx: 0xb5c264cbab9e33aec3847ff72b95180309d90b94f7616766be17ec0125678f54
+    ✓ withdrew 1.5 USDC
+
+[2] V6.createAgentPool() (as agent 1 owner)
+    tx: 0x89b912dbb026f497cceec99112de5190904d17a21161fa6327ce8ff02a988421
+    ✓ created V6 pool 1
+
+[3] usdc.approve(V6, MaxUint256)
+    tx: 0xc8b56251d50232b241eb22d2a94e74b7d8acaa05609358f2aeca38ee0498d362
+    ✓ approved
+
+[4] V6.supplyLiquidity(1, available USDC)
+    supplying 1.5 USDC
+    tx: 0x5aa1078156353d3393ca9162a6bc4d07575dd463ac446109fcccc63675cd5ee5
+    ✓ supplied to V6 pool 1
+
+[5] V6.setMigrationFinalized() (locks seedPool/seedPosition irreversibly)
+    tx: 0x8098299b193b50c324fb2e043c546bd68bf68cd649b5710b90acff0a8eae6bf9
+    ✓ migration finalized — seedPool/seedPosition locked
+
+[6] v4.pause() (prevents new v4 activity)
+    tx: 0x9c69e45c5216ecca36a853a2c857b6799cf48d86046cade7b54f992a284c8974
+    ✓ v4 paused
+
+═══════════════════════════════════════════════════════
+   FINAL STATE
+═══════════════════════════════════════════════════════
+V6 pool 1: totalLiq=1.5, avail=1.5
+v4 paused: true
+V6 migrationFinalized: true
+Master: ETH=0.01033399613031952 (Δ -0.000003660561177551)
+Master: USDC=283.511268 (Δ 0.0)
+
+✅ MIGRATION COMPLETE
+
+Next: update src/config/base-addresses.json + frontend/js/config.js to point at V6 as canonical.

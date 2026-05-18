@@ -33,7 +33,7 @@ const GetStarted = ({ onComplete }) => {
       contracts: {
         registry: '0xb9996de05fD514A0cB2B81fa25448EECD4559Aaa',
         reputation: '0xf19b1780A84668C8dfB6b4E84C08e457dB3B0527',
-        marketplace: '0xd7b4dEE74C61844DFA75aEbe224e4635463b1C8f',
+        marketplace: '0x0a4e3C745aB95aceb45B05C28D89fe4Db8815F9a',
       }
     },
     arbitrum: {
