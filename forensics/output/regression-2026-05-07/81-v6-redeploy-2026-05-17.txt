@@ -1,0 +1,45 @@
+Warning: Function state mutability can be restricted to pure
+   --> contracts/core/AgentLiquidityMarketplace.sol:464:5:
+    |
+464 |     function getActiveAgents() external view returns (uint256[] memory) {
+    |     ^ (Relevant source part starts here and spans across multiple lines).
+
+
+Warning: Function state mutability can be restricted to pure
+   --> contracts/core/AgentLiquidityMarketplaceV6.sol:545:5:
+    |
+545 |     function getActiveAgents() external view returns (uint256[] memory) {
+    |     ^ (Relevant source part starts here and spans across multiple lines).
+
+
+Compiled 49 Solidity files successfully (evm target: paris).
+
+🚀 DEPLOY V6 TO ARC TESTNET
+
+═══════════════════════════════════════════════════════
+
+Deployer: 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+Network chainId: 5042002
+Native balance: 212.662908072054094529
+
+Dependencies (existing):
+  AgentRegistryV2:     0x741C03c0d95d2c15E479CE1c7E69B3196d86faD7
+  ReputationManagerV3: 0x94F2fa47c4488202a46dAA9038Ed9C9c4c07467F
+  USDC:                0xf2807051e292e945751A25616705a9aadfb39895
+
+Deploying AgentLiquidityMarketplaceV6...
+  ✅ V6: 0x7a0560551b2370ee87458186c0b1eFCc38c7c57a
+  tx: 0x3e7b3184c363bbe989f764f70d789ecd83c22897b00624c34ed044f4c40eec1a
+
+Authorizing V6 with ReputationManagerV3...
+  authorizePool tx: 0x395625cde11064a90860a51fc0ec88cd479839c46f7bd92a45f81fff8c7585da
+  ✅ authorized
+
+✅ Updated /Users/peterschroeder/Specular/src/config/arc-testnet-addresses.json
+
+Next steps:
+  1. Verify on https://testnet.arcscan.app/address/0x7a0560551b2370ee87458186c0b1eFCc38c7c57a
+  2. Run migration: scripts/migrate-arc-to-v6.js (write next)
+  3. After migration: call setMigrationFinalized()
+  4. Update src/sdk/* to point at agentLiquidityMarketplace_v6
+  5. Pause v4 marketplace to prevent new state divergence
