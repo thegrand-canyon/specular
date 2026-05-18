@@ -1,0 +1,28 @@
+
+🚀 DEPLOY V6 → BASE MAINNET
+
+═══════════════════════════════════════════════════════
+
+Deployer: 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+chainId: 8453
+Base ETH: 0.010355031855011746
+
+Dependencies (existing on Base):
+  AgentRegistryV2:     0xb9996de05fD514A0cB2B81fa25448EECD4559Aaa
+  ReputationManagerV3: 0xf19b1780A84668C8dfB6b4E84C08e457dB3B0527
+  USDC:                0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 (real USDC)
+
+Deployment estimate:
+  gas:       2856062
+  gasPrice:  0.006 gwei
+  cost:      0.000017136372 ETH (≈ $0.05)
+
+📋 DRY-RUN COMPLETE. To broadcast, re-run with:
+   DEPLOY_CONFIRM=I_HAVE_AUDITED_V6 npx hardhat run scripts/deploy-v6-base-mainnet.js --network base
+
+⚠️  Before setting DEPLOY_CONFIRM, make sure you have:
+   1. External audit of V6 (slither, mythril, manual review) — see V6_MIGRATION_RUNBOOK.md
+   2. Verified all 287 hardhat tests + 8 V6Migration tests pass on the deployed bytecode
+   3. Decided on the migration sequence with users notified
+   4. Liquidated stuck Base loans #2/#3/#4 (post 2026-05-11 19:10 UTC)
+   5. Bridged sufficient ETH to deployer wallet

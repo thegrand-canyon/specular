@@ -3,11 +3,12 @@
   "reputationManagerV3": "0xf19b1780A84668C8dfB6b4E84C08e457dB3B0527",
   "usdc": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
   "agentLiquidityMarketplace": "0xd7b4dEE74C61844DFA75aEbe224e4635463b1C8f",
-  "agentLiquidityMarketplace_v6": null,
-  "agentLiquidityMarketplace_v6_note": "V6 not yet deployed to Base. Gated on external audit. Run scripts/deploy-v6-base-mainnet.js with DEPLOY_CONFIRM=I_HAVE_AUDITED_V6 after audit.",
+  "agentLiquidityMarketplace_v6": "0x0a4e3C745aB95aceb45B05C28D89fe4Db8815F9a",
+  "agentLiquidityMarketplace_v6_note": "V6 with §B1 + §S1 + §S5 fixes. Migration not started. Not yet canonical.",
   "deployer": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
   "deployedAt": "2026-02-25T00:00:00.000Z",
   "network": "base-mainnet",
   "chainId": 8453,
-  "note": "Redeployed ReputationManager and Marketplace on 2026-02-25 to fix authorization issue. Registry unchanged. All contracts now owned by secure wallet with unified ownership."
+  "note": "Redeployed ReputationManager and Marketplace on 2026-02-25 to fix authorization issue. Registry unchanged. All contracts now owned by secure wallet with unified ownership.",
+  "agentLiquidityMarketplace_v6_deployedAt": "2026-05-18T19:38:28.836Z"
 }

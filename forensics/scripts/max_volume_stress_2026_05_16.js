@@ -102,7 +102,7 @@ function extractLoanId(receipt, contractIface) {
     const borrowers = [];
     for (let i = 0; i < N_LENDERS; i++) lenders.push(ethers.Wallet.createRandom().connect(provider));
     for (let i = 0; i < N_BORROWERS; i++) borrowers.push(ethers.Wallet.createRandom().connect(provider));
-    fs.writeFileSync('./forensics/output/regression-2026-05-07/79-maxvol-wallets.json', JSON.stringify({
+    fs.writeFileSync('./forensics/output/regression-2026-05-07/83-postaudit-stress-wallets.json', JSON.stringify({
         startedAt: new Date().toISOString(),
         lenders: lenders.map(w => ({ addr: w.address, key: w.privateKey })),
         borrowers: borrowers.map(w => ({ addr: w.address, key: w.privateKey }))
@@ -275,7 +275,7 @@ function extractLoanId(receipt, contractIface) {
     log(`Invariant violations: ${violations.length} / ${invariantLog.length}`);
     if (violations.length === 0) log('   ✅ ALL INVARIANTS HELD ACROSS HIGH-VOLUME OPS');
 
-    fs.writeFileSync('./forensics/output/regression-2026-05-07/79-maxvol-stress.json', JSON.stringify({
+    fs.writeFileSync('./forensics/output/regression-2026-05-07/83-postaudit-stress.json', JSON.stringify({
         v6: V6, startedAt: new Date(t0).toISOString(), completedAt: new Date().toISOString(),
         totalOps, totalLoans, volumeMoved: volumeMoved.toString(),
         masterUsdcDelta: (endUsdc - startUsdc).toString(),

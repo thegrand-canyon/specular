@@ -32,7 +32,7 @@ Website: specular.financial | GitHub: thegrand-canyon/specular | Deploy: specula
 | Network | v4 (canonical) | V6 (with fixes) | Owner | Paused |
 |---------|---------------|------------------|-------|--------|
 | Arc Testnet | `0x048363A325A5B188b7FF157d725C5e329f0171D3` | `0x7a0560551b2370ee87458186c0b1eFCc38c7c57a` (post-WORLDCLASS audit, deployed 2026-05-17) | `0x800e305A...F72C` (secure) | **No** |
-| Base Mainnet | `0xd7b4dEE74C61844DFA75aEbe224e4635463b1C8f` | NOT YET DEPLOYED (audit gate) | `0x800e305A...F72C` (secure) | **No** |
+| Base Mainnet | `0xd7b4dEE74C61844DFA75aEbe224e4635463b1C8f` | `0x0a4e3C745aB95aceb45B05C28D89fe4Db8815F9a` (deployed 2026-05-17, post-WORLDCLASS audit) | `0x800e305A...F72C` (secure) | **No** |
 
 - Base stale marketplace: `0x77F8D49cdE6Ae7481BeA38C8a70b5A893bD4d9AF` (60.5 USDC residual, different owner — ignore)
 - Arc compromised wallet: `0x656086A21073272533c8A3f56A94c1f3D8BCFcE2` (key published; agentId 43, 777+ loans, USDC swept to secure wallet 2026-05-08)

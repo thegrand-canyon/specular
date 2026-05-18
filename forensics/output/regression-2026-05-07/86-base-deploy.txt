@@ -1,0 +1,40 @@
+
+🚀 DEPLOY V6 → BASE MAINNET
+
+═══════════════════════════════════════════════════════
+
+Deployer: 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+chainId: 8453
+Base ETH: 0.010355031855011746
+
+Dependencies (existing on Base):
+  AgentRegistryV2:     0xb9996de05fD514A0cB2B81fa25448EECD4559Aaa
+  ReputationManagerV3: 0xf19b1780A84668C8dfB6b4E84C08e457dB3B0527
+  USDC:                0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 (real USDC)
+
+Deployment estimate:
+  gas:       2856062
+  gasPrice:  0.006 gwei
+  cost:      0.000017136372 ETH (≈ $0.05)
+
+🚨 DEPLOY_CONFIRM SET — BROADCASTING TO BASE MAINNET 🚨
+
+✅ V6: 0x0a4e3C745aB95aceb45B05C28D89fe4Db8815F9a
+   tx: 0x239d5bf0e2346061820550ad451ad96f94b9d217d8cf51bfe42d903a935f01d9
+
+Authorizing V6 with Base ReputationManagerV3...
+  authorizePool tx: 0xb205b660bc6b82d2e004d5309043462399476d0f91bd25398980fb9a2ee5b008
+  ✅ authorized
+
+✅ Updated /Users/peterschroeder/Specular/src/config/base-addresses.json
+
+Next steps:
+  1. Verify on https://basescan.org/address/0x0a4e3C745aB95aceb45B05C28D89fe4Db8815F9a
+  2. Submit for verification: npx hardhat verify --network base 0x0a4e3C745aB95aceb45B05C28D89fe4Db8815F9a "0xb9996de05fD514A0cB2B81fa25448EECD4559Aaa" "0xf19b1780A84668C8dfB6b4E84C08e457dB3B0527" "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+  3. Smoke-test: read paused(), owner(), MAX_LENDERS_PER_POOL, MAX_ACTIVE_LOANS_PER_AGENT
+  4. Notify users of migration window (per V6_MIGRATION_RUNBOOK.md communication template)
+  5. Lenders self-migrate from v4 (one Base lender: secure wallet itself, single migration)
+  6. Owner: setMigrationFinalized()
+  7. Update src/config/base-addresses.json — swap agentLiquidityMarketplace value to V6
+  8. Update frontend/js/config.js + frontend/abis/AgentLiquidityMarketplace.json
+  9. Redeploy API (Railway) + frontend (Vercel)

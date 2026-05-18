@@ -46,7 +46,8 @@ function loadKnownWallets() {
         './forensics/output/regression-2026-05-07/72-api-wallet.json',
         './forensics/output/regression-2026-05-07/73-mega-v2-wallets.json',
         './forensics/output/regression-2026-05-07/73-mega-v2-extras.json',
-        './forensics/output/regression-2026-05-07/79-maxvol-wallets.json'
+        './forensics/output/regression-2026-05-07/79-maxvol-wallets.json',
+        './forensics/output/regression-2026-05-07/83-postaudit-stress-wallets.json'
     ];
     for (const f of candidates) {
         if (!fs.existsSync(f)) continue;
