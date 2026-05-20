@@ -1,0 +1,35 @@
+=== W1 SANDWICH DEFENSE — LIVE on Arc V6 ===
+V6: 0x7a0560551b2370ee87458186c0b1eFCc38c7c57a
+legit: 0xE1B220358274fcEd63EF71A180F4A0cCCedfd79a
+borrower: 0xF8755A544D714114db5FcffE6bBA7EFf0660c3d5
+attacker: 0x6C1608089a4eeb8F712fCD09957e87C02BDCB4d6
+
+[1] Funding ephemeral wallets
+  ✓ funded
+
+[2] Register borrower + create pool + approvals
+  borrower agentId=185
+
+[3] Legit supplies 100 USDC at t0
+  legit.depositTimestamp: 1779290011
+
+[4] Borrower requests 10 USDC loan at t1 (after legit supply)
+  loanId: 103
+  loan.startTime: 1779290020
+
+[5] Attacker sandwich-supplies 1000 USDC at t2 (AFTER loan start)
+  attacker.depositTimestamp: 1779290029
+  loan.startTime <= attacker.depositTimestamp: true (if true, attacker DOES NOT qualify)
+
+[6] Borrower repays — _distributeInterest runs
+
+[7] Verify interest distribution
+  legit earnedInterest: 0.02848 USDC
+  attacker earnedInterest: 0.0 USDC
+
+✅ W1 DEFENSE LIVE-VERIFIED on Arc V6
+   legit got interest (> 0): true
+   attacker got NOTHING (=0): true
+
+[8] Cleanup
+  ✓ cleanup done

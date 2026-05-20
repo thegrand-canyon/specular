@@ -1,0 +1,42 @@
+=== BASE V6 FIRST REAL LIFECYCLE SMOKE ===
+V6: 0x0a4e3C745aB95aceb45B05C28D89fe4Db8815F9a
+Borrower (also agent 1): 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+Pre: ETH=0.01033399613031952, USDC=283.511268
+USDC allowance to V6: 115792089237316195423570985008687907853269984665640564039457584007913128.139935
+
+V6 Pool 1 state:
+  totalLiquidity: 1.5
+  availableLiquidity: 1.5
+  totalLoaned: 0.0
+  lenderCount: 1
+
+[1] requestLoan(0.1 USDC, 7 days)
+  tx: 0x8cc90831bae1826854df88835f5eeaafa53e3a361ac8a094cbfa76952140bbad
+  ✓ loanId: 1 gas: 428771
+  loan state: ACTIVE
+  loan amount: 0.1
+  loan collateral: 0.1
+  loan interest rate (bps): 1500
+
+Mid-state V6 Pool 1:
+  availableLiquidity: 1.4
+  totalLoaned: 0.1
+
+[2] repayLoan(1)
+  tx: 0xd94f9eb59c27f3875182ff3f7ac3126edf2ff938ab31e520dc146246dc8669ec
+  ✓ repaid, gas: 224438
+  loan state final: REPAID
+
+Post-repay V6 Pool 1:
+  totalLiquidity: 1.5
+  availableLiquidity: 1.500285
+  totalLoaned: 0.0
+  totalEarned: 0.000285
+
+Secure wallet position on pool 1:
+  amount: 1.5
+  earnedInterest: 0.000285
+
+Final: ETH=0.010330064368354137 (Δ -0.000003931761965383), USDC=283.510981 (Δ -0.000287)
+
+✅ Base V6 first real loan lifecycle complete
