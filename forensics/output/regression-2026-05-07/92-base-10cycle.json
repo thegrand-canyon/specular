@@ -1,0 +1,113 @@
+{
+  "timestamp": "2026-05-22T17:00:25.169Z",
+  "v6": "0x0a4e3C745aB95aceb45B05C28D89fe4Db8815F9a",
+  "completed": 10,
+  "firstLoanId": "2",
+  "lastLoanId": "11",
+  "avgRequestGas": 411659,
+  "avgRepayGas": 156038,
+  "gasUsed": [
+    {
+      "phase": "request",
+      "cycle": 1,
+      "gas": 411659
+    },
+    {
+      "phase": "repay",
+      "cycle": 1,
+      "gas": 156038
+    },
+    {
+      "phase": "request",
+      "cycle": 2,
+      "gas": 411659
+    },
+    {
+      "phase": "repay",
+      "cycle": 2,
+      "gas": 156038
+    },
+    {
+      "phase": "request",
+      "cycle": 3,
+      "gas": 411659
+    },
+    {
+      "phase": "repay",
+      "cycle": 3,
+      "gas": 156038
+    },
+    {
+      "phase": "request",
+      "cycle": 4,
+      "gas": 411659
+    },
+    {
+      "phase": "repay",
+      "cycle": 4,
+      "gas": 156038
+    },
+    {
+      "phase": "request",
+      "cycle": 5,
+      "gas": 411659
+    },
+    {
+      "phase": "repay",
+      "cycle": 5,
+      "gas": 156038
+    },
+    {
+      "phase": "request",
+      "cycle": 6,
+      "gas": 411659
+    },
+    {
+      "phase": "repay",
+      "cycle": 6,
+      "gas": 156038
+    },
+    {
+      "phase": "request",
+      "cycle": 7,
+      "gas": 411659
+    },
+    {
+      "phase": "repay",
+      "cycle": 7,
+      "gas": 156038
+    },
+    {
+      "phase": "request",
+      "cycle": 8,
+      "gas": 411659
+    },
+    {
+      "phase": "repay",
+      "cycle": 8,
+      "gas": 156038
+    },
+    {
+      "phase": "request",
+      "cycle": 9,
+      "gas": 411659
+    },
+    {
+      "phase": "repay",
+      "cycle": 9,
+      "gas": 156038
+    },
+    {
+      "phase": "request",
+      "cycle": 10,
+      "gas": 411659
+    },
+    {
+      "phase": "repay",
+      "cycle": 10,
+      "gas": 156038
+    }
+  ],
+  "deltaEth": "-0.000033141615927417",
+  "deltaUsdc": "-0.001287"
+}

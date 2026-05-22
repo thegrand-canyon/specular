@@ -1,0 +1,36 @@
+=== Arc V6 SHARED-POOL CONCURRENT STRESS ===
+V6: 0x7a0560551b2370ee87458186c0b1eFCc38c7c57a
+8 lenders × 5000 USDC each, single borrower doing 30 cycles, lender rotation every 5 cycles
+
+[1] Funding wallets
+[2] Register + pool create
+
+[3] First 4 lenders supply 5000 USDC each to pool
+  lender 1 supplied
+  lender 2 supplied
+  lender 3 supplied
+  lender 4 supplied
+
+[4] 30 loan cycles, rotating new lender every 5 cycles
+  cycle 5: lender 5 JOINED
+  ✅ cycle 5: pool totalLiq=25000, avail=25001.423975, lc=5, unique=5, dups=false
+  cycle 10: lender 6 JOINED
+  ✅ cycle 10: pool totalLiq=30000, avail=30002.84795, lc=6, unique=6, dups=false
+  cycle 15: lender 7 JOINED
+  ✅ cycle 15: pool totalLiq=35000, avail=35004.271925, lc=7, unique=7, dups=false
+  cycle 20: lender 8 JOINED
+  ✅ cycle 20: pool totalLiq=40000, avail=40005.6959, lc=8, unique=8, dups=false
+  ✅ cycle 25: pool totalLiq=40000, avail=40007.119875, lc=8, unique=8, dups=false
+  ✅ cycle 30: pool totalLiq=40000, avail=40008.54385, lc=8, unique=8, dups=false
+
+[5] Total loans completed: 30/30
+
+[6] All lenders claim interest
+  total claimed: 8.54378 USDC
+
+Final pool 186: totalLiq=40000, avail=40000.00007, mpBal=45501.42399
+
+[7] Cleanup
+Duration: 11.6 min
+Invariant violations: 0/6
+✅ ALL INVARIANTS HELD

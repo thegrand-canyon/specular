@@ -1,0 +1,23 @@
+=== BASE V6 10-CYCLE PRODUCTION STRESS ===
+Pre: ETH=0.010330064368354137, USDC=283.510981
+  cycle 1/10: loanId=2, req=411659 gas, repay=156038 gas ✓
+  cycle 2/10: loanId=3, req=411659 gas, repay=156038 gas ✓
+  cycle 3/10: loanId=4, req=411659 gas, repay=156038 gas ✓
+  cycle 4/10: loanId=5, req=411659 gas, repay=156038 gas ✓
+  cycle 5/10: loanId=6, req=411659 gas, repay=156038 gas ✓
+  cycle 6/10: loanId=7, req=411659 gas, repay=156038 gas ✓
+  cycle 7/10: loanId=8, req=411659 gas, repay=156038 gas ✓
+  cycle 8/10: loanId=9, req=411659 gas, repay=156038 gas ✓
+  cycle 9/10: loanId=10, req=411659 gas, repay=156038 gas ✓
+  cycle 10/10: loanId=11, req=411659 gas, repay=156038 gas ✓
+
+=== RESULTS ===
+Completed: 10/10
+First loanId: 2, Last: 11
+Avg request gas: 411659
+Avg repay gas:   156038
+Δ ETH: -0.000033141615927417
+Δ USDC: -0.001287
+
+Final pool 1: totalLiq=1.5, avail=1.501705, totalEarned=0.001705
+Saved.
