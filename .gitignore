@@ -36,3 +36,5 @@ forensics/output/**/*wallets*.json
 forensics/output/**/*-extras*.json
 forensics/output/**/*-agent.json
 forensics/output/**/*-lender.json
+__pycache__/
+*.pyc

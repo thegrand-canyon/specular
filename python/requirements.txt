@@ -1,0 +1,5 @@
+web3>=6.0.0
+eth-account>=0.10.0
+# Optional for LangChain integration:
+# langchain>=0.3.0
+# langchain-anthropic>=0.3.0
