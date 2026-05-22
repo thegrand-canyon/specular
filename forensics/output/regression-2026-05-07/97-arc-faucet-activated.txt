@@ -1,0 +1,20 @@
+=== Activating Arc faucet ===
+Faucet: 0xb22FccD4a223C002E7cE963060A2cEF45D162b14
+Owner: 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+Faucet USDC balance pre-fund: 0.0
+
+[1] Transferring 100 USDC to faucet...
+  tx: 0xb654d158dc4588f6c561220857be3cef9d2a085bf81752b1e7e701baf1e2837b
+  new faucet balance: 100.0
+
+[2] Current maxEligibleAgentId: 0
+  setMaxEligibleAgentId(200) tx: 0x5bc24e6c3e68c96a6054951c27da215bb9821e338a5095262ecacdc12af25c71
+  new maxEligibleAgentId: 200
+
+[3] Verify isEligible() for known agentIds
+  agentId 1: eligible=true
+  agentId 50: eligible=true
+  agentId 188: eligible=true
+  agentId 201: eligible=false
+
+✅ Arc faucet activated. Agents 1-200 can now claim 10 USDC each.
