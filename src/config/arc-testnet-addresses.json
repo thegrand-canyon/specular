@@ -48,5 +48,8 @@
   "agentLiquidityMarketplace_v6_archive_2026_05_13_note": "Post-Claude-review V6 (pre CLAUDE_AUDIT_DEEP + WORLDCLASS fixes). Replaced 2026-05-17. Holds 200k stranded USDC in pool 124 (at MAX_LENDERS cap, unrecoverable on this deployment).",
   "agentLiquidityMarketplace_v6": "0x7a0560551b2370ee87458186c0b1eFCc38c7c57a",
   "agentLiquidityMarketplace_v6_deployedAt": "2026-05-17T00:36:20.252Z",
-  "agentLiquidityMarketplace_v6_note": "V6 with §B1+§S1+§S5 fixes + CLAUDE_REVIEW (4) + CLAUDE_AUDIT_DEEP (2 Med) + CLAUDE_AUDIT_WORLDCLASS (W1 sandwich + W2+W3+W4) all applied. Migration not started. Not yet canonical."
+  "agentLiquidityMarketplace_v6_note": "V6 with §B1+§S1+§S5 fixes + CLAUDE_REVIEW (4) + CLAUDE_AUDIT_DEEP (2 Med) + CLAUDE_AUDIT_WORLDCLASS (W1 sandwich + W2+W3+W4) all applied. Migration not started. Not yet canonical.",
+  "agentCreditFaucet": "0xb22FccD4a223C002E7cE963060A2cEF45D162b14",
+  "agentCreditFaucet_deployedAt": "2026-05-22T17:40:15.579Z",
+  "agentCreditFaucet_note": "Initial credit boost for new agents — owner must fund + set maxEligibleAgentId"
 }

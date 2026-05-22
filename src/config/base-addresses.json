@@ -12,5 +12,8 @@
   "chainId": 8453,
   "note": "V6 became canonical 2026-05-17 after migration. Migration finalized on-chain (seedPool/seedPosition locked).",
   "v6_deployedAt": "2026-05-17T00:18:23Z",
-  "v6_migrationCompletedAt": "2026-05-17T19:48Z"
+  "v6_migrationCompletedAt": "2026-05-17T19:48Z",
+  "agentCreditFaucet": "0x990f7495528bFC2ebcb8CbD6EeBd2Bc32B450164",
+  "agentCreditFaucet_deployedAt": "2026-05-22T17:41:04.140Z",
+  "agentCreditFaucet_note": "Initial credit boost for new agents — owner must fund + set maxEligibleAgentId"
 }
