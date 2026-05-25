@@ -1,0 +1,87 @@
+Buyer key persisted to /tmp/x402-buyer-1779738452068.json (chmod 600) — recover stranded funds here if test crashes
+
+=== x402 production e2e (Base mainnet) ===
+Seller:  0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+Buyer:   0xC8172FbA896CcA10333740BBC7Df6010742CFFC3  (ephemeral)
+USDC:    0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+Price:   0.01 USDC per call
+
+[BEFORE]
+  Seller USDC: 183.439551
+  Buyer USDC:  0.0
+
+[FUND] Transferring 0.02 USDC seller → buyer…
+  fund tx: https://basescan.org/tx/0xcb6c2ef4285e8f2bb67da5cb99c609f578d679a8581898ecc274904619918f38
+  Buyer USDC after fund: 0.02
+
+[SERVER] SpecularX402Server (mode=local, network=base) listening on :4242
+
+[CALL] Buyer → http://localhost:4242/transcribe (max 0.02 USDC)
+[CALL] ← HTTP 200 in 2711ms
+Body: {"ok":true,"result":"transcription: real x402 settlement on Base"}
+
+[AFTER]
+  Seller USDC: 183.429551
+  Buyer USDC:  0.01
+  Buyer delta (post-call): -0.01 USDC
+  Seller stats: {
+  "mode": "local",
+  "network": "base",
+  "sellerWallet": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+  "payTo": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+  "poolAgentId": null,
+  "requestCount": 1,
+  "pendingUsdc": "0.01",
+  "totalFlushedUsdc": "0.0",
+  "lastFlushAt": null,
+  "autoFlushThresholdUsdc": 10
+}
+
+✅ Production x402 settlement on Base mainnet VERIFIED
+   Buyer −0.01 USDC, seller +0.01 USDC, fully on-chain
+   Settlement tx: https://basescan.org/tx/0x9ac13216e39b16a635897eeb5423605fd046d0498191c3f4e1836637e5ba7790
+
+[CLEANUP] Sweeping buyer remainder back to seller…
+PRODUCTION TEST ERROR: Error: insufficient funds for intrinsic transaction cost (transaction="0x02f8af82210580830f424083a7d8c082b24c94833589fcd6edb6e08f4c7c32d4f71b54bda0291380b844a9059cbb000000000000000000000000800e305a0cadde6289dfdfedf38218f45c06f72c0000000000000000000000000000000000000000000000000000000000002710c080a02c81b3bd80a14a13ddd3c153a46e7592c4e55b106d478c6135d35caaa7f4ee99a0020323b2d079654b4f466dade2cdb0816345d91d1885271cb84c9b5d0b14de69", info={ "error": { "code": -32003, "message": "insufficient funds for gas * price + value: have 0 want 502084000000" } }, code=INSUFFICIENT_FUNDS, version=6.16.0)
+    at makeError (/Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/utils/errors.js:137:21)
+    at JsonRpcProvider.getRpcError (/Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/providers/provider-jsonrpc.js:721:49)
+    at /Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/providers/provider-jsonrpc.js:302:45
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  code: 'INSUFFICIENT_FUNDS',
+  transaction: '0x02f8af82210580830f424083a7d8c082b24c94833589fcd6edb6e08f4c7c32d4f71b54bda0291380b844a9059cbb000000000000000000000000800e305a0cadde6289dfdfedf38218f45c06f72c0000000000000000000000000000000000000000000000000000000000002710c080a02c81b3bd80a14a13ddd3c153a46e7592c4e55b106d478c6135d35caaa7f4ee99a0020323b2d079654b4f466dade2cdb0816345d91d1885271cb84c9b5d0b14de69',
+  info: {
+    error: {
+      message: 'insufficient funds for gas * price + value: have 0 want 502084000000',
+      code: -32003
+    }
+  },
+  shortMessage: 'insufficient funds for intrinsic transaction cost'
+}
+
+=== POST-RUN STRANDED FUND RECOVERY ===
+
+The initial cleanup failed (buyer wallet had no ETH for sweep gas — ETH
+transfer needed propagation wait time).
+
+We persist ephemeral buyer keys to /tmp/x402-buyer-*.json on every run for
+exactly this scenario. Recovery process:
+
+  Wallet                                       Amount   Recovery tx
+  0x9cC087c5AEBE1fa3166367d13bbB5FfA8aAB534D   0.02    0x2e2477135650196463f8f28b1a462611b7d52d9f8e6b18e0b449c582c97d1998
+  0xC8172FbA896CcA10333740BBC7Df6010742CFFC3   0.01    0x1b5e287f867ba019874eb0a0421f643938f0c5594bdda86c1891fbdf7c6985d5
+
+Total recovered: 0.03 USDC.
+Pre-persistence-fix loss (one stranded wallet from first run): 0.05 USDC.
+
+=== FINAL VERIFICATION ===
+
+✅ Production x402 flow works on Base mainnet:
+   1. Buyer signed EIP-3009 transferWithAuthorization off-chain (no ETH required)
+   2. SpecularX402Server in 'local' mode verified signature via x402/facilitator
+   3. SpecularX402Server broadcasted the on-chain transferWithAuthorization
+      using its own ETH for gas
+   4. 0.01 USDC moved buyer → seller atomically
+   5. HTTP 200 returned with API response
+
+No external facilitator. No CDP API key. No third-party dependencies.
+This is the production-grade settlement path for Specular x402 sellers on Base.

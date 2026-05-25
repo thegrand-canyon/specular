@@ -1,1 +1,4 @@
-module.exports = require('./SpecularX402Client');
+module.exports = {
+    ...require('./SpecularX402Client'),
+    ...require('./SpecularX402Server'),
+};
