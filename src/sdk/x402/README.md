@@ -35,6 +35,13 @@ npm install x402-fetch x402 viem ethers
 # specular SDK is in this repo
 ```
 
+TypeScript types are shipped alongside the JS files. No `@types/specular` install
+needed — `.d.ts` files live next to each module.
+
+```typescript
+import { SpecularX402Client, SpecularX402Server, type ServerStats } from '@specular/sdk/x402';
+```
+
 ## Buyer side — `SpecularX402Client`
 
 ```javascript

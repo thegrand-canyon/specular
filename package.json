@@ -3,9 +3,11 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "types": "src/sdk/index.d.ts",
   "scripts": {
     "start": "node --max-old-space-size=512 src/api/MultiNetworkAPI.js",
     "test": "hardhat test",
+    "test:types": "tsc --project src/sdk/__types-test__/tsconfig.json",
     "test:unit": "hardhat test test/unit/**/*.js",
     "test:integration": "hardhat test test/integration/**/*.js",
     "compile": "hardhat compile",
