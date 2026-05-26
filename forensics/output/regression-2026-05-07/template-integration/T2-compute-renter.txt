@@ -1,0 +1,14 @@
+Agent reputation: 1000 / Credit: 50000.0 USDC
+
+Borrowing 0.0015 USDC for compute…
+Loan id: 138
+  [Provider] Rented compute for 0.0015 USDC
+  [Job] Running on gpu-621682 for 0.001 hour(s)
+Job done. Result: ipfs://Qm7xt9cr
+
+[Client] Paid agent 5 USDC for completed work
+
+Repaying loan…
+Repaid: https://testnet.arcscan.app/tx/0x0f777fea3fb81fb8b2fa1a0c143142d036b3566ab7c9649047e280d62b0e9e2f
+
+Net margin: 4.9985 USDC. Reputation 1000 → 1000

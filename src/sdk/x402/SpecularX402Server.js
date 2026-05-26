@@ -72,7 +72,8 @@ class SpecularX402Server {
         this.addresses = addr;
         this.usdcAddr = addr.usdc;
 
-        this.provider = new ethers.JsonRpcProvider(opts.rpcUrl || netCfg.defaultRpc);
+        // batchMaxCount: 1 — many free public RPCs (drpc, ankr) reject batched calls
+        this.provider = new ethers.JsonRpcProvider(opts.rpcUrl || netCfg.defaultRpc, undefined, { batchMaxCount: 1 });
         this.wallet = new ethers.Wallet(pkPrefixed, this.provider);
         this.payTo = opts.payTo || this.wallet.address;
         this.poolAgentId = opts.poolAgentId || null;  // null = no auto-supply
@@ -87,6 +88,7 @@ class SpecularX402Server {
         this._lastFlushAt = null;
         this._totalFlushed = 0n;
         this._lastSettlement = null;
+        this._flushInFlight = null;  // mutex: in-flight flushToPool Promise (or null)
 
         // Lazy-load SDK + x402 (don't pay import cost unless we'll use them)
         this._sdk = null;
@@ -225,33 +227,49 @@ class SpecularX402Server {
     /**
      * Supply accumulated revenue into the configured Specular pool. Idempotent
      * if nothing to flush. Returns { txHash, amountUsdc } or null.
+     *
+     * Serialized: only one flush runs at a time. Concurrent calls await the
+     * in-flight one and then re-enter to drain any revenue accumulated during
+     * that flush (necessary because new requests may arrive mid-flush).
      */
     async flushToPool() {
         if (!this.poolAgentId) return null;
+        // If a flush is in-flight, wait for it; then we'll re-check and
+        // potentially run our own (to drain revenue that arrived during the
+        // prior flush). This collapses the N concurrent threshold-triggered
+        // calls into at most 2 sequential supply txs.
+        if (this._flushInFlight) {
+            try { await this._flushInFlight; } catch (e) { /* ignore */ }
+        }
         if (this._earned === 0n) return null;
 
-        const sdk = this._getSdk();
-        // Make sure pool exists / we have allowance
-        await sdk.onboard().catch(() => {});  // no-op if seller has no agent
+        this._flushInFlight = (async () => {
+            const sdk = this._getSdk();
+            await sdk.onboard().catch(() => {});
 
-        // Check actual on-chain USDC balance — facilitator settlement may not
-        // have completed in stub mode, and we only supply what's actually there
-        const usdc = new ethers.Contract(this.usdcAddr,
-            ['function balanceOf(address) view returns (uint256)'], this.provider);
-        const bal = await usdc.balanceOf(this.wallet.address);
+            const usdc = new ethers.Contract(this.usdcAddr,
+                ['function balanceOf(address) view returns (uint256)'], this.provider);
+            const bal = await usdc.balanceOf(this.wallet.address);
 
-        const toSupply = bal < this._earned ? bal : this._earned;
-        if (toSupply === 0n) {
-            return null;
+            // Snapshot _earned now; deduct AFTER the supply tx confirms
+            const snapshot = this._earned;
+            const toSupply = bal < snapshot ? bal : snapshot;
+            if (toSupply === 0n) return null;
+
+            const amountUsdc = Number(ethers.formatUnits(toSupply, 6));
+            const txHash = await sdk.supply(this.poolAgentId, toSupply);
+            this._earned -= toSupply;
+            this._totalFlushed += toSupply;
+            this._lastFlushAt = new Date().toISOString();
+            console.log(`[SpecularX402Server] Flushed ${amountUsdc} USDC into pool ${this.poolAgentId}: ${txHash}`);
+            return { txHash, amountUsdc };
+        })();
+
+        try {
+            return await this._flushInFlight;
+        } finally {
+            this._flushInFlight = null;
         }
-
-        const amountUsdc = Number(ethers.formatUnits(toSupply, 6));
-        const txHash = await sdk.supply(this.poolAgentId, toSupply);
-        this._earned -= toSupply;
-        this._totalFlushed += toSupply;
-        this._lastFlushAt = new Date().toISOString();
-        console.log(`[SpecularX402Server] Flushed ${amountUsdc} USDC into pool ${this.poolAgentId}: ${txHash}`);
-        return { txHash, amountUsdc };
     }
 
     /** Stats snapshot for monitoring. */

@@ -62,7 +62,7 @@ const { SpecularX402Client } = require('../x402/SpecularX402Client');
     if (loans.length > 0) {
         console.log('\nOutstanding loans (repay after revenue comes in):');
         for (const l of loans) {
-            console.log(`  #${l.loanId}: ${l.amount_usdc || l.amount} USDC @ ${l.interestRate / 100}% APR`);
+            console.log(`  #${l.id}: ${l.amount} USDC @ ${l.interestRate / 100}% APR`);
         }
     }
 

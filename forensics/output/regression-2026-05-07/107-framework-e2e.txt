@@ -1,0 +1,86 @@
+Agent: 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+RPC:   https://arc-testnet.drpc.org
+
+═══ LangChain JS ═══
+  ✅ returns array: 8 tools
+  ✅ tool specular_credit_info: desc="Get the current credit info for this agent: reputa…"
+  ✅ tool specular_onboard: desc="Register this agent on Specular Protocol and creat…"
+  ✅ tool specular_borrow: desc="Borrow USDC against the agent's on-chain reputatio…"
+  ✅ tool specular_repay: desc="Repay an outstanding loan. Pays principal + intere…"
+  ✅ tool specular_loans: desc="List the agent's active and historical loans. Retu…"
+  ✅ tool specular_supply: desc="Supply USDC liquidity to an agent's pool. The lend…"
+  ✅ tool specular_withdraw: desc="Withdraw lender position from an agent's pool. Lim…"
+  ✅ tool specular_claim_interest: desc="Claim accrued interest as a lender from an agent's…"
+  ✅ langchain credit_info: "{\"score\":1000,\"creditLimit\":\"50000.0\",\"collateralPct\":0,\"interestRateBps\":500,\"interestRateAPR\":5}"
+  ✅ langchain loans: "[{\"id\":136,\"amount\":\"1.0\",\"interestRate\":500,\"state\":\"REPAID\",\"endTime\":1780082450},{\"id\":137,\"amount\
+  ✅ langchain borrow(0.5 USDC, 7d): "{\"loanId\":140,\"txHash\":\"0xcbc89214d6d9a62c432ca49f6de19062e023764039b8fe1331e49c2d190002e6\",\"explorerUrl\":\"htt
+  ✅ langchain repay(140): "{\"txHash\":\"0xf5753413fdcb85990c262338c77984eb071f1ebe64121eaf07c40a6da351b1b5\",\"explorerUrl\":\"https://testnet.ar
+
+═══ OpenAI Functions JS ═══
+  ✅ returns array: 6 functions
+  ✅ function specular_credit_info: params: (none)
+  ✅ function specular_onboard: params: ipfs_hash
+  ✅ function specular_borrow: params: amount,duration_days
+  ✅ function specular_repay: params: loan_id
+  ✅ function specular_loans: params: (none)
+  ✅ function specular_claim_initial_credit: params: (none)
+  ✅ openai credit_info: "{\"score\":1000,\"creditLimit\":\"50000.0\",\"collateralPct\":0,\"interestRateBps\":500,\"interestRateAPR\":5}"
+  ✅ openai loans: "[{\"id\":136,\"amount\":\"1.0\",\"interestRate\":500,\"state\":\"REPAID\",\"endTime\":1780082450},{\"id\":137,\"amount\
+  ✅ openai borrow(0.5 USDC, 7d): "{\"loanId\":141,\"tx\":\"0x320bee4750b73a2a037ea2bb9bfd9b8ebd71bb1fbcbede99a51d21104f3e0b2d\"}"
+  ✅ openai repay(141): "{\"txHash\":\"0x0376257d48be4546467b98c1ce3f4e8bc138592233b660a54ca6fd867e633e31\"}"
+
+═══ Anthropic Tool Use JS ═══
+  ✅ returns array: 6 tools
+  ✅ tool specular_credit_info: schema=object
+  ✅ tool specular_onboard: schema=object
+  ✅ tool specular_borrow: schema=object
+  ✅ tool specular_repay: schema=object
+  ✅ tool specular_loans: schema=object
+  ✅ tool specular_claim_initial_credit: schema=object
+  ✅ anthropic credit_info: "{\"score\":1000,\"creditLimit\":\"50000.0\",\"collateralPct\":0,\"interestRateBps\":500,\"interestRateAPR\":5}"
+  ✅ anthropic loans: "[{\"id\":136,\"amount\":\"1.0\",\"interestRate\":500,\"state\":\"REPAID\",\"endTime\":1780082450},{\"id\":137,\"amount\
+  ✅ anthropic borrow(0.5 USDC, 7d): "{\"loanId\":142,\"tx\":\"0x1e5149250b993a0a1e40a95bba7dcf29ad2018361e1a3207351f35971c902e23\"}"
+  ✅ anthropic repay(142): "{\"txHash\":\"0x0cb810c8c53ab0daede107001a4cc196b2f2c71da8d3873e7f2bbbf91b8bf9e0\"}"
+
+═══ TOTAL: 35 pass, 0 fail ═══
+Traceback (most recent call last):
+  File "/Users/peterschroeder/Specular/forensics/scripts/tmp_framework_python_e2e.py", line 133, in <module>
+    main()
+  File "/Users/peterschroeder/Specular/forensics/scripts/tmp_framework_python_e2e.py", line 56, in main
+    sdk = SpecularClient.from_private_key(pk, network="arc", rpc_url=rpc)
+AttributeError: type object 'SpecularClient' has no attribute 'from_private_key'
+Agent: 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+RPC:   https://arc-testnet.drpc.org
+
+=== Python SpecularClient ===
+  PASS creditInfo: {"score": 1000, "credit_limit_usdc": 50000.0, "collateral_pct": 0, "interest_rate_apr": 5.0}
+  PASS loans: [{"loan_id": 136, "amount_usdc": 1.0, "interest_rate_bps": 500, "state": "REPAID", "end_time": 1780082450}, {"loan_id": 137, "amount_usdc": 1.0, "interest_rate_bps": 500, "state": "REPAID", "end_time": 1780364056}, {"loan_id": 138, "amount_usdc": 0.0015, "interest_rate_bps": 500, "state": "REPAID", "end_time": 1780364349}]
+
+=== OpenAI Functions ===
+  PASS returns list: 6 functions
+  PASS function specular_credit_info: params: (none)
+  PASS function specular_onboard: params: ipfs_hash
+  PASS function specular_borrow: params: amount,duration_days
+  PASS function specular_repay: params: loan_id
+  PASS function specular_loans: params: (none)
+  PASS openai credit_info: {"score": 1000, "credit_limit_usdc": 50000.0, "collateral_pct": 0, "interest_rate_apr": 5.0}
+  PASS openai loans: [{"loan_id": 136, "amount_usdc": 1.0, "interest_rate_bps": 500, "state": "REPAID", "end_time": 1780082450}, {"loan_id": 137, "amount_usdc": 1.0, "interest_rate_
+  PASS openai borrow(0.5, 7d): {"loanId": 143, "tx": "472f4f012f9caff996006073afe0e787f334d2211ae3a251009af8a1885cfe69", "explorerUrl": "https://testnet.arcscan.app/tx/472f4f012f9caff99600607
+  PASS openai repay(143): {"txHash": "2d9e0598f5a1d211eae15d9e6f43f9dc2d211229153653e37e0eb6e6c439d04a"}
+
+=== Anthropic Tool Use ===
+  PASS returns list: 6 tools
+  PASS tool specular_credit_info: schema=object
+  PASS tool specular_onboard: schema=object
+  PASS tool specular_borrow: schema=object
+  PASS tool specular_repay: schema=object
+  PASS tool specular_loans: schema=object
+  PASS anthropic credit_info: {"score": 1000, "credit_limit_usdc": 50000.0, "collateral_pct": 0, "interest_rate_apr": 5.0}
+  PASS anthropic loans: [{"loan_id": 136, "amount_usdc": 1.0, "interest_rate_bps": 500, "state": "REPAID", "end_time": 1780082450}, {"loan_id": 137, "amount_usdc": 1.0, "interest_rate_
+  PASS anthropic borrow(0.5, 7d): {"loanId": 144, "tx": "bf5a0cfdf1688ec03e34a1cf9fb2f0f785bec850019e66c9a75f96d5bcbdc5a5", "explorerUrl": "https://testnet.arcscan.app/tx/bf5a0cfdf1688ec03e34a1c
+  PASS anthropic repay(144): {"txHash": "9334bec96d3b860b748c4defb7712b2c7b7a614aef638a5abc852fdf43d6db74"}
+
+=== LangChain (optional) ===
+  FAIL langchain import: langchain not installed: No module named 'langchain_core'
+
+=== TOTAL: 22 pass, 1 fail ===

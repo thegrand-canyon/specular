@@ -85,16 +85,36 @@ class SpecularQuickstart {
         let agentId = await this.registry.addressToAgentId(addr);
         if (agentId === 0n) {
             const tx = await this.registry.register(ipfsHash, []);
-            const r = await tx.wait();
+            await tx.wait();
             out.registerTx = tx.hash;
-            agentId = await this.registry.addressToAgentId(addr);
+            // Public-RPC propagation: the registry write may not be visible
+            // from every node yet. Poll until the marketplace's view of the
+            // registry agrees, so the next call (createAgentPool) doesn't
+            // revert with "Not a registered agent".
+            for (let i = 0; i < 20; i++) {
+                agentId = await this.registry.addressToAgentId(addr);
+                if (agentId !== 0n) break;
+                await new Promise(r => setTimeout(r, 1000));
+            }
+            if (agentId === 0n) throw new Error('register() confirmed but addressToAgentId still 0 after 20s');
         }
         out.agentId = Number(agentId);
 
         // Step 2: createAgentPool (if not yet)
         const pool = await this.marketplace.agentPools(agentId);
         if (!pool.isActive) {
-            const tx = await this.marketplace.createAgentPool();
+            // Retry on RPC-state staleness; some public Base RPCs return inconsistent
+            // views across nodes for a few seconds after a registry write
+            let tx;
+            for (let i = 0; i < 5; i++) {
+                try {
+                    tx = await this.marketplace.createAgentPool();
+                    break;
+                } catch (e) {
+                    if (i === 4 || !/Not a registered agent/.test(e.message || '')) throw e;
+                    await new Promise(r => setTimeout(r, 2000));
+                }
+            }
             await tx.wait();
             out.poolTx = tx.hash;
         }

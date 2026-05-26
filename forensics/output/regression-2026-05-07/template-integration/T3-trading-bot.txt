@@ -1,0 +1,10 @@
+Bot reputation: 1000 / Credit: 50000.0 USDC @ 5% APR
+Pool empty — self-supplying 20 USDC for demo
+
+Borrowing 10 USDC for trade position…
+  [DEX] Opening position with 10 USDC…
+  [DEX] Closed position. Profit: 0.15 USDC
+
+Interest owed on loan: 0.0096 USDC. Profit: 0.15 USDC. Margin: 0.1404
+Repaid: https://testnet.arcscan.app/tx/0x126506e0aa233fa3610739616581d1da6f25e7458ed766c6e9ed3b8109ba3d00
+Reputation 1000 → 1000.
