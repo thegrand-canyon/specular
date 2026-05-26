@@ -1,0 +1,35 @@
+Agent: 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+RPC:   https://arc-testnet.drpc.org
+
+=== Python SpecularClient ===
+  PASS creditInfo: {"score": 1000, "credit_limit_usdc": 50000.0, "collateral_pct": 0, "interest_rate_apr": 5.0}
+  PASS loans: [{"loan_id": 136, "amount_usdc": 1.0, "interest_rate_bps": 500, "state": "REPAID", "end_time": 1780082450}, {"loan_id": 137, "amount_usdc": 1.0, "interest_rate_bps": 500, "state": "REPAID", "end_time": 1780364056}, {"loan_id": 138, "amount_usdc": 0.0015, "interest_rate_bps": 500, "state": "REPAID", "end_time": 1780364349}]
+
+=== OpenAI Functions ===
+  PASS returns list: 6 functions
+  PASS function specular_credit_info: params: (none)
+  PASS function specular_onboard: params: ipfs_hash
+  PASS function specular_borrow: params: amount,duration_days
+  PASS function specular_repay: params: loan_id
+  PASS function specular_loans: params: (none)
+  PASS openai credit_info: {"score": 1000, "credit_limit_usdc": 50000.0, "collateral_pct": 0, "interest_rate_apr": 5.0}
+  PASS openai loans: [{"loan_id": 136, "amount_usdc": 1.0, "interest_rate_bps": 500, "state": "REPAID", "end_time": 1780082450}, {"loan_id": 137, "amount_usdc": 1.0, "interest_rate_
+  PASS openai borrow(0.5, 7d): {"loanId": 151, "tx": "8f930f17d73552b9bfa4a0c1aad6f18261dd760c5bc8fcc72c326c9517b7300b", "explorerUrl": "https://testnet.arcscan.app/tx/8f930f17d73552b9bfa4a0c
+  PASS openai repay(151): {"txHash": "ad280a5f9748b581553359e5c4b9e358e1902cd8616152c69aaf170997d4259d"}
+
+=== Anthropic Tool Use ===
+  PASS returns list: 6 tools
+  PASS tool specular_credit_info: schema=object
+  PASS tool specular_onboard: schema=object
+  PASS tool specular_borrow: schema=object
+  PASS tool specular_repay: schema=object
+  PASS tool specular_loans: schema=object
+  PASS anthropic credit_info: {"score": 1000, "credit_limit_usdc": 50000.0, "collateral_pct": 0, "interest_rate_apr": 5.0}
+  PASS anthropic loans: [{"loan_id": 136, "amount_usdc": 1.0, "interest_rate_bps": 500, "state": "REPAID", "end_time": 1780082450}, {"loan_id": 137, "amount_usdc": 1.0, "interest_rate_
+  PASS anthropic borrow(0.5, 7d): {"loanId": 152, "tx": "67e9f7de84ed3edad4ed109e35a1d6658e26b4a4c1be60668f97b8d16e0d962f", "explorerUrl": "https://testnet.arcscan.app/tx/67e9f7de84ed3edad4ed109
+  PASS anthropic repay(152): {"txHash": "853b96050b61cbf95042b19c78ea399d293113797a83bd3a8469a345f09c5114"}
+
+=== LangChain (optional) ===
+  FAIL langchain import: langchain not installed: No module named 'langchain_core'
+
+=== TOTAL: 22 pass, 1 fail ===

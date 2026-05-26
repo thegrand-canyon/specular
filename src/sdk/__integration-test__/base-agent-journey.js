@@ -47,7 +47,7 @@ async function pickRpc() {
     throw new Error('No working Base RPC');
 }
 const FUND_USDC = 5;
-const FUND_ETH = '0.005';
+const FUND_ETH = '0.00003';  // ~4x estimated journey gas cost (Base @ 0.006 gwei = 0.0000072 ETH)
 const X402_TARGET = 'https://api.x402node.dev/dev/uuid';
 const SELF_SUPPLY_USDC = 2;
 const BORROW_USDC = 0.5;

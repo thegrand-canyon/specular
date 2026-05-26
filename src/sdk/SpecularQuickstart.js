@@ -140,20 +140,41 @@ class SpecularQuickstart {
         const amt = typeof amount === 'bigint' ? amount : ethers.parseUnits(String(amount), this.cfg.decimals);
         const tx = await this.marketplace.requestLoan(amt, durationDays);
         const r = await tx.wait();
+        let loanId = null;
         for (const log of r.logs) {
             try {
                 const parsed = this.marketplace.interface.parseLog(log);
-                if (parsed && parsed.name === 'LoanRequested') return { loanId: Number(parsed.args.loanId), tx: tx.hash };
+                if (parsed && parsed.name === 'LoanRequested') { loanId = Number(parsed.args.loanId); break; }
             } catch (e) {}
         }
-        throw new Error('LoanRequested event not found in receipt');
+        if (loanId === null) throw new Error('LoanRequested event not found in receipt');
+        // Public-RPC propagation: poll until the loan is readable from the
+        // marketplace's view so the next call (e.g. repay) doesn't hit a
+        // stale node that returns loan.borrower=0x0 → "Not the borrower"
+        for (let i = 0; i < 20; i++) {
+            const loan = await this.marketplace.loans(loanId);
+            if (loan[1] && loan[1].toLowerCase() === this.wallet.address.toLowerCase()) break;
+            await new Promise(r => setTimeout(r, 1000));
+        }
+        return { loanId, tx: tx.hash };
     }
 
     /**
-     * Repay a loan. Returns tx hash.
+     * Repay a loan. Returns tx hash. Retries on transient "Not the borrower"
+     * errors which indicate the prior borrow's storage write is not yet
+     * visible from this RPC node.
      */
     async repay(loanId) {
-        const tx = await this.marketplace.repayLoan(loanId);
+        let tx;
+        for (let i = 0; i < 5; i++) {
+            try {
+                tx = await this.marketplace.repayLoan(loanId);
+                break;
+            } catch (e) {
+                if (i === 4 || !/Not the borrower/.test(e.message || '')) throw e;
+                await new Promise(r => setTimeout(r, 2000));
+            }
+        }
         await tx.wait();
         return tx.hash;
     }

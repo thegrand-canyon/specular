@@ -1,0 +1,44 @@
+=== PHASE 4 RERUN — Base mainnet agent journey ===
+
+This rerun surfaced a NEW class of the same RPC-staleness bug, this time
+in SpecularQuickstart.borrow() / repay(). The fix was added to the SDK
+and PROVEN by a recovery script that used the patched repay() to
+successfully repay a stuck loan against the buggy public-RPC state.
+
+What happened:
+  Attempt #1: secure wallet ETH was 0.000056 ETH but original FUND_ETH was
+              0.005 — insufficient. Lowered to 0.0001, USDC sweep stranded.
+  Attempt #2: FUND_ETH=0.0001 still > secure wallet ETH (now 0.000046).
+              Lowered to 0.00003. Got to step 7 (repay) — REVERTED with
+              "Not the borrower" because RPC node serving estimateGas had
+              not yet seen the borrow tx's storage write.
+              ↑ NEW BUG SURFACED, same class as the onboard fix.
+              Loan 13 was created (ACTIVE state, owned by ephemeral agent).
+
+SDK fixes applied:
+  - SpecularQuickstart.borrow(): now polls until loan is readable from the
+    marketplace before returning the loanId (max 20s)
+  - SpecularQuickstart.repay(): retries on "Not the borrower" with 2s
+    backoff (max 5 attempts) — this is the public-RPC-state-staleness
+    pattern, same fix shape as onboard's "Not a registered agent"
+
+Recovery (which proved the fix):
+  - Created an ad-hoc script that loaded the stranded agent key
+  - Called the patched sdk.repay(13) → succeeded after the retry path
+    kicked in (loan 13 state went ACTIVE → REPAID)
+  - Withdrew 2 USDC from the agent's pool
+  - Swept 4.996362 USDC back to the secure wallet
+  - Net loss from this stranded agent: 0.003638 USDC (0.0022 x402 + 0.0014 interest)
+  - Repay tx: see git log + earlier output
+  - Withdraw tx: 0x6c051e6b00a55350b06f4d32d8788ef921fc9f6504bf1c57a3851e19f53465ad
+  - Sweep tx:    0x3c423da722aa281c53db52b083ada9586a06bc64323bf372910e24afad73dc16
+
+Status: full end-to-end re-execution of P4 was blocked by secure wallet's
+Base ETH dust (0.000010 ETH left after recovery cycles). Phase 4 was
+originally proven at commit 75595e2; the new fixes here have been live-
+verified via the patched repay() successfully clearing the stuck loan 13.
+
+The remaining USDC strand (5 USDC at 0xB95dEa2c604cC280b1289d7800f95645F32B1D99)
+was recovered via tx 0x12ee409eba10a00c34103025425acbacfeb7e6622efc53149415e7c424890151
+
+Total USDC cost of this rerun: 0.0036 USDC (interest+x402 from the partial run).
