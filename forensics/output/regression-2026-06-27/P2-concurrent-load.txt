@@ -1,0 +1,41 @@
+
+=== x402 concurrent load test ===
+Parallel buyers:   200
+Price per call:    0.05 USDC
+Expected revenue:  10 USDC
+Auto-flush at:     1 USDC
+Pool 49 totalLiquidity (before): 44.9 USDC
+
+Server listening on :4500
+
+[FIRE] Launching 200 concurrent x402-paying buyers...
+
+[RESULT] 200/200 succeeded, 0 failed in 307ms
+         Throughput: 651.47 req/sec
+
+Waiting 15s for auto-flush tx(s) to settle on Arc...
+[SpecularX402Server] Flushed 10 USDC into pool 49: 0x7313ddc7e77972992d475b625e3dc83629681225cedc71a0f441a996cdcad53f
+
+[STATS] {
+  "mode": "stub",
+  "network": "arc",
+  "sellerWallet": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+  "payTo": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+  "poolAgentId": 49,
+  "requestCount": 200,
+  "pendingUsdc": "0.0",
+  "totalFlushedUsdc": "10.0",
+  "lastFlushAt": "2026-06-27T23:33:41.134Z",
+  "autoFlushThresholdUsdc": 1
+}
+
+Pool 49 totalLiquidity (after):  54.9 USDC
+Delta:               10.0 USDC
+
+Expected revenue:   10.0 USDC
+Supplied on-chain:  10.0 USDC
+Still pending:      0.0 USDC
+Accounted:          10.0 USDC
+
+✅ x402 concurrent load PASS
+   200 parallel buyers, all settled exact, no race conditions

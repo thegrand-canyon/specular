@@ -1,0 +1,45 @@
+Agent: 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+RPC:   https://arc-testnet.drpc.org
+
+═══ LangChain JS ═══
+  ✅ returns array: 8 tools
+  ✅ tool specular_credit_info: desc="Get the current credit info for this agent: reputa…"
+  ✅ tool specular_onboard: desc="Register this agent on Specular Protocol and creat…"
+  ✅ tool specular_borrow: desc="Borrow USDC against the agent's on-chain reputatio…"
+  ✅ tool specular_repay: desc="Repay an outstanding loan. Pays principal + intere…"
+  ✅ tool specular_loans: desc="List the agent's active and historical loans. Retu…"
+  ✅ tool specular_supply: desc="Supply USDC liquidity to an agent's pool. The lend…"
+  ✅ tool specular_withdraw: desc="Withdraw lender position from an agent's pool. Lim…"
+  ✅ tool specular_claim_interest: desc="Claim accrued interest as a lender from an agent's…"
+  ✅ langchain credit_info: "{\"score\":1000,\"creditLimit\":\"50000.0\",\"collateralPct\":0,\"interestRateBps\":500,\"interestRateAPR\":5}"
+  ✅ langchain loans: "[{\"id\":136,\"amount\":\"1.0\",\"interestRate\":500,\"state\":\"REPAID\",\"endTime\":1780082450},{\"id\":137,\"amount\
+  ✅ langchain borrow(0.5 USDC, 7d): "{\"loanId\":156,\"txHash\":\"0x07a0014d679d90515f84a12328bd06694a65e31de141475d5d2ab358a18590a2\",\"explorerUrl\":\"htt
+  ✅ langchain repay(156): "{\"txHash\":\"0xf8b85ce1d3b26a730e7c447b1c4a7ac216e3157754e90241a9803c7bfe95dfa8\",\"explorerUrl\":\"https://testnet.ar
+
+═══ OpenAI Functions JS ═══
+  ✅ returns array: 6 functions
+  ✅ function specular_credit_info: params: (none)
+  ✅ function specular_onboard: params: ipfs_hash
+  ✅ function specular_borrow: params: amount,duration_days
+  ✅ function specular_repay: params: loan_id
+  ✅ function specular_loans: params: (none)
+  ✅ function specular_claim_initial_credit: params: (none)
+  ✅ openai credit_info: "{\"score\":1000,\"creditLimit\":\"50000.0\",\"collateralPct\":0,\"interestRateBps\":500,\"interestRateAPR\":5}"
+  ✅ openai loans: "[{\"id\":136,\"amount\":\"1.0\",\"interestRate\":500,\"state\":\"REPAID\",\"endTime\":1780082450},{\"id\":137,\"amount\
+  ✅ openai borrow(0.5 USDC, 7d): "{\"loanId\":157,\"tx\":\"0x1593dd42aa3c59ad7ab3adb9a21083130e8d274a2ec89dae7a4055e20bfbc874\"}"
+  ✅ openai repay(157): "{\"txHash\":\"0x19f4725d064147aceae928e6ecea71648162e9e31eca84f97e2094ad6bf903fa\"}"
+
+═══ Anthropic Tool Use JS ═══
+  ✅ returns array: 6 tools
+  ✅ tool specular_credit_info: schema=object
+  ✅ tool specular_onboard: schema=object
+  ✅ tool specular_borrow: schema=object
+  ✅ tool specular_repay: schema=object
+  ✅ tool specular_loans: schema=object
+  ✅ tool specular_claim_initial_credit: schema=object
+  ✅ anthropic credit_info: "{\"score\":1000,\"creditLimit\":\"50000.0\",\"collateralPct\":0,\"interestRateBps\":500,\"interestRateAPR\":5}"
+  ✅ anthropic loans: "[{\"id\":136,\"amount\":\"1.0\",\"interestRate\":500,\"state\":\"REPAID\",\"endTime\":1780082450},{\"id\":137,\"amount\
+  ✅ anthropic borrow(0.5 USDC, 7d): "{\"loanId\":158,\"tx\":\"0x38514f711394ce5780b70e1ca3b527aafb987a608a64d1b9d09846221545029d\"}"
+  ✅ anthropic repay(158): "{\"txHash\":\"0xab1ee99b327a44566da705df5dfa4478eb8cdf27c4f75b4347b73d23929b7d3a\"}"
+
+═══ TOTAL: 35 pass, 0 fail ═══

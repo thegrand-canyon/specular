@@ -66,6 +66,19 @@ The client:
    constructs an EIP-3009 USDC payment, retries with `X-PAYMENT` header
 4. Returns the API response
 
+### Preview / Circle batching detection
+
+```javascript
+const preview = await x402.previewPaymentRequirements('https://api.example.com/endpoint');
+// → { status: 402, priceBaseUnits: '2200', payTo: '0x…', network: 'base',
+//     asset: '0x833589…', batched: false }
+```
+
+If `batched === true`, the seller accepts [Circle's gasless batched
+settlement](https://agents.circle.com/) via `@circle-fin/x402-batching`.
+`batchVerifyingContract` is the GatewayWallet address against which the EIP-3009
+authorization should be signed (instead of the USDC contract).
+
 ## Seller side — `SpecularX402Server`
 
 ```javascript

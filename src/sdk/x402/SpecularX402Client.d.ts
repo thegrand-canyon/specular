@@ -41,6 +41,22 @@ export class SpecularX402Client {
      */
     fetch(url: string, init?: RequestInit): Promise<Response>;
 
+    /**
+     * Peek at an endpoint's 402 challenge without paying. Returns the parsed
+     * payment requirements plus a `batched` flag indicating whether the seller
+     * accepts Circle Gateway batched settlement (gasless via @circle-fin/x402-batching).
+     */
+    previewPaymentRequirements(url: string): Promise<{
+        status: number;
+        requirements?: unknown;
+        payTo?: string;
+        asset?: string;
+        priceBaseUnits?: string;
+        network?: string;
+        batched?: boolean;
+        batchVerifyingContract?: string;
+    }>;
+
     /** Active loans the agent owes. */
     outstandingLoans(): Promise<LoanRecord[]>;
 

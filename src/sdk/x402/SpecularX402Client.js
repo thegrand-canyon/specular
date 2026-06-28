@@ -23,6 +23,11 @@ const { base } = require('viem/chains');
 const { SpecularQuickstart } = require('../SpecularQuickstart');
 const fs = require('fs');
 
+// Optional: Circle batched-settlement detector (gasless x402 via Circle Gateway).
+// Loaded lazily; absent import does not break the client.
+let _circleBatching = null;
+try { _circleBatching = require('@circle-fin/x402-batching'); } catch (_) {}
+
 const arcTestnet = {
     id: 5042002,
     name: 'Arc Testnet',
@@ -76,6 +81,33 @@ class SpecularX402Client {
             await this._ensureUsdc(this.maxPayment - have);
         }
         return await this.wrappedFetch(url, init);
+    }
+
+    /**
+     * Peek at an endpoint's 402 challenge without paying. Useful for surfacing
+     * Circle batched-settlement support, deciding price thresholds, or
+     * diagnostics. Returns { status, requirements?, batched?, payTo?, asset? }.
+     */
+    async previewPaymentRequirements(url) {
+        const res = await fetch(url, { method: 'GET' });
+        if (res.status !== 402) return { status: res.status };
+        const body = await res.json().catch(() => ({}));
+        const accept = body.accepts?.[0];
+        const out = {
+            status: 402,
+            requirements: body,
+            payTo: accept?.payTo,
+            asset: accept?.asset,
+            priceBaseUnits: accept?.maxAmountRequired,
+            network: accept?.network,
+        };
+        if (_circleBatching && accept) {
+            out.batched = !!_circleBatching.supportsBatching(accept);
+            if (out.batched) {
+                out.batchVerifyingContract = _circleBatching.getVerifyingContract(accept);
+            }
+        }
+        return out;
     }
 
     async _usdcBalance() {
