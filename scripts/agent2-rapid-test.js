@@ -4,7 +4,7 @@ const fs = require('fs');
 const CYCLES = 50;
 const LOAN_AMOUNT = 20;
 const RPC_URL = 'https://arc-testnet.drpc.org';
-const AGENT_KEY = 'process.env.TEST_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000'';
+const AGENT_KEY = process.env.TEST_KEY;
 
 async function main() {
     console.log('\n🚀 AGENT 2 RAPID-FIRE TEST');
@@ -78,4 +78,4 @@ async function main() {
     console.log(`Range: ${minTime}ms - ${maxTime}ms\n`);
 }
 
-main().catch(console.error);
+main().catch((e) => { console.error(e); process.exit(1); });

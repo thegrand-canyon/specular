@@ -20,8 +20,9 @@
 
 const fs   = require('fs');
 const path = require('path');
-const { SpecularSDK }    = require('../sdk/SpecularSDK');
+const SpecularSDK        = require('../sdk/SpecularSDK');
 const { AgentMessenger } = require('../xmtp/AgentMessenger');
+const { assertDurationDays } = require('../sdk/duration');
 
 // Agent states
 const STATE = {
@@ -69,6 +70,8 @@ class AutonomousAgent {
             maxLoanUsdc:      cfg.maxLoanUsdc      ?? 500,
             loanDurationDays: cfg.loanDurationDays ?? 7,
         };
+        // Fail fast on misconfigured durations rather than after sending a doomed tx.
+        assertDurationDays(this.cfg.loanDurationDays, 'AutonomousAgent.config.loanDurationDays');
 
         this.reportsDir = opts.reportsDir
             ?? path.join(__dirname, 'reports');

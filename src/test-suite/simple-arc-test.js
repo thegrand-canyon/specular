@@ -6,8 +6,8 @@ const { ethers } = require('ethers');
 
 const RPC_URL = process.env.ARC_TESTNET_RPC_URL || 'https://arc-testnet.drpc.org';
 const AGENT1_KEY = process.env.PRIVATE_KEY;
-const AGENT2_KEY = 'process.env.TEST_KEY_1 || '0x0000000000000000000000000000000000000000000000000000000000000000'';
-const LENDER_KEY = 'process.env.TEST_KEY_2 || '0x0000000000000000000000000000000000000000000000000000000000000000'';
+const AGENT2_KEY = process.env.TEST_KEY_1;
+const LENDER_KEY = process.env.TEST_KEY_2;
 
 const addresses = require('../../src/config/arc-testnet-addresses.json');
 

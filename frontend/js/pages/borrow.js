@@ -204,8 +204,16 @@ async function doRequestLoan(collateralReq) {
     const duration = parseInt(durStr || '0');
     const btn = document.getElementById('borrowBtn');
 
-    if (amount <= 0n || duration < 7 || duration > 365) {
-        showToast('Enter a valid amount (min 1 USDC) and duration (7–365 days)', true);
+    if (amount <= 0n) {
+        showToast('Enter a valid amount (min 1 USDC)', true);
+        return;
+    }
+    if (!Number.isInteger(duration) || duration < 7 || duration > 365) {
+        // Catch the most common mistake: passing duration in seconds (e.g. 7*86400=604800).
+        const secondsHint = (Number.isInteger(duration) && duration > 365 && duration % 86400 === 0)
+            ? ` (looks like ${duration / 86400} days expressed in seconds — enter days)`
+            : '';
+        showToast(`Duration must be 7–365 days${secondsHint}`, true);
         return;
     }
 

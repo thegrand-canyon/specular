@@ -9,6 +9,8 @@
  */
 
 const { ethers } = require('ethers');
+const { assertDurationDays } = require('./duration');
+const { waitForReceiptResilient } = require('./receipt');
 
 class SpecularSDK {
     constructor({ apiUrl, wallet, rpcUrl }) {
@@ -104,17 +106,28 @@ class SpecularSDK {
         });
 
         console.log(`Registration transaction sent: ${tx.hash}`);
-        const receipt = await tx.wait();
+        const { receipt } = await waitForReceiptResilient(this.provider, tx.hash);
+        if (receipt.status !== 1) {
+            throw new Error(`Registration tx ${tx.hash.slice(0,12)} reverted on-chain`);
+        }
         console.log(`Registration confirmed in block ${receipt.blockNumber}`);
 
         return receipt;
     }
 
     /**
-     * Request a loan (requires wallet)
+     * Request a loan (requires wallet).
+     *
+     * @param {object} params
+     * @param {number|bigint|string} params.amount         loan amount in USDC base units (6 decimals)
+     * @param {number|bigint} params.durationDays          loan duration in DAYS (integer, 7-365 inclusive).
+     *                                                     The on-chain contract multiplies by `1 days` internally;
+     *                                                     passing seconds (e.g. 604800) will be rejected locally
+     *                                                     by `assertDurationDays` before any network call.
      */
     async requestLoan({ amount, durationDays }) {
         if (!this.wallet) throw new Error('Wallet required for loan request');
+        assertDurationDays(durationDays, 'SpecularSDK.requestLoan');
 
         // Get unsigned transaction data from API
         const response = await fetch(`${this.apiUrl}/tx/request-loan`, {
@@ -135,7 +148,10 @@ class SpecularSDK {
         });
 
         console.log(`Loan request sent: ${tx.hash}`);
-        const receipt = await tx.wait();
+        const { receipt } = await waitForReceiptResilient(this.provider, tx.hash);
+        if (receipt.status !== 1) {
+            throw new Error(`Loan request tx ${tx.hash.slice(0,12)} reverted on-chain`);
+        }
         console.log(`Loan request confirmed in block ${receipt.blockNumber}`);
 
         // Extract loan ID from events
@@ -168,7 +184,10 @@ class SpecularSDK {
         });
 
         console.log(`Loan repayment sent: ${tx.hash}`);
-        const receipt = await tx.wait();
+        const { receipt } = await waitForReceiptResilient(this.provider, tx.hash);
+        if (receipt.status !== 1) {
+            throw new Error(`Loan repayment tx ${tx.hash.slice(0,12)} reverted on-chain`);
+        }
         console.log(`Loan repaid in block ${receipt.blockNumber}`);
 
         return receipt;

@@ -29,4 +29,4 @@ async function main() {
     console.log('   npx hardhat run scripts/deploy-v2.js --network sepolia\n');
 }
 
-main().catch(console.error);
+main().catch((e) => { console.error(e); process.exit(1); });

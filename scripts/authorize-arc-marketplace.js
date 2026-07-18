@@ -2,7 +2,7 @@ const { ethers } = require('ethers');
 const fs = require('fs');
 
 const RPC_URL = 'https://arc-testnet.drpc.org';
-const OWNER_KEY = process.env.PRIVATE_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000';
+const OWNER_KEY = process.env.PRIVATE_KEY;
 
 async function main() {
     console.log('\nAuthorizing marketplace in ReputationManager\n');
@@ -57,4 +57,4 @@ async function main() {
     console.log(`Verification: ${isAuthorizedNow}\n`);
 }
 
-main().catch(console.error);
+main().catch((e) => { console.error(e); process.exit(1); });

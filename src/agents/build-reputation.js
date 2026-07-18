@@ -6,6 +6,7 @@
  */
 
 const { ethers } = require('ethers');
+const { waitForReceiptResilient } = require('../sdk/receipt');
 
 const API_BASE = 'http://localhost:3001';
 const RPC_URL = process.env.ARC_TESTNET_RPC_URL || 'https://arc-testnet.drpc.org';
@@ -36,7 +37,10 @@ async function approveUSDC(wallet, usdcAddress, spender, amount) {
         wallet
     );
     const tx = await usdcContract.approve(spender, amount);
-    await tx.wait();
+    const { receipt } = await waitForReceiptResilient(wallet.provider, tx.hash);
+    if (receipt.status !== 1) {
+        throw new Error(`USDC approve tx ${tx.hash.slice(0,12)} reverted on-chain`);
+    }
 }
 
 // Helper: Send transaction with retry
@@ -47,7 +51,10 @@ async function sendTxWithRetry(wallet, txData, description, maxRetries = 3) {
                 to: txData.to,
                 data: txData.data
             });
-            const receipt = await tx.wait();
+            const { receipt } = await waitForReceiptResilient(wallet.provider, tx.hash);
+            if (receipt.status !== 1) {
+                throw new Error(`${description} tx ${tx.hash.slice(0,12)} reverted on-chain`);
+            }
             return receipt;
         } catch (error) {
             if (attempt === maxRetries) throw error;

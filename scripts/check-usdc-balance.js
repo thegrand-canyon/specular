@@ -14,4 +14,4 @@ async function main() {
     console.log(`USDC Balance: ${ethers.formatUnits(balance, 6)} USDC\n`);
 }
 
-main().catch(console.error);
+main().catch((e) => { console.error(e); process.exit(1); });

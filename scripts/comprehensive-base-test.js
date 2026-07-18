@@ -14,8 +14,8 @@ const { ethers } = require('ethers');
 const fs = require('fs');
 
 const RPC_URL = 'https://sepolia.base.org';
-const AGENT1_KEY = process.env.PRIVATE_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000';
-const AGENT2_KEY = 'process.env.TEST_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000''; // Different agent
+const AGENT1_KEY = process.env.PRIVATE_KEY;
+const AGENT2_KEY = process.env.TEST_KEY; // Different agent
 
 async function main() {
     console.log('\n╔══════════════════════════════════════════════════╗');

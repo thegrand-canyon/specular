@@ -21,8 +21,8 @@ const RPC_URLS = {
     base: 'https://sepolia.base.org',
 };
 
-const AGENT_KEY = process.env.PRIVATE_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000';
-const LENDER_KEY = 'process.env.TEST_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000'';
+const AGENT_KEY = process.env.PRIVATE_KEY;
+const LENDER_KEY = process.env.TEST_KEY;
 
 async function main() {
     console.log('\n╔══════════════════════════════════════════════════╗');

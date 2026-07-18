@@ -22,17 +22,17 @@ const RPC_URLS = {
 const AGENTS = [
     {
         name: 'Agent 1',
-        key: process.env.PRIVATE_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000',
+        key: process.env.PRIVATE_KEY,
         loanAmount: 100,
     },
     {
         name: 'Agent 2',
-        key: 'process.env.TEST_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000'',
+        key: process.env.TEST_KEY,
         loanAmount: 50,
     },
     {
         name: 'Agent 3',
-        key: 'process.env.TEST_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000'',
+        key: process.env.TEST_KEY,
         loanAmount: 75,
     },
 ];
