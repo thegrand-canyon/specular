@@ -26,6 +26,21 @@ const EIP3009_TYPES = {
     ],
 };
 
+// Default per-payment cap (base units, 6 decimals): 10 USDC. x402 is a
+// micropayment scheme, so this is generous while still bounding the blast
+// radius if a hostile paywall names a huge amount. Callers move real money by
+// raising maxPayment explicitly — never by having no cap at all.
+const DEFAULT_MAX_PAYMENT = 10_000000n;
+
+// Known canonical USDC token addresses per x402 network name. The EIP-3009
+// signature is only valid against `verifyingContract`; if a server picks that,
+// it picks which token the buyer signs away. Where we know the real USDC we
+// pin it and reject anything else.
+const KNOWN_USDC = {
+    'base':        '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+    'arc-testnet': '0xf2807051e292e945751A25616705a9aadfb39895',
+};
+
 class x402Client {
     /**
      * @param {ethers.Wallet}   wallet  - Signer wallet with USDC balance
@@ -39,6 +54,20 @@ class x402Client {
         this.maxRetries = options.maxRetries ?? 2;
         this.verbose    = options.verbose    ?? false;
         this.domainOverrides = options.domainOverrides ?? {};
+
+        // Spend caps (base units). maxPayment bounds a single payment;
+        // maxTotalSpend bounds the lifetime of this client. maxPayment defaults
+        // to a safe non-null value so an unset caller can never sign away the
+        // whole wallet on one hostile 402. Pass null explicitly to opt out.
+        this.maxPayment = options.maxPayment === null
+            ? null
+            : BigInt(options.maxPayment ?? DEFAULT_MAX_PAYMENT);
+        this.maxTotalSpend = options.maxTotalSpend != null ? BigInt(options.maxTotalSpend) : null;
+
+        // If true, trust a server-supplied eip712Domain even when its
+        // verifyingContract disagrees with the known USDC for the network.
+        // Off by default — this is the token-substitution guard.
+        this.allowUntrustedToken = options.allowUntrustedToken ?? false;
 
         // Track spend for budget limits
         this.totalSpent = 0n; // in token base units
@@ -115,12 +144,44 @@ class x402Client {
         const from        = this.wallet.address;
         const to          = payTo;
         const value       = BigInt(maxAmountRequired);
+
+        // ── Spend guards: enforce BEFORE signing anything ──────────────────
+        if (value <= 0n) {
+            throw new Error(`[x402] refusing to sign a non-positive payment (${value})`);
+        }
+        if (!to || !ethers.isAddress(to)) {
+            throw new Error(`[x402] refusing to sign — invalid payTo "${to}"`);
+        }
+        if (this.maxPayment !== null && value > this.maxPayment) {
+            throw new Error(
+                `[x402] payment ${Number(value) / 1e6} USDC exceeds maxPayment ` +
+                `${Number(this.maxPayment) / 1e6} USDC — raise maxPayment to authorize`);
+        }
+        if (this.maxTotalSpend !== null && (this.totalSpent + value) > this.maxTotalSpend) {
+            throw new Error(
+                `[x402] payment would exceed maxTotalSpend ` +
+                `${Number(this.maxTotalSpend) / 1e6} USDC (already spent ` +
+                `${Number(this.totalSpent) / 1e6})`);
+        }
+
         const validAfter  = BigInt(extra.validAfter  ?? Math.floor(Date.now() / 1000) - 60);
         const validBefore = BigInt(extra.validBefore ?? Math.floor(Date.now() / 1000) + 300);
         const nonce       = ethers.hexlify(ethers.randomBytes(32));
 
         // Resolve EIP-712 domain from network config
         const domain = await this._resolveDomain(asset, network, extra);
+
+        // Token-substitution guard: the signature is only valid against
+        // domain.verifyingContract. If we know the real USDC for this network,
+        // the server does not get to point the signature at a different token.
+        const knownUsdc = KNOWN_USDC[network];
+        if (knownUsdc && !this.allowUntrustedToken && domain.verifyingContract &&
+            domain.verifyingContract.toLowerCase() !== knownUsdc.toLowerCase()) {
+            throw new Error(
+                `[x402] refusing to sign — verifyingContract ${domain.verifyingContract} ` +
+                `is not the known USDC for ${network} (${knownUsdc}); ` +
+                `set allowUntrustedToken to override`);
+        }
 
         const sig = await this.wallet.signTypedData(domain, EIP3009_TYPES, {
             from, to, value, validAfter, validBefore, nonce,
