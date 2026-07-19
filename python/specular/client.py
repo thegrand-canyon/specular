@@ -124,7 +124,13 @@ class SpecularClient:
         tx["gas"] = self.w3.eth.estimate_gas(tx)
         signed = self.account.sign_transaction(tx)
         tx_hash = self.w3.eth.send_raw_transaction(signed.raw_transaction)
-        self.w3.eth.wait_for_transaction_receipt(tx_hash)
+        receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash)
+        # A mined receipt is not a successful one: status 0 means the EVM
+        # reverted. Without this check a reverted repay/supply/withdraw returns
+        # its hash as "success" and the calling agent (or LLM tool wrapper)
+        # treats the loan as repaid — later defaulting for real.
+        if receipt["status"] != 1:
+            raise RuntimeError(f"transaction {tx_hash.hex()} reverted (status 0)")
         return tx_hash.hex()
 
     def explorer_url(self, tx_hash: str) -> str:

@@ -25,6 +25,13 @@ test-agents.json
 fresh-agents-config.json
 *-agents-config.json
 *-agents.json
+# Wallet/key dumps (singular *-wallet.json slipped past *wallets*.json)
+*-wallet.json
+*wallet*.json
+forensics/output/**/*wallet*.json
+# Secrets have leaked from these dirs before — keep local-only
+moltbook-posts/
+test-results/
 
 # Scratch / forensics scripts that may pull keys from env at runtime — keep local-only
 forensics/scripts/tmp_*.js

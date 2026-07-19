@@ -234,11 +234,17 @@ class SpecularX402Server {
      */
     async flushToPool() {
         if (!this.poolAgentId) return null;
-        // If a flush is in-flight, wait for it; then we'll re-check and
-        // potentially run our own (to drain revenue that arrived during the
-        // prior flush). This collapses the N concurrent threshold-triggered
-        // calls into at most 2 sequential supply txs.
-        if (this._flushInFlight) {
+        // If a flush is in-flight, wait for it; then re-check and potentially
+        // run our own (to drain revenue that arrived during the prior flush).
+        // This MUST be a `while`, not an `if`: when N callers await the same
+        // in-flight flush and it resolves, they all resume past this guard in
+        // the same microtask batch. A plain `if` lets every one of them fall
+        // through and overwrite `_flushInFlight` with its own IIFE, each
+        // snapshotting the same `_earned` and supplying it concurrently
+        // (double-supply + negative `_earned`). Looping re-checks the guard so
+        // exactly one caller proceeds per drain — the check-and-set below is
+        // synchronous, so no other caller can interleave before it reassigns.
+        while (this._flushInFlight) {
             try { await this._flushInFlight; } catch (e) { /* ignore */ }
         }
         if (this._earned === 0n) return null;

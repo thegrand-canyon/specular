@@ -32,7 +32,10 @@ class Validator {
      * Validate loan amount
      */
     static validateLoanAmount(amount) {
-        if (typeof amount !== 'number' || amount <= 0) {
+        // Number.isFinite rejects NaN/Infinity — typeof NaN === 'number' and
+        // every comparison against NaN is false, so a bare typeof+range check
+        // lets NaN through to die confusingly inside ethers.parseUnits.
+        if (!Number.isFinite(amount) || amount <= 0) {
             throw new ValidationError('Loan amount must be a positive number', 'amount');
         }
         if (amount > 1000000) {
@@ -45,8 +48,10 @@ class Validator {
      * Validate loan duration
      */
     static validateLoanDuration(durationDays) {
-        if (typeof durationDays !== 'number' || durationDays <= 0) {
-            throw new ValidationError('Duration must be a positive number', 'durationDays');
+        // Must be a whole number of days: NaN/floats otherwise slip through
+        // (NaN comparisons are false; 7.5 would reach the contract and revert).
+        if (!Number.isInteger(durationDays) || durationDays <= 0) {
+            throw new ValidationError('Duration must be a positive whole number of days', 'durationDays');
         }
         if (durationDays > 365) {
             throw new ValidationError('Duration too long (max 365 days)', 'durationDays');
