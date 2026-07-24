@@ -152,13 +152,28 @@ class SpecularClient:
         if not pool[6]:
             out["poolTx"] = self._send(self.marketplace.functions.createAgentPool())
 
-        allowance = self.usdc.functions.allowance(self.account.address, self.marketplace_addr).call()
-        MAX_UINT = 2**256 - 1
-        if allowance < MAX_UINT // 2:
-            out["approveTx"] = self._send(
-                self.usdc.functions.approve(self.marketplace_addr, MAX_UINT)
-            )
+        # No blanket approval: each USDC-pulling op (borrow collateral, repay,
+        # supply) approves EXACTLY what it needs just-in-time. approveTx stays in
+        # the return shape (always None) for backward compatibility.
         return out
+
+    def _approve_exact(self, amount: int) -> str | None:
+        """Approve exactly `amount` (base units) to the marketplace if the current
+        allowance doesn't already cover it. Bounds a single marketplace bug to
+        the amount in flight rather than the wallet's whole USDC balance."""
+        if amount <= 0:
+            return None
+        current = self.usdc.functions.allowance(self.account.address, self.marketplace_addr).call()
+        if current >= amount:
+            return None
+        return self._send(self.usdc.functions.approve(self.marketplace_addr, amount))
+
+    def revoke_approval(self) -> str | None:
+        """Set the marketplace USDC allowance to 0. Returns tx hash or None."""
+        current = self.usdc.functions.allowance(self.account.address, self.marketplace_addr).call()
+        if current == 0:
+            return None
+        return self._send(self.usdc.functions.approve(self.marketplace_addr, 0))
 
     def credit_info(self) -> CreditInfo:
         score = self.reputation.functions.getReputationScore(self.account.address).call()
@@ -174,10 +189,14 @@ class SpecularClient:
 
     def borrow(self, amount: float, duration_days: int) -> dict[str, Any]:
         """Borrow USDC. Returns dict with loanId, tx hash, explorer URL."""
-        self.onboard()  # idempotent
         if duration_days < 7 or duration_days > 365:
             raise ValueError("duration_days must be 7-365")
+        self.onboard()  # idempotent
         amt_units = int(amount * 1e6)
+        # Low-reputation agents must post collateral, pulled by requestLoan.
+        # required = amount * collateralPercent / 100 (matches the contract).
+        coll_pct = self.reputation.functions.calculateCollateralRequirement(self.account.address).call()
+        self._approve_exact(amt_units * coll_pct // 100)
         tx_hash = self._send(self.marketplace.functions.requestLoan(amt_units, duration_days))
         receipt = self.w3.eth.get_transaction_receipt(tx_hash)
         loan_id = None
@@ -193,15 +212,19 @@ class SpecularClient:
         return {"loanId": loan_id, "tx": tx_hash, "explorerUrl": self.explorer_url(tx_hash)}
 
     def repay(self, loan_id: int) -> str:
+        # Approve exactly the total owed (principal + interest). Interest is
+        # computed from loan.duration (fixed full term), not elapsed time, so the
+        # client figure matches the contract to the base unit.
+        # loan tuple: (loanId, borrower, agentId, amount, collateralAmount,
+        #              interestRate, startTime, endTime, duration, state)
+        loan = self.marketplace.functions.loans(loan_id).call()
+        interest = self.marketplace.functions.calculateInterest(loan[3], loan[5], loan[8]).call()
+        self._approve_exact(loan[3] + interest)
         return self._send(self.marketplace.functions.repayLoan(loan_id))
 
     def supply(self, agent_id: int, amount: float) -> str:
-        # Ensure approval
-        allowance = self.usdc.functions.allowance(self.account.address, self.marketplace_addr).call()
-        MAX_UINT = 2**256 - 1
-        if allowance < MAX_UINT // 2:
-            self._send(self.usdc.functions.approve(self.marketplace_addr, MAX_UINT))
         amt = int(amount * 1e6)
+        self._approve_exact(amt)
         return self._send(self.marketplace.functions.supplyLiquidity(agent_id, amt))
 
     def withdraw(self, agent_id: int, amount: float) -> str:

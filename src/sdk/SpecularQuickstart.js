@@ -18,14 +18,20 @@ const { ethers } = require('ethers');
 const fs = require('fs');
 const path = require('path');
 
+// Resolve everything relative to THIS module, never the process CWD. With
+// CWD-relative resolution, an agent framework running the SDK from an untrusted
+// workspace could shadow ./src/config/*.json with attacker-chosen marketplace/
+// usdc addresses — and onboarding would then approve/transact against them.
+const REPO_ROOT = path.resolve(__dirname, '..', '..');
+
 const NETWORK_CONFIGS = {
     base: {
-        addresses: './src/config/base-addresses.json',
+        addresses: path.join(REPO_ROOT, 'src/config/base-addresses.json'),
         explorer: 'https://basescan.org/tx/',
         decimals: 6
     },
     arc: {
-        addresses: './src/config/arc-testnet-addresses.json',
+        addresses: path.join(REPO_ROOT, 'src/config/arc-testnet-addresses.json'),
         explorer: 'https://testnet.arcscan.app/tx/',
         decimals: 6
     }
@@ -44,8 +50,7 @@ class SpecularQuickstart {
         this.network = network;
         this.cfg = NETWORK_CONFIGS[network];
 
-        const addrPath = path.resolve(this.cfg.addresses);
-        const addr = JSON.parse(fs.readFileSync(addrPath, 'utf8'));
+        const addr = JSON.parse(fs.readFileSync(this.cfg.addresses, 'utf8'));
         this.addresses = {
             marketplace: this.network === 'arc'
                 ? addr.agentLiquidityMarketplace_v6  // arc: V6 not yet canonical
@@ -55,10 +60,9 @@ class SpecularQuickstart {
             usdc: addr.usdc
         };
 
-        const root = path.resolve('.');
-        const mpAbi = JSON.parse(fs.readFileSync(path.join(root, 'artifacts/contracts/core/AgentLiquidityMarketplaceV6.sol/AgentLiquidityMarketplaceV6.json'))).abi;
-        const regAbi = JSON.parse(fs.readFileSync(path.join(root, 'artifacts/contracts/core/AgentRegistryV2.sol/AgentRegistryV2.json'))).abi;
-        const repAbi = JSON.parse(fs.readFileSync(path.join(root, 'artifacts/contracts/core/ReputationManagerV3.sol/ReputationManagerV3.json'))).abi;
+        const mpAbi = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'artifacts/contracts/core/AgentLiquidityMarketplaceV6.sol/AgentLiquidityMarketplaceV6.json'))).abi;
+        const regAbi = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'artifacts/contracts/core/AgentRegistryV2.sol/AgentRegistryV2.json'))).abi;
+        const repAbi = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'artifacts/contracts/core/ReputationManagerV3.sol/ReputationManagerV3.json'))).abi;
         const usdcAbi = [
             'function balanceOf(address) view returns (uint256)',
             'function approve(address,uint256) returns (bool)',
@@ -78,6 +82,13 @@ class SpecularQuickstart {
      * @param {string} ipfsHash - metadata URI (default 'ipfs://agent')
      */
     async onboard(ipfsHash = 'ipfs://agent') {
+        // approveTx is retained in the return shape for backward compat but is
+        // always null now: we no longer grant a blanket allowance up front.
+        // Each USDC-pulling op (borrow collateral, repay, supply) approves the
+        // EXACT amount it needs just-in-time. A single marketplace bug can then
+        // only ever touch the amount approved for the op in flight, never the
+        // agent's whole balance (which an unbounded MaxUint256 allowance exposed
+        // — especially dangerous given this contract's own §B1/§S1 history).
         const out = { agentId: null, registerTx: null, poolTx: null, approveTx: null };
         const addr = this.wallet.address;
 
@@ -119,15 +130,40 @@ class SpecularQuickstart {
             out.poolTx = tx.hash;
         }
 
-        // Step 3: approve USDC (if not yet)
-        const allowance = await this.usdc.allowance(addr, this.addresses.marketplace);
-        if (allowance < ethers.MaxUint256 / 2n) {
-            const tx = await this.usdc.approve(this.addresses.marketplace, ethers.MaxUint256);
-            await tx.wait();
-            out.approveTx = tx.hash;
-        }
-
+        // Step 3 (approval) intentionally removed — approvals are now exact and
+        // just-in-time per operation. See _approveExact / borrow / repay / supply.
         return out;
+    }
+
+    /**
+     * Ensure the marketplace can pull exactly `amount` USDC for the next
+     * operation, and no more. Idempotent: if the current allowance already
+     * covers `amount` it does nothing (so a leftover allowance is spent down
+     * rather than re-approved). USDC (unlike USDT) permits non-zero→non-zero
+     * approve, so no reset dance is needed.
+     * @param {bigint} amount - base units to approve
+     * @returns {Promise<string|null>} approve tx hash, or null if already covered
+     */
+    async _approveExact(amount) {
+        if (amount <= 0n) return null;
+        const current = await this.usdc.allowance(this.wallet.address, this.addresses.marketplace);
+        if (current >= amount) return null;
+        const tx = await this.usdc.approve(this.addresses.marketplace, amount);
+        await tx.wait();
+        return tx.hash;
+    }
+
+    /**
+     * Revoke the marketplace's USDC allowance (set to 0). Useful after a
+     * session, or to clear a stale allowance. Returns tx hash or null if
+     * already zero.
+     */
+    async revokeApproval() {
+        const current = await this.usdc.allowance(this.wallet.address, this.addresses.marketplace);
+        if (current === 0n) return null;
+        const tx = await this.usdc.approve(this.addresses.marketplace, 0n);
+        await tx.wait();
+        return tx.hash;
     }
 
     /**
@@ -138,6 +174,14 @@ class SpecularQuickstart {
     async borrow(amount, durationDays) {
         await this.onboard();
         const amt = typeof amount === 'bigint' ? amount : ethers.parseUnits(String(amount), this.cfg.decimals);
+
+        // Low-reputation agents must post collateral, which requestLoan pulls
+        // via safeTransferFrom. Approve exactly that (0 for 0%-collateral tiers).
+        // requiredCollateral = amount * collateralPercent / 100 (matches contract).
+        const collateralPct = await this.reputation.calculateCollateralRequirement(this.wallet.address);
+        const requiredCollateral = (amt * collateralPct) / 100n;
+        await this._approveExact(requiredCollateral);
+
         const tx = await this.marketplace.requestLoan(amt, durationDays);
         const r = await tx.wait();
         let loanId = null;
@@ -165,6 +209,14 @@ class SpecularQuickstart {
      * visible from this RPC node.
      */
     async repay(loanId) {
+        // Approve exactly the total owed (principal + interest). The contract
+        // computes interest from loan.duration (the FIXED full term), not
+        // elapsed time, so this client-side figure matches to the base unit —
+        // no time-drift, no over-approval.
+        const loan = await this.marketplace.loans(loanId);
+        const interest = await this.marketplace.calculateInterest(loan.amount, loan.interestRate, loan.duration);
+        await this._approveExact(loan.amount + interest);
+
         let tx;
         for (let i = 0; i < 5; i++) {
             try {
@@ -180,25 +232,11 @@ class SpecularQuickstart {
     }
 
     /**
-     * Ensure msg.sender has MaxUint allowance to the marketplace. Idempotent.
-     * Returns the approve tx hash if one was needed, null if already approved.
-     */
-    async _ensureUsdcApproval() {
-        const allowance = await this.usdc.allowance(this.wallet.address, this.addresses.marketplace);
-        if (allowance < ethers.MaxUint256 / 2n) {
-            const tx = await this.usdc.approve(this.addresses.marketplace, ethers.MaxUint256);
-            await tx.wait();
-            return tx.hash;
-        }
-        return null;
-    }
-
-    /**
-     * Supply USDC liquidity to an agent's pool. Auto-approves USDC if needed.
+     * Supply USDC liquidity to an agent's pool. Approves exactly `amt`.
      */
     async supply(agentId, amount) {
-        await this._ensureUsdcApproval();
         const amt = typeof amount === 'bigint' ? amount : ethers.parseUnits(String(amount), this.cfg.decimals);
+        await this._approveExact(amt);
         const tx = await this.marketplace.supplyLiquidity(agentId, amt);
         await tx.wait();
         return tx.hash;
