@@ -10,8 +10,17 @@ from __future__ import annotations
 import json
 import os
 from dataclasses import dataclass
+from decimal import Decimal
 from pathlib import Path
 from typing import Any
+
+
+def _usdc_units(amount: float | str | int) -> int:
+    """Convert a USDC display amount to 6-decimal base units WITHOUT float
+    truncation. int(19.99 * 1e6) == 19989999 (one unit short) because 19.99 is
+    not exactly representable in binary float; Decimal(str(amount)) avoids that.
+    Truncates toward zero for sub-unit precision (never over-spends)."""
+    return int(Decimal(str(amount)) * 1_000_000)
 
 from web3 import Web3
 from web3.contract.contract import Contract
@@ -118,7 +127,9 @@ class SpecularClient:
         """Sign and send a contract function call. Returns tx hash hex."""
         tx = fn_call.build_transaction({
             "from": self.account.address,
-            "nonce": self.w3.eth.get_transaction_count(self.account.address),
+            # 'pending' (not the default 'latest') so rapid sequential sends
+            # don't reuse a nonce and hit "nonce too low".
+            "nonce": self.w3.eth.get_transaction_count(self.account.address, "pending"),
         })
         # Estimate gas
         tx["gas"] = self.w3.eth.estimate_gas(tx)
@@ -192,7 +203,7 @@ class SpecularClient:
         if duration_days < 7 or duration_days > 365:
             raise ValueError("duration_days must be 7-365")
         self.onboard()  # idempotent
-        amt_units = int(amount * 1e6)
+        amt_units = _usdc_units(amount)
         # Low-reputation agents must post collateral, pulled by requestLoan.
         # required = amount * collateralPercent / 100 (matches the contract).
         coll_pct = self.reputation.functions.calculateCollateralRequirement(self.account.address).call()
@@ -223,12 +234,12 @@ class SpecularClient:
         return self._send(self.marketplace.functions.repayLoan(loan_id))
 
     def supply(self, agent_id: int, amount: float) -> str:
-        amt = int(amount * 1e6)
+        amt = _usdc_units(amount)
         self._approve_exact(amt)
         return self._send(self.marketplace.functions.supplyLiquidity(agent_id, amt))
 
     def withdraw(self, agent_id: int, amount: float) -> str:
-        amt = int(amount * 1e6)
+        amt = _usdc_units(amount)
         return self._send(self.marketplace.functions.withdrawLiquidity(agent_id, amt))
 
     def claim_interest(self, agent_id: int) -> str:

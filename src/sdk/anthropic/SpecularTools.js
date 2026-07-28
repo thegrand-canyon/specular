@@ -34,7 +34,7 @@ async function executeSpecularAnthropicTool(sdk, name, args) {
             case 'specular_credit_info': return JSON.stringify(await sdk.creditInfo());
             case 'specular_onboard':     return JSON.stringify(await sdk.onboard(args.ipfs_hash));
             case 'specular_borrow':
-                if (args.duration_days < 7 || args.duration_days > 365) return JSON.stringify({ error: 'duration_days must be 7-365' });
+                if (!Number.isInteger(args.duration_days) || args.duration_days < 7 || args.duration_days > 365) return JSON.stringify({ error: 'duration_days must be an integer 7-365' });
                 return JSON.stringify(await sdk.borrow(args.amount, args.duration_days));
             case 'specular_repay':       return JSON.stringify({ txHash: await sdk.repay(args.loan_id) });
             case 'specular_loans':       return JSON.stringify(await sdk.loans());

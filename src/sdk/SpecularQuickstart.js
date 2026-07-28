@@ -17,6 +17,7 @@
 const { ethers } = require('ethers');
 const fs = require('fs');
 const path = require('path');
+const { assertDurationDays } = require('./duration');
 
 // Resolve everything relative to THIS module, never the process CWD. With
 // CWD-relative resolution, an agent framework running the SDK from an untrusted
@@ -172,6 +173,22 @@ class SpecularQuickstart {
      * @param {number} durationDays - 7 to 365
      */
     async borrow(amount, durationDays) {
+        // Authoritative validation — this is the single choke point every tool
+        // wrapper (LangChain/OpenAI/Anthropic) funnels through, so validating
+        // here backstops any NaN/undefined that slips a wrapper's own guard.
+        assertDurationDays(durationDays, 'SpecularQuickstart.borrow');
+        // Amount unit convention: number|string = display units (e.g. 100 = 100
+        // USDC), bigint = base units. Reject NaN/Infinity/≤0 before it dies
+        // opaquely inside parseUnits or is sent to the chain.
+        if (typeof amount !== 'bigint') {
+            const n = Number(amount);
+            if (!Number.isFinite(n) || n <= 0) {
+                throw new Error(`SpecularQuickstart.borrow: amount must be a positive number, got ${amount}`);
+            }
+        } else if (amount <= 0n) {
+            throw new Error('SpecularQuickstart.borrow: amount must be > 0');
+        }
+
         await this.onboard();
         const amt = typeof amount === 'bigint' ? amount : ethers.parseUnits(String(amount), this.cfg.decimals);
 

@@ -12,26 +12,40 @@ class StateManager {
             collateralRequirement: null,
             lastUpdate: null
         };
+        // Per-key freshness timestamps. A single shared lastUpdate (set only by
+        // syncState) made per-key TTLs wrong in both directions: an individual
+        // refreshX() left the timestamp stale so its fresh data read as expired,
+        // while syncState marked never-refreshed keys as fresh. Each key now
+        // stamps itself on successful refresh.
+        this.timestamps = {};
         this.cacheTTL = 30000; // 30 seconds default TTL
     }
 
     /**
-     * Check if cache is valid
+     * Check if a specific cache key is still within its TTL.
      */
     isCacheValid(cacheKey) {
-        if (!this.cache[cacheKey] || !this.cache.lastUpdate) {
+        const ts = this.timestamps[cacheKey];
+        if (!ts || this.cache[cacheKey] == null) {
             return false;
         }
-
-        const age = Date.now() - this.cache.lastUpdate;
-        return age < this.cacheTTL;
+        return (Date.now() - ts) < this.cacheTTL;
     }
 
     /**
-     * Update cache timestamp
+     * Mark the given cache keys as freshly fetched (now).
+     */
+    _stamp(...keys) {
+        const now = Date.now();
+        for (const k of keys) this.timestamps[k] = now;
+    }
+
+    /**
+     * Update cache timestamp (back-compat): stamps every cache field.
      */
     updateTimestamp() {
         this.cache.lastUpdate = Date.now();
+        this._stamp('reputation', 'agentInfo', 'activeLoans', 'creditLimit', 'collateralRequirement');
     }
 
     /**
@@ -72,6 +86,7 @@ class StateManager {
             );
             this.cache.collateralRequirement = Number(collateralReq);
 
+            this._stamp('reputation', 'creditLimit', 'collateralRequirement');
         } catch (error) {
             if (!error.message.includes('not initialized')) {
                 console.error('Failed to refresh reputation:', error.message);
@@ -93,6 +108,7 @@ class StateManager {
                 registrationTime: Number(info.registrationTime),
                 isActive: info.isActive
             };
+            this._stamp('agentInfo');
         } catch (error) {
             if (!error.message.includes('not registered')) {
                 console.error('Failed to refresh agent info:', error.message);
@@ -125,6 +141,7 @@ class StateManager {
             }
 
             this.cache.activeLoans = loans;
+            this._stamp('activeLoans');
         } catch (error) {
             console.error('Failed to refresh loans:', error.message);
         }
@@ -190,6 +207,7 @@ class StateManager {
             collateralRequirement: null,
             lastUpdate: null
         };
+        this.timestamps = {};
     }
 
     /**
@@ -197,6 +215,7 @@ class StateManager {
      */
     invalidateKey(key) {
         this.cache[key] = null;
+        delete this.timestamps[key];
     }
 
     /**

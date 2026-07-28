@@ -61,8 +61,8 @@ function specularTools(wallet, network = 'base') {
                 required: ['amount', 'durationDays']
             },
             async invoke(args) {
-                if (args.durationDays < 7 || args.durationDays > 365) {
-                    return JSON.stringify({ error: 'durationDays must be 7-365' });
+                if (!Number.isInteger(args.durationDays) || args.durationDays < 7 || args.durationDays > 365) {
+                    return JSON.stringify({ error: 'durationDays must be an integer 7-365' });
                 }
                 const out = await sdk.borrow(args.amount, args.durationDays);
                 return JSON.stringify({

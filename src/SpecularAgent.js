@@ -74,7 +74,7 @@ class SpecularAgent {
 
             // Initialize reputation (fetch fresh nonce to avoid nonce issues)
             console.log('Initializing reputation...');
-            const currentNonce = await this.wallet.provider.getTransactionCount(this.address, 'latest');
+            const currentNonce = await this.wallet.provider.getTransactionCount(this.address, 'pending');
             const reputationTx = await this.contracts.reputationManager.initializeReputation(
                 this.address,
                 { nonce: currentNonce }
@@ -151,7 +151,7 @@ class SpecularAgent {
             }
 
             // Request loan (fetch fresh nonce to avoid nonce issues after approval)
-            const currentNonce = await this.wallet.provider.getTransactionCount(this.address, 'latest');
+            const currentNonce = await this.wallet.provider.getTransactionCount(this.address, 'pending');
             const tx = await this.contracts.lendingPool.requestLoan(
                 amountInTokens,
                 durationDays,
