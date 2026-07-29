@@ -37,8 +37,9 @@ const DEFAULT_MAX_PAYMENT = 10_000000n;
 // it picks which token the buyer signs away. Where we know the real USDC we
 // pin it and reject anything else.
 const KNOWN_USDC = {
-    'base':        '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
-    'arc-testnet': '0xf2807051e292e945751A25616705a9aadfb39895',
+    'base':         '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+    'arc-testnet':  '0xf2807051e292e945751A25616705a9aadfb39895',
+    'base-sepolia': '0x036CbD53842c5426634e7929541eC2318f3dCF7e', // Circle official
 };
 
 class x402Client {
@@ -172,15 +173,28 @@ class x402Client {
         const domain = await this._resolveDomain(asset, network, extra);
 
         // Token-substitution guard: the signature is only valid against
-        // domain.verifyingContract. If we know the real USDC for this network,
-        // the server does not get to point the signature at a different token.
+        // domain.verifyingContract, and the server picks that. The per-payment
+        // cap bounds token *quantity*, not value — a substituted low-decimal or
+        // high-value token can blow past the intended blast radius — so we must
+        // pin the token identity, not just cap the amount.
         const knownUsdc = KNOWN_USDC[network];
-        if (knownUsdc && !this.allowUntrustedToken && domain.verifyingContract &&
-            domain.verifyingContract.toLowerCase() !== knownUsdc.toLowerCase()) {
-            throw new Error(
-                `[x402] refusing to sign — verifyingContract ${domain.verifyingContract} ` +
-                `is not the known USDC for ${network} (${knownUsdc}); ` +
-                `set allowUntrustedToken to override`);
+        if (!this.allowUntrustedToken) {
+            if (!knownUsdc) {
+                // Unknown network ⇒ we have no canonical USDC to pin against, so
+                // the server could name any EIP-3009 token. Refuse rather than
+                // sign blind. (Previously this path skipped the guard entirely.)
+                throw new Error(
+                    `[x402] refusing to sign on unrecognized network "${network}" — ` +
+                    `no known USDC to pin verifyingContract against; ` +
+                    `set allowUntrustedToken to override`);
+            }
+            if (domain.verifyingContract &&
+                domain.verifyingContract.toLowerCase() !== knownUsdc.toLowerCase()) {
+                throw new Error(
+                    `[x402] refusing to sign — verifyingContract ${domain.verifyingContract} ` +
+                    `is not the known USDC for ${network} (${knownUsdc}); ` +
+                    `set allowUntrustedToken to override`);
+            }
         }
 
         const sig = await this.wallet.signTypedData(domain, EIP3009_TYPES, {

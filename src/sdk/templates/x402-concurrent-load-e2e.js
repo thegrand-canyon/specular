@@ -42,6 +42,7 @@ const NETWORK = 'arc';
         pricing: { '/transcribe': PRICE, default: PRICE },
         autoFlushThresholdUsdc: AUTO_FLUSH,
         mode: 'stub',
+        allowStub: true,  // test harness: stub does no payment verification
     });
 
     const poolBefore = await mp.agentPools(POOL_AGENT_ID);

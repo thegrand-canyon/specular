@@ -81,4 +81,25 @@ describe("legacy x402Client spend cap + token pinning (F1)", function () {
             /invalid payTo/i
         );
     });
+
+    it("refuses to sign on an unrecognized network (no USDC to pin against)", async () => {
+        const c = new x402Client(wallet, { maxPayment: 1000_000000n });
+        await rejects(
+            c._buildPaymentHeader(req(1_000000, { network: "polygon", extra: { chainId: 137 } })),
+            /unrecognized network/i
+        );
+    });
+
+    it("allows base-sepolia against its known Circle USDC", async () => {
+        const c = new x402Client(wallet);
+        const BASE_SEPOLIA_USDC = "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
+        const header = await c._buildPaymentHeader(req(1_000000, { token: BASE_SEPOLIA_USDC, network: "base-sepolia" }));
+        expect(header).to.be.a("string");
+    });
+
+    it("allows an unknown network only when allowUntrustedToken is set", async () => {
+        const c = new x402Client(wallet, { maxPayment: 1000_000000n, allowUntrustedToken: true });
+        const header = await c._buildPaymentHeader(req(1_000000, { network: "polygon", extra: { chainId: 137 } }));
+        expect(header).to.be.a("string");
+    });
 });

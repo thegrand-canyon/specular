@@ -34,6 +34,7 @@ const NETWORK = 'arc';
         pricing: { '/transcribe': PRICE_PER_CALL, default: PRICE_PER_CALL },
         autoFlushThresholdUsdc: THRESHOLD,
         mode: 'stub',
+        allowStub: true,  // test harness: stub does no payment verification
     });
 
     // Read pool state BEFORE

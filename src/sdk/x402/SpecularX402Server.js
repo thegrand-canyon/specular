@@ -83,6 +83,27 @@ class SpecularX402Server {
         this.facilitatorUrl = opts.facilitatorUrl || netCfg.defaultFacilitator;
         this._pkPrefixed = pkPrefixed;
 
+        // [F4] stub mode serves the resource and books revenue with NO payment
+        // verification — fine for local dev/tests, dangerous if shipped by
+        // accident (a "paywall" that collects nothing while reporting revenue).
+        // Require an explicit opt-in.
+        this.allowStub = opts.allowStub === true || process.env.SPECULAR_X402_ALLOW_STUB === '1';
+        if (this.mode === 'stub' && !this.allowStub) {
+            throw new Error(
+                'SpecularX402Server: stub mode performs NO payment verification. ' +
+                'To use it (tests/local dev only) pass { allowStub: true } or set ' +
+                'SPECULAR_X402_ALLOW_STUB=1. For real payments use mode "local" or "facilitator".');
+        }
+
+        // [F5] Base URL used to build the payment `resource`. When set, we derive
+        // it server-side instead of from client-controlled Host/X-Forwarded
+        // headers.
+        this.baseUrl = (opts.baseUrl || process.env.SPECULAR_X402_BASE_URL || '').replace(/\/+$/, '') || null;
+
+        // [F6] Token gating the /__specular_x402/stats endpoint. If unset, stats
+        // are served only to loopback callers (never remote).
+        this.statsToken = opts.statsToken || process.env.SPECULAR_X402_STATS_TOKEN || null;
+
         this._earned = 0n;  // accumulated USDC (6-dec base units)
         this._requestCount = 0;
         this._lastFlushAt = null;
@@ -129,8 +150,17 @@ class SpecularX402Server {
     }
 
     _paymentRequirements(req, routePath, priceUsdc) {
-        const proto = req.headers['x-forwarded-proto'] || 'http';
-        const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost';
+        // [F5] Prefer the server-configured baseUrl. Only fall back to
+        // client-controlled Host/X-Forwarded-* headers when no baseUrl is set
+        // (a spoofed Host can otherwise poison a facilitator's replay-key/logs).
+        let resource;
+        if (this.baseUrl) {
+            resource = `${this.baseUrl}${routePath}`;
+        } else {
+            const proto = req.headers['x-forwarded-proto'] || 'http';
+            const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost';
+            resource = `${proto}://${host}${routePath}`;
+        }
         return {
             x402Version: 1,
             error: 'X-PAYMENT header is required',
@@ -138,7 +168,7 @@ class SpecularX402Server {
                 scheme: 'exact',
                 network: this.netCfg.x402Network,
                 maxAmountRequired: String(Math.floor(priceUsdc * 1_000_000)),
-                resource: `${proto}://${host}${routePath}`,
+                resource,
                 description: `Payment for ${routePath}`,
                 mimeType: 'application/json',
                 payTo: this.payTo,
@@ -303,10 +333,29 @@ class SpecularX402Server {
      *       res.writeHead(200); res.end(...);
      *   }));
      */
+    /**
+     * [F6] Is this caller allowed to read /__specular_x402/stats? Stats expose
+     * wallet/pool/revenue, so: if a statsToken is configured, require it in an
+     * Authorization: Bearer header; otherwise only loopback callers may read.
+     */
+    _statsAllowed(req) {
+        if (this.statsToken) {
+            const auth = req.headers['authorization'] || '';
+            return auth === `Bearer ${this.statsToken}`;
+        }
+        const ip = (req.socket && req.socket.remoteAddress) || (req.connection && req.connection.remoteAddress) || '';
+        return ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1';
+    }
+
     handle(handler) {
         return async (req, res) => {
-            // Stats endpoint (always accessible)
             if (req.url === '/__specular_x402/stats' && req.method === 'GET') {
+                if (!this._statsAllowed(req)) {
+                    // Don't reveal the endpoint exists to unauthorized callers.
+                    res.writeHead(404, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: 'not found' }));
+                    return;
+                }
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify(this.stats(), null, 2));
                 return;
@@ -322,9 +371,11 @@ class SpecularX402Server {
                 // Payment valid — invoke handler
                 await handler(req, res, result);
             } catch (e) {
+                // Log detail server-side; return a generic body (don't leak RPC
+                // URLs / addresses / ethers internals to unauthenticated clients).
                 console.error('[SpecularX402Server] error:', e.message);
                 res.writeHead(500, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ error: e.message }));
+                res.end(JSON.stringify({ error: 'internal error' }));
             }
         };
     }
@@ -339,6 +390,9 @@ class SpecularX402Server {
     express() {
         return async (req, res, next) => {
             if (req.url === '/__specular_x402/stats' && req.method === 'GET') {
+                if (!this._statsAllowed(req)) {
+                    return res.status(404).json({ error: 'not found' });
+                }
                 return res.status(200).json(this.stats());
             }
             try {
@@ -350,7 +404,7 @@ class SpecularX402Server {
                 next();
             } catch (e) {
                 console.error('[SpecularX402Server] express error:', e.message);
-                res.status(500).json({ error: e.message });
+                res.status(500).json({ error: 'internal error' });
             }
         };
     }

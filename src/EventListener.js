@@ -52,6 +52,34 @@ class EventListener {
         this._lastBlockAt = null;
         this._staleMs = options.staleMs || 60000;      // no block this long ⇒ reconnect
         this._watchdogMs = options.watchdogMs || 20000; // how often to check
+
+        // Dedup ledger so a backfill (queryFilter) can't re-deliver an event
+        // already emitted live, and repeated reconnects can't re-emit the same
+        // window. Keyed by txHash:logIndex, bounded FIFO.
+        this._seen = new Set();
+        this._seenOrder = [];
+        this._seenMax = options.dedupWindow || 2000;
+    }
+
+    /**
+     * Emit with dedup. `meta` is the raw event/EventLog (live: last handler arg;
+     * backfill: the queryFilter result) — we derive a stable identity from it.
+     * If no identity is derivable we emit (can't dedup, prefer at-least-once).
+     */
+    _emitDedup(eventName, data, meta) {
+        const log = (meta && meta.log) ? meta.log : meta;
+        const txHash = log && (log.transactionHash || log.transactionHash);
+        const logIndex = log && (log.index != null ? log.index : log.logIndex);
+        if (txHash != null && logIndex != null) {
+            const key = `${txHash}:${logIndex}`;
+            if (this._seen.has(key)) return;            // already delivered
+            this._seen.add(key);
+            this._seenOrder.push(key);
+            if (this._seenOrder.length > this._seenMax) {
+                this._seen.delete(this._seenOrder.shift());
+            }
+        }
+        this.emit(eventName, data);
     }
 
     /** Register an event listener */
@@ -92,7 +120,9 @@ class EventListener {
         for (const spec of EVENT_SPECS) {
             const contract = this.contracts && this.contracts[spec.contract];
             if (!contract || typeof contract.on !== 'function') continue;
-            const handler = (...args) => this.emit(spec.event, spec.map(...args));
+            // ethers v6 appends the EventLog as the final handler arg; use it
+            // for dedup, and pass the leading args to the spec's payload map.
+            const handler = (...args) => this._emitDedup(spec.event, spec.map(...args), args[args.length - 1]);
             contract.on(spec.event, handler);
             this._subs.push({ contract, contractName: spec.contract, event: spec.event, handler });
         }
@@ -157,7 +187,18 @@ class EventListener {
         try {
             this._unsubscribeAll();
             this._subscribeAll();
-            if (from != null) await this._backfill(from + 1);
+            if (from != null) {
+                // Backfill to a fixed head captured now. Advancing _lastSeenBlock
+                // to that head afterward stops a subsequent reconnect (e.g. an
+                // error burst) from re-querying the same window; the dedup ledger
+                // covers the live/backfill overlap.
+                let head = null;
+                if (this.provider && typeof this.provider.getBlockNumber === 'function') {
+                    try { head = Number(await this.provider.getBlockNumber()); } catch (_) { head = null; }
+                }
+                await this._backfill(from + 1, head == null ? 'latest' : head);
+                if (head != null) this._lastSeenBlock = head;
+            }
             console.warn('Event listener reconnected');
         } catch (e) {
             console.error('Event listener reconnect failed:', e.message);
@@ -167,17 +208,17 @@ class EventListener {
         }
     }
 
-    /** Re-emit events between `fromBlock` and head that we may have missed. */
-    async _backfill(fromBlock) {
+    /** Re-emit (deduped) events between `fromBlock` and `toBlock` we may have missed. */
+    async _backfill(fromBlock, toBlock = 'latest') {
         for (const spec of EVENT_SPECS) {
             const contract = this.contracts && this.contracts[spec.contract];
             if (!contract || typeof contract.queryFilter !== 'function') continue;
             let filter;
             try { filter = contract.filters[spec.event](); } catch (_) { continue; }
             let events;
-            try { events = await contract.queryFilter(filter, fromBlock, 'latest'); } catch (_) { continue; }
+            try { events = await contract.queryFilter(filter, fromBlock, toBlock); } catch (_) { continue; }
             for (const ev of events) {
-                try { this.emit(spec.event, spec.map(...ev.args)); } catch (_) { /* ignore one bad event */ }
+                try { this._emitDedup(spec.event, spec.map(...ev.args), ev); } catch (_) { /* ignore one bad event */ }
             }
         }
     }

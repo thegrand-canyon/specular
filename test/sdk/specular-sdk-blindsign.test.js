@@ -60,7 +60,20 @@ describe("SpecularSDK blind-signing guard (H1)", function () {
         expect(() => new SpecularSDK({ apiUrl: "http://evil.example.com" })).to.throw(/plaintext http/i);
     });
 
+    it("rejects the http:// guard case-insensitively (HTTP://)", function () {
+        expect(() => new SpecularSDK({ apiUrl: "HTTP://evil.example.com" })).to.throw(/plaintext http/i);
+    });
+
     it("still allows http://localhost for local dev", function () {
         expect(() => new SpecularSDK({ apiUrl: "http://localhost:3001" })).to.not.throw();
+    });
+
+    it("rejects USDC approval to an ARCHIVED/paused marketplace (not just attacker)", function () {
+        // Base v4 archived marketplace — a known `to` (targets) but must NOT be
+        // an accepted approve spender.
+        const ARCHIVED_V4 = "0xd7b4dEE74C61844DFA75aEbe224e4635463b1C8f";
+        expect(() =>
+            sdk._assertSafeTx({ to: USDC_BASE, data: approveCalldata(ARCHIVED_V4, ethers.MaxUint256) }, "test")
+        ).to.throw(/unknown spender/i);
     });
 });

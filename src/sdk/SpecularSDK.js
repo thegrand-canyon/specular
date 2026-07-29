@@ -37,12 +37,23 @@ function loadTrustedAddresses() {
     try { books.push(require('../config/base-addresses.json')); } catch (_) {}
     try { books.push(require('../config/arc-testnet-addresses.json')); } catch (_) {}
 
+    // Keys that denote an ARCHIVED / superseded / compromised-deployer
+    // marketplace. These may legitimately be a tx `to` (targets) for reads, but
+    // must NOT be accepted as a USDC approve spender — approving one re-opens a
+    // drain path to a paused/known-bad contract.
+    const isArchivedKey = (k) =>
+        k.includes('archive') || k.includes('_old') || k.includes('_v2') ||
+        k.includes('_v4') || k.includes('_v5') || k.includes('deployer');
+
     for (const book of books) {
         for (const [key, val] of Object.entries(book)) {
             add(targets, val);
             const k = key.toLowerCase();
             if (k === 'usdc' || k === 'mockusdc') add(usdc, val);
-            if (k.includes('marketplace') || k.includes('depositrouter')) add(spenders, val);
+            // Only the CANONICAL marketplace/router keys qualify as spenders.
+            if ((k.includes('marketplace') || k.includes('depositrouter')) && !isArchivedKey(k)) {
+                add(spenders, val);
+            }
         }
     }
     return { targets, usdc, spenders };
@@ -57,9 +68,12 @@ class SpecularSDK {
 
         // Reject plaintext HTTP to a non-loopback API: a MITM could swap the
         // unsigned-tx payload we're about to sign. Localhost stays allowed for dev.
-        const host = (() => { try { return new URL(this.apiUrl).hostname; } catch { return ''; } })();
+        const parsedUrl = (() => { try { return new URL(this.apiUrl); } catch { return null; } })();
+        const host = parsedUrl ? parsedUrl.hostname : '';
+        // Scheme compared case-insensitively — `HTTP://evil` must not slip past.
+        const isPlaintext = parsedUrl ? parsedUrl.protocol.toLowerCase() === 'http:' : false;
         const isLoopback = host === 'localhost' || host === '127.0.0.1' || host === '::1' || host === '[::1]';
-        if (this.apiUrl.startsWith('http://') && !isLoopback) {
+        if (isPlaintext && !isLoopback) {
             throw new Error(`SpecularSDK: refusing plaintext http:// API for non-localhost host "${host}" — use https://`);
         }
 
