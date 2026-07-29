@@ -169,4 +169,19 @@ events via `queryFilter` from the last seen block. **L9:** `stop()` called
 
 ---
 
+## 8. Base on-chain state (verified read-only, 2026-07)
+
+- **v4 archived `0xd7b4…1C8f`:** `paused: true`, owner = secure wallet,
+  USDC balance 0. Loans #2/#3/#4 are all **DEFAULTED** (state 3) — the
+  2026-05-11 liquidation cron ran; the "stuck loans" note in CLAUDE.md was
+  stale and has been corrected. (They were 0.10-USDC owner self-borrows.)
+- **V6 canonical `0x0a4e…15F9a`:** `paused: false`, owner = secure wallet,
+  13 loans all **REPAID**, 0 active/defaulted, no phantom liquidity (§S1
+  holds live). USDC balance ~1.50.
+- **Secure wallet `0x800e…F72C`:** ~0.0000085 ETH (the P4 blocker) + 181.45 USDC on Base.
+- Cosmetic: V6 `totalPools()` returns 3 but populated pools are at IDs 1 and 5
+  (counter/ID misalignment) — no funds at risk.
+
+---
+
 *Generated with Claude Code. All fixes carry regression tests under `test/sdk/`.*

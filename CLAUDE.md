@@ -63,7 +63,8 @@ Website: specular.financial | GitHub: thegrand-canyon/specular | Deploy: specula
 
 ### Live impact still extant on v4
 
-- **3 stuck Base mainnet loans** (#2, #3, #4) — repayLoan reverts `Panic(0x11)`. Cron scheduled to liquidate at 2026-05-11 19:30 UTC.
+- **Base mainnet loans #2/#3/#4 — RESOLVED** (verified on-chain 2026-07). The liquidation cron ran on schedule; all three are now `DEFAULTED` (state 3) and the v4 marketplace USDC balance is 0. v4 is `paused: true`, owner = secure wallet. (Historical: they were the 0.10-USDC self-borrows whose `repayLoan` reverted `Panic(0x11)`; `liquidateLoan` avoids the buggy interest path and succeeded.)
+- Base canonical V6 verified clean 2026-07: unpaused, owner = secure wallet, 13 loans all `REPAID`, no phantom liquidity (§S1 holds).
 - **Arc v4 §S1 leak**: ~74.87 USDC of phantom availableLiquidity across 40 lenders (cumulative)
 - **Arc v4 agent #43**: 777+ lifetime loans, 3.94M gas per requestLoan, ~5,665 loans from full DoS
 
@@ -80,6 +81,11 @@ Website: specular.financial | GitHub: thegrand-canyon/specular | Deploy: specula
 | 5 reentrancy attack scenarios | All blocked by `nonReentrant` |
 
 ## Key Reports & Forensics
+
+### SDK & off-chain security audit (2026-07)
+- `forensics/output/security-audit-2026-07/SDK_SECURITY_AUDIT_2026-07.md` — 3 HIGH + 4 MEDIUM + 6 LOW off-chain findings, all fixed with regression tests under `test/sdk/`. Covers the SDKs, x402 layer, secrets, and config integrity (contracts NOT re-audited — unchanged since WORLDCLASS 2026-05-17).
+- New security env flags introduced by these fixes are documented in `.env.example`: `SPECULAR_ALLOW_KEY_PERSIST`, `SPECULAR_KEYSTORE_PASSWORD`, `SPECULAR_X402_ALLOW_STUB`, `SPECULAR_X402_STATS_TOKEN`, `SPECULAR_X402_BASE_URL`. Behavior changes: SDK approvals are now exact (no MaxUint256); x402 client has a default 10 USDC per-payment cap (`maxPayment`); x402 stub mode requires opt-in.
+- **Open action (owner):** rotate `MOLTBOOK_API_KEY` — it is in public git history (`a8efbf8`); the code fallback was removed but that does not revoke it.
 
 ### Audit + V6 (current, 2026-05-07/08)
 - `forensics/output/regression-2026-05-07/EXECUTIVE_SUMMARY.md` — non-technical stakeholder one-pager
