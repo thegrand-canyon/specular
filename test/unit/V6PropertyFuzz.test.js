@@ -234,12 +234,19 @@ describe("V6 property-based fuzz", function () {
         const aid = 1;
         for (let i = 0; i < 25; i++) {
             await v6.connect(lender).supplyLiquidity(aid, USDC(1));
+            // After each supply the lender must appear exactly once — never a
+            // duplicate (the §B1 guarantee).
+            let list = await getPoolLenders(aid);
+            expect(list.length, 'no duplicate entry after supply').to.equal(1);
+            expect(list[0]).to.equal(lender.address.toLowerCase());
+            expect(await v6.isInPoolLenders(aid, lender.address)).to.equal(true);
+
             await v6.connect(lender).withdrawLiquidity(aid, USDC(1));
+            // [H-2] Full withdrawal frees the slot: entry removed, flag cleared.
+            list = await getPoolLenders(aid);
+            expect(list.length, 'slot freed on full withdrawal').to.equal(0);
+            expect(await v6.isInPoolLenders(aid, lender.address)).to.equal(false);
         }
-        const list = await getPoolLenders(aid);
-        expect(list.length).to.equal(1);
-        expect(list[0]).to.equal(lender.address.toLowerCase());
-        expect(await v6.isInPoolLenders(aid, lender.address)).to.equal(true);
     });
 
     it('§S5 stress: 50+ lifetime loans, gas stays flat', async function () {

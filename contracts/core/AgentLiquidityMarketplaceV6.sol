@@ -228,10 +228,39 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
         pool.totalLiquidity -= amount;
         pool.availableLiquidity -= amount;
 
+        // [H-2 FIX 2026-07] Free the lender's slot once their balance hits zero.
+        // Previously the §B1 flag was set permanently and withdraw never removed
+        // the entry, so an attacker could supply→withdraw from 50 addresses to
+        // permanently occupy MAX_LENDERS_PER_POOL and lock out all future lenders
+        // (permanent griefing DoS on the agent's pool). Removing here keeps the
+        // §B1 no-duplicate guarantee: a later re-supply sees isInPoolLenders=false
+        // and pushes exactly one entry. Unclaimed earnedInterest is unaffected —
+        // claimInterest reads the position directly, not poolLenders membership.
+        if (position.amount == 0) {
+            _removePoolLender(agentId, msg.sender);
+        }
+
         // Transfer USDC back to lender
         usdcToken.safeTransfer(msg.sender, amount);
 
         emit LiquidityWithdrawn(agentId, msg.sender, amount);
+    }
+
+    /**
+     * @notice Remove a lender from a pool's lender list (swap-and-pop) and clear
+     *         its membership flag. Bounded by MAX_LENDERS_PER_POOL (≤50 SLOADs).
+     */
+    function _removePoolLender(uint256 agentId, address lender) internal {
+        if (!isInPoolLenders[agentId][lender]) return;
+        address[] storage lenders = poolLenders[agentId];
+        for (uint256 i = 0; i < lenders.length; i++) {
+            if (lenders[i] == lender) {
+                lenders[i] = lenders[lenders.length - 1];
+                lenders.pop();
+                break;
+            }
+        }
+        isInPoolLenders[agentId][lender] = false;
     }
 
     /**
