@@ -22,6 +22,9 @@ Python 28/28, concurrent-load 50/50, all agent templates + x402 loop.
 | F3 | HIGH (pre-prod) | frontend | Landing Privy mock returned `Wallet.createRandom()` as a user signer. | `42f83ff` |
 | x402 #4 | MED | SDK | Each 402 retry signed a new independently-settleable EIP-3009 auth (up to `maxRetries × maxPayment` per request). Now one auth per request. | `61c3c0d` |
 | EL #3 | nit | SDK | Dead-code fallback in dedup key. | `61c3c0d` |
+| **H-3** | HIGH | contract | Credit limit per-loan not aggregate → 10× unsecured exposure. Now tracks `outstandingPrincipal` and checks the aggregate. | `30cca63` |
+| M-3 | MED | contract | Faucet Sybil via NFT-cycling. Now deduped by claiming address. | `30cca63` |
+| deps | — | build | Non-major `npm audit fix` cleared both criticals (82→75). | `d55864b` |
 
 All carry regression tests (`test/unit/V6InterestSolvency.test.js`,
 `V6LenderSlotReclaim.test.js`, updated `V6PropertyFuzz`, and `test/sdk/*`).
@@ -47,25 +50,27 @@ The two contract fixes above are **source-only**; the deployed Arc V6 and Base V
 bytecode still contain H-1/H-2. These, plus the below, argue for a re-audit +
 redeploy before further mainnet exposure:
 
-- **H-3 (HIGH) — credit limit is per-loan, not aggregate.** `requestLoan` checks
-  `amount ≤ creditLimit` per loan and `activeLoans < 10`, but `calculateCreditLimit`
-  never subtracts outstanding principal → a 0-collateral agent can hold 10 × limit
-  (up to 250k USDC) unsecured. **Not fixed** — the fix (track outstanding principal
-  and check the aggregate) changes credit semantics; wanted a design decision.
-- **M-1 — agent NFT transfer resells reputation + borrowing rights** against
+- ~~**H-3 (HIGH) — credit limit is per-loan, not aggregate.**~~ **FIXED in source
+  (`30cca63`)** — now tracks `outstandingPrincipal` and enforces the aggregate.
+  Still needs redeploy to take effect on-chain.
+- ~~**M-3 — faucet Sybil**~~ **FIXED in source (`30cca63`)** — deduped by claiming
+  address so NFT-cycling can't re-farm.
+- **Still open (product/semantics decisions, not fixed):**
+  **M-1 — agent NFT transfer resells reputation + borrowing rights** against
   lenders' liquidity. **M-2 — cheap reputation farming** (flat +10 per repay, no
-  min hold time) enables H-3. **M-3 — faucet Sybil**: register→claim→transfer NFT→
-  re-register drains the faucet's USDC. **M-4 — socialized-loss ordering** on
-  default DoSes the last withdrawer. All verified; none fixed.
+  min hold time). **M-4 — socialized-loss ordering** on default DoSes the last
+  withdrawer. All verified; each changes credit/reputation/loss semantics, so
+  left for a product decision.
 - LOW: L-1 `notifyRefill` event spoofing, L-2 validationRegistry can DoS
   `requestLoan`, L-3 init-score doc mismatch (100 vs documented 0).
 
-### Dependencies (need an upgrade decision)
-`npm audit`: **82 vulns (2 critical, 20 high, 41 moderate, 19 low)**, all with
-fixes. **Do NOT run `npm audit fix --force`** — npm's suggested fixes for the
-prod chains (`x402`, `@xmtp/xmtp-js`) are semver-major *downgrades*. The safe
-non-major `npm audit fix` clears `protobufjs` (critical, xmtp chain), `axios`
-(high, x402 chain), `handlebars` (critical, dev/coverage) and others. Python
+### Dependencies (partially done)
+Non-major `npm audit fix` applied (`d55864b`): **82 → 75 vulns, both criticals
+cleared** (`protobufjs`/xmtp, `handlebars`/coverage), transitive-only, verified
+non-breaking. The remaining **75 (22 high, 34 moderate, 19 low)** sit behind
+semver-major upgrades of prod deps (`x402`, `@xmtp/xmtp-js`, `hardhat`) whose
+npm-suggested fixes are major *downgrades* — **do NOT run `npm audit fix
+--force`**; these need a deliberate upgrade+retest decision. Python
 `requirements.txt` is unpinned (`>=`) — recommend pinning + a lockfile.
 
 ### Remaining LOW SDK (from the fresh HEAD re-audit)
