@@ -86,6 +86,17 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
     uint256 public platformFeeRate = 100; // 1% platform fee (in basis points)
     uint256 public accumulatedFees;
 
+    // [M-2 lever 2026-07] Minimum time (seconds) a loan must be held before an
+    // on-time repayment earns reputation. 0 = disabled (current behavior). Set
+    // > 0 to blunt request→repay reputation farming. Owner-tunable risk param.
+    uint256 public minHoldForReputationReward;
+
+    // [M-1 lever 2026-07] When true, only a pool's original creator address may
+    // borrow from it — so transferring the agent NFT does NOT hand the buyer
+    // borrowing rights against lenders' liquidity (reputation is keyed by
+    // agentId and would otherwise transfer with the NFT). false = current behavior.
+    bool public bindBorrowToPoolCreator;
+
     // Discovery: ordered list of all agent IDs that have created pools
     uint256[] public agentPoolIds;
 
@@ -281,6 +292,12 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
         AgentPool storage pool = agentPools[agentId];
         require(amount <= pool.availableLiquidity, "Insufficient pool liquidity");
 
+        // [M-1 lever] Optionally bind borrowing to the pool's original creator,
+        // so a transferred agent NFT cannot borrow against existing lenders.
+        if (bindBorrowToPoolCreator) {
+            require(pool.agentAddress == msg.sender, "Borrow restricted to pool creator");
+        }
+
         // Validate loan parameters
         uint256 duration = durationDays * 1 days;
         require(duration >= MIN_LOAN_DURATION && duration <= MAX_LOAN_DURATION, "Invalid duration");
@@ -419,9 +436,15 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
             usdcToken.safeTransfer(loan.borrower, loan.collateralAmount);
         }
 
-        // Record with reputation manager
+        // Record with reputation manager.
+        // [M-2 lever] Only reward reputation if the loan was held long enough —
+        // blunts request→repay farming. recordLoanCompletion applies NO penalty
+        // when the flag is false, so a too-fast on-time repay simply earns no
+        // bonus (neither reward nor penalty).
         bool onTime = block.timestamp <= loan.endTime;
-        reputationManager.recordLoanCompletion(loan.borrower, loan.amount, onTime);
+        bool heldLongEnough = minHoldForReputationReward == 0
+            || (block.timestamp - loan.startTime) >= minHoldForReputationReward;
+        reputationManager.recordLoanCompletion(loan.borrower, loan.amount, onTime && heldLongEnough);
 
         emit LoanRepaid(loanId, loan.amount, interest);
     }
@@ -825,6 +848,28 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
     }
 
     /**
+     * @notice [M-2 lever] Set the minimum loan hold time (seconds) required for
+     *         an on-time repayment to earn reputation. 0 disables the gate.
+     *         Capped at MAX_LOAN_DURATION so it can never exceed a loan's term.
+     */
+    function setMinHoldForReputationReward(uint256 newMinHold) external onlyOwner {
+        require(newMinHold <= MAX_LOAN_DURATION, "Min hold exceeds max duration");
+        uint256 old = minHoldForReputationReward;
+        minHoldForReputationReward = newMinHold;
+        emit MinHoldForReputationRewardChanged(old, newMinHold);
+    }
+
+    /**
+     * @notice [M-1 lever] Toggle whether borrowing is restricted to a pool's
+     *         original creator address (blocks a transferred agent NFT from
+     *         borrowing against existing lenders' liquidity).
+     */
+    function setBindBorrowToPoolCreator(bool enabled) external onlyOwner {
+        bindBorrowToPoolCreator = enabled;
+        emit BindBorrowToPoolCreatorChanged(enabled);
+    }
+
+    /**
      * @notice Emergency function to recalculate and fix pool accounting
      * @dev Recalculates totalLoaned by summing active loans for agent.
      *      Recalculates availableLiquidity from totalLiquidity + Σ unclaimed
@@ -908,4 +953,6 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
 
     // CLAUDE_AUDIT_WORLDCLASS W2: emit on platform fee changes for off-chain monitoring
     event PlatformFeeRateChanged(uint256 oldRate, uint256 newRate);
+    event MinHoldForReputationRewardChanged(uint256 oldValue, uint256 newValue);
+    event BindBorrowToPoolCreatorChanged(bool enabled);
 }
