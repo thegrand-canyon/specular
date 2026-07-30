@@ -102,4 +102,24 @@ describe("legacy x402Client spend cap + token pinning (F1)", function () {
         const header = await c._buildPaymentHeader(req(1_000000, { network: "polygon", extra: { chainId: 137 } }));
         expect(header).to.be.a("string");
     });
+
+    it("signs at most ONE authorization per request even if the server keeps returning 402", async () => {
+        // A hostile paywall that always 402s must not be able to collect multiple
+        // independently-settleable authorizations (each _buildPaymentHeader mints
+        // a fresh-nonce EIP-3009 auth).
+        const c = new x402Client(wallet);
+        let signCount = 0;
+        const realBuild = c._buildPaymentHeader.bind(c);
+        c._buildPaymentHeader = async (r) => { signCount++; return realBuild(r); };
+        // Server always answers 402 with valid requirements.
+        c._rawFetch = async () => ({
+            status: 402,
+            body: { accepts: [{ maxAmountRequired: "1000000", payTo: PAYTO, asset: USDC_BASE, network: "base", extra: {} }] },
+        });
+        // _parseRequirements pulls accepts[0].
+        let threw = false;
+        try { await c.get("http://paywall.example/x"); } catch { threw = true; }
+        expect(threw, "should give up rather than keep paying").to.equal(true);
+        expect(signCount, "must sign at most one authorization").to.equal(1);
+    });
 });

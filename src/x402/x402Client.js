@@ -102,10 +102,20 @@ class x402Client {
 
     // ── Core fetch-with-payment loop ───────────────────────────────────────────
 
-    async _fetchWithPayment(method, url, body, headers, retryCount = 0) {
+    async _fetchWithPayment(method, url, body, headers, retryCount = 0, alreadyPaid = false) {
         const response = await this._rawFetch(method, url, body, headers);
 
         if (response.status === 402) {
+            // If we already signed and sent a payment authorization and the server
+            // STILL returns 402, do NOT sign a new one. Each _buildPaymentHeader
+            // mints a fresh-nonce EIP-3009 authorization that is INDEPENDENTLY
+            // settleable on-chain; signing another would let a hostile or
+            // misbehaving paywall collect multiple payments (up to maxRetries ×
+            // maxPayment) for a single logical request. One authorization per
+            // request — if it isn't honored, fail.
+            if (alreadyPaid) {
+                throw new Error(`[x402] payment sent but server still returned 402 for ${url} — refusing to sign another authorization`);
+            }
             if (retryCount >= this.maxRetries) {
                 throw new Error(`[x402] Max retries (${this.maxRetries}) exceeded for ${url}`);
             }
@@ -120,11 +130,11 @@ class x402Client {
 
             const paymentHeader = await this._buildPaymentHeader(requirements);
 
-            // Retry with payment
+            // Retry once WITH the single signed authorization.
             return this._fetchWithPayment(method, url, body, {
                 ...headers,
                 'X-PAYMENT': paymentHeader,
-            }, retryCount + 1);
+            }, retryCount + 1, true);
         }
 
         if (response.status >= 400) {

@@ -68,7 +68,9 @@ class EventListener {
      */
     _emitDedup(eventName, data, meta) {
         const log = (meta && meta.log) ? meta.log : meta;
-        const txHash = log && (log.transactionHash || log.transactionHash);
+        // ethers v6 exposes transactionHash on both the EventLog and log objects;
+        // logIndex is `.index` (falls back to `.logIndex` on older shapes).
+        const txHash = log && log.transactionHash;
         const logIndex = log && (log.index != null ? log.index : log.logIndex);
         if (txHash != null && logIndex != null) {
             const key = `${txHash}:${logIndex}`;
