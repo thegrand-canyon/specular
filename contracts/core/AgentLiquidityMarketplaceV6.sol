@@ -412,6 +412,12 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
             // This can happen for new pools where the only lender supplied after the
             // loan was already in REQUESTED state, or for sandwich attempts where
             // attackers supplied after loan start.
+            // [H-1 FIX 2026-07] repayLoan already added the full lenderInterest to
+            // pool.availableLiquidity. Routing it to fees WITHOUT this decrement
+            // would double-count it (withdrawFees moves USDC out but never touches
+            // availableLiquidity) — the §S1 phantom-liquidity drift. Remove it from
+            // availableLiquidity as it leaves for fees.
+            agentPools[agentId].availableLiquidity -= totalInterest;
             accumulatedFees += totalInterest;
             emit InterestDistributed(agentId, totalInterest);
             return;
@@ -428,9 +434,15 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
             }
         }
 
-        // [H-01 FIX preserved] Rounding dust → platform fees rather than trapped
+        // [H-01 FIX preserved] Rounding dust → platform fees rather than trapped.
+        // [H-1 FIX 2026-07] Also decrement availableLiquidity by the dust: it was
+        // added to availableLiquidity in repayLoan as part of lenderInterest but
+        // is never distributed as a lender's earnedInterest, so leaving it in
+        // availableLiquidity while also crediting accumulatedFees double-counts it
+        // (phantom liquidity). Mirror the §S1 discipline.
         uint256 dust = totalInterest - distributed;
         if (dust > 0) {
+            agentPools[agentId].availableLiquidity -= dust;
             accumulatedFees += dust;
         }
 
