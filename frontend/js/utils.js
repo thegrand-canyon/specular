@@ -61,13 +61,31 @@ export function setLoading(btn, loading) {
     btn.textContent = loading ? 'Processing...' : btn.dataset.originalText;
 }
 
+// Escape a string for safe interpolation into innerHTML. Use for any value
+// that originates off-chain / from the API / from an agent (all untrusted).
+export function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 export function agentName(agentInfo, agentId) {
     if (!agentInfo) return `Agent #${agentId}`;
     const uri = agentInfo.agentURI || agentInfo[3];
     if (!uri) return `Agent #${agentId}`;
-    // Extract name from URI like https://specular.ai/agents/agentbot-alpha
-    const parts = uri.split('/');
+    // Extract name from URI like https://specular.ai/agents/agentbot-alpha.
+    // agentURI is attacker-controlled (registration is permissionless) and this
+    // name is interpolated into innerHTML across the app (leaderboard, pool,
+    // portfolio, supply). A name slug only ever needs letters/digits/space/
+    // hyphen, so strip everything else — this neutralizes markup injection at
+    // the source for every consumer, whether they use innerHTML or textContent.
+    const parts = String(uri).split('/');
     const slug = parts[parts.length - 1];
     if (!slug) return `Agent #${agentId}`;
-    return slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    const clean = slug.replace(/-/g, ' ').replace(/[^\w \-]/g, '').trim();
+    if (!clean) return `Agent #${agentId}`;
+    return clean.replace(/\b\w/g, c => c.toUpperCase());
 }
