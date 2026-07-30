@@ -24,6 +24,7 @@ Python 28/28, concurrent-load 50/50, all agent templates + x402 loop.
 | EL #3 | nit | SDK | Dead-code fallback in dedup key. | `61c3c0d` |
 | **H-3** | HIGH | contract | Credit limit per-loan not aggregate → 10× unsecured exposure. Now tracks `outstandingPrincipal` and checks the aggregate. | `30cca63` |
 | M-3 | MED | contract | Faucet Sybil via NFT-cycling. Now deduped by claiming address. | `30cca63` |
+| M-1/M-2 | MED | contract | Owner-configurable levers (default off): bind-borrow-to-creator, min-hold-for-reputation. | `c7a6d1e` |
 | deps | — | build | Non-major `npm audit fix` cleared both criticals (82→75). | `d55864b` |
 
 All carry regression tests (`test/unit/V6InterestSolvency.test.js`,
@@ -55,12 +56,22 @@ redeploy before further mainnet exposure:
   Still needs redeploy to take effect on-chain.
 - ~~**M-3 — faucet Sybil**~~ **FIXED in source (`30cca63`)** — deduped by claiming
   address so NFT-cycling can't re-farm.
-- **Still open (product/semantics decisions, not fixed):**
-  **M-1 — agent NFT transfer resells reputation + borrowing rights** against
-  lenders' liquidity. **M-2 — cheap reputation farming** (flat +10 per repay, no
-  min hold time). **M-4 — socialized-loss ordering** on default DoSes the last
-  withdrawer. All verified; each changes credit/reputation/loss semantics, so
-  left for a product decision.
+- **M-1 / M-2 — shipped as owner-configurable levers (`c7a6d1e`), default off.**
+  Because both change core reputation/NFT semantics (and the documented 0→950
+  progression), they ship as tunable mechanisms rather than forced behavior:
+  - **M-1** `setBindBorrowToPoolCreator(true)` — only a pool's original creator
+    may borrow, so a transferred agent NFT can't borrow against existing lenders.
+  - **M-2** `setMinHoldForReputationReward(seconds)` — on-time repayments earn
+    reputation only if held long enough, blunting request→repay farming.
+  The owner activates each post-deploy per risk tolerance (no extra redeploy).
+- **M-4 — socialized-loss ordering (STILL OPEN, design work).** On an
+  under-collateralized default, `totalLiquidity` drops but individual
+  `position.amount` values don't, so withdrawals/claims are first-come-first-
+  served against `availableLiquidity` and the last lender is DoS'd. A correct
+  fix is **pro-rata loss accounting** (scale every position by the pool's
+  realized loss factor, or track a per-pool `lossPerShare` accumulator that
+  withdraw/claim net against). This is a real accounting redesign, not a safe
+  toggle — recommend a dedicated design + audit pass. Not implemented.
 - LOW: L-1 `notifyRefill` event spoofing, L-2 validationRegistry can DoS
   `requestLoan`, L-3 init-score doc mismatch (100 vs documented 0).
 
