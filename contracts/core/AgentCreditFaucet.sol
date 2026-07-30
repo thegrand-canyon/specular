@@ -48,6 +48,13 @@ contract AgentCreditFaucet is Ownable, ReentrancyGuard {
     /// @notice Per-agent claim tracking. True iff the agent has already claimed.
     mapping(uint256 => bool) public claimed;
 
+    /// @notice [M-3 fix 2026-07] Per-address claim tracking. Agent registration
+    /// is permissionless and transferring the agent NFT frees the sender's
+    /// addressToAgentId, so a single funded EOA could otherwise register→claim→
+    /// transfer→re-register→claim to drain the faucet. Dedup by the claiming
+    /// address too so each EOA can claim at most once regardless of NFT cycling.
+    mapping(address => bool) public claimedByAddress;
+
     /// @notice Aggregate USDC granted to date. For analytics.
     uint256 public totalGranted;
 
@@ -74,6 +81,8 @@ contract AgentCreditFaucet is Ownable, ReentrancyGuard {
         require(agentId != 0, "Not a registered agent");
         require(agentId <= maxEligibleAgentId, "Agent not yet eligible");
         require(!claimed[agentId], "Already claimed");
+        // [M-3 fix] Block the register→claim→transfer→re-register Sybil loop.
+        require(!claimedByAddress[msg.sender], "Address already claimed");
 
         amount = claimAmount;
         require(amount > 0, "Faucet inactive");
@@ -81,6 +90,7 @@ contract AgentCreditFaucet is Ownable, ReentrancyGuard {
 
         // Effects
         claimed[agentId] = true;
+        claimedByAddress[msg.sender] = true;
         totalGranted += amount;
 
         // Interaction (last)

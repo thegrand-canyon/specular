@@ -119,4 +119,22 @@ describe("AgentCreditFaucet", function () {
             expect(await faucet.balance()).to.equal(USDC(990));
         });
     });
+
+    describe("M-3: per-address Sybil resistance", () => {
+        it("blocks re-claim after transferring the NFT away and re-registering", async () => {
+            await faucet.setMaxEligibleAgentId(100);
+            // agent (agentId 1) claims once.
+            await faucet.connect(agent).claim();
+            expect(await faucet.claimedByAddress(agent.address)).to.equal(true);
+
+            // Transfer the agent NFT away, freeing addressToAgentId[agent].
+            await registry.connect(agent).transferFrom(agent.address, stranger.address, 1);
+
+            // Re-register the SAME EOA → a fresh agentId. The per-agentId dedup
+            // would not catch this, but the per-address dedup must.
+            await registry.connect(agent).register("ipfs://a1-again", []);
+            await expect(faucet.connect(agent).claim()).to.be.revertedWith("Address already claimed");
+        });
+    });
+
 });

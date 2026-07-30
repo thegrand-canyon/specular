@@ -92,6 +92,11 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
     // §S5 fix: O(1) active-loan counter — replaces _countActiveLoans array walk
     mapping(address => uint256) public activeLoanCount;
 
+    // [H-3 fix 2026-07] Aggregate outstanding principal per borrower. The credit
+    // limit must bound TOTAL unsecured exposure, not each loan individually —
+    // otherwise MAX_ACTIVE_LOANS_PER_AGENT concurrent loans multiply the limit.
+    mapping(address => uint256) public outstandingPrincipal;
+
     // §B1 fix: presence flag — gates poolLenders.push(), prevents duplicate entries
     mapping(uint256 => mapping(address => bool)) public isInPoolLenders;
 
@@ -280,9 +285,13 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
         uint256 duration = durationDays * 1 days;
         require(duration >= MIN_LOAN_DURATION && duration <= MAX_LOAN_DURATION, "Invalid duration");
 
-        // Get credit limit based on reputation
+        // Get credit limit based on reputation.
+        // [H-3 fix 2026-07] Enforce the limit on AGGREGATE outstanding principal,
+        // not the single loan. Previously `amount <= creditLimit` let an agent
+        // hold up to MAX_ACTIVE_LOANS_PER_AGENT loans each at the full limit —
+        // e.g. 10 × 25k = 250k unsecured for a 0-collateral tier.
         uint256 creditLimit = reputationManager.calculateCreditLimit(msg.sender);
-        require(amount <= creditLimit, "Exceeds credit limit");
+        require(outstandingPrincipal[msg.sender] + amount <= creditLimit, "Exceeds credit limit");
 
         // [SECURITY-01] Enforce concurrent loan limit to prevent credit limit bypass
         uint256 activeLoans = _countActiveLoans(msg.sender);
@@ -347,6 +356,9 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
         // §S5 FIX: increment counter on transition to ACTIVE
         activeLoanCount[loan.borrower]++;
 
+        // [H-3 fix] Track aggregate outstanding principal for the credit check.
+        outstandingPrincipal[loan.borrower] += loan.amount;
+
         // Transfer funds to borrower
         usdcToken.safeTransfer(loan.borrower, loan.amount);
 
@@ -385,6 +397,9 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
 
         // §S5 FIX: decrement counter on transition out of ACTIVE
         activeLoanCount[loan.borrower]--;
+
+        // [H-3 fix] Principal repaid — free the borrower's aggregate exposure.
+        outstandingPrincipal[loan.borrower] -= loan.amount;
 
         // Update pool
         AgentPool storage pool = agentPools[loan.agentId];
@@ -508,6 +523,9 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
 
         // §S5 FIX: decrement counter on transition out of ACTIVE
         activeLoanCount[loan.borrower]--;
+
+        // [H-3 fix] Defaulted principal is no longer outstanding for credit purposes.
+        outstandingPrincipal[loan.borrower] -= loan.amount;
 
         // Record default with reputation manager
         reputationManager.recordDefault(loan.borrower, loan.amount);
