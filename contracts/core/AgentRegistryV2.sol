@@ -77,11 +77,12 @@ contract AgentRegistryV2 is ERC721URIStorage, Ownable, Pausable, EIP712 {
 
         uint256 agentId = _nextAgentId++;
 
-        // Mint the agent NFT to the caller
-        _safeMint(msg.sender, agentId);
-        _setTokenURI(agentId, agentURI);
-
-        // Store agent data
+        // [slither reentrancy-no-eth fix, pre-mainnet 2026-08] EFFECTS before
+        // INTERACTIONS. Agents may be smart contracts, so _safeMint()'s
+        // onERC721Received callback is attacker-reachable. Setting the
+        // registration state FIRST means a reentrant register() hits the
+        // "Agent already registered" guard above instead of minting a second
+        // orphaned agentId for the same address.
         agents[agentId] = Agent({
             agentId: agentId,
             owner: msg.sender,
@@ -90,16 +91,21 @@ contract AgentRegistryV2 is ERC721URIStorage, Ownable, Pausable, EIP712 {
             registrationTime: block.timestamp,
             isActive: true
         });
-
         addressToAgentId[msg.sender] = agentId;
+        _setTokenURI(agentId, agentURI); // storage-only in ERC721URIStorage; no external call
 
-        // Store custom metadata
+        // Store custom metadata (effects)
         for (uint256 i = 0; i < metadata.length; i++) {
             agentMetadata[agentId][metadata[i].key] = metadata[i].value;
             emit MetadataUpdated(agentId, metadata[i].key, metadata[i].value);
         }
 
         emit AgentRegistered(agentId, msg.sender, agentURI, block.timestamp);
+
+        // INTERACTION last: _safeMint may invoke the recipient's onERC721Received
+        // hook. All state is already written, so a reentrant call is a no-op
+        // (blocked by the "already registered" guard).
+        _safeMint(msg.sender, agentId);
 
         return agentId;
     }
