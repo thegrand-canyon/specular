@@ -219,6 +219,27 @@
     "status": "testnet",
     "description": "Development and testing environment"
   },
+  "arc-mainnet": {
+    "name": "Arc",
+    "chainId": null,
+    "network": "arc-mainnet",
+    "rpc": null,
+    "explorer": null,
+    "explorerApiUrl": null,
+    "usdc": {
+      "address": null,
+      "decimals": 6,
+      "type": "native"
+    },
+    "features": {
+      "cctp": true
+    },
+    "gasPrice": {
+      "type": "auto"
+    },
+    "status": "pending-config",
+    "description": "Circle Arc L1 mainnet. TODO: fill chainId / rpc / explorer / real USDC address from Circle's official docs before deploy (see ARC_MAINNET_DEPLOY_PREP.md). null values are intentional placeholders."
+  },
   "_metadata": {
     "version": "1.0.0",
     "lastUpdated": "2026-02-19",
