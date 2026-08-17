@@ -240,8 +240,16 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
         // Update position
         position.amount -= amount;
 
-        // Update pool
-        pool.totalLiquidity -= amount;
+        // Update pool.
+        // [audit 2026-08] totalLiquidity is a principal-accounting figure that can
+        // legitimately drift BELOW Σ position.amount after a lossy liquidation
+        // (which reduces totalLiquidity by the loss but leaves positions intact)
+        // or when interest paid into availableLiquidity is withdrawn as principal.
+        // A plain `-=` then underflow-reverts (solc 0.8.20 checked math), bricking
+        // withdrawals of liquidity that demonstrably exists in availableLiquidity.
+        // Saturate. availableLiquidity is the solvency-critical figure and is
+        // guarded by the require above, so it uses a plain subtraction.
+        pool.totalLiquidity = amount >= pool.totalLiquidity ? 0 : pool.totalLiquidity - amount;
         pool.availableLiquidity -= amount;
 
         // [H-2 FIX 2026-07] Free the lender's slot once their balance hits zero.
@@ -533,9 +541,13 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
         // Seize collateral (what we actually recover)
         pool.availableLiquidity += recovered;
 
-        // Reduce totalLiquidity by the unrecovered loss so it reflects real pool value
+        // Reduce totalLiquidity by the unrecovered loss so it reflects real pool
+        // value. [audit 2026-08] Saturate — the loss can exceed the (already
+        // drifted) totalLiquidity, and a plain `-=` would underflow-revert and
+        // brick liquidation permanently (loan stuck ACTIVE, default penalty
+        // evaded). totalLiquidity is not solvency-critical (availableLiquidity is).
         if (loss > 0) {
-            pool.totalLiquidity -= loss;
+            pool.totalLiquidity = loss >= pool.totalLiquidity ? 0 : pool.totalLiquidity - loss;
         }
 
         // Update loaned amount
@@ -910,10 +922,15 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
             unclaimedInterest += positions[agentId][lenders[i]].earnedInterest;
         }
 
-        // Update pool state
+        // Update pool state.
+        // [audit 2026-08] Saturate: if actualLoaned exceeds totalLiquidity +
+        // unclaimedInterest (possible once totalLiquidity has drifted below the
+        // loaned principal), a plain subtraction underflow-reverts — bricking the
+        // very emergency tool an operator would reach for on an underwater pool.
         uint256 oldLoaned = pool.totalLoaned;
         pool.totalLoaned = actualLoaned;
-        pool.availableLiquidity = pool.totalLiquidity + unclaimedInterest - actualLoaned;
+        uint256 backing = pool.totalLiquidity + unclaimedInterest;
+        pool.availableLiquidity = actualLoaned >= backing ? 0 : backing - actualLoaned;
 
         emit PoolAccountingReset(agentId, oldLoaned, actualLoaned, pool.availableLiquidity);
     }
