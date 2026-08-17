@@ -87,15 +87,18 @@ describe("V6 property-based fuzz", function () {
             }
         }
 
-        // §S1: Σ pool.availableLiquidity ≤ usdc.balanceOf(MP)
+        // §S1: Σ pool.availableLiquidity + accumulatedFees ≤ usdc.balanceOf(MP)
+        // [audit 2026-08] fees MUST be in this sum — omitting it is exactly what
+        // let the H-1 phantom-liquidity bug hide from the fuzz originally.
         let sumAvail = 0n, sumLoaned = 0n;
         for (const aid of agentIds) {
             const p = await v6.getAgentPool(aid);
             sumAvail += p.availableLiquidity;
             sumLoaned += p.totalLoaned;
         }
+        const fees = await v6.accumulatedFees();
         const mpBal = await usdc.balanceOf(await v6.getAddress());
-        expect(sumAvail, `Σ avail ${sumAvail} must be ≤ mpBal ${mpBal}`).to.be.lte(mpBal);
+        expect(sumAvail + fees, `Σ avail ${sumAvail} + fees ${fees} must be ≤ mpBal ${mpBal}`).to.be.lte(mpBal);
 
         // §S5: every agent's activeLoanCount must equal the live count of ACTIVE loans
         for (let i = 0; i < agents.length; i++) {

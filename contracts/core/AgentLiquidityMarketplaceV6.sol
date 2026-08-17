@@ -97,6 +97,14 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
     // agentId and would otherwise transfer with the NFT). false = current behavior.
     bool public bindBorrowToPoolCreator;
 
+    // [F-C lever 2026-08] Minimum supply amount. poolLenders is hard-capped at
+    // MAX_LENDERS_PER_POOL to bound _distributeInterest gas; with no minimum, an
+    // attacker can occupy all 50 slots with 1-base-unit deposits from 50 Sybil
+    // addresses and (never withdrawing) permanently lock out real lenders. A
+    // minimum forces a squatter to LOCK minSupplyAmount × 50 per pool. 0 =
+    // disabled (current behavior); set > 0 at launch. Owner-tunable.
+    uint256 public minSupplyAmount;
+
     // Discovery: ordered list of all agent IDs that have created pools
     uint256[] public agentPoolIds;
 
@@ -191,6 +199,11 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
      */
     function supplyLiquidity(uint256 agentId, uint256 amount) external nonReentrant whenNotPaused {
         require(amount > 0, "Amount must be > 0");
+        // [F-C lever] Raise the cost of lender-slot squatting when enabled. Only
+        // gates a NEW slot: an existing lender may top up by any amount.
+        if (minSupplyAmount > 0 && !isInPoolLenders[agentId][msg.sender]) {
+            require(amount >= minSupplyAmount, "Below minimum supply");
+        }
         require(agentPools[agentId].isActive, "Pool not active");
 
         AgentPool storage pool = agentPools[agentId];
@@ -255,12 +268,17 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
         // [H-2 FIX 2026-07] Free the lender's slot once their balance hits zero.
         // Previously the §B1 flag was set permanently and withdraw never removed
         // the entry, so an attacker could supply→withdraw from 50 addresses to
-        // permanently occupy MAX_LENDERS_PER_POOL and lock out all future lenders
-        // (permanent griefing DoS on the agent's pool). Removing here keeps the
-        // §B1 no-duplicate guarantee: a later re-supply sees isInPoolLenders=false
-        // and pushes exactly one entry. Unclaimed earnedInterest is unaffected —
-        // claimInterest reads the position directly, not poolLenders membership.
-        if (position.amount == 0) {
+        // permanently occupy MAX_LENDERS_PER_POOL and lock out all future lenders.
+        // Removing here keeps the §B1 no-duplicate guarantee: a later re-supply
+        // sees isInPoolLenders=false and pushes exactly one entry.
+        // [audit 2026-08] Only remove when there is ALSO no unclaimed interest.
+        // resetPoolAccounting sums earnedInterest over poolLenders to rebuild
+        // availableLiquidity; removing a lender who still has earnedInterest would
+        // drop their interest from that sum → understated availableLiquidity →
+        // their claimInterest reverts "Drain underflow" (frozen funds). A lender
+        // who withdraws all principal but has interest stays until they claim;
+        // claimInterest then removes them (see below), so no slot is leaked.
+        if (position.amount == 0 && position.earnedInterest == 0) {
             _removePoolLender(agentId, msg.sender);
         }
 
@@ -670,6 +688,14 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
         // available", producing the phantom liquidity drift documented in the audit.
         pool.availableLiquidity -= interest;
 
+        // [audit 2026-08] If this lender has now fully exited (no principal, and
+        // interest just zeroed), free their poolLenders slot — the counterpart to
+        // the withdraw-side removal, so a lender who withdrew principal before
+        // claiming interest doesn't leave a permanent dust slot.
+        if (position.amount == 0) {
+            _removePoolLender(agentId, msg.sender);
+        }
+
         usdcToken.safeTransfer(msg.sender, interest);
         emit InterestClaimed(agentId, msg.sender, interest);
     }
@@ -862,10 +888,13 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
     /**
      * @notice [M-2 lever] Set the minimum loan hold time (seconds) required for
      *         an on-time repayment to earn reputation. 0 disables the gate.
-     *         Capped at MAX_LOAN_DURATION so it can never exceed a loan's term.
+     * @dev [audit 2026-08] Capped at MIN_LOAN_DURATION (7d), not MAX. A minHold
+     *      above the shortest allowed loan term would silently deny reputation to
+     *      every loan repaid at its (shorter) term — a foot-gun. Bounding it to
+     *      MIN_LOAN_DURATION guarantees any loan held to term always qualifies.
      */
     function setMinHoldForReputationReward(uint256 newMinHold) external onlyOwner {
-        require(newMinHold <= MAX_LOAN_DURATION, "Min hold exceeds max duration");
+        require(newMinHold <= MIN_LOAN_DURATION, "Min hold exceeds min loan duration");
         uint256 old = minHoldForReputationReward;
         minHoldForReputationReward = newMinHold;
         emit MinHoldForReputationRewardChanged(old, newMinHold);
@@ -879,6 +908,19 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
     function setBindBorrowToPoolCreator(bool enabled) external onlyOwner {
         bindBorrowToPoolCreator = enabled;
         emit BindBorrowToPoolCreatorChanged(enabled);
+    }
+
+    /**
+     * @notice [F-C lever] Set the minimum amount required to OPEN a new lender
+     *         slot in a pool (existing lenders may top up by any amount). Raises
+     *         the capital an attacker must lock to squat the MAX_LENDERS_PER_POOL
+     *         cap. 0 disables. Capped so it can't lock out ordinary lenders.
+     */
+    function setMinSupplyAmount(uint256 newMin) external onlyOwner {
+        require(newMin <= 100 * 1e6, "Min supply too high (>100 USDC)");
+        uint256 old = minSupplyAmount;
+        minSupplyAmount = newMin;
+        emit MinSupplyAmountChanged(old, newMin);
     }
 
     /**
@@ -972,4 +1014,5 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
     event PlatformFeeRateChanged(uint256 oldRate, uint256 newRate);
     event MinHoldForReputationRewardChanged(uint256 oldValue, uint256 newValue);
     event BindBorrowToPoolCreatorChanged(bool enabled);
+    event MinSupplyAmountChanged(uint256 oldValue, uint256 newValue);
 }

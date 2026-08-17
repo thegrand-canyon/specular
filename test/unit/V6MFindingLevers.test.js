@@ -60,8 +60,9 @@ describe("V6 — M-finding protective levers (M-1/M-2)", function () {
             await v6.connect(agent).repayLoan(2);
             expect(await reputation["getReputationScore(address)"](agent.address)).to.be.gt(0n);
         });
-        it("rejects a min hold above the max loan duration", async () => {
-            await expect(v6.setMinHoldForReputationReward(400 * 24 * 60 * 60)).to.be.revertedWith("Min hold exceeds max duration");
+        it("rejects a min hold above the min loan duration (7 days)", async () => {
+            // [audit 2026-08] cap tightened from MAX to MIN loan duration.
+            await expect(v6.setMinHoldForReputationReward(8 * 24 * 60 * 60)).to.be.revertedWith("Min hold exceeds min loan duration");
         });
         it("only owner can set it", async () => {
             await expect(v6.connect(agent).setMinHoldForReputationReward(3600)).to.be.reverted;

@@ -21,6 +21,12 @@ contract ReputationManagerV3 is Ownable {
     mapping(uint256 => uint256) private agentReputation; // agentId => score (0-1000)
     mapping(address => uint256) private agentIdByAddress;
 
+    // [audit 2026-08 F1/F-G] Explicit init flag. Gating initialization on
+    // score==0 conflated "never initialized" with "defaulted down to 0"
+    // (recordDefault floors the score at 0), letting a defaulter re-initialize
+    // back to 100 and erase the penalty. Track initialization separately.
+    mapping(uint256 => bool) public initialized; // agentId => has been initialized
+
     // Loan tracking
     mapping(uint256 => uint256) public totalBorrowed; // agentId => total amount borrowed
     mapping(uint256 => uint256) public totalRepaid;   // agentId => total amount repaid
@@ -119,13 +125,14 @@ contract ReputationManagerV3 is Ownable {
      */
     function initializeReputation(uint256 agentId) external {
         require(agentId != 0, "Invalid agent ID");
-        require(agentReputation[agentId] == 0, "Already initialized");
+        require(!initialized[agentId], "Already initialized");
         // Verify caller owns the agent NFT — prevents front-running and identity hijacking
         require(
             agentRegistry.addressToAgentId(msg.sender) == agentId,
             "Caller is not the owner of this agent"
         );
 
+        initialized[agentId] = true;
         agentReputation[agentId] = 100; // Start at 100
         agentIdByAddress[msg.sender] = agentId;
 
@@ -138,8 +145,9 @@ contract ReputationManagerV3 is Ownable {
     function initializeReputation() external {
         uint256 agentId = agentRegistry.addressToAgentId(msg.sender);
         require(agentId != 0, "Not an agent");
-        require(agentReputation[agentId] == 0, "Already initialized");
+        require(!initialized[agentId], "Already initialized");
 
+        initialized[agentId] = true;
         agentReputation[agentId] = 100;
         agentIdByAddress[msg.sender] = agentId;
 

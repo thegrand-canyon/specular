@@ -299,6 +299,15 @@ contract AgentRegistryV2 is ERC721URIStorage, Ownable, Pausable, EIP712 {
         // Update mappings on transfer
         if (from != address(0)) {
             delete addressToAgentId[from];
+            // [audit 2026-08 F3] On a TRANSFER (not mint), reject a recipient that
+            // already owns a different agent. addressToAgentId is 1:1 and is the
+            // address→agentId lookup the marketplace/reputation rely on; overwriting
+            // it would silently orphan the recipient's existing agent (its
+            // reputation/pool/credit become unreachable). Mint is exempt: from==0,
+            // and register() already set the mapping via CEI before _safeMint.
+            if (to != address(0)) {
+                require(addressToAgentId[to] == 0, "Recipient already owns an agent");
+            }
         }
         if (to != address(0)) {
             addressToAgentId[to] = tokenId;
