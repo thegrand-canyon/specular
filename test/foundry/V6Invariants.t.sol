@@ -8,10 +8,16 @@ import "../../contracts/core/ReputationManagerV3.sol";
 import "../../contracts/tokens/MockUSDC.sol";
 
 /**
- * @title V6Invariants
- * @notice Foundry invariant tests for AgentLiquidityMarketplaceV6.
- *         The fuzzer drives random user operations through a Handler contract;
- *         after every call sequence, Foundry asserts the invariant() functions.
+ * @title V6Invariants (strengthened 2026-08 self-audit)
+ * @notice Foundry stateful invariant tests. Upgrades vs the original:
+ *   - handler now includes LIQUIDATE (with time-warp) and WARP ops — the paths
+ *     that hid the A1 totalLiquidity-underflow bug;
+ *   - the agent is pumped to the 0%-collateral tier so liquidations produce REAL
+ *     losses (100%-collateral loans liquidate at zero loss and never exercise the
+ *     totalLiquidity loss path);
+ *   - EXACT solvency invariant (balance == Σ availableLiquidity + fees + Σ active
+ *     collateral), not the weak `Σ avail ≤ balance`;
+ *   - H-3 invariant (outstandingPrincipal == Σ active principal per borrower).
  */
 contract V6InvariantTest is Test {
     AgentLiquidityMarketplaceV6 public v6;
@@ -33,14 +39,21 @@ contract V6InvariantTest is Test {
         reputation.authorizePool(address(v6));
         vm.stopPrank();
 
-        // Register the agent
         vm.prank(agent);
         AgentRegistryV2.MetadataEntry[] memory empty;
         registry.register("ipfs://test", empty);
         vm.prank(agent);
         v6.createAgentPool();
 
-        // Mint USDC + approvals
+        // Pump the agent into the 0%-collateral tier (score >= 600) so that
+        // defaults produce real losses that exercise the totalLiquidity path.
+        vm.startPrank(owner);
+        reputation.authorizePool(owner);
+        for (uint256 i = 0; i < 65; i++) {
+            reputation.recordLoanCompletion(agent, 1e6, true);
+        }
+        vm.stopPrank();
+
         vm.prank(owner);
         usdc.mint(agent, 1e12); // 1M USDC
         vm.prank(agent);
@@ -52,94 +65,96 @@ contract V6InvariantTest is Test {
             usdc.approve(address(v6), type(uint256).max);
         }
 
-        handler = new Handler(v6, registry, usdc, agent, lenders);
+        handler = new Handler(v6, registry, usdc, agent, lenders, owner);
         targetContract(address(handler));
     }
 
-    /// §B1 invariant: poolLenders[agentId] never contains duplicates.
+    /// §B1: poolLenders[agentId] never contains duplicates.
     function invariant_B1_no_duplicate_lenders() public view {
         uint256[] memory pools = handler.knownPools();
         for (uint256 p = 0; p < pools.length; p++) {
             uint256 aid = pools[p];
-            (, , , , , , uint256 lc) = v6.getAgentPool(aid);
-            address[] memory seen = new address[](lc);
-            uint256 seenCount = 0;
-            for (uint256 j = 0; j < lc; j++) {
-                address l = v6.poolLenders(aid, j);
-                for (uint256 k = 0; k < seenCount; k++) {
-                    require(seen[k] != l, "B1: duplicate found");
+            (, , , , , , uint256 count) = v6.getAgentPool(aid);
+            for (uint256 i = 0; i < count; i++) {
+                address a = v6.poolLenders(aid, i);
+                for (uint256 j = i + 1; j < count; j++) {
+                    require(a != v6.poolLenders(aid, j), "B1: duplicate lender");
                 }
-                seen[seenCount++] = l;
             }
         }
     }
 
-    /// §B1 flag invariant: addr in poolLenders[aid] iff isInPoolLenders[aid][addr] == true.
+    /// §B1 flag: address in poolLenders ⟺ isInPoolLenders true.
     function invariant_B1_flag_consistent() public view {
         uint256[] memory pools = handler.knownPools();
         for (uint256 p = 0; p < pools.length; p++) {
             uint256 aid = pools[p];
-            (, , , , , , uint256 lc) = v6.getAgentPool(aid);
-            for (uint256 j = 0; j < lc; j++) {
-                address l = v6.poolLenders(aid, j);
-                require(v6.isInPoolLenders(aid, l), "B1: flag missing");
+            (, , , , , , uint256 count) = v6.getAgentPool(aid);
+            for (uint256 i = 0; i < count; i++) {
+                require(v6.isInPoolLenders(aid, v6.poolLenders(aid, i)), "B1: flag false for member");
             }
         }
     }
 
-    /// §S1 invariant: Σ pool.availableLiquidity ≤ usdc.balanceOf(MP).
-    function invariant_S1_solvency() public view {
+    /// EXACT solvency: contract USDC == Σ availableLiquidity + fees + Σ active collateral.
+    function invariant_S1_solvency_exact() public view {
         uint256[] memory pools = handler.knownPools();
         uint256 sumAvail = 0;
         for (uint256 p = 0; p < pools.length; p++) {
             (, , uint256 avail, , , , ) = v6.getAgentPool(pools[p]);
             sumAvail += avail;
         }
-        uint256 mpBal = usdc.balanceOf(address(v6));
-        require(sumAvail <= mpBal, "S1: sumAvail > mpBal");
+        uint256 fees = v6.accumulatedFees();
+        uint256 sumCollateral = 0;
+        uint256 n = v6.nextLoanId();
+        for (uint256 id = 1; id < n; id++) {
+            (, , , , uint256 coll, , , , , AgentLiquidityMarketplaceV6.LoanState st) = v6.loans(id);
+            if (st == AgentLiquidityMarketplaceV6.LoanState.ACTIVE) sumCollateral += coll;
+        }
+        require(usdc.balanceOf(address(v6)) == sumAvail + fees + sumCollateral, "S1: exact solvency broken");
     }
 
-    /// §S5 invariant: no agent has activeLoanCount > MAX_ACTIVE_LOANS_PER_AGENT.
-    function invariant_S5_cap_respected() public view {
-        uint256 max = v6.MAX_ACTIVE_LOANS_PER_AGENT();
+    /// H-3: outstandingPrincipal[borrower] == Σ ACTIVE loan principal for that borrower.
+    function invariant_H3_outstanding_principal() public view {
         address[] memory borrowers = handler.knownBorrowers();
-        for (uint256 i = 0; i < borrowers.length; i++) {
-            require(v6.activeLoanCount(borrowers[i]) <= max, "S5: counter > cap");
+        uint256 n = v6.nextLoanId();
+        for (uint256 b = 0; b < borrowers.length; b++) {
+            uint256 sum = 0;
+            for (uint256 id = 1; id < n; id++) {
+                (, address borrower, , uint256 amount, , , , , , AgentLiquidityMarketplaceV6.LoanState st) = v6.loans(id);
+                if (borrower == borrowers[b] && st == AgentLiquidityMarketplaceV6.LoanState.ACTIVE) sum += amount;
+            }
+            require(v6.outstandingPrincipal(borrowers[b]) == sum, "H-3: outstandingPrincipal mismatch");
         }
     }
 
-    /// §S5 integrity: counter equals the array walk count.
-    function invariant_S5_counter_matches_array() public view {
+    /// §S5: activeLoanCount within cap and equal to the live ACTIVE count.
+    function invariant_S5_counter() public view {
+        uint256 max = v6.MAX_ACTIVE_LOANS_PER_AGENT();
         address[] memory borrowers = handler.knownBorrowers();
-        for (uint256 i = 0; i < borrowers.length; i++) {
-            uint256 counter = v6.activeLoanCount(borrowers[i]);
+        uint256 n = v6.nextLoanId();
+        for (uint256 b = 0; b < borrowers.length; b++) {
+            require(v6.activeLoanCount(borrowers[b]) <= max, "S5: over cap");
             uint256 actual = 0;
-            // Bounded for gas, but high enough that ultra-fuzz can't exhaust the
-            // agentLoans[] array within a single 512-depth run (each requestLoan
-            // pushes one entry; the cap of 10 ACTIVE loans limits how many can be
-            // active at any moment but the lifetime array grows unbounded).
-            for (uint256 j = 0; j < 5000; j++) {
-                try v6.agentLoans(borrowers[i], j) returns (uint256 lid) {
-                    (, , , , , , , , , AgentLiquidityMarketplaceV6.LoanState st) = v6.loans(lid);
-                    if (st == AgentLiquidityMarketplaceV6.LoanState.ACTIVE) actual++;
-                } catch {
-                    break;
-                }
+            for (uint256 id = 1; id < n; id++) {
+                (, address borrower, , , , , , , , AgentLiquidityMarketplaceV6.LoanState st) = v6.loans(id);
+                if (borrower == borrowers[b] && st == AgentLiquidityMarketplaceV6.LoanState.ACTIVE) actual++;
             }
-            require(counter == actual, "S5: counter mismatch with array walk");
+            require(v6.activeLoanCount(borrowers[b]) == actual, "S5: counter mismatch");
         }
     }
 }
 
 /**
  * @title Handler
- * @notice Drives random sequences of user operations against V6 for the invariant fuzzer.
+ * @notice Drives random user-op sequences, now including liquidation + time warp.
  */
 contract Handler is Test {
     AgentLiquidityMarketplaceV6 public v6;
     AgentRegistryV2 public registry;
     MockUSDC public usdc;
     address public agent;
+    address public owner;
     address[5] public lenders;
 
     uint256[] internal _activeLoanIds;
@@ -151,12 +166,14 @@ contract Handler is Test {
         AgentRegistryV2 _reg,
         MockUSDC _usdc,
         address _agent,
-        address[5] memory _lenders
+        address[5] memory _lenders,
+        address _owner
     ) {
         v6 = _v6;
         registry = _reg;
         usdc = _usdc;
         agent = _agent;
+        owner = _owner;
         lenders = _lenders;
         _knownPools.push(1);
         _knownBorrowers.push(_agent);
@@ -187,7 +204,7 @@ contract Handler is Test {
         (, , uint256 avail, , , , ) = v6.getAgentPool(1);
         if (avail < 1e6) return;
         if (v6.activeLoanCount(agent) >= 10) return;
-        uint256 amt = (uint256(amountSeed) % 5 + 1) * 1e5; // 0.1 - 0.5 USDC
+        uint256 amt = (uint256(amountSeed) % 20 + 1) * 1e6; // 1 - 20 USDC (0% tier, no collateral)
         if (amt > avail) return;
         uint256 dur = 7 + (uint256(durSeed) % 30);
         vm.prank(agent);
@@ -207,11 +224,30 @@ contract Handler is Test {
         } catch {}
     }
 
+    /// Liquidate a (possibly overdue) active loan — warps past endTime first.
+    function liquidateLoan(uint8 idxSeed) external {
+        if (_activeLoanIds.length == 0) return;
+        uint256 idx = uint256(idxSeed) % _activeLoanIds.length;
+        uint256 lid = _activeLoanIds[idx];
+        (, , , , , , , uint256 endTime, , AgentLiquidityMarketplaceV6.LoanState st) = v6.loans(lid);
+        if (st != AgentLiquidityMarketplaceV6.LoanState.ACTIVE) return;
+        if (block.timestamp <= endTime) vm.warp(endTime + 1);
+        vm.prank(owner);
+        try v6.liquidateLoan(lid) {
+            _activeLoanIds[idx] = _activeLoanIds[_activeLoanIds.length - 1];
+            _activeLoanIds.pop();
+        } catch {}
+    }
+
     function claim(uint8 lenderIdx) external {
         address lender = lenders[lenderIdx % 5];
         (, uint256 earnedInt, ) = v6.positions(1, lender);
         if (earnedInt == 0) return;
         vm.prank(lender);
         try v6.claimInterest(1) {} catch {}
+    }
+
+    function warpTime(uint16 secs) external {
+        vm.warp(block.timestamp + (uint256(secs) % (30 days)) + 1);
     }
 }
