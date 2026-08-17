@@ -66,9 +66,15 @@ At launch, fill from Circle's official mainnet docs and set in `.env`:
 The deploy script hard-refuses: the testnet mock USDC, a chainId that doesn't
 match the RPC, and any USDC handle without 6 decimals (blocks the native view).
 
-## Gate 1 — External audit of the fixed V6 (RECOMMENDED)
+## Gate 1 — External audit of the fixed V6 (REQUIRED)
 
-Six contract changes since the WORLDCLASS audit (2026-07/08), all with regression
+An **internal self-audit (2026-08)** ran first — 4 adversarial review lenses +
+an exact-solvency fuzz + slither — and fixed 1 HIGH (liquidation-underflow) + 4
+MEDIUM. See `SELF_AUDIT_2026-08.md`. It also surfaced **D1 (reputation-minting
+economics)** as a CRITICAL design risk no lever fixes — the external audit's #1
+item. The self-audit does NOT replace the external audit.
+
+Contract changes since the WORLDCLASS audit (2026-07/08), all with regression
 tests but **not externally re-audited**:
 - [ ] H-1 phantom-liquidity fix (`_distributeInterest` decrements availableLiquidity on fee routing)
 - [ ] H-2 lender-slot reclaim (`_removePoolLender` on full withdrawal)
@@ -104,6 +110,9 @@ Owner decisions for the Arc mainnet launch (all three protections ON):
       hold for their term) while forcing ~50 days to farm to the 0-collateral
       tier. Tunable later via `setMinHoldForReputationReward`. **→ confirm the
       exact seconds value before deploy.**
+- [x] **F-C squat lever** → `SPECULAR_MIN_SUPPLY=<base units>`. Minimum to open a
+      new lender slot; forces a squatter to lock `minSupply × 50` per pool.
+      **Recommended: `1000000` (1 USDC)**. Default 0 = off. **→ set at launch.**
 - [x] **Faucet ENABLED**. Still to set at/after deploy:
       - `FAUCET_MAX_ELIGIBLE_AGENT_ID=<N>` — initial eligible cohort size (start
         small, raise as needed). 0 = off, so this MUST be set > 0 to activate.
@@ -117,6 +126,7 @@ Deploy invocation with the confirmed config (once Gate 0/1 clear):
 DEPLOY_CONFIRM=YES \
 SPECULAR_BIND_BORROW=1 \
 SPECULAR_MIN_HOLD_SECONDS=86400 \
+SPECULAR_MIN_SUPPLY=1000000 \
 FAUCET_MAX_ELIGIBLE_AGENT_ID=<N> \
 node scripts/deploy-arc-mainnet.js
 ```
