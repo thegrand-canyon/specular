@@ -18,26 +18,53 @@ by default), `arcMainnet` hardhat network, `chains.json` arc-mainnet entry.
 | Full unit suite | ✅ 484 passing (+ H-1/H-2/H-3/M-3/lever regression tests) |
 | Slither run + triaged | ✅ register() reentrancy fixed; remaining High/Med are OZ false-positives / accepted (see below) |
 | Deploy script + guards | ✅ `scripts/deploy-arc-mainnet.js` (dry-run default, refuses mock USDC / chain mismatch / non-6-dec token) |
-| **Arc mainnet network params** | ❌ **BLOCKER — chainId / RPC / real USDC address must be confirmed** |
-| **External audit of fixed V6** | ❌ **RECOMMENDED before mainnet money** (6 fixes since WORLDCLASS) |
-| Deployer funded on Arc (native gas) | ❌ pending |
+| **Arc mainnet exists** | ❌ **HARD BLOCKER — Arc mainnet NOT launched yet** (Circle: "testnet only", 2026-08). Everything below is staged for launch. |
+| **External audit of fixed V6** | ❌ **REQUIRED before mainnet money** (owner decision, 2026-08) — 6 fixes since WORLDCLASS |
+| Launch config | ✅ decided: M-1 on, M-2 on (≈1 day), faucet on |
+| Deployer funded on Arc (USDC = gas) | ⏳ at launch |
+
+**Two gating blockers, both outside code:** (1) Arc mainnet must launch, (2) an
+external re-audit of the 6 post-WORLDCLASS fixes must pass. The repo side is
+ready: fixed contracts, deploy script + guards, network scaffolding, this runbook.
 
 ---
 
-## Gate 0 — Confirm Arc Mainnet network params (BLOCKER)
+## Gate 0 — Arc Mainnet network params (HARD BLOCKER: mainnet not live)
 
-Fill these from **Circle's official Arc documentation** (do not guess — a wrong
-value on mainnet is catastrophic), then set in `.env`:
+**Verified 2026-08 against Circle's official docs (docs.arc.io, circlefin/skills):
+Arc MAINNET HAS NOT LAUNCHED. "Mainnet addresses are not yet available … Arc is
+testnet only."** So this deploy cannot happen until Circle ships Arc mainnet.
+Everything else here is staged and ready for that moment.
 
-- [ ] `ARC_MAINNET_CHAIN_ID` — Arc mainnet chain id
-- [ ] `ARC_MAINNET_RPC_URL` — official/production RPC
-- [ ] `ARC_MAINNET_USDC` — **real** USDC token address on Arc (6 decimals). On
-      Arc, USDC is the native/canonical asset — confirm the exact contract.
+Confirmed Arc facts (testnet today; confirm the mainnet equivalents at launch):
+- **Chain ID (testnet):** `5042002` (`0x4CEF52`). Mainnet id: TBD.
+- **RPC (testnet):** `https://rpc.testnet.arc.network` (official) — note the repo
+  currently uses `https://arc-testnet.drpc.org`, a valid third-party endpoint.
+- **USDC is a DUAL-MODEL asset** (same funds, two views):
+  - Native gas token — **18 decimals** — used for `msg.value` / fees.
+  - **ERC-20 interface — 6 decimals — testnet address `0x3600000000000000000000000000000000000000`.**
+    This is the view the marketplace uses (`safeTransferFrom`/`approve`).
+  - 1 USDC = 1e6 ERC-20 base units = 1e18 native. **Never mix the two.**
+- **Gas is paid in USDC (native view).** The deployer just needs USDC — no
+  separate gas token. `deploy-arc-mainnet.js`'s native-balance check ≈ USDC
+  (0.01 "native" ≈ 0.01 USDC).
+
+**Implication for the contracts:** NO changes needed. The marketplace's ERC-20
+`safeTransferFrom`/`approve` path binds to the 6-decimal USDC ERC-20 view; the
+deploy script's "must be 6 decimals" guard already selects that view and would
+reject the 18-decimal native handle. The Arc TESTNET config in this repo uses a
+deployed MockUSDC (`0xf2807…`) rather than the canonical `0x3600…0000` ERC-20 —
+for mainnet, use Arc's real USDC ERC-20 address.
+
+At launch, fill from Circle's official mainnet docs and set in `.env`:
+- [ ] `ARC_MAINNET_CHAIN_ID` — Arc **mainnet** chain id (not 5042002)
+- [ ] `ARC_MAINNET_RPC_URL` — official mainnet RPC
+- [ ] `ARC_MAINNET_USDC` — the **6-decimal ERC-20** USDC address on Arc mainnet
+      (likely the system address `0x3600…0000`, but CONFIRM — do not assume)
 - [ ] Explorer URL + verification API (for `chains.json` + `hardhat verify`)
-- [ ] Native gas token + how to fund the deployer
 
 The deploy script hard-refuses: the testnet mock USDC, a chainId that doesn't
-match the RPC, and any USDC without 6 decimals.
+match the RPC, and any USDC handle without 6 decimals (blocks the native view).
 
 ## Gate 1 — External audit of the fixed V6 (RECOMMENDED)
 
@@ -65,16 +92,34 @@ tests but **not externally re-audited**:
 - [ ] Dry run: `node scripts/deploy-arc-mainnet.js` (with Gate-0 env set) — validates
       chain/USDC/balance and prints a gas estimate. No broadcast.
 
-## Gate 3 — Launch config decisions
+## Gate 3 — Launch config decisions (CONFIRMED 2026-08)
 
-- [ ] **M-1 lever** (`SPECULAR_BIND_BORROW=1`)? Restricts borrowing to a pool's
-      creator (a transferred agent NFT can't borrow against lenders). Default off.
-- [ ] **M-2 lever** (`SPECULAR_MIN_HOLD_SECONDS=N`)? Min loan hold before an
-      on-time repay earns reputation (blunts farming). Default off (0).
-- [ ] **Faucet** (`FAUCET_MAX_ELIGIBLE_AGENT_ID=N`, `setClaimAmount`)? Default
-      grants disabled (max=0). Fund the faucet with USDC if enabling.
+Owner decisions for the Arc mainnet launch (all three protections ON):
+
+- [x] **M-1 lever ON** → `SPECULAR_BIND_BORROW=1`. Borrowing restricted to a
+      pool's creator; a transferred agent NFT can't borrow against lenders.
+- [x] **M-2 lever ON** → `SPECULAR_MIN_HOLD_SECONDS=<value>`. On-time repayments
+      earn reputation only if the loan was held long enough. **Recommended
+      starting value: `86400` (1 day)** — barely affects legitimate agents (who
+      hold for their term) while forcing ~50 days to farm to the 0-collateral
+      tier. Tunable later via `setMinHoldForReputationReward`. **→ confirm the
+      exact seconds value before deploy.**
+- [x] **Faucet ENABLED**. Still to set at/after deploy:
+      - `FAUCET_MAX_ELIGIBLE_AGENT_ID=<N>` — initial eligible cohort size (start
+        small, raise as needed). 0 = off, so this MUST be set > 0 to activate.
+      - `setClaimAmount(<amount>)` — grant per agent (default 10 USDC, max 100).
+      - **Fund the faucet** with USDC (`maxEligible × claimAmount` headroom).
 - [ ] **Owner**: deploy from, or transfer all 4 contracts to, the secure wallet
       `0x800e305A0caDdE6289dFDFEDF38218f45C06F72C`.
+
+Deploy invocation with the confirmed config (once Gate 0/1 clear):
+```bash
+DEPLOY_CONFIRM=YES \
+SPECULAR_BIND_BORROW=1 \
+SPECULAR_MIN_HOLD_SECONDS=86400 \
+FAUCET_MAX_ELIGIBLE_AGENT_ID=<N> \
+node scripts/deploy-arc-mainnet.js
+```
 
 ---
 
