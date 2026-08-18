@@ -113,4 +113,18 @@ describe("V6 self-audit fixes (2026-08)", function () {
         });
     });
 
+
+    describe("D5 — centralization hardening", () => {
+        it("renounceOwnership reverts (can't brick owner levers)", async () => {
+            await expect(v6.renounceOwnership()).to.be.revertedWith("Ownership cannot be renounced");
+        });
+        it("ownership transfer is two-step (Ownable2Step)", async () => {
+            await v6.transferOwnership(other.address);
+            // Not yet owner until accepted.
+            expect(await v6.owner()).to.equal(owner.address);
+            expect(await v6.pendingOwner()).to.equal(other.address);
+            await v6.connect(other).acceptOwnership();
+            expect(await v6.owner()).to.equal(other.address);
+        });
+    });
 });

@@ -108,15 +108,19 @@ describe("V6 coverage gap-fillers", function () {
                 .to.be.revertedWithCustomError(v6, "EnforcedPause");
         });
 
-        it("liquidateLoan still works when paused (intentional — recovery path)", async () => {
+        it("liquidateLoan is blocked while paused (D5: no forced default while borrower can't repay)", async () => {
             await v6.connect(lender).supplyLiquidity(1, USDC(500));
             await v6.connect(agent).requestLoan(USDC(100), 7);
             await time.increase(8 * 24 * 3600);
             await v6.pause();
-            // liquidateLoan does NOT have whenNotPaused — by design
+            // [audit 2026-08 D5] liquidateLoan is now whenNotPaused. While paused,
+            // repayLoan is also blocked, so a borrower cannot be force-defaulted
+            // during a window where they have no way to cure.
+            await expect(v6.liquidateLoan(1)).to.be.revertedWithCustomError(v6, "EnforcedPause");
+            // After unpausing, liquidation works again.
+            await v6.unpause();
             await v6.liquidateLoan(1);
-            const loan = await v6.loans(1);
-            expect(Number(loan.state)).to.equal(3); // DEFAULTED
+            expect(Number((await v6.loans(1)).state)).to.equal(3); // DEFAULTED
         });
 
         it("unpause restores normal operation", async () => {

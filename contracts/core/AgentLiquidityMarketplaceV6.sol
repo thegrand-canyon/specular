@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -28,7 +29,7 @@ import "./ReputationManagerV3.sol";
  *
  * NOT independently audited. Do not deploy to Base mainnet without external review.
  */
-contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
+contract AgentLiquidityMarketplaceV6 is Ownable2Step, ReentrancyGuard, Pausable {
     using SafeERC20 for IERC20;
 
     // State variables (set in constructor, immutable for gas savings — slither finding)
@@ -158,6 +159,16 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
         agentRegistry = AgentRegistryV2(_agentRegistry);
         reputationManager = ReputationManagerV3(_reputationManager);
         usdcToken = IERC20(_usdcToken);
+    }
+
+    /**
+     * @notice [audit 2026-08 D5] Ownership cannot be renounced. This contract has
+     *         owner-only levers (liquidate, withdrawFees, migration finalize,
+     *         pause/unpause, protective levers); renouncing would permanently
+     *         brick them and could strand funds. Use Ownable2Step transfer instead.
+     */
+    function renounceOwnership() public view override onlyOwner {
+        revert("Ownership cannot be renounced");
     }
 
     /**
@@ -553,7 +564,7 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
     /**
      * @notice Liquidate a defaulted loan
      */
-    function liquidateLoan(uint256 loanId) external onlyOwner nonReentrant {
+    function liquidateLoan(uint256 loanId) external onlyOwner nonReentrant whenNotPaused {
         Loan storage loan = loans[loanId];
         require(loan.state == LoanState.ACTIVE, "Loan not active");
         require(block.timestamp > loan.endTime, "Loan not overdue");
