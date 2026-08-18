@@ -28,10 +28,12 @@ describe("V6 — totalLiquidity underflow bricks liquidateLoan", function () {
             await usdc.connect(w).approve(await v6.getAddress(), ethers.MaxUint256);
         }
         // Pump the agent to a 0%-collateral tier (score >= 600) by authorizing the
-        // owner as a "pool" and recording on-time completions directly.
+        // owner as a "pool" and recording on-time completions directly. Use the
+        // full bonusReferenceAmount (100 USDC) so each completion earns the full
+        // +10 under the D1 principal-scaled bonus.
         await reputation.authorizePool(owner.address);
         for (let i = 0; i < 65; i++) {
-            await reputation.recordLoanCompletion(agent.address, USDC(1), true);
+            await reputation.recordLoanCompletion(agent.address, USDC(100), true);
         }
         expect(await reputation["getReputationScore(address)"](agent.address)).to.be.gte(600n);
         // Confirm 0% collateral tier so loans disburse with no collateral.

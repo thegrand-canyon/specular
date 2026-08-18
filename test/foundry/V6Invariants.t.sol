@@ -49,8 +49,10 @@ contract V6InvariantTest is Test {
         // defaults produce real losses that exercise the totalLiquidity path.
         vm.startPrank(owner);
         reputation.authorizePool(owner);
+        // Use the full bonusReferenceAmount (100 USDC) so each completion earns
+        // the full +10 under the D1 principal-scaled bonus.
         for (uint256 i = 0; i < 65; i++) {
-            reputation.recordLoanCompletion(agent, 1e6, true);
+            reputation.recordLoanCompletion(agent, 100e6, true);
         }
         vm.stopPrank();
 

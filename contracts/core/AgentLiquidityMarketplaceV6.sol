@@ -467,10 +467,15 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
         // blunts request→repay farming. recordLoanCompletion applies NO penalty
         // when the flag is false, so a too-fast on-time repay simply earns no
         // bonus (neither reward nor penalty).
+        // [D1] Also require the loan to have paid non-zero interest — a
+        // zero-interest (sub-rounding) dust loan earns no reputation. Combined
+        // with the principal-scaled bonus in the reputation manager, this makes
+        // reputation reflect real economic activity, not free loop count.
         bool onTime = block.timestamp <= loan.endTime;
         bool heldLongEnough = minHoldForReputationReward == 0
             || (block.timestamp - loan.startTime) >= minHoldForReputationReward;
-        reputationManager.recordLoanCompletion(loan.borrower, loan.amount, onTime && heldLongEnough);
+        bool paidInterest = interest > 0;
+        reputationManager.recordLoanCompletion(loan.borrower, loan.amount, onTime && heldLongEnough && paidInterest);
 
         emit LoanRepaid(loanId, loan.amount, interest);
     }

@@ -38,6 +38,14 @@ contract ReputationManagerV3 is Ownable {
     uint256 public defaultPenaltyBase = 50;        // Base penalty for defaults
     uint256 public defaultPenaltyLarge = 100;      // Penalty for large loan defaults
     uint256 public largeLoanThreshold = 10000 * 1e6; // Threshold for large loan penalty (USDC)
+
+    // [audit 2026-08 D1] Reputation must reflect economic stake, not loan COUNT.
+    // The on-time bonus is scaled by principal against this reference: a loan of
+    // >= bonusReferenceAmount earns the full onTimeRepaymentBonus; smaller loans
+    // earn proportionally less (a dust loan earns ~0). This kills the cheap
+    // build-then-bust-out farm (flat +10 per tiny, zero-interest, self-funded
+    // loan). Owner-tunable. See also the marketplace's interest>0 reward gate.
+    uint256 public bonusReferenceAmount = 100 * 1e6; // 100 USDC
     uint256 public validationBonusThreshold = 75;  // Min validation score for credit bonus (0-100)
     uint256 public validationCreditBonus = 2000 * 1e6; // Extra USDC credit limit for validated agents
 
@@ -47,6 +55,7 @@ contract ReputationManagerV3 is Ownable {
     event ValidationRegistrySet(address indexed registry);
     event ScoringParametersUpdated(uint256 onTimeBonus, uint256 defaultPenaltyBase, uint256 defaultPenaltyLarge, uint256 largeLoanThreshold);
     event ValidationBonusParametersUpdated(uint256 bonusThreshold, uint256 creditBonus);
+    event BonusReferenceAmountUpdated(uint256 newReference);
     event ReputationInitialized(uint256 indexed agentId, uint256 score);
     event ReputationUpdated(uint256 indexed agentId, uint256 oldScore, uint256 newScore, string reason);
     event LoanRecorded(uint256 indexed agentId, uint256 amount);
@@ -104,6 +113,17 @@ contract ReputationManagerV3 is Ownable {
         defaultPenaltyLarge = _defaultPenaltyLarge;
         largeLoanThreshold = _largeLoanThreshold;
         emit ScoringParametersUpdated(_onTimeBonus, _defaultPenaltyBase, _defaultPenaltyLarge, _largeLoanThreshold);
+    }
+
+    /**
+     * @notice [D1] Set the principal reference used to scale the on-time bonus.
+     *         Higher = reputation requires larger loans to build (stronger
+     *         anti-farming). Must be > 0 (used as a divisor).
+     */
+    function setBonusReferenceAmount(uint256 newRef) external onlyOwner {
+        require(newRef > 0, "Reference must be > 0");
+        bonusReferenceAmount = newRef;
+        emit BonusReferenceAmountUpdated(newRef);
     }
 
     /**
@@ -177,12 +197,21 @@ contract ReputationManagerV3 is Ownable {
         totalRepaid[agentId] += amount;
 
         if (onTime) {
-            uint256 oldScore = agentReputation[agentId];
-            uint256 newScore = oldScore + onTimeRepaymentBonus;
-            if (newScore > 1000) newScore = 1000;
+            // [D1] Scale the bonus by principal so reputation tracks economic
+            // stake, not loan count. amount >= bonusReferenceAmount → full bonus;
+            // a dust loan → ~0 bonus (integer division). bonusReferenceAmount is
+            // never 0 (guarded in the setter), so no divide-by-zero.
+            uint256 ref = bonusReferenceAmount;
+            uint256 effAmount = amount < ref ? amount : ref;
+            uint256 bonus = (onTimeRepaymentBonus * effAmount) / ref;
+            if (bonus > 0) {
+                uint256 oldScore = agentReputation[agentId];
+                uint256 newScore = oldScore + bonus;
+                if (newScore > 1000) newScore = 1000;
 
-            agentReputation[agentId] = newScore;
-            emit ReputationUpdated(agentId, oldScore, newScore, "on-time repayment");
+                agentReputation[agentId] = newScore;
+                emit ReputationUpdated(agentId, oldScore, newScore, "on-time repayment");
+            }
         }
 
         emit LoanCompleted(agentId, amount, onTime);
