@@ -129,12 +129,13 @@ contract AgentCreditFaucet is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @notice Optional: notify the contract of a refill (transfer is permissionless
-     *         via standard USDC transfer to this address — this method just emits
-     *         an event for off-chain monitoring).
+     * @notice Optional: notify the contract of a refill for off-chain monitoring.
+     * @dev [audit 2026-08 D11] Owner-only and emits the ACTUAL balance, not a
+     *      caller-supplied amount. Previously anyone could emit an arbitrary
+     *      Refilled(msg.sender, amount), feeding monitors bogus values.
      */
-    function notifyRefill(uint256 amount) external {
-        emit Refilled(msg.sender, amount);
+    function notifyRefill() external onlyOwner {
+        emit Refilled(msg.sender, usdcToken.balanceOf(address(this)));
     }
 
     /**

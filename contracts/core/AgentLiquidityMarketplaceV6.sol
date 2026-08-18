@@ -671,13 +671,24 @@ contract AgentLiquidityMarketplaceV6 is Ownable2Step, ReentrancyGuard, Pausable 
     }
 
     /**
-     * @notice Get all active agent pools (for browsing)
+     * @notice Get the agentIds of all pools whose isActive flag is set.
+     * @dev [audit 2026-08 D12] Implemented against the tracked `agentPoolIds`
+     *      instead of the old reverting stub. View-only; unbounded in principle
+     *      but only ever iterated off-chain, so gas is not a concern.
      */
     function getActiveAgents() external view returns (uint256[] memory) {
-        // Note: This requires tracking active agent IDs separately for gas efficiency
-        // For now, front-end should query by known agent IDs
-        // TODO: Add agentId array tracking if needed
-        revert("Use front-end to query specific agents");
+        uint256 total = agentPoolIds.length;
+        uint256 count = 0;
+        for (uint256 i = 0; i < total; i++) {
+            if (agentPools[agentPoolIds[i]].isActive) count++;
+        }
+        uint256[] memory active = new uint256[](count);
+        uint256 j = 0;
+        for (uint256 i = 0; i < total; i++) {
+            uint256 aid = agentPoolIds[i];
+            if (agentPools[aid].isActive) active[j++] = aid;
+        }
+        return active;
     }
 
     /**

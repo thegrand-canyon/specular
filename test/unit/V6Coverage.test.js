@@ -188,8 +188,10 @@ describe("V6 coverage gap-fillers", function () {
             expect(await v6.totalPools()).to.equal(2);
         });
 
-        it("getActiveAgents reverts as expected (v4 design)", async () => {
-            await expect(v6.getActiveAgents()).to.be.revertedWith("Use front-end to query specific agents");
+        it("getActiveAgents returns active pool agentIds (D12: implemented)", async () => {
+            // agent created pool 1 in the fixture; it should be listed active.
+            const active = await v6.getActiveAgents();
+            expect(active.map(Number)).to.include(1);
         });
 
         it("setPlatformFeeRate works for owner", async () => {
