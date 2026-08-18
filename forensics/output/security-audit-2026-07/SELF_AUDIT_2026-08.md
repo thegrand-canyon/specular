@@ -1,18 +1,28 @@
 # Specular V6 — Internal Self-Audit (2026-08, pre-Arc-mainnet)
 
-Best-effort adversarial self-audit of the money contracts before the external
-audit that gates Arc Mainnet. Method: **four independent deep-review agents**
-(accounting/invariants, access-control/reentrancy, economic/game-theory, and a
-fixes+test-adequacy pass) + an **original exact-solvency invariant fuzz** written
-and run for this audit + **slither 0.11.4**. Every fix below carries a reproducing
-regression test.
+> **UPDATE 2026-08 — the owner elected to do NO external audit and instead
+> maximize internal rigor.** A second pass therefore FIXED most of the open
+> design findings (D1–D3, D5, D11, D12), upgraded the Foundry invariant suite to
+> exact-solvency + liquidation (64,000 calls/invariant), and ran a final
+> adversarial re-review. This section is the original self-audit; the **"D-series
+> resolution" and "Final adversarial re-review" sections at the bottom are the
+> current status.** Note the honest residual risk on D1 and D4/D6/D7 below —
+> internal rigor is NOT equivalent to independent professional review, and this
+> document discloses what remains.
+
+Best-effort adversarial self-audit of the money contracts. Method: **four
+independent deep-review agents** (accounting/invariants, access-control/
+reentrancy, economic/game-theory, fixes+test-adequacy) + an **original
+exact-solvency invariant fuzz** + **Foundry stateful invariants** + **slither
+0.11.4** + a **final adversarial re-review** of all fixes. Every fix carries a
+reproducing regression test.
 
 **Scope:** `AgentLiquidityMarketplaceV6.sol`, `ReputationManagerV3.sol`,
 `AgentRegistryV2.sol`, `AgentCreditFaucet.sol`, `ValidationRegistry.sol`.
 
-**Result:** 1 HIGH + 4 MEDIUM fixed this round (with tests); a set of design-level
-and lower-severity findings documented below for the external auditor and for
-product decisions. Test suite **414 → 492** over the whole hardening effort.
+**Result:** 1 HIGH + 4 MEDIUM fixed in round 1; D1/D2/D3/D5/D11/D12 fixed in
+round 2. Test suite **414 → 501** + Foundry invariants. Remaining residual risk
+(D1 farming, D4 loss-ordering, D6 W1-JIT, D7 timestamp) disclosed below.
 
 ---
 
@@ -141,3 +151,73 @@ design-level risk that no lever fixes — and D2/D3/D4/D6 (the credit-key coupli
 validation DoS, and the interest/loss accounting model). Launch config (M-1 ON,
 M-2 ON ~1d, faucet ON, and now `minSupplyAmount` > 0) mitigates several of these
 at the edges but is not a substitute for the model-level fix in D1.
+
+---
+
+## D-series resolution (round 2, 2026-08 — in place of external audit)
+
+| ID | Sev | Status | Fix | Commit |
+|----|-----|--------|-----|--------|
+| **D1** | CRITICAL | **MITIGATED (not eliminated)** | Principal-scaled reputation bonus + interest>0 reward gate. Farming cost raised from ~0 to (platform fee + collateral time-lock). **Residual risk below.** | `2c1567c` |
+| **D2** | HIGH | **FIXED** | `outstandingPrincipal`/`activeLoanCount` re-keyed by agentId → H-3 aggregate credit decoupled from the M-1 lever; NFT-transfer reset closed. | `dc4759d` |
+| **D3** | MED | **FIXED (latent)** | `getSummary` bounds its scan to the most-recent 200; registry stays unset at launch. | `3cadb0c` |
+| **D5** | MED | **FIXED** | `liquidateLoan` now `whenNotPaused` (no forced default); `Ownable2Step`; `renounceOwnership` reverts. | `8fff1a3` |
+| **D11** | LOW | **FIXED** | `notifyRefill` owner-only + emits actual balance. | `3cadb0c` |
+| **D12** | LOW | **FIXED** | `getActiveAgents` implemented (was reverting stub). | `3cadb0c` |
+| A1 | HIGH | **FIXED** | Saturating `totalLiquidity` (liquidation no longer bricked). | `a9a66f3` |
+| **Foundry** | — | **Upgraded** | Exact-solvency + H-3 + liquidation invariants; deep campaign 256×250 = 64,000 calls/invariant, all green. | `88a296e` |
+
+## Final adversarial re-review (2026-08) — results
+
+A fresh agent attacked every round-2 fix for regressions/bypasses. **No BROKEN
+regressions.** Verdicts:
+
+- **D2 / A1-availableLiquidity / D5 / D11 / D12 — SOLID.** agentId re-keying is
+  consistent across all loan-state transitions and genuinely closes the H-3
+  bypass independent of M-1; `availableLiquidity` stays a checked subtraction
+  everywhere (saturation only on the non-solvency-critical `totalLiquidity`);
+  pause/Ownable2Step/renounce wired correctly; no on-chain caller of the new
+  view functions. Earlier fixes (H-1, H-3, M-3, register-CEI, §S1/§S5/§B1) still
+  hold under the layered changes.
+
+- **D1 — WEAK (disclosed residual risk).** My "kills the farm" claim was
+  **overstated and is corrected.** A farmer controlling both the borrower and a
+  Sybil lender address supplies to their own pool, borrows, and recaptures the
+  interest — so the real per-cycle cost is only the platform fee + the
+  time-value of collateral locked during the minHold window. The mitigations
+  (principal-scaling, interest gate) + the launch levers (M-2 minHold ON,
+  nonzero platformFeeRate) raise the cost materially but do **not** eliminate it.
+  **A complete on-chain defense is not possible without identity/attestation
+  (ERC-8004 ValidationRegistry, audited + wired) or slashable staking.** This is
+  documented in-code at `ReputationManagerV3.bonusReferenceAmount` and is the
+  #1 residual risk. Launch MUST enable M-2 + a nonzero fee; the deepest fix
+  (staking/identity) is future work.
+
+- **A1 `resetPoolAccounting` — LOW/MED failure-mode note.** On an already-drifted
+  pool, the saturating `totalLiquidity` makes the owner-only emergency repair
+  tool now silently understate `availableLiquidity` (was: revert). It cannot
+  reconcile against real USDC custody because the contract balance is shared
+  across pools. Documented limitation; only reachable on a pool already underwater
+  from a lossy default.
+
+- **D3 tail-scan — LOW/latent.** Bounding to the last 200 lets an agent bury
+  earlier bad validations under fresh good ones IF the registry is ever wired.
+  Latent (registry unset at launch); revisit before enabling the validation bonus.
+
+## Still open — require design work, NOT rushed (honest disclosure)
+
+- **D1 residual** (above) — needs identity/staking. **D4 socialized-loss
+  ordering** — a pro-rata `lossPerShare` redesign; deliberately NOT attempted
+  here because a rushed accounting rewrite could break global solvency (worse
+  than the bounded fairness issue it fixes). **D6 W1 JIT** and **D7 top-up
+  timestamp reset** — both resolved by a time-weighted interest-accrual redesign;
+  same reasoning. These are the honest limits of what internal work should change
+  without independent review.
+
+## Launch posture required by this audit (Arc mainnet)
+1. **M-2 `minHoldForReputationReward` > 0** and **nonzero `platformFeeRate`** —
+   REQUIRED for D1 to bite (not optional).
+2. **M-1 on**, **`minSupplyAmount` > 0** (F-C), **faucet cohort small + funded**.
+3. **Leave `validationRegistry` unset** (keeps D3 latent) until it is separately
+   audited + the tail-scan revisited.
+4. Transfer ownership to the secure wallet via the two-step flow.

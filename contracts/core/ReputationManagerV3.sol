@@ -42,9 +42,19 @@ contract ReputationManagerV3 is Ownable {
     // [audit 2026-08 D1] Reputation must reflect economic stake, not loan COUNT.
     // The on-time bonus is scaled by principal against this reference: a loan of
     // >= bonusReferenceAmount earns the full onTimeRepaymentBonus; smaller loans
-    // earn proportionally less (a dust loan earns ~0). This kills the cheap
-    // build-then-bust-out farm (flat +10 per tiny, zero-interest, self-funded
-    // loan). Owner-tunable. See also the marketplace's interest>0 reward gate.
+    // earn proportionally less (a dust loan earns ~0). Owner-tunable. See also the
+    // marketplace's interest>0 reward gate.
+    //
+    // RESIDUAL RISK (honest scope, self-audit 2026-08): this MITIGATES but does
+    // NOT eliminate reputation farming. A farmer who controls both the borrower
+    // and a lender address (Sybil) supplies to their own pool, borrows, and
+    // recaptures the interest as that lender — so the real per-cycle cost is only
+    // the platform fee plus the time-value of collateral locked during the
+    // minHold window. It bites only with (a) minHoldForReputationReward > 0 and
+    // (b) a nonzero platformFeeRate — BOTH are part of the Arc launch config.
+    // A COMPLETE defense needs off-chain identity/attestation (ERC-8004
+    // ValidationRegistry, audited + wired) or slashable staking — tracked as
+    // future work; do not rely on this alone.
     uint256 public bonusReferenceAmount = 100 * 1e6; // 100 USDC
     uint256 public validationBonusThreshold = 75;  // Min validation score for credit bonus (0-100)
     uint256 public validationCreditBonus = 2000 * 1e6; // Extra USDC credit limit for validated agents
