@@ -90,4 +90,27 @@ describe("V6 self-audit fixes (2026-08)", function () {
             expect(await registry.addressToAgentId(other.address)).to.equal(1n);
         });
     });
+
+    describe("D2 — aggregate credit keyed by agentId (decoupled from M-1)", () => {
+        it("outstandingPrincipal follows the agentId across an NFT transfer (no reset), M-1 OFF", async () => {
+            // bindBorrowToPoolCreator stays OFF — proving H-3 no longer depends on it.
+            await usdc.mint(agent2.address, USDC(100000));
+            await usdc.connect(agent2).approve(await v6.getAddress(), ethers.MaxUint256);
+            await v6.connect(lender).supplyLiquidity(1, USDC(2000));
+            await v6.connect(agent).requestLoan(USDC(500), 30);
+            expect(await v6.outstandingPrincipal(1)).to.equal(USDC(500));
+
+            // Transfer agent NFT (agentId 1) to agent2. Pre-D2 the aggregate was
+            // keyed by address, so agent2 would start at 0 and could re-borrow the
+            // full limit against the same reputation. Now it's keyed by agentId,
+            // so agent2 inherits the SAME outstandingPrincipal(1).
+            await registry.connect(agent).transferFrom(agent.address, agent2.address, 1);
+            expect(await v6.outstandingPrincipal(1)).to.equal(USDC(500)); // unchanged by transfer
+            // agent2's borrowing is bounded by the SAME agentId aggregate.
+            const limit = await reputation.calculateCreditLimit(agent2.address);
+            const room = limit - USDC(500);
+            await expect(v6.connect(agent2).requestLoan(room + 1n, 30)).to.be.revertedWith("Exceeds credit limit");
+        });
+    });
+
 });

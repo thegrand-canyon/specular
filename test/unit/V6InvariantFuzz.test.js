@@ -75,16 +75,19 @@ describe("V6 invariant fuzz (exact solvency + liquidation)", function () {
         const rhs = sumAvail + fees + sumCollateral;
         expect(mpBal, `SOLVENCY: balance ${mpBal} must EQUAL avail+fees+collateral ${rhs} (avail=${sumAvail} fees=${fees} coll=${sumCollateral})`).to.equal(rhs);
 
-        // ── H-3: outstandingPrincipal == Σ ACTIVE principal per borrower ────
-        for (const a of agents) {
+        // ── H-3: outstandingPrincipal == Σ ACTIVE principal per agent ───────
+        // [D2] keyed by agentId (agents[i] ⇒ agentId i+1).
+        for (let i = 0; i < agents.length; i++) {
+            const a = agents[i];
+            const agentId = i + 1;
             let sumPrincipal = 0n, liveCount = 0;
             for (const l of active) {
                 if (l.borrower.toLowerCase() !== a.address.toLowerCase()) continue;
                 const loan = await v6.loans(l.id);
                 if (Number(loan.state) === 1) { sumPrincipal += loan.amount; liveCount++; }
             }
-            expect(await v6.outstandingPrincipal(a.address), `outstandingPrincipal mismatch for ${a.address.slice(0, 8)}`).to.equal(sumPrincipal);
-            expect(Number(await v6.activeLoanCount(a.address)), `activeLoanCount mismatch for ${a.address.slice(0, 8)}`).to.equal(liveCount);
+            expect(await v6.outstandingPrincipal(agentId), `outstandingPrincipal mismatch for agent ${agentId}`).to.equal(sumPrincipal);
+            expect(Number(await v6.activeLoanCount(agentId)), `activeLoanCount mismatch for agent ${agentId}`).to.equal(liveCount);
         }
 
         // ── §B1: no duplicate lenders; flag ⟺ membership ────────────────────
@@ -130,9 +133,9 @@ describe("V6 invariant fuzz (exact solvency + liquidation)", function () {
             if (op === 'requestLoan') {
                 const pool = await v6.getAgentPool(aid);
                 if (pool.availableLiquidity < USDC('0.02')) return null;
-                if ((await v6.activeLoanCount(agentSigner.address)) >= 10n) return null;
+                if ((await v6.activeLoanCount(aid)) >= 10n) return null;
                 const limit = await reputation.calculateCreditLimit(agentSigner.address);
-                const outstanding = await v6.outstandingPrincipal(agentSigner.address);
+                const outstanding = await v6.outstandingPrincipal(aid);
                 let cap = pool.availableLiquidity;
                 if (limit - outstanding < cap) cap = limit - outstanding;
                 if (cap < USDC('0.01')) return null;

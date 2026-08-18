@@ -126,7 +126,8 @@ contract V6InvariantTest is Test {
                 (, address borrower, , uint256 amount, , , , , , AgentLiquidityMarketplaceV6.LoanState st) = v6.loans(id);
                 if (borrower == borrowers[b] && st == AgentLiquidityMarketplaceV6.LoanState.ACTIVE) sum += amount;
             }
-            require(v6.outstandingPrincipal(borrowers[b]) == sum, "H-3: outstandingPrincipal mismatch");
+            // [D2] outstandingPrincipal is keyed by agentId.
+            require(v6.outstandingPrincipal(registry.addressToAgentId(borrowers[b])) == sum, "H-3: outstandingPrincipal mismatch");
         }
     }
 
@@ -136,13 +137,14 @@ contract V6InvariantTest is Test {
         address[] memory borrowers = handler.knownBorrowers();
         uint256 n = v6.nextLoanId();
         for (uint256 b = 0; b < borrowers.length; b++) {
-            require(v6.activeLoanCount(borrowers[b]) <= max, "S5: over cap");
+            uint256 aid = registry.addressToAgentId(borrowers[b]); // [D2] agentId-keyed
+            require(v6.activeLoanCount(aid) <= max, "S5: over cap");
             uint256 actual = 0;
             for (uint256 id = 1; id < n; id++) {
                 (, address borrower, , , , , , , , AgentLiquidityMarketplaceV6.LoanState st) = v6.loans(id);
                 if (borrower == borrowers[b] && st == AgentLiquidityMarketplaceV6.LoanState.ACTIVE) actual++;
             }
-            require(v6.activeLoanCount(borrowers[b]) == actual, "S5: counter mismatch");
+            require(v6.activeLoanCount(aid) == actual, "S5: counter mismatch");
         }
     }
 }
@@ -205,7 +207,7 @@ contract Handler is Test {
     function requestLoan(uint8 amountSeed, uint8 durSeed) external {
         (, , uint256 avail, , , , ) = v6.getAgentPool(1);
         if (avail < 1e6) return;
-        if (v6.activeLoanCount(agent) >= 10) return;
+        if (v6.activeLoanCount(1) >= 10) return; // [D2] agentId-keyed (agent == agentId 1)
         uint256 amt = (uint256(amountSeed) % 20 + 1) * 1e6; // 1 - 20 USDC (0% tier, no collateral)
         if (amt > avail) return;
         uint256 dur = 7 + (uint256(durSeed) % 30);

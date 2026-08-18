@@ -204,9 +204,9 @@ describe("V6 migration from v4 — full simulation", function () {
             // Take + repay 5 loans — counter should oscillate 0..1..0..1...
             for (let i = 0; i < 5; i++) {
                 await v6.connect(agent1).requestLoan(USDC(10), 7);
-                expect(await v6.activeLoanCount(agent1.address)).to.equal(1);
+                expect(await v6.activeLoanCount(1)).to.equal(1);
                 await v6.connect(agent1).repayLoan(i + 1);
-                expect(await v6.activeLoanCount(agent1.address)).to.equal(0);
+                expect(await v6.activeLoanCount(1)).to.equal(0);
             }
         });
     });

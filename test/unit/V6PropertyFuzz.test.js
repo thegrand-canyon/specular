@@ -101,8 +101,9 @@ describe("V6 property-based fuzz", function () {
         expect(sumAvail + fees, `Σ avail ${sumAvail} + fees ${fees} must be ≤ mpBal ${mpBal}`).to.be.lte(mpBal);
 
         // §S5: every agent's activeLoanCount must equal the live count of ACTIVE loans
+        // [D2] activeLoanCount keyed by agentId (agents[i] ⇒ agentId i+1).
         for (let i = 0; i < agents.length; i++) {
-            const counter = await v6.activeLoanCount(agents[i].address);
+            const counter = await v6.activeLoanCount(i + 1);
             // walk agentLoans to count
             let actual = 0;
             for (let j = 0; j < 100; j++) {
@@ -147,7 +148,7 @@ describe("V6 property-based fuzz", function () {
             if (op === 'requestLoan') {
                 const pool = await v6.getAgentPool(aid);
                 if (pool.availableLiquidity === 0n) return null;
-                const counter = await v6.activeLoanCount(agentSigner.address);
+                const counter = await v6.activeLoanCount(aid); // [D2] agentId-keyed
                 if (counter >= 10n) return null;
                 let amt = USDC((0.1 + rand() * 1).toFixed(6));
                 if (amt > pool.availableLiquidity) amt = pool.availableLiquidity / 2n;

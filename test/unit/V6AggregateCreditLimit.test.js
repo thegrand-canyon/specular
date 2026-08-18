@@ -35,7 +35,7 @@ describe("V6 — aggregate credit limit (H-3)", function () {
         const second = (limit * 40n) / 100n;  // 40% — sum 110% > limit
 
         await v6.connect(agent).requestLoan(first, 30);
-        expect(await v6.outstandingPrincipal(agent.address)).to.equal(first);
+        expect(await v6.outstandingPrincipal(1)).to.equal(first);
 
         // Under the old per-loan check this passed (second <= limit); now the
         // aggregate first+second exceeds the limit and must revert.
@@ -49,11 +49,11 @@ describe("V6 — aggregate credit limit (H-3)", function () {
 
         await v6.connect(agent).requestLoan(first, 30);   // loan 1
         await v6.connect(agent).repayLoan(1);             // frees principal
-        expect(await v6.outstandingPrincipal(agent.address)).to.equal(0n);
+        expect(await v6.outstandingPrincipal(1)).to.equal(0n);
 
         // Now the 40% loan fits.
         await expect(v6.connect(agent).requestLoan(second, 30)).to.not.be.reverted;
-        expect(await v6.outstandingPrincipal(agent.address)).to.equal(second);
+        expect(await v6.outstandingPrincipal(1)).to.equal(second);
     });
 
     it("allows borrowing up to exactly the limit in aggregate", async () => {
@@ -61,7 +61,7 @@ describe("V6 — aggregate credit limit (H-3)", function () {
         const half = limit / 2n;
         await v6.connect(agent).requestLoan(half, 30);
         await v6.connect(agent).requestLoan(limit - half, 30); // sum == limit, OK
-        expect(await v6.outstandingPrincipal(agent.address)).to.equal(limit);
+        expect(await v6.outstandingPrincipal(1)).to.equal(limit);
         // One more base unit over the limit must revert.
         await expect(v6.connect(agent).requestLoan(1n, 30)).to.be.revertedWith("Exceeds credit limit");
     });

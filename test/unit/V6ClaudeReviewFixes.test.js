@@ -123,7 +123,7 @@ describe("V6 — Claude review fixes (4 low-severity findings)", function () {
 
         it("still accepts requestLoan(amount > 0)", async () => {
             await v6.connect(agent).requestLoan(USDC(10), 7);
-            expect(await v6.activeLoanCount(agent.address)).to.equal(1);
+            expect(await v6.activeLoanCount(1)).to.equal(1);
         });
 
         it("an agent can no longer block their own slot with 0-amount loans", async () => {
@@ -133,7 +133,7 @@ describe("V6 — Claude review fixes (4 low-severity findings)", function () {
                     .to.be.revertedWith("Amount must be > 0");
             }
             // Cap is still empty
-            expect(await v6.activeLoanCount(agent.address)).to.equal(0);
+            expect(await v6.activeLoanCount(1)).to.equal(0);
         });
     });
 

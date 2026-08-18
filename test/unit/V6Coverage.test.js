@@ -38,12 +38,12 @@ describe("V6 coverage gap-fillers", function () {
         it("decrements activeLoanCount on liquidation", async () => {
             await v6.connect(lender).supplyLiquidity(1, USDC(500));
             await v6.connect(agent).requestLoan(USDC(100), 7);
-            expect(await v6.activeLoanCount(agent.address)).to.equal(1);
+            expect(await v6.activeLoanCount(1)).to.equal(1);
 
             // Fast-forward past loan endTime
             await time.increase(8 * 24 * 3600);
             await v6.liquidateLoan(1);
-            expect(await v6.activeLoanCount(agent.address)).to.equal(0, '§S5: counter must decrement on liquidation');
+            expect(await v6.activeLoanCount(1)).to.equal(0, '§S5: counter must decrement on liquidation');
 
             const loan = await v6.loans(1);
             expect(Number(loan.state)).to.equal(3); // DEFAULTED

@@ -108,13 +108,16 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
     // Discovery: ordered list of all agent IDs that have created pools
     uint256[] public agentPoolIds;
 
-    // §S5 fix: O(1) active-loan counter — replaces _countActiveLoans array walk
-    mapping(address => uint256) public activeLoanCount;
+    // §S5 fix: O(1) active-loan counter — replaces _countActiveLoans array walk.
+    // [audit 2026-08 D2] Keyed by agentId, not address: the credit limit and
+    // reputation are per-agentId, so the aggregate must follow the same identity.
+    // Keying by address let a transferred agent NFT reset the aggregate (fresh
+    // address, same reputation) — the H-3 bypass that otherwise depended on the
+    // M-1 lever to block. agentId-keying decouples H-3 from M-1.
+    mapping(uint256 => uint256) public activeLoanCount;
 
-    // [H-3 fix 2026-07] Aggregate outstanding principal per borrower. The credit
-    // limit must bound TOTAL unsecured exposure, not each loan individually —
-    // otherwise MAX_ACTIVE_LOANS_PER_AGENT concurrent loans multiply the limit.
-    mapping(address => uint256) public outstandingPrincipal;
+    // [H-3 fix 2026-07] Aggregate outstanding principal per AGENT (see D2 above).
+    mapping(uint256 => uint256) public outstandingPrincipal;
 
     // §B1 fix: presence flag — gates poolLenders.push(), prevents duplicate entries
     mapping(uint256 => mapping(address => bool)) public isInPoolLenders;
@@ -334,10 +337,10 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
         // hold up to MAX_ACTIVE_LOANS_PER_AGENT loans each at the full limit —
         // e.g. 10 × 25k = 250k unsecured for a 0-collateral tier.
         uint256 creditLimit = reputationManager.calculateCreditLimit(msg.sender);
-        require(outstandingPrincipal[msg.sender] + amount <= creditLimit, "Exceeds credit limit");
+        require(outstandingPrincipal[agentId] + amount <= creditLimit, "Exceeds credit limit");
 
         // [SECURITY-01] Enforce concurrent loan limit to prevent credit limit bypass
-        uint256 activeLoans = _countActiveLoans(msg.sender);
+        uint256 activeLoans = _countActiveLoans(agentId);
         require(activeLoans < MAX_ACTIVE_LOANS_PER_AGENT, "Too many active loans");
 
         // Calculate collateral requirement
@@ -397,10 +400,10 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
         loan.endTime = block.timestamp + loan.duration;
 
         // §S5 FIX: increment counter on transition to ACTIVE
-        activeLoanCount[loan.borrower]++;
+        activeLoanCount[loan.agentId]++;
 
         // [H-3 fix] Track aggregate outstanding principal for the credit check.
-        outstandingPrincipal[loan.borrower] += loan.amount;
+        outstandingPrincipal[loan.agentId] += loan.amount;
 
         // Transfer funds to borrower
         usdcToken.safeTransfer(loan.borrower, loan.amount);
@@ -439,10 +442,10 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
         loan.state = LoanState.REPAID;
 
         // §S5 FIX: decrement counter on transition out of ACTIVE
-        activeLoanCount[loan.borrower]--;
+        activeLoanCount[loan.agentId]--;
 
         // [H-3 fix] Principal repaid — free the borrower's aggregate exposure.
-        outstandingPrincipal[loan.borrower] -= loan.amount;
+        outstandingPrincipal[loan.agentId] -= loan.amount;
 
         // Update pool
         AgentPool storage pool = agentPools[loan.agentId];
@@ -580,10 +583,10 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
         loan.state = LoanState.DEFAULTED;
 
         // §S5 FIX: decrement counter on transition out of ACTIVE
-        activeLoanCount[loan.borrower]--;
+        activeLoanCount[loan.agentId]--;
 
         // [H-3 fix] Defaulted principal is no longer outstanding for credit purposes.
-        outstandingPrincipal[loan.borrower] -= loan.amount;
+        outstandingPrincipal[loan.agentId] -= loan.amount;
 
         // Record default with reputation manager
         reputationManager.recordDefault(loan.borrower, loan.amount);
@@ -986,9 +989,10 @@ contract AgentLiquidityMarketplaceV6 is Ownable, ReentrancyGuard, Pausable {
      * @notice Count active loans for an agent
      * @dev §S5 FIX: O(1) lookup via activeLoanCount counter, replaces array walk.
      *      The counter is maintained at requestLoan (++), repayLoan (--), liquidateLoan (--).
+     *      [D2] Keyed by agentId.
      */
-    function _countActiveLoans(address agent) internal view returns (uint256) {
-        return activeLoanCount[agent];
+    function _countActiveLoans(uint256 agentId) internal view returns (uint256) {
+        return activeLoanCount[agentId];
     }
 
     /**
