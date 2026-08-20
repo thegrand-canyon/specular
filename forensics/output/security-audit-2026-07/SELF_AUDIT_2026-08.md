@@ -1,14 +1,17 @@
 # Specular V6 — Internal Self-Audit (2026-08, pre-Arc-mainnet)
 
-> **UPDATE 2026-08 — the owner elected to do NO external audit and instead
-> maximize internal rigor.** A second pass therefore FIXED most of the open
-> design findings (D1–D3, D5, D11, D12), upgraded the Foundry invariant suite to
-> exact-solvency + liquidation (64,000 calls/invariant), and ran a final
-> adversarial re-review. This section is the original self-audit; the **"D-series
-> resolution" and "Final adversarial re-review" sections at the bottom are the
-> current status.** Note the honest residual risk on D1 and D4/D6/D7 below —
-> internal rigor is NOT equivalent to independent professional review, and this
-> document discloses what remains.
+> **UPDATE 2026-08 (round 3) — the owner elected NO external audit; we
+> maximized internal rigor instead.** Rounds 2–3 FIXED nearly every open design
+> finding: D1 (principal-scale + interest-gate + reputation rate-limit), D2, D3,
+> **D4 (pro-rata socialized loss)**, D5, D11, D12, and the A1 `resetPoolAccounting`
+> robustness follow-up. The Foundry suite was upgraded to exact-solvency +
+> liquidation (64,000 calls/invariant) and a final adversarial re-review ran.
+> Test suite **414 → 507**. **Still-open residual (honestly disclosed): D1 cannot
+> be COMPLETELY eliminated on-chain without identity/staking — the mitigations
+> make farming slow + capital-intensive but not impossible; D4 fixes the FCFS
+> last-withdrawer dump but a front-runner can still pull idle liquidity; D6/D7
+> (W1-JIT / timestamp) need a time-weighted-accrual redesign, deliberately not
+> rushed.** Internal rigor is NOT equivalent to independent professional review.
 
 Best-effort adversarial self-audit of the money contracts. Method: **four
 independent deep-review agents** (accounting/invariants, access-control/
@@ -221,3 +224,45 @@ regressions.** Verdicts:
 3. **Leave `validationRegistry` unset** (keeps D3 latent) until it is separately
    audited + the tail-scan revisited.
 4. Transfer ownership to the secure wallet via the two-step flow.
+
+---
+
+## Round 3 (2026-08) — "fix what we need to": D1 residual, D4, A1 follow-up
+
+| ID | Sev | Status | Fix | Commit |
+|----|-----|--------|-----|--------|
+| **D1 residual** | CRITICAL | **MITIGATED (3 layers)** | Principal-scaled bonus + interest>0 gate + **reputation-gain rate limit** (caps gain/window, defeating the MAX_ACTIVE_LOANS concurrency accelerant). | `bf2e1ac` |
+| **D4** | MED | **FIXED (worst case)** | `liquidateLoan` socializes the loss PRO-RATA across lender positions (`_socializeLoss`, ≤50). Restores `Σ position.amount == availableLiquidity + totalLoaned` → no more last-withdrawer dump. | `a1a3559` |
+| **A1 reset** | LOW/MED | **FIXED** | `resetPoolAccounting` rebuilds `totalLiquidity` from Σ position.amount (ground truth) → no silent understatement. | `41d2b13` |
+
+**Verification:** full suite **507 passing**; deep Foundry campaign **64,000
+calls/invariant** holds exact solvency (`balance == Σ availableLiquidity + fees +
+Σ active collateral`) + H-3 + §S5 through the new socialization under liquidation
+stress; slither unchanged (1 High OZ-`mulDiv` false-positive + 3 accepted Mediums).
+
+### Honest residual risk (what internal rigor could NOT fully close)
+- **D1** — farming is now slow (rate-limit), capital-intensive (collateral lock
+  during M-2 min-hold), and fee-bearing, but a determined attacker with capital +
+  time can still farm and bust out. **Complete** defense needs off-chain
+  identity/attestation (ERC-8004, audited + wired) or slashable staking — future
+  work. Launch MUST enable: rate-limit + M-2 min-hold + nonzero platform fee.
+- **D4** — the pro-rata fix makes post-liquidation withdrawal fair, but a lender
+  can still withdraw IDLE liquidity before liquidation (bounded by
+  availableLiquidity; a normal feature). Fully closing it needs blocking
+  withdrawals during an overdue loan (requires loan iteration) — not done.
+- **D6 (W1 JIT) / D7 (top-up timestamp reset)** — both resolved by a time-weighted
+  interest-accrual redesign that also disentangles principal/interest. This is the
+  one remaining structural change deliberately NOT attempted internally: it
+  touches the core accounting and a subtle error could break solvency. Documented
+  as the primary candidate for eventual independent review.
+
+### Updated Arc launch config (required by this audit)
+```
+setReputationRateLimit(<maxGain>, <window>)   # e.g. 20 points / 1 day   [D1]
+setMinHoldForReputationReward(86400)          # 1 day                     [M-2/D1]
+setPlatformFeeRate(>=100)                      # nonzero, e.g. 1%          [D1]
+setBindBorrowToPoolCreator(true)              #                           [M-1]
+setMinSupplyAmount(1000000)                   # 1 USDC                    [F-C]
+# faucet: small maxEligibleAgentId + funded; validationRegistry: leave UNSET [D3]
+# transfer ownership to secure wallet via Ownable2Step (two-step)
+```
