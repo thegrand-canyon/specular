@@ -1023,20 +1023,28 @@ contract AgentLiquidityMarketplaceV6 is Ownable2Step, ReentrancyGuard, Pausable 
         // instead of pool.totalEarned (lifetime). totalEarned never decrements on
         // claimInterest, so the prior formula double-counted already-claimed
         // interest. Bounded loop: MAX_LENDERS_PER_POOL = 50.
+        // [audit 2026-08 A1 follow-up] Rebuild totalLiquidity from Σ position.amount
+        // (ground truth) in the SAME loop, instead of trusting the possibly-drifted
+        // pool.totalLiquidity. Deriving availableLiquidity from the drifted value
+        // could silently understate it and strand withdrawable USDC — the exact
+        // failure mode of the emergency tool an operator reaches for on an
+        // underwater pool. Positions are the authoritative principal record.
         uint256 unclaimedInterest = 0;
+        uint256 actualPrincipal = 0;
         address[] storage lenders = poolLenders[agentId];
         for (uint256 i = 0; i < lenders.length; i++) {
-            unclaimedInterest += positions[agentId][lenders[i]].earnedInterest;
+            LenderPosition storage p = positions[agentId][lenders[i]];
+            unclaimedInterest += p.earnedInterest;
+            actualPrincipal += p.amount;
         }
 
-        // Update pool state.
-        // [audit 2026-08] Saturate: if actualLoaned exceeds totalLiquidity +
-        // unclaimedInterest (possible once totalLiquidity has drifted below the
-        // loaned principal), a plain subtraction underflow-reverts — bricking the
-        // very emergency tool an operator would reach for on an underwater pool.
+        // Update pool state from ground truth. Saturate defensively (should not
+        // trigger now that principal is rebuilt from positions, but keeps the tool
+        // from ever reverting on a pathological pool).
         uint256 oldLoaned = pool.totalLoaned;
         pool.totalLoaned = actualLoaned;
-        uint256 backing = pool.totalLiquidity + unclaimedInterest;
+        pool.totalLiquidity = actualPrincipal;
+        uint256 backing = actualPrincipal + unclaimedInterest;
         pool.availableLiquidity = actualLoaned >= backing ? 0 : backing - actualLoaned;
 
         emit PoolAccountingReset(agentId, oldLoaned, actualLoaned, pool.availableLiquidity);

@@ -127,4 +127,30 @@ describe("V6 self-audit fixes (2026-08)", function () {
             expect(await v6.owner()).to.equal(other.address);
         });
     });
+
+    describe("A1 follow-up — resetPoolAccounting rebuilds from positions", () => {
+        it("does not understate availableLiquidity; stays solvent after reset", async () => {
+            // Two lenders; a repaid loan credits interest into availableLiquidity.
+            await v6.connect(lender).supplyLiquidity(1, USDC(1000));
+            await usdc.mint(other.address, USDC(100000));
+            await usdc.connect(other).approve(await v6.getAddress(), ethers.MaxUint256);
+            await v6.connect(other).supplyLiquidity(1, USDC(1000));
+            await v6.connect(agent).requestLoan(USDC(100), 30);
+            await v6.connect(agent).repayLoan(1);
+
+            // Owner runs the emergency reconciler.
+            await v6.resetPoolAccounting(1);
+            const pool = await v6.getAgentPool(1);
+
+            // availableLiquidity must equal Σ position.amount + Σ unclaimed interest
+            // (no active loans left), reconstructed from positions — never understated.
+            const posL = await v6.positions(1, lender.address);
+            const posO = await v6.positions(1, other.address);
+            const expected = posL.amount + posL.earnedInterest + posO.amount + posO.earnedInterest;
+            expect(pool.availableLiquidity).to.equal(expected);
+            // And the contract is solvent for it.
+            expect(await usdc.balanceOf(await v6.getAddress())).to.be.gte(pool.availableLiquidity);
+        });
+    });
+
 });
