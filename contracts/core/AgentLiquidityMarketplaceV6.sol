@@ -268,14 +268,14 @@ contract AgentLiquidityMarketplaceV6 is Ownable2Step, ReentrancyGuard, Pausable 
         position.amount -= amount;
 
         // Update pool.
-        // [audit 2026-08] totalLiquidity is a principal-accounting figure that can
-        // legitimately drift BELOW Σ position.amount after a lossy liquidation
-        // (which reduces totalLiquidity by the loss but leaves positions intact)
-        // or when interest paid into availableLiquidity is withdrawn as principal.
-        // A plain `-=` then underflow-reverts (solc 0.8.20 checked math), bricking
-        // withdrawals of liquidity that demonstrably exists in availableLiquidity.
-        // Saturate. availableLiquidity is the solvency-critical figure and is
-        // guarded by the require above, so it uses a plain subtraction.
+        // [audit 2026-08] totalLiquidity can legitimately drift below Σ
+        // position.amount (e.g. interest paid into availableLiquidity withdrawn as
+        // principal), so a plain `-=` could underflow-revert (solc 0.8.20 checked
+        // math) and brick a withdrawal of liquidity that demonstrably exists in
+        // availableLiquidity. Saturate. (D4 keeps positions and totalLiquidity in
+        // step on loss, but this defensive saturation is retained.)
+        // availableLiquidity is the solvency-critical figure and is guarded by the
+        // require above, so it uses a plain subtraction.
         pool.totalLiquidity = amount >= pool.totalLiquidity ? 0 : pool.totalLiquidity - amount;
         pool.availableLiquidity -= amount;
 
@@ -317,6 +317,36 @@ contract AgentLiquidityMarketplaceV6 is Ownable2Step, ReentrancyGuard, Pausable 
             }
         }
         isInPoolLenders[agentId][lender] = false;
+    }
+
+    /**
+     * @notice [audit 2026-08 D4] Reduce every lender's principal position in a
+     *         pool pro-rata by `loss`, distributing a defaulted-loan shortfall
+     *         fairly. Returns the actual total reduction applied (≈ loss, minus
+     *         integer-division dust, and clamped when total principal < loss).
+     * @dev Bounded by MAX_LENDERS_PER_POOL (≤ 50). Only principal (position.amount)
+     *      is reduced — earnedInterest is untouched. The loss is split by share of
+     *      total principal; any rounding dust is left as an unreduced remainder
+     *      (below `loss`), which the caller reconciles against totalLiquidity.
+     */
+    function _socializeLoss(uint256 agentId, uint256 loss) internal returns (uint256 reduced) {
+        address[] storage lenders = poolLenders[agentId];
+        uint256 totalPrincipal = 0;
+        for (uint256 i = 0; i < lenders.length; i++) {
+            totalPrincipal += positions[agentId][lenders[i]].amount;
+        }
+        if (totalPrincipal == 0) return 0;
+
+        uint256 cappedLoss = loss > totalPrincipal ? totalPrincipal : loss;
+        for (uint256 i = 0; i < lenders.length; i++) {
+            LenderPosition storage p = positions[agentId][lenders[i]];
+            if (p.amount == 0) continue;
+            // Proportional share; floor division means Σshares ≤ cappedLoss.
+            uint256 share = (cappedLoss * p.amount) / totalPrincipal;
+            p.amount -= share;
+            reduced += share;
+        }
+        return reduced;
     }
 
     /**
@@ -578,13 +608,18 @@ contract AgentLiquidityMarketplaceV6 is Ownable2Step, ReentrancyGuard, Pausable 
         // Seize collateral (what we actually recover)
         pool.availableLiquidity += recovered;
 
-        // Reduce totalLiquidity by the unrecovered loss so it reflects real pool
-        // value. [audit 2026-08] Saturate — the loss can exceed the (already
-        // drifted) totalLiquidity, and a plain `-=` would underflow-revert and
-        // brick liquidation permanently (loan stuck ACTIVE, default penalty
-        // evaded). totalLiquidity is not solvency-critical (availableLiquidity is).
+        // [audit 2026-08 D4] Socialize the unrecovered loss PRO-RATA across all
+        // current lenders by reducing each position.amount by its share. This
+        // restores the invariant `Σ position.amount == availableLiquidity +
+        // totalLoaned`, so first-come-first-served withdrawal can no longer let an
+        // alert/colluding lender exit whole and dump the shortfall on the last
+        // lender — every lender bears the loss in proportion to their stake,
+        // regardless of withdrawal order. Bounded by MAX_LENDERS_PER_POOL (50).
         if (loss > 0) {
-            pool.totalLiquidity = loss >= pool.totalLiquidity ? 0 : pool.totalLiquidity - loss;
+            uint256 reduced = _socializeLoss(loan.agentId, loss);
+            // Keep totalLiquidity == Σ position.amount. reduced ≈ loss (± rounding
+            // dust when totalPrincipal < loss, i.e. positions already near zero).
+            pool.totalLiquidity = reduced >= pool.totalLiquidity ? 0 : pool.totalLiquidity - reduced;
         }
 
         // Update loaned amount
