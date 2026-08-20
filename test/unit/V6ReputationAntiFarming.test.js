@@ -84,4 +84,40 @@ describe("D1 — stake-weighted reputation (anti-farming)", function () {
             expect(await reputation["getReputationScore(address)"](agent.address)).to.equal(before);
         });
     });
+
+    describe("D1 residual — reputation-gain rate limit", () => {
+        it("defaults off (unlimited)", async () => {
+            expect(await reputation.maxReputationGainPerWindow()).to.equal(0n);
+        });
+
+        it("caps reputation gain per window, defeating the concurrency farm", async () => {
+            await reputation.authorizePool(owner.address);
+            // 20 points/day cap.
+            await reputation.setReputationRateLimit(20, 24 * 60 * 60);
+            // Simulate 10 concurrent full-size loans repaid in the same window:
+            // without the cap that is +100; with the cap it is +20.
+            for (let i = 0; i < 10; i++) {
+                await reputation.recordLoanCompletion(agent.address, USDC(100), true);
+            }
+            expect(await reputation["getReputationScore(address)"](agent.address)).to.equal(20n);
+
+            // Same window: further completions add nothing.
+            await reputation.recordLoanCompletion(agent.address, USDC(100), true);
+            expect(await reputation["getReputationScore(address)"](agent.address)).to.equal(20n);
+
+            // Next window: budget resets, up to +20 more.
+            await ethers.provider.send("evm_increaseTime", [24 * 60 * 60 + 1]);
+            await ethers.provider.send("evm_mine", []);
+            await reputation.recordLoanCompletion(agent.address, USDC(100), true); // +10
+            await reputation.recordLoanCompletion(agent.address, USDC(100), true); // +10 (fills the new window)
+            await reputation.recordLoanCompletion(agent.address, USDC(100), true); // capped → +0
+            expect(await reputation["getReputationScore(address)"](agent.address)).to.equal(40n);
+        });
+
+        it("setReputationRateLimit is owner-only and rejects zero window", async () => {
+            await expect(reputation.connect(agent).setReputationRateLimit(20, 3600)).to.be.reverted;
+            await expect(reputation.setReputationRateLimit(20, 0)).to.be.revertedWith("Window must be > 0");
+        });
+    });
+
 });

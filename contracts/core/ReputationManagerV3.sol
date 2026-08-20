@@ -27,6 +27,18 @@ contract ReputationManagerV3 is Ownable {
     // back to 100 and erase the penalty. Track initialization separately.
     mapping(uint256 => bool) public initialized; // agentId => has been initialized
 
+    // [audit 2026-08 D1 residual] Reputation-gain rate limit. The principal-scale
+    // + interest gate raised farming COST but a Sybil (self-lender + borrower)
+    // still recaptures interest, and MAX_ACTIVE_LOANS concurrency lets an agent
+    // earn bonus × 10 per window. This caps total reputation GAIN per rolling
+    // window per agent, so concurrency no longer accelerates farming — building
+    // a tier now takes real wall-clock time regardless of loan count. 0 =
+    // unlimited (disabled); set > 0 at launch. Owner-tunable.
+    uint256 public maxReputationGainPerWindow; // points; 0 = unlimited
+    uint256 public reputationGainWindow = 1 days;
+    mapping(uint256 => uint256) public windowStart;       // agentId => current window start ts
+    mapping(uint256 => uint256) public gainedInWindow;    // agentId => reputation gained this window
+
     // Loan tracking
     mapping(uint256 => uint256) public totalBorrowed; // agentId => total amount borrowed
     mapping(uint256 => uint256) public totalRepaid;   // agentId => total amount repaid
@@ -66,6 +78,7 @@ contract ReputationManagerV3 is Ownable {
     event ScoringParametersUpdated(uint256 onTimeBonus, uint256 defaultPenaltyBase, uint256 defaultPenaltyLarge, uint256 largeLoanThreshold);
     event ValidationBonusParametersUpdated(uint256 bonusThreshold, uint256 creditBonus);
     event BonusReferenceAmountUpdated(uint256 newReference);
+    event ReputationRateLimitUpdated(uint256 maxGainPerWindow, uint256 window);
     event ReputationInitialized(uint256 indexed agentId, uint256 score);
     event ReputationUpdated(uint256 indexed agentId, uint256 oldScore, uint256 newScore, string reason);
     event LoanRecorded(uint256 indexed agentId, uint256 amount);
@@ -134,6 +147,18 @@ contract ReputationManagerV3 is Ownable {
         require(newRef > 0, "Reference must be > 0");
         bonusReferenceAmount = newRef;
         emit BonusReferenceAmountUpdated(newRef);
+    }
+
+    /**
+     * @notice [D1 residual] Configure the reputation-gain rate limit.
+     * @param maxGain Max reputation points an agent can gain per window (0 = unlimited/off).
+     * @param window  Rolling window length in seconds (must be > 0).
+     */
+    function setReputationRateLimit(uint256 maxGain, uint256 window) external onlyOwner {
+        require(window > 0, "Window must be > 0");
+        maxReputationGainPerWindow = maxGain;
+        reputationGainWindow = window;
+        emit ReputationRateLimitUpdated(maxGain, window);
     }
 
     /**
@@ -214,7 +239,23 @@ contract ReputationManagerV3 is Ownable {
             uint256 ref = bonusReferenceAmount;
             uint256 effAmount = amount < ref ? amount : ref;
             uint256 bonus = (onTimeRepaymentBonus * effAmount) / ref;
+
+            // [D1 residual] Rate-limit the gain per rolling window so concurrency
+            // can't accelerate farming. Reset the window if it has elapsed, then
+            // clamp the bonus to the remaining budget.
+            if (maxReputationGainPerWindow > 0) {
+                if (block.timestamp >= windowStart[agentId] + reputationGainWindow) {
+                    windowStart[agentId] = block.timestamp;
+                    gainedInWindow[agentId] = 0;
+                }
+                uint256 remaining = maxReputationGainPerWindow > gainedInWindow[agentId]
+                    ? maxReputationGainPerWindow - gainedInWindow[agentId]
+                    : 0;
+                if (bonus > remaining) bonus = remaining;
+            }
+
             if (bonus > 0) {
+                if (maxReputationGainPerWindow > 0) gainedInWindow[agentId] += bonus;
                 uint256 oldScore = agentReputation[agentId];
                 uint256 newScore = oldScore + bonus;
                 if (newScore > 1000) newScore = 1000;
