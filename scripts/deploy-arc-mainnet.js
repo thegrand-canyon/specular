@@ -117,7 +117,9 @@ async function main() {
     if (process.env.SPECULAR_BIND_BORROW === '1') console.log('  6. marketplace.setBindBorrowToPoolCreator(true)   [M-1 lever]');
     if (process.env.SPECULAR_MIN_HOLD_SECONDS) console.log(`  7. marketplace.setMinHoldForReputationReward(${process.env.SPECULAR_MIN_HOLD_SECONDS})   [M-2 lever]`);
     if (process.env.SPECULAR_MIN_SUPPLY) console.log(`  8. marketplace.setMinSupplyAmount(${process.env.SPECULAR_MIN_SUPPLY})   [F-C squat lever]`);
-    if (process.env.FAUCET_MAX_ELIGIBLE_AGENT_ID) console.log(`  9. faucet.setMaxEligibleAgentId(${process.env.FAUCET_MAX_ELIGIBLE_AGENT_ID})`);
+    if (process.env.SPECULAR_REP_RATE_MAX) console.log(`  9. reputation.setReputationRateLimit(${process.env.SPECULAR_REP_RATE_MAX}, ${process.env.SPECULAR_REP_RATE_WINDOW || 86400})   [D1 rate limit]`);
+    if (process.env.SPECULAR_PLATFORM_FEE_BPS) console.log(`  10. marketplace.setPlatformFeeRate(${process.env.SPECULAR_PLATFORM_FEE_BPS})   [D1: nonzero fee]`);
+    if (process.env.FAUCET_MAX_ELIGIBLE_AGENT_ID) console.log(`  11. faucet.setMaxEligibleAgentId(${process.env.FAUCET_MAX_ELIGIBLE_AGENT_ID})`);
     console.log('');
 
     if (DRY_RUN) {
@@ -179,6 +181,15 @@ async function main() {
     if (process.env.SPECULAR_MIN_SUPPLY) {
         await (await marketplace.setMinSupplyAmount(BigInt(process.env.SPECULAR_MIN_SUPPLY))).wait();
         console.log(`  ✅ F-C lever: minSupplyAmount = ${process.env.SPECULAR_MIN_SUPPLY} base units`);
+    }
+    if (process.env.SPECULAR_REP_RATE_MAX) {
+        const win = BigInt(process.env.SPECULAR_REP_RATE_WINDOW || 86400);
+        await (await reputation.setReputationRateLimit(BigInt(process.env.SPECULAR_REP_RATE_MAX), win)).wait();
+        console.log(`  ✅ D1 rate limit: ${process.env.SPECULAR_REP_RATE_MAX} pts / ${win}s`);
+    }
+    if (process.env.SPECULAR_PLATFORM_FEE_BPS) {
+        await (await marketplace.setPlatformFeeRate(BigInt(process.env.SPECULAR_PLATFORM_FEE_BPS))).wait();
+        console.log(`  ✅ D1: platformFeeRate = ${process.env.SPECULAR_PLATFORM_FEE_BPS} bps`);
     }
     if (process.env.FAUCET_MAX_ELIGIBLE_AGENT_ID) {
         await (await faucet.setMaxEligibleAgentId(BigInt(process.env.FAUCET_MAX_ELIGIBLE_AGENT_ID))).wait();
