@@ -54,6 +54,14 @@ const NETWORKS = {
         defaultRpc: 'https://arc-testnet.drpc.org',
         x402Network: 'base',  // Arc isn't an x402 native chain; demos use stub
         defaultFacilitator: null,  // no facilitator on Arc — stub only
+    },
+    // Arc testnet V6-STAGING — the 2026-08 self-audited/fixed stack. Auto-supply
+    // routes through SpecularQuickstart('arc-staging') → the fixed marketplace.
+    'arc-staging': {
+        addresses: './src/config/arc-testnet-v6-addresses.json',
+        defaultRpc: 'https://arc-testnet.drpc.org',
+        x402Network: 'base',
+        defaultFacilitator: null,  // stub only
     }
 };
 
