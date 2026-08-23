@@ -28,10 +28,12 @@ Website: specular.financial | GitHub: thegrand-canyon/specular | Deploy: specula
 - `AgentLiquidityMarketplaceV6.sol` — V6, surgical patch with §B1/§S1/§S5 fixes (NEW, deployed Arc only)
 - Arc Testnet addresses: `src/config/arc-testnet-addresses.json`
 - Base Mainnet addresses: `src/config/base-addresses.json`
+- **Arc Testnet V6-STAGING (2026-08 self-audit fixes)**: `src/config/arc-testnet-v6-addresses.json` — the FIXED stack (H-1..H-3, A1, D1–D5, D11/D12 + all levers) deployed to Arc testnet as a mainnet rehearsal. Marketplace `0xDbDf60AE5CB46D23aA44c062a4943655a6820f31`, RegistryV2 `0x4712A978A0EADe68f0b485b981112Ae66aA622d9`, ReputationV3 `0x085D581FB56d4aD428d9852466557286099dD46c`, Faucet `0x11D3e3A358D0Ef572260E33DAC66D0276EB97c57`, MockUSDC `0x9F3C10985998D1354D1465c5135Aa924775bd11D`. Owner = secure wallet. Launch levers ON (M-1, M-2=1d, F-C=1 USDC, D1 rate-limit 20/day, 1% fee, faucet cohort 100). On-chain smoke test 19/19 (`scripts/smoke-test-arc-testnet-v6.js`). Deploy: `scripts/deploy-arc-testnet-v6.js`. NOTE: this is the fixed code on TESTNET; the older Arc-testnet V6 `0x7a05…` below predates these fixes.
 
 | Network | v4 (canonical) | V6 (with fixes) | Owner | Paused |
 |---------|---------------|------------------|-------|--------|
-| Arc Testnet | `0x048363A325A5B188b7FF157d725C5e329f0171D3` | `0x7a0560551b2370ee87458186c0b1eFCc38c7c57a` (post-WORLDCLASS audit, deployed 2026-05-17) | `0x800e305A...F72C` (secure) | **No** |
+| Arc Testnet | `0x048363A325A5B188b7FF157d725C5e329f0171D3` | `0x7a0560551b2370ee87458186c0b1eFCc38c7c57a` (post-WORLDCLASS audit, deployed 2026-05-17 — predates 2026-08 self-audit fixes) | `0x800e305A...F72C` (secure) | **No** |
+| Arc Testnet **V6-staging (fixed)** | — | `0xDbDf60AE5CB46D23aA44c062a4943655a6820f31` (2026-08 self-audit fixes + levers, fresh MockUSDC) | `0x800e305A...F72C` (secure) | **No** |
 | Base Mainnet | `0x0a4e3C745aB95aceb45B05C28D89fe4Db8815F9a` (CANONICAL 2026-05-17 — V6, post-WORLDCLASS audit) | (v4 archived: `0xd7b4dEE74C61844DFA75aEbe224e4635463b1C8f`, paused) | `0x800e305A...F72C` (secure) | **No** |
 
 - Base stale marketplace: `0x77F8D49cdE6Ae7481BeA38C8a70b5A893bD4d9AF` (60.5 USDC residual, different owner — ignore)
