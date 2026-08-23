@@ -35,6 +35,13 @@ const NETWORK_CONFIGS = {
         addresses: path.join(REPO_ROOT, 'src/config/arc-testnet-addresses.json'),
         explorer: 'https://testnet.arcscan.app/tx/',
         decimals: 6
+    },
+    // Arc testnet V6-STAGING — the 2026-08 self-audited/fixed stack (levers ON,
+    // fresh MockUSDC). Use this to exercise the SDK against the FIXED contracts.
+    'arc-staging': {
+        addresses: path.join(REPO_ROOT, 'src/config/arc-testnet-v6-addresses.json'),
+        explorer: 'https://testnet.arcscan.app/tx/',
+        decimals: 6
     }
 };
 
@@ -53,9 +60,9 @@ class SpecularQuickstart {
 
         const addr = JSON.parse(fs.readFileSync(this.cfg.addresses, 'utf8'));
         this.addresses = {
-            marketplace: this.network === 'arc'
-                ? addr.agentLiquidityMarketplace_v6  // arc: V6 not yet canonical
-                : addr.agentLiquidityMarketplace,    // base: V6 IS canonical
+            // arc/arc-staging expose the V6 marketplace under agentLiquidityMarketplace_v6;
+            // base's canonical V6 lives under agentLiquidityMarketplace. Prefer _v6 when present.
+            marketplace: addr.agentLiquidityMarketplace_v6 || addr.agentLiquidityMarketplace,
             registry: addr.agentRegistryV2,
             reputation: addr.reputationManagerV3,
             usdc: addr.usdc

@@ -63,6 +63,12 @@ class SpecularClient:
             "explorer_tx": "https://testnet.arcscan.app/tx/",
             "default_rpc": "https://arc-testnet.drpc.org",
         },
+        # Arc testnet V6-STAGING — the 2026-08 self-audited/fixed stack (levers ON).
+        "arc-staging": {
+            "addresses_path": REPO_ROOT / "src" / "config" / "arc-testnet-v6-addresses.json",
+            "explorer_tx": "https://testnet.arcscan.app/tx/",
+            "default_rpc": "https://arc-testnet.drpc.org",
+        },
     }
 
     _LOAN_STATES = ["REQUESTED", "ACTIVE", "REPAID", "DEFAULTED"]
@@ -76,12 +82,9 @@ class SpecularClient:
         cfg = self.NETWORK_CONFIGS[network]
         with open(cfg["addresses_path"]) as f:
             addr = json.load(f)
-        # On Base, V6 is canonical; on Arc, V6 is at the _v6 key.
-        self.marketplace_addr = (
-            addr["agentLiquidityMarketplace_v6"]
-            if network == "arc"
-            else addr["agentLiquidityMarketplace"]
-        )
+        # arc/arc-staging expose V6 at the _v6 key; Base's canonical V6 is at
+        # agentLiquidityMarketplace. Prefer _v6 when present.
+        self.marketplace_addr = addr.get("agentLiquidityMarketplace_v6") or addr["agentLiquidityMarketplace"]
         self.registry_addr = addr["agentRegistryV2"]
         self.reputation_addr = addr["reputationManagerV3"]
         self.usdc_addr = addr["usdc"]
