@@ -206,7 +206,21 @@ class SpecularQuickstart {
         const requiredCollateral = (amt * collateralPct) / 100n;
         await this._approveExact(requiredCollateral);
 
-        const tx = await this.marketplace.requestLoan(amt, durationDays);
+        // Exact-approval is the common path (D2). Some deployed marketplaces pull
+        // marginally MORE collateral than amount*pct/100 (rounding, upfront
+        // interest, or deployed-bytecode drift from source). On an allowance
+        // revert, approve a BOUNDED buffer — collateral + full principal, which
+        // covers any plausible interest/rounding and is capped, to the trusted
+        // marketplace — retry once, then revoke any leftover (below) to restore
+        // the exact-approval blast-radius guarantee.
+        let tx;
+        try {
+            tx = await this.marketplace.requestLoan(amt, durationDays);
+        } catch (e) {
+            if (!/allowance|exceeds|transfer amount/i.test(e.message || '')) throw e;
+            await this._approveExact(requiredCollateral + amt);
+            tx = await this.marketplace.requestLoan(amt, durationDays);
+        }
         const r = await tx.wait();
         let loanId = null;
         for (const log of r.logs) {
@@ -216,6 +230,9 @@ class SpecularQuickstart {
             } catch (e) {}
         }
         if (loanId === null) throw new Error('LoanRequested event not found in receipt');
+        // Restore exact-approval: clear any leftover collateral allowance from the
+        // buffer path (a no-op — no tx — on the common exact path, where it's 0).
+        await this.revokeApproval().catch(() => {});
         // Public-RPC propagation: poll until the loan is readable from the
         // marketplace's view so the next call (e.g. repay) doesn't hit a
         // stale node that returns loan.borrower=0x0 → "Not the borrower"
@@ -241,17 +258,28 @@ class SpecularQuickstart {
         const interest = await this.marketplace.calculateInterest(loan.amount, loan.interestRate, loan.duration);
         await this._approveExact(loan.amount + interest);
 
-        let tx;
+        let tx, bumped = false;
         for (let i = 0; i < 5; i++) {
             try {
                 tx = await this.marketplace.repayLoan(loanId);
                 break;
             } catch (e) {
-                if (i === 4 || !/Not the borrower/.test(e.message || '')) throw e;
+                const msg = e.message || '';
+                // Same bounded-buffer fallback as borrow: if the contract pulls
+                // slightly more than principal+interest (rounding / drift), bump
+                // the approval by one more interest-worth (bounded) and retry.
+                if (!bumped && /allowance|exceeds|transfer amount/i.test(msg)) {
+                    bumped = true;
+                    await this._approveExact(loan.amount + interest * 2n);
+                    continue;
+                }
+                if (i === 4 || !/Not the borrower/.test(msg)) throw e;
                 await new Promise(r => setTimeout(r, 2000));
             }
         }
         await tx.wait();
+        // Restore exact-approval if the buffer path was taken (no-op otherwise).
+        if (bumped) await this.revokeApproval().catch(() => {});
         return tx.hash;
     }
 
