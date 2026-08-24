@@ -37,9 +37,14 @@ contract AgentRegistryV2 is ERC721URIStorage, Ownable, Pausable, EIP712 {
     mapping(address => uint256) public addressToAgentId; // owner address => agentId
     mapping(uint256 => mapping(string => bytes)) public agentMetadata; // agentId => key => value
 
-    // EIP-712 for setAgentWallet signatures
+    // EIP-712 for setAgentWallet signatures.
+    // [audit 2026-08 D9] Includes a per-agent nonce so a signature can't be
+    // replayed within its deadline window to force the wallet back to a prior value.
     bytes32 private constant SET_WALLET_TYPEHASH =
-        keccak256("SetWallet(uint256 agentId,address newWallet,uint256 deadline)");
+        keccak256("SetWallet(uint256 agentId,address newWallet,uint256 deadline,uint256 nonce)");
+
+    // agentId => next expected setAgentWallet nonce (incremented on each use).
+    mapping(uint256 => uint256) public walletNonce;
 
     // Events (ERC-8004 compliant)
     event AgentRegistered(
@@ -141,15 +146,16 @@ contract AgentRegistryV2 is ERC721URIStorage, Ownable, Pausable, EIP712 {
         require(block.timestamp <= deadline, "Signature expired");
         require(newWallet != address(0), "Invalid wallet address");
 
-        // Verify EIP-712 signature
+        // Verify EIP-712 signature over the current nonce (replay protection).
         bytes32 structHash = keccak256(
-            abi.encode(SET_WALLET_TYPEHASH, agentId, newWallet, deadline)
+            abi.encode(SET_WALLET_TYPEHASH, agentId, newWallet, deadline, walletNonce[agentId])
         );
         bytes32 digest = _hashTypedDataV4(structHash);
         address signer = digest.recover(signature);
 
         require(signer == ownerOf(agentId), "Invalid signature");
 
+        walletNonce[agentId]++; // consume the nonce — the signature can't be replayed
         agents[agentId].agentWallet = newWallet;
 
         emit AgentWalletUpdated(agentId, newWallet);

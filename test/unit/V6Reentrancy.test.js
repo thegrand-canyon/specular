@@ -155,4 +155,31 @@ describe("V6 reentrancy guards", function () {
         const reentered = await attacker.reentered();
         expect(reentered, 'cross-function reentry must be blocked').to.equal(false);
     });
+
+    it("reentry on requestLoan (during collateral transferFrom) → blocked", async () => {
+        const v6Addr = await v6.getAddress();
+        const A = (n) => ethers.parseUnits(n.toString(), 6);
+        // Fresh agent (score 0) → 100% collateral, so requestLoan pulls collateral
+        // via transferFrom on the malicious token — the reentry window.
+        await v6.connect(lender).supplyLiquidity(1, A(500));
+        await attacker.setAttack(ATTACK_ON_TRANSFER_FROM, v6Addr,
+            v6.interface.encodeFunctionData('requestLoan', [A(10), 7]));
+        try { await v6.connect(agent).requestLoan(A(10), 7); } catch (e) {}
+        expect(await attacker.reentered(), 'reentry on requestLoan must be blocked').to.equal(false);
+    });
+
+    it("reentry on liquidateLoan → blocked by nonReentrant", async () => {
+        const v6Addr = await v6.getAddress();
+        const A = (n) => ethers.parseUnits(n.toString(), 6);
+        await attacker.setAttack(ATTACK_NONE, ethers.ZeroAddress, '0x');
+        await v6.connect(lender).supplyLiquidity(1, A(500));
+        await v6.connect(agent).requestLoan(A(10), 7); // loanId 1
+        const loan = await v6.loans(1);
+        await ethers.provider.send("evm_increaseTime", [Number(loan.endTime) - (await ethers.provider.getBlock("latest")).timestamp + 1]);
+        await ethers.provider.send("evm_mine", []);
+        // On the collateral-return transfer inside liquidate, try to reenter liquidate.
+        await attacker.setAttack(ATTACK_ON_TRANSFER, v6Addr, v6.interface.encodeFunctionData('liquidateLoan', [1]));
+        try { await v6.connect(owner).liquidateLoan(1); } catch (e) {}
+        expect(await attacker.reentered(), 'reentry on liquidateLoan must be blocked').to.equal(false);
+    });
 });
