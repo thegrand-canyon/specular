@@ -114,13 +114,18 @@ const BORROW_DAYS = 7;
         rpcUrl: RPC,
         maxPayment: ethers.parseUnits('0.01', 6),
     });
-    const x402Res = await x402.fetch(X402_TARGET, { method: 'GET' });
-    const x402Body = await x402Res.text();
-    console.log(`  HTTP ${x402Res.status}: ${x402Body.slice(0, 150)}`);
-    await new Promise(r => setTimeout(r, 6000));
-    const usdcAfterX402 = await usdcReader.balanceOf(agent.address);
-    const x402Cost = usdcBeforeX402 - usdcAfterX402;
-    console.log(`  x402 cost: ${ethers.formatUnits(x402Cost, 6)} USDC`);
+    // Resilient: an external x402-endpoint outage must NOT abort the journey
+    // before the sweep (step 9), which would strand funded USDC. Log + continue.
+    try {
+        const x402Res = await x402.fetch(X402_TARGET, { method: 'GET' });
+        const x402Body = await x402Res.text();
+        console.log(`  HTTP ${x402Res.status}: ${x402Body.slice(0, 150)}`);
+        await new Promise(r => setTimeout(r, 6000));
+        const usdcAfterX402 = await usdcReader.balanceOf(agent.address);
+        console.log(`  x402 cost: ${ethers.formatUnits(usdcBeforeX402 - usdcAfterX402, 6)} USDC`);
+    } catch (e) {
+        console.log(`  ⚠️  x402 step skipped (external endpoint error): ${e.message.slice(0, 120)}`);
+    }
 
     // === STEP 5: self-supply ===
     console.log(`\n[STEP 5] Self-supply ${SELF_SUPPLY_USDC} USDC to own pool…`);
