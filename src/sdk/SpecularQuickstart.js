@@ -158,6 +158,17 @@ class SpecularQuickstart {
         if (current >= amount) return null;
         const tx = await this.usdc.approve(this.addresses.marketplace, amount);
         await tx.wait();
+        // [RPC-staleness fix] Public RPCs load-balance across nodes (Base's
+        // mainnet.base.org especially); the just-mined approve may not be visible
+        // from the replica the NEXT call's estimateGas hits, which then reverts
+        // "ERC20: transfer amount exceeds allowance". Poll until the new allowance
+        // is visible before returning, so the dependent pull (supply/collateral/
+        // repay) sees a consistent view. Same pattern the loan-state polling uses.
+        for (let i = 0; i < 15; i++) {
+            const seen = await this.usdc.allowance(this.wallet.address, this.addresses.marketplace);
+            if (seen >= amount) break;
+            await new Promise(r => setTimeout(r, 1000));
+        }
         return tx.hash;
     }
 
@@ -206,21 +217,35 @@ class SpecularQuickstart {
         const requiredCollateral = (amt * collateralPct) / 100n;
         await this._approveExact(requiredCollateral);
 
-        // Exact-approval is the common path (D2). Some deployed marketplaces pull
-        // marginally MORE collateral than amount*pct/100 (rounding, upfront
-        // interest, or deployed-bytecode drift from source). On an allowance
-        // revert, approve a BOUNDED buffer — collateral + full principal, which
-        // covers any plausible interest/rounding and is capped, to the trusted
-        // marketplace — retry once, then revoke any leftover (below) to restore
-        // the exact-approval blast-radius guarantee.
-        let tx;
-        try {
-            tx = await this.marketplace.requestLoan(amt, durationDays);
-        } catch (e) {
-            if (!/allowance|exceeds|transfer amount/i.test(e.message || '')) throw e;
-            await this._approveExact(requiredCollateral + amt);
-            tx = await this.marketplace.requestLoan(amt, durationDays);
+        // requestLoan with two robustness layers:
+        //  (a) Exact-approval is the common path (D2). If the contract pulls
+        //      marginally MORE collateral than amount*pct/100 (rounding/version),
+        //      approve a BOUNDED buffer (collateral + principal, capped, to the
+        //      trusted marketplace) once, then revoke the leftover below.
+        //  (b) Transient RPC staleness: on load-balanced public RPCs the prior
+        //      supply/registration may not be visible from the replica this call's
+        //      estimateGas hits ("Insufficient pool liquidity" / "Not a registered
+        //      agent"). Back off and retry.
+        let tx, buffered = false;
+        for (let attempt = 0; attempt < 6; attempt++) {
+            try {
+                tx = await this.marketplace.requestLoan(amt, durationDays);
+                break;
+            } catch (e) {
+                const msg = e.message || '';
+                if (!buffered && /allowance|exceeds|transfer amount/i.test(msg)) {
+                    buffered = true;
+                    await this._approveExact(requiredCollateral + amt);
+                    continue;
+                }
+                if (attempt < 5 && /Insufficient pool liquidity|Not a registered agent|No pool for agent/i.test(msg)) {
+                    await new Promise(r => setTimeout(r, 2000));
+                    continue;
+                }
+                throw e;
+            }
         }
+        if (!tx) throw new Error('requestLoan failed after retries');
         const r = await tx.wait();
         let loanId = null;
         for (const log of r.logs) {
@@ -230,9 +255,9 @@ class SpecularQuickstart {
             } catch (e) {}
         }
         if (loanId === null) throw new Error('LoanRequested event not found in receipt');
-        // Restore exact-approval: clear any leftover collateral allowance from the
-        // buffer path (a no-op — no tx — on the common exact path, where it's 0).
-        await this.revokeApproval().catch(() => {});
+        // Restore exact-approval: clear any leftover collateral allowance — only
+        // on the buffer path (the common exact path leaves 0, no read/tx needed).
+        if (buffered) await this.revokeApproval().catch(() => {});
         // Public-RPC propagation: poll until the loan is readable from the
         // marketplace's view so the next call (e.g. repay) doesn't hit a
         // stale node that returns loan.borrower=0x0 → "Not the borrower"

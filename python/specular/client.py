@@ -180,7 +180,16 @@ class SpecularClient:
         current = self.usdc.functions.allowance(self.account.address, self.marketplace_addr).call()
         if current >= amount:
             return None
-        return self._send(self.usdc.functions.approve(self.marketplace_addr, amount))
+        tx = self._send(self.usdc.functions.approve(self.marketplace_addr, amount))
+        # [RPC-staleness fix] Public RPCs load-balance across nodes; the just-mined
+        # approve may not be visible from the replica the next call hits, which
+        # reverts "exceeds allowance". Poll until the new allowance is visible.
+        import time as _time
+        for _ in range(15):
+            if self.usdc.functions.allowance(self.account.address, self.marketplace_addr).call() >= amount:
+                break
+            _time.sleep(1)
+        return tx
 
     def revoke_approval(self) -> str | None:
         """Set the marketplace USDC allowance to 0. Returns tx hash or None."""
