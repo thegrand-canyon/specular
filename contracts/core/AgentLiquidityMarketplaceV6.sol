@@ -322,12 +322,12 @@ contract AgentLiquidityMarketplaceV6 is Ownable2Step, ReentrancyGuard, Pausable 
     /**
      * @notice [audit 2026-08 D4] Reduce every lender's principal position in a
      *         pool pro-rata by `loss`, distributing a defaulted-loan shortfall
-     *         fairly. Returns the actual total reduction applied (≈ loss, minus
-     *         integer-division dust, and clamped when total principal < loss).
+     *         fairly. Returns the actual total reduction applied — EXACTLY
+     *         min(loss, totalPrincipal): the floor-division remainder is assigned
+     *         so no dust is left unreduced (keeps totalLiquidity == Σ position.amount
+     *         and availableLiquidity+totalLoaned == Σamount+Σinterest exact).
      * @dev Bounded by MAX_LENDERS_PER_POOL (≤ 50). Only principal (position.amount)
-     *      is reduced — earnedInterest is untouched. The loss is split by share of
-     *      total principal; any rounding dust is left as an unreduced remainder
-     *      (below `loss`), which the caller reconciles against totalLiquidity.
+     *      is reduced — earnedInterest is untouched.
      */
     function _socializeLoss(uint256 agentId, uint256 loss) internal returns (uint256 reduced) {
         address[] storage lenders = poolLenders[agentId];
@@ -345,6 +345,18 @@ contract AgentLiquidityMarketplaceV6 is Ownable2Step, ReentrancyGuard, Pausable 
             uint256 share = (cappedLoss * p.amount) / totalPrincipal;
             p.amount -= share;
             reduced += share;
+        }
+        // Assign the floor-division remainder (< lender count, base units) so the
+        // pool loses EXACTLY cappedLoss and no per-pool accounting dust accrues.
+        uint256 remainder = cappedLoss - reduced;
+        if (remainder > 0) {
+            for (uint256 i = 0; i < lenders.length && remainder > 0; i++) {
+                LenderPosition storage p = positions[agentId][lenders[i]];
+                uint256 take = p.amount < remainder ? p.amount : remainder;
+                p.amount -= take;
+                reduced += take;
+                remainder -= take;
+            }
         }
         return reduced;
     }

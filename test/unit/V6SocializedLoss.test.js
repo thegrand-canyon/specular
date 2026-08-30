@@ -35,6 +35,24 @@ describe("V6 — socialized loss on default (D4)", function () {
         expect(await reputation.calculateCollateralRequirement(agent.address)).to.equal(0n);
     });
 
+    it("distributes the loss EXACTLY (no rounding dust) even with unequal, coprime stakes", async () => {
+        // Coprime-ish unequal stakes force floor-division remainders; the fix
+        // assigns the remainder so totalLiquidity == Σ position.amount stays exact.
+        await v6.connect(lenderA).supplyLiquidity(1, USDC(733));
+        await v6.connect(lenderB).supplyLiquidity(1, USDC(457));
+        const r = await (await v6.connect(agent).requestLoan(USDC(1000), 30)).wait();
+        let id; for (const lg of r.logs) { try { const p = v6.interface.parseLog(lg); if (p?.name === "LoanRequested") { id = p.args.loanId; break; } } catch {} }
+        await time.increaseTo(Number((await v6.loans(id)).endTime) + 1);
+        await v6.connect(owner).liquidateLoan(id);
+        // After a full-loss (0-collateral) default of 1000 over principal 1190,
+        // positions must sum to exactly 190 and equal totalLiquidity (no dust).
+        const pA = (await v6.positions(1, lenderA.address)).amount;
+        const pB = (await v6.positions(1, lenderB.address)).amount;
+        const pool = await v6.getAgentPool(1);
+        expect(pA + pB).to.equal(pool.totalLiquidity);
+        expect(pA + pB).to.equal(USDC(1190) - USDC(1000)); // exactly 190 remains, no dust
+    });
+
     it("splits an under-collateralized default pro-rata; last withdrawer is not dumped on", async () => {
         await v6.connect(lenderA).supplyLiquidity(1, USDC(100));
         await v6.connect(lenderB).supplyLiquidity(1, USDC(100));

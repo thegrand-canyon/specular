@@ -147,6 +147,29 @@ contract V6InvariantTest is Test {
             require(v6.activeLoanCount(aid) == actual, "S5: counter mismatch");
         }
     }
+
+    /// Per-pool principal conservation (D4 socialized loss + A1). Two properties
+    /// the fixes must maintain through supply/borrow/repay/claim AND lossy
+    /// liquidation (which reduces positions pro-rata):
+    ///   (a) totalLiquidity == Σ position.amount           (principal tracked)
+    ///   (b) availableLiquidity + totalLoaned == Σ position.amount + Σ earnedInterest
+    ///       (idle + lent == principal + accrued-unclaimed interest)
+    function invariant_pool_principal_conservation() public view {
+        uint256[] memory pools = handler.knownPools();
+        for (uint256 p = 0; p < pools.length; p++) {
+            uint256 aid = pools[p];
+            (, uint256 total, uint256 avail, uint256 loaned, , , uint256 count) = v6.getAgentPool(aid);
+            uint256 sumAmount = 0;
+            uint256 sumInterest = 0;
+            for (uint256 i = 0; i < count; i++) {
+                (uint256 amount, uint256 earned, ) = v6.positions(aid, v6.poolLenders(aid, i));
+                sumAmount += amount;
+                sumInterest += earned;
+            }
+            require(total == sumAmount, "conservation: totalLiquidity != sum position.amount");
+            require(avail + loaned == sumAmount + sumInterest, "conservation: avail+loaned != sum(amount+interest)");
+        }
+    }
 }
 
 /**
