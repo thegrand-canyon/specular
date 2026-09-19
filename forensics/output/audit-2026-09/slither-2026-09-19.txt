@@ -1,0 +1,209 @@
+/Users/peterschroeder/.local/share/uv/tools/slither-analyzer/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+'forge clean' running (wd: /Users/peterschroeder/Specular)
+'forge config --json' running
+'forge build --build-info --skip ./test/foundry/** ./script/** --force' running (wd: /Users/peterschroeder/Specular)
+
+Detector: divide-before-multiply
+AgentLiquidityMarketplaceV6.calculateInterest(uint256,uint256,uint256) (contracts/core/AgentLiquidityMarketplaceV6.sol#658-666) performs a multiplication on the result of a division:
+	- annualInterest = (principal * annualRateBPS) / 10000 (contracts/core/AgentLiquidityMarketplaceV6.sol#663)
+	- interest = (annualInterest * durationSeconds) / 31536000 (contracts/core/AgentLiquidityMarketplaceV6.sol#664)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#divide-before-multiply
+
+Detector: incorrect-equality
+AgentLiquidityMarketplaceV6._countActiveLoansFromArray(address) (contracts/core/AgentLiquidityMarketplaceV6.sol#1078-1089) uses a dangerous strict equality:
+	- loans[loanIds[i]].state == LoanState.ACTIVE (contracts/core/AgentLiquidityMarketplaceV6.sol#1083)
+AgentLiquidityMarketplaceV6._socializeLoss(uint256,uint256) (contracts/core/AgentLiquidityMarketplaceV6.sol#332-362) uses a dangerous strict equality:
+	- totalPrincipal == 0 (contracts/core/AgentLiquidityMarketplaceV6.sol#338)
+ValidationRegistry.getSummary(uint256,address[],string) (contracts/core/ValidationRegistry.sol#308-378) uses a dangerous strict equality:
+	- validation.status == ValidationStatus.PENDING || validation.status == ValidationStatus.DISPUTED (contracts/core/ValidationRegistry.sol#339-340)
+ValidationRegistry.getSummary(uint256,address[],string) (contracts/core/ValidationRegistry.sol#308-378) uses a dangerous strict equality:
+	- validation.status == ValidationStatus.APPROVED (contracts/core/ValidationRegistry.sol#365)
+ValidationRegistry.getSummary(uint256,address[],string) (contracts/core/ValidationRegistry.sol#308-378) uses a dangerous strict equality:
+	- validation.status == ValidationStatus.REJECTED (contracts/core/ValidationRegistry.sol#367)
+ValidationRegistry.validationRequest(address,uint256,string,bytes32) (contracts/core/ValidationRegistry.sol#156-212) uses a dangerous strict equality:
+	- require(bool,string)(validations[requestHash].timestamp == 0,Validation request already exists) (contracts/core/ValidationRegistry.sol#179-182)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#dangerous-strict-equalities
+
+Detector: reentrancy-no-eth
+Reentrancy in DepositRouter._routeToPool(bytes32,uint256,uint256) (contracts/bridge/DepositRouter.sol#161-188):
+	External calls:
+	- usdc.approve(address(marketplace),amount) (contracts/bridge/DepositRouter.sol#174)
+	- marketplace.supplyLiquidity(agentId,amount) (contracts/bridge/DepositRouter.sol#177)
+	State variables written after the call(s):
+	- deposit.processed = true (contracts/bridge/DepositRouter.sol#180)
+	DepositRouter.deposits (contracts/bridge/DepositRouter.sol#44) can be used in cross function reentrancies:
+	- DepositRouter._routeToPool(bytes32,uint256,uint256) (contracts/bridge/DepositRouter.sol#161-188)
+	- DepositRouter.deposits (contracts/bridge/DepositRouter.sol#44)
+	- DepositRouter.getDeposit(bytes32) (contracts/bridge/DepositRouter.sol#206-212)
+	- DepositRouter.manualRoute(bytes32) (contracts/bridge/DepositRouter.sol#194-200)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-1
+
+Detector: unused-return
+CCTPBridge.bridgeToArcPool(uint256,uint256) (contracts/bridge/CCTPBridge.sol#91-130) ignores return value by usdc.approve(address(tokenMessenger),amount) (contracts/bridge/CCTPBridge.sol#102)
+CCTPBridge.bridgeToArc(uint256,address) (contracts/bridge/CCTPBridge.sol#137-176) ignores return value by usdc.approve(address(tokenMessenger),amount) (contracts/bridge/CCTPBridge.sol#148)
+DepositRouter.depositDirect(uint256,uint256) (contracts/bridge/DepositRouter.sol#134-156) ignores return value by usdc.approve(address(marketplace),amount) (contracts/bridge/DepositRouter.sol#145)
+DepositRouter._routeToPool(bytes32,uint256,uint256) (contracts/bridge/DepositRouter.sol#161-188) ignores return value by (None,None,None,None,None,None,isActive) = marketplace.agentPools(agentId) (contracts/bridge/DepositRouter.sol#170)
+DepositRouter._routeToPool(bytes32,uint256,uint256) (contracts/bridge/DepositRouter.sol#161-188) ignores return value by usdc.approve(address(marketplace),amount) (contracts/bridge/DepositRouter.sol#174)
+ReputationManagerV3.calculateCreditLimit(address) (contracts/core/ReputationManagerV3.sol#311-331) ignores return value by (None,None,None,avgScore) = validationRegistry.getSummary(agentId,new address[](0),) (contracts/core/ReputationManagerV3.sol#324)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#unused-return
+
+Detector: events-maths
+CCTPBridge.setArcDomain(uint32) (contracts/bridge/CCTPBridge.sol#204-206) should emit an event for: 
+	- arcDomain = _arcDomain (contracts/bridge/CCTPBridge.sol#205) 
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#missing-events-arithmetic
+
+Detector: missing-zero-check
+CCTPBridge.constructor(address,address,address,address,uint32)._arcMarketplace (contracts/bridge/CCTPBridge.sol#76) lacks a zero-check on :
+		- arcMarketplace = _arcMarketplace (contracts/bridge/CCTPBridge.sol#82)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#missing-zero-address-validation
+
+Detector: reentrancy-benign
+Reentrancy in DepositRouter._routeToPool(bytes32,uint256,uint256) (contracts/bridge/DepositRouter.sol#161-188):
+	External calls:
+	- usdc.approve(address(marketplace),amount) (contracts/bridge/DepositRouter.sol#174)
+	- marketplace.supplyLiquidity(agentId,amount) (contracts/bridge/DepositRouter.sol#177)
+	State variables written after the call(s):
+	- totalCrossChainVolume += amount (contracts/bridge/DepositRouter.sol#184)
+	- totalDeposited[deposit.depositor] += amount (contracts/bridge/DepositRouter.sol#183)
+	- totalDeposits ++ (contracts/bridge/DepositRouter.sol#185)
+Reentrancy in CCTPBridge.bridgeToArc(uint256,address) (contracts/bridge/CCTPBridge.sol#137-176):
+	External calls:
+	- usdc.approve(address(tokenMessenger),amount) (contracts/bridge/CCTPBridge.sol#148)
+	- nonce = tokenMessenger.depositForBurn(amount,arcDomain,mintRecipient,address(usdc)) (contracts/bridge/CCTPBridge.sol#154-159)
+	State variables written after the call(s):
+	- bridgeTransactions[nonce] = BridgeTransaction({sender:msg.sender,amount:amount,agentId:0,nonce:nonce,timestamp:block.timestamp,completed:false}) (contracts/bridge/CCTPBridge.sol#162-169)
+	- totalBridged[msg.sender] += amount (contracts/bridge/CCTPBridge.sol#171)
+Reentrancy in CCTPBridge.bridgeToArcPool(uint256,uint256) (contracts/bridge/CCTPBridge.sol#91-130):
+	External calls:
+	- usdc.approve(address(tokenMessenger),amount) (contracts/bridge/CCTPBridge.sol#102)
+	- nonce = tokenMessenger.depositForBurn(amount,arcDomain,mintRecipient,address(usdc)) (contracts/bridge/CCTPBridge.sol#108-113)
+	State variables written after the call(s):
+	- bridgeTransactions[nonce] = BridgeTransaction({sender:msg.sender,amount:amount,agentId:agentId,nonce:nonce,timestamp:block.timestamp,completed:false}) (contracts/bridge/CCTPBridge.sol#116-123)
+	- totalBridged[msg.sender] += amount (contracts/bridge/CCTPBridge.sol#125)
+Reentrancy in DepositRouter.depositDirect(uint256,uint256) (contracts/bridge/DepositRouter.sol#134-156):
+	External calls:
+	- usdc.approve(address(marketplace),amount) (contracts/bridge/DepositRouter.sol#145)
+	- marketplace.supplyLiquidity(agentId,amount) (contracts/bridge/DepositRouter.sol#148)
+	State variables written after the call(s):
+	- totalCrossChainVolume += amount (contracts/bridge/DepositRouter.sol#152)
+	- totalDeposited[msg.sender] += amount (contracts/bridge/DepositRouter.sol#151)
+	- totalDeposits ++ (contracts/bridge/DepositRouter.sol#153)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-2
+
+Detector: reentrancy-events
+Reentrancy in DepositRouter._routeToPool(bytes32,uint256,uint256) (contracts/bridge/DepositRouter.sol#161-188):
+	External calls:
+	- usdc.approve(address(marketplace),amount) (contracts/bridge/DepositRouter.sol#174)
+	- marketplace.supplyLiquidity(agentId,amount) (contracts/bridge/DepositRouter.sol#177)
+	Event emitted after the call(s):
+	- DepositRouted(depositId,agentId,amount) (contracts/bridge/DepositRouter.sol#187)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-3
+
+Detector: timestamp
+DepositRouter._routeToPool(bytes32,uint256,uint256) (contracts/bridge/DepositRouter.sol#161-188) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(! deposit.processed,Already processed) (contracts/bridge/DepositRouter.sol#167)
+DepositRouter.manualRoute(bytes32) (contracts/bridge/DepositRouter.sol#194-200) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(! deposit.processed,Already processed) (contracts/bridge/DepositRouter.sol#196)
+	- require(bool,string)(deposit.amount > 0,Deposit not found) (contracts/bridge/DepositRouter.sol#197)
+AgentLiquidityMarketplaceV6.createAgentPool() (contracts/core/AgentLiquidityMarketplaceV6.sol#177-195) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(! agentPools[agentId].isActive,Pool already exists) (contracts/core/AgentLiquidityMarketplaceV6.sol#180)
+AgentLiquidityMarketplaceV6.supplyLiquidity(uint256,uint256) (contracts/core/AgentLiquidityMarketplaceV6.sol#214-253) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(agentPools[agentId].isActive,Pool not active) (contracts/core/AgentLiquidityMarketplaceV6.sol#221)
+AgentLiquidityMarketplaceV6.withdrawLiquidity(uint256,uint256) (contracts/core/AgentLiquidityMarketplaceV6.sol#258-303) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(position.amount >= amount,Insufficient balance) (contracts/core/AgentLiquidityMarketplaceV6.sol#264)
+	- require(bool,string)(pool.availableLiquidity >= amount,Insufficient pool liquidity) (contracts/core/AgentLiquidityMarketplaceV6.sol#265)
+AgentLiquidityMarketplaceV6._socializeLoss(uint256,uint256) (contracts/core/AgentLiquidityMarketplaceV6.sol#332-362) uses timestamp for comparisons
+	Dangerous comparisons:
+	- totalPrincipal == 0 (contracts/core/AgentLiquidityMarketplaceV6.sol#338)
+	- remainder > 0 (contracts/core/AgentLiquidityMarketplaceV6.sol#352)
+	- i_scope_1 < lenders.length && remainder > 0 (contracts/core/AgentLiquidityMarketplaceV6.sol#353)
+	- loss > totalPrincipal (contracts/core/AgentLiquidityMarketplaceV6.sol#340)
+	- p_scope_2.amount < remainder (contracts/core/AgentLiquidityMarketplaceV6.sol#355)
+AgentLiquidityMarketplaceV6.requestLoan(uint256,uint256) (contracts/core/AgentLiquidityMarketplaceV6.sol#367-435) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(agentPools[agentId].isActive,No pool for agent) (contracts/core/AgentLiquidityMarketplaceV6.sol#372)
+	- require(bool,string)(amount <= pool.availableLiquidity,Insufficient pool liquidity) (contracts/core/AgentLiquidityMarketplaceV6.sol#375)
+	- require(bool,string)(pool.agentAddress == msg.sender,Borrow restricted to pool creator) (contracts/core/AgentLiquidityMarketplaceV6.sol#380)
+	- require(bool,string)(outstandingPrincipal[agentId] + amount <= creditLimit,Exceeds credit limit) (contracts/core/AgentLiquidityMarketplaceV6.sol#393)
+AgentLiquidityMarketplaceV6._disburseLoan(uint256) (contracts/core/AgentLiquidityMarketplaceV6.sol#440-468) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(loan.state == LoanState.REQUESTED,Invalid loan state) (contracts/core/AgentLiquidityMarketplaceV6.sol#444)
+AgentLiquidityMarketplaceV6.repayLoan(uint256) (contracts/core/AgentLiquidityMarketplaceV6.sol#473-537) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(msg.sender == loan.borrower,Not the borrower) (contracts/core/AgentLiquidityMarketplaceV6.sol#475)
+	- require(bool,string)(loan.state == LoanState.ACTIVE,Loan not active) (contracts/core/AgentLiquidityMarketplaceV6.sol#476)
+	- onTime = block.timestamp <= loan.endTime (contracts/core/AgentLiquidityMarketplaceV6.sol#530)
+	- heldLongEnough = minHoldForReputationReward == 0 || (block.timestamp - loan.startTime) >= minHoldForReputationReward (contracts/core/AgentLiquidityMarketplaceV6.sol#531-532)
+	- reputationManager.recordLoanCompletion(loan.borrower,loan.amount,onTime && heldLongEnough && paidInterest) (contracts/core/AgentLiquidityMarketplaceV6.sol#534)
+AgentLiquidityMarketplaceV6.liquidateLoan(uint256) (contracts/core/AgentLiquidityMarketplaceV6.sol#609-653) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(loan.state == LoanState.ACTIVE,Loan not active) (contracts/core/AgentLiquidityMarketplaceV6.sol#611)
+	- require(bool,string)(block.timestamp > loan.endTime,Loan not overdue) (contracts/core/AgentLiquidityMarketplaceV6.sol#612)
+	- reduced >= pool.totalLiquidity (contracts/core/AgentLiquidityMarketplaceV6.sol#634)
+AgentLiquidityMarketplaceV6.getAgentPool(uint256) (contracts/core/AgentLiquidityMarketplaceV6.sol#671-694) uses timestamp for comparisons
+	Dangerous comparisons:
+	- pool.totalLiquidity > 0 (contracts/core/AgentLiquidityMarketplaceV6.sol#681-683)
+AgentLiquidityMarketplaceV6.getLenderPosition(uint256,address) (contracts/core/AgentLiquidityMarketplaceV6.sol#699-718) uses timestamp for comparisons
+	Dangerous comparisons:
+	- pool.totalLiquidity > 0 (contracts/core/AgentLiquidityMarketplaceV6.sol#708-710)
+AgentLiquidityMarketplaceV6.claimInterest(uint256) (contracts/core/AgentLiquidityMarketplaceV6.sol#751-778) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(pool.availableLiquidity >= interest,Drain underflow) (contracts/core/AgentLiquidityMarketplaceV6.sol#759)
+AgentLiquidityMarketplaceV6.seedPosition(uint256,address,uint256,uint256,uint256) (contracts/core/AgentLiquidityMarketplaceV6.sol#872-909) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(agentPools[agentId].agentId == agentId,Pool not seeded) (contracts/core/AgentLiquidityMarketplaceV6.sol#880)
+	- require(bool,string)(sumPositions <= agentPools[agentId].totalLiquidity,Position sum exceeds totalLiquidity) (contracts/core/AgentLiquidityMarketplaceV6.sol#903-906)
+AgentLiquidityMarketplaceV6.resetPoolAccounting(uint256) (contracts/core/AgentLiquidityMarketplaceV6.sol#1010-1063) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(pool.agentId == agentId,Pool does not exist) (contracts/core/AgentLiquidityMarketplaceV6.sol#1012)
+	- require(bool,string)(agentRegistry.ownerOf(agentId) == pool.agentAddress,Agent transferred; resync via migration helpers) (contracts/core/AgentLiquidityMarketplaceV6.sol#1019-1022)
+AgentLiquidityMarketplaceV6._countActiveLoansFromArray(address) (contracts/core/AgentLiquidityMarketplaceV6.sol#1078-1089) uses timestamp for comparisons
+	Dangerous comparisons:
+	- loans[loanIds[i]].state == LoanState.ACTIVE (contracts/core/AgentLiquidityMarketplaceV6.sol#1083)
+AgentRegistryV2.setAgentWallet(uint256,address,uint256,bytes) (contracts/core/AgentRegistryV2.sol#140-162) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(block.timestamp <= deadline,Signature expired) (contracts/core/AgentRegistryV2.sol#146)
+AgentRegistryV2.deactivateAgent(uint256) (contracts/core/AgentRegistryV2.sol#202-209) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(agents[agentId].isActive,Agent already deactivated) (contracts/core/AgentRegistryV2.sol#204)
+AgentRegistryV2.reactivateAgent(uint256) (contracts/core/AgentRegistryV2.sol#215-222) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(! agents[agentId].isActive,Agent already active) (contracts/core/AgentRegistryV2.sol#217)
+AgentRegistryV2.isAgentActive(address) (contracts/core/AgentRegistryV2.sol#240-243) uses timestamp for comparisons
+	Dangerous comparisons:
+	- agentId != 0 && agents[agentId].isActive (contracts/core/AgentRegistryV2.sol#242)
+ReputationManagerV3.recordLoanCompletion(address,uint256,bool) (contracts/core/ReputationManagerV3.sol#228-269) uses timestamp for comparisons
+	Dangerous comparisons:
+	- block.timestamp >= windowStart[agentId] + reputationGainWindow (contracts/core/ReputationManagerV3.sol#247)
+ValidationRegistry.validationRequest(address,uint256,string,bytes32) (contracts/core/ValidationRegistry.sol#156-212) uses timestamp for comparisons
+	Dangerous comparisons:
+	- requestHash == bytes32(0) (contracts/core/ValidationRegistry.sol#166)
+	- require(bool,string)(validations[requestHash].timestamp == 0,Validation request already exists) (contracts/core/ValidationRegistry.sol#179-182)
+ValidationRegistry.validationResponse(bytes32,uint8,string,bytes32,string) (contracts/core/ValidationRegistry.sol#222-257) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(validation.timestamp != 0,Validation request does not exist) (contracts/core/ValidationRegistry.sol#231)
+	- require(bool,string)(msg.sender == validation.validatorAddress,Not the assigned validator) (contracts/core/ValidationRegistry.sol#232-235)
+	- require(bool,string)(validation.status == ValidationStatus.PENDING,Validation already completed) (contracts/core/ValidationRegistry.sol#236-239)
+ValidationRegistry.disputeValidation(bytes32) (contracts/core/ValidationRegistry.sol#263-282) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(validation.timestamp != 0,Validation does not exist) (contracts/core/ValidationRegistry.sol#266)
+	- require(bool,string)(msg.sender == validation.requester || msg.sender == agentRegistry.ownerOf(validation.agentId),Not authorized to dispute) (contracts/core/ValidationRegistry.sol#267-271)
+	- require(bool,string)(validation.status == ValidationStatus.APPROVED || validation.status == ValidationStatus.REJECTED,Can only dispute completed validations) (contracts/core/ValidationRegistry.sol#272-276)
+ValidationRegistry.getValidationStatus(bytes32) (contracts/core/ValidationRegistry.sol#289-296) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(validations[requestHash].timestamp != 0,Validation does not exist) (contracts/core/ValidationRegistry.sol#294)
+ValidationRegistry.getSummary(uint256,address[],string) (contracts/core/ValidationRegistry.sol#308-378) uses timestamp for comparisons
+	Dangerous comparisons:
+	- validation.status == ValidationStatus.PENDING || validation.status == ValidationStatus.DISPUTED (contracts/core/ValidationRegistry.sol#339-340)
+	- validation.validatorAddress == validatorAddresses[j] (contracts/core/ValidationRegistry.sol#348)
+	- keccak256(bytes)(bytes(validation.tag)) != keccak256(bytes)(bytes(tag)) (contracts/core/ValidationRegistry.sol#357)
+	- validation.status == ValidationStatus.APPROVED (contracts/core/ValidationRegistry.sol#365)
+	- validation.status == ValidationStatus.REJECTED (contracts/core/ValidationRegistry.sol#367)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#block-timestamp
+. analyzed (55 contracts with 74 detectors), 47 result(s) found

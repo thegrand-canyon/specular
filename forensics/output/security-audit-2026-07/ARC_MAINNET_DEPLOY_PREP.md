@@ -172,7 +172,7 @@ Deploy log: /tmp/arc-mainnet-deploy.log (copy into forensics if needed).
       Note: a lender top-up AFTER a loan opens forfeits that loan's interest to fees (by design).
 - [ ] Add arc-mainnet to the SDK config loaders (SpecularQuickstart, python client)
       and `chains.json` (fill the real values, flip status → production).
-- [x] Monitoring: `V6_MONITOR_NETWORK=arc-mainnet node forensics/monitor/v6-invariants.js` (launchd job still points at testnet — add a second job or switch).
+- [x] Monitoring: `V6_MONITOR_NETWORK=arc-mainnet node forensics/monitor/v6-invariants.js` — launchd `com.specular.v6-invariants-arc-mainnet` (every 30 min, log `forensics/monitor/v6-invariants-arc-mainnet.log`), installed 2026-09-19 alongside the testnet job.
 - [x] CLAUDE.md network table updated.
 - [x] Source verification: all 4 contracts **exact_match (creation + runtime) on Sourcify** 2026-09-19
       (https://repo.sourcify.dev/5042/<addr>). explorer.arc.io's /api is Cloudflare-challenged so
