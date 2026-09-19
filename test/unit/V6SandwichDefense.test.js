@@ -87,21 +87,31 @@ describe("V6 — W1 sandwich attack defense", function () {
         expect(pos.earnedInterest).to.be.gt(0);                           // qualifies ✓
     });
 
-    it("legit lender's re-supply MID-LOAN disqualifies them for THAT loan", async () => {
+    it("legit lender's re-supply MID-LOAN: only the TOP-UP is unqualified for THAT loan (F-02 fix 2026-09)", async () => {
+        // Pre-fix this case asserted the whole position was disqualified ("accepted UX
+        // tradeoff"). The 2026-09-19 internal audit (F-02) showed that forfeits a
+        // position's entire in-flight interest for a 1-base-unit top-up. V6.1 keeps
+        // the pre-existing 1000 qualified and parks the 500 in a pending tranche.
         await v6.connect(legitLender).supplyLiquidity(1, USDC(1000));  // t0
         await time.increase(60);
         await v6.connect(agent).requestLoan(USDC(500), 7);                // t1: loan start
         await time.increase(60);
         await v6.connect(legitLender).supplyLiquidity(1, USDC(500));   // t2: re-supply mid-loan
+        const pt = await v6.pendingTranche(1, legitLender.address);
+        expect(pt.amount).to.equal(USDC(500));                            // top-up is pending
+        const loan = await v6.loans(1);
+        expect(await v6.qualifiedAmountAt(1, legitLender.address, loan.startTime)).to.equal(USDC(1000));
         await v6.connect(agent).repayLoan(1);                             // distribute
 
-        // Re-supply at t2 updates depositTimestamp to t2 > t1 (loan start)
-        // So they DON'T qualify for this loan's interest (accepted UX tradeoff)
+        const interest = (await v6.repayments(1)).interestPaid;
+        const fee = (interest * 100n) / 10000n;
         const pos = await v6.positions(1, legitLender.address);
-        // With only this lender disqualified, interest goes to fees instead
-        expect(pos.earnedInterest).to.equal(0);
-        const fees = await v6.accumulatedFees();
-        expect(fees).to.be.gt(0);
+        expect(pos.earnedInterest).to.equal(interest - fee);              // sole qualified lender: full share
+        expect(await v6.accumulatedFees()).to.equal(fee);                 // fees = platform fee only
+        // The sandwich defence is intact: new money still never qualifies for an open loan.
+        await time.increase(60);
+        await v6.connect(agent).requestLoan(USDC(500), 7);                // loan 2 starts after the top-up
+        expect(await v6.qualifiedAmountAt(1, legitLender.address, (await v6.loans(2)).startTime)).to.equal(USDC(1500));
     });
 
     it("first-and-only lender supplies same block as loan request → still qualifies (equal timestamp)", async () => {
