@@ -1,0 +1,13 @@
+{
+  "network": "arc-mainnet",
+  "chainId": 5042,
+  "rpcUrl": "https://rpc.mainnet.arc.io",
+  "agentRegistryV2": "0x6F1EbF50290f6D4A9947E9EB77f98a683684fBF5",
+  "reputationManagerV3": "0x1577Eb9985CcA859F25ED2EDaeD16A464ADFaE5e",
+  "agentLiquidityMarketplace_v6": "0xb9996de05fD514A0cB2B81fa25448EECD4559Aaa",
+  "agentCreditFaucet": "0xD854F80031A8d0CB166587AafA0969Da8C3757bF",
+  "usdc": "0x3600000000000000000000000000000000000000",
+  "deployer": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+  "deployedAt": "2026-09-19T15:26:25.558Z",
+  "marketplaceVersion": "V6 (2026-07 audit fixes: H-1/H-2/H-3/M-3 + M-1/M-2 levers)"
+}

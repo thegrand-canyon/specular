@@ -30,8 +30,11 @@ const { ethers } = require('ethers');
 const fs = require('fs');
 const path = require('path');
 
-// The known Arc TESTNET mock USDC — refuse to deploy mainnet against it.
-const ARC_TESTNET_MOCK_USDC = '0xf2807051e292e945751A25616705a9aadfb39895';
+// The known Arc TESTNET mock USDCs (v4 stack + V6-staging stack) — refuse to deploy mainnet against either.
+const ARC_TESTNET_MOCK_USDCS = [
+    '0xf2807051e292e945751A25616705a9aadfb39895', // arc-testnet-addresses.json (v4/V6 0x7a05…)
+    '0x9F3C10985998D1354D1465c5135Aa924775bd11D', // arc-testnet-v6-addresses.json (V6-staging)
+].map(a => a.toLowerCase());
 
 function req(name) {
     const v = process.env[name];
@@ -56,7 +59,7 @@ async function main() {
     console.log('╚════════════════════════════════════════════════════════╝\n');
 
     // ── Guard: never deploy mainnet against the testnet mock USDC ──────────
-    if (USDC.toLowerCase() === ARC_TESTNET_MOCK_USDC.toLowerCase()) {
+    if (ARC_TESTNET_MOCK_USDCS.includes(USDC.toLowerCase())) {
         console.error('❌ ARC_MAINNET_USDC is the Arc TESTNET mock USDC. Set the real mainnet USDC.');
         process.exit(1);
     }

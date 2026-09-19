@@ -42,13 +42,20 @@ const NETWORK_CONFIGS = {
         addresses: path.join(REPO_ROOT, 'src/config/arc-testnet-v6-addresses.json'),
         explorer: 'https://testnet.arcscan.app/tx/',
         decimals: 6
+    },
+    // Arc MAINNET (chainId 5042) — real USDC (0x3600…0000, 6-dec ERC-20 view of the
+    // native gas token). Deployed 2026-09-19; same fixed V6 code as arc-staging.
+    'arc-mainnet': {
+        addresses: path.join(REPO_ROOT, 'src/config/arc-mainnet-addresses.json'),
+        explorer: 'https://explorer.arc.io/tx/',
+        decimals: 6
     }
 };
 
 class SpecularQuickstart {
     /**
      * @param {ethers.Wallet} wallet - signer wallet, must be connected to network
-     * @param {'base'|'arc'} network
+     * @param {'base'|'arc'|'arc-staging'|'arc-mainnet'} network
      */
     constructor(wallet, network = 'base') {
         if (!wallet || !wallet.provider) throw new Error('Wallet must have provider');

@@ -158,7 +158,8 @@ module.exports = {
       polygon: POLYGONSCAN_API_KEY,
       polygonAmoy: POLYGONSCAN_API_KEY,
       // Arc
-      arcTestnet: "no-api-key-needed"
+      arcTestnet: "no-api-key-needed",
+      arcMainnet: "no-api-key-needed"
     },
     customChains: [
       {
@@ -208,8 +209,25 @@ module.exports = {
           apiURL: "https://testnet.arcscan.app/api",
           browserURL: "https://testnet.arcscan.app"
         }
+      },
+      {
+        // Arc Mainnet (live 2026-09-16). Explorer is Cloudflare-fronted; the
+        // /api verification endpoint is assumed Blockscout-style and unverified.
+        network: "arcMainnet",
+        chainId: 5042,
+        urls: {
+          apiURL: "https://explorer.arc.io/api",
+          browserURL: "https://explorer.arc.io"
+        }
       }
     ]
+  },
+  // Sourcify lists Arc mainnet (5042) + testnet as supported; used because the Arc
+  // explorer's own /api is Cloudflare-challenged and rejects hardhat-verify.
+  sourcify: {
+    enabled: true,
+    apiUrl: "https://sourcify.dev/server",
+    browserUrl: "https://repo.sourcify.dev"
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS === "true",

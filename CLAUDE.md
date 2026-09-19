@@ -35,6 +35,9 @@ Website: specular.financial | GitHub: thegrand-canyon/specular | Deploy: specula
 | Arc Testnet | `0x048363A325A5B188b7FF157d725C5e329f0171D3` | `0x7a0560551b2370ee87458186c0b1eFCc38c7c57a` (post-WORLDCLASS audit, deployed 2026-05-17 — predates 2026-08 self-audit fixes) | `0x800e305A...F72C` (secure) | **No** |
 | Arc Testnet **V6-staging (fixed)** | — | `0xDbDf60AE5CB46D23aA44c062a4943655a6820f31` (2026-08 self-audit fixes + levers, fresh MockUSDC) | `0x800e305A...F72C` (secure) | **No** |
 | Base Mainnet | `0x0a4e3C745aB95aceb45B05C28D89fe4Db8815F9a` (CANONICAL 2026-05-17 — V6, post-WORLDCLASS audit) | (v4 archived: `0xd7b4dEE74C61844DFA75aEbe224e4635463b1C8f`, paused) | `0x800e305A...F72C` (secure) | **No** |
+| **Arc Mainnet** (chainId 5042) | — | `0xb9996de05fD514A0cB2B81fa25448EECD4559Aaa` (V6 fixed stack, deployed 2026-09-19, same code as Arc V6-staging) | `0x800e305A...F72C` (secure) | **No** |
+
+- **Arc Mainnet (deployed 2026-09-19)**: `src/config/arc-mainnet-addresses.json`. RegistryV2 `0x6F1EbF50290f6D4A9947E9EB77f98a683684fBF5`, ReputationV3 `0x1577Eb9985CcA859F25ED2EDaeD16A464ADFaE5e`, Marketplace V6 `0xb9996de05fD514A0cB2B81fa25448EECD4559Aaa`, Faucet `0xD854F80031A8d0CB166587AafA0969Da8C3757bF`. USDC = Arc native ERC-20 `0x3600000000000000000000000000000000000000` (6 dec; gas is the same USDC in its 18-dec native view). RPC `https://rpc.mainnet.arc.io`, explorer `https://explorer.arc.io`. Levers ON at deploy: M-1, M-2=86400s, F-C=1 USDC, D1 rate-limit 20/day, 1% fee, faucet cohort 100 (faucet UNFUNDED). Smoke test: `scripts/smoke-test-arc-mainnet.js` (real USDC, tiny amounts). Deployed ahead of the runbook's Gate 1 external re-audit (owner decision 2026-09-19).
 
 - Base stale marketplace: `0x77F8D49cdE6Ae7481BeA38C8a70b5A893bD4d9AF` (60.5 USDC residual, different owner — ignore)
 - Arc compromised wallet: `0x656086A21073272533c8A3f56A94c1f3D8BCFcE2` (key published; agentId 43, 777+ loans, USDC swept to secure wallet 2026-05-08)

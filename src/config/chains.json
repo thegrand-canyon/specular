@@ -221,13 +221,13 @@
   },
   "arc-mainnet": {
     "name": "Arc",
-    "chainId": null,
+    "chainId": 5042,
     "network": "arc-mainnet",
-    "rpc": null,
-    "explorer": null,
-    "explorerApiUrl": null,
+    "rpc": "https://rpc.mainnet.arc.io",
+    "explorer": "https://explorer.arc.io",
+    "explorerApiUrl": "https://explorer.arc.io/api",
     "usdc": {
-      "address": null,
+      "address": "0x3600000000000000000000000000000000000000",
       "decimals": 6,
       "type": "native"
     },
@@ -235,19 +235,32 @@
       "cctp": true
     },
     "gasPrice": {
-      "type": "auto"
+      "type": "legacy",
+      "gasPrice": "20"
     },
-    "status": "pending-config",
-    "description": "Circle Arc L1 mainnet. TODO: fill chainId / rpc / explorer / real USDC address from Circle's official docs before deploy (see ARC_MAINNET_DEPLOY_PREP.md). null values are intentional placeholders."
+    "status": "production",
+    "description": "Circle Arc L1 mainnet (live 2026-09-16). USDC is the native gas token (18-dec native view) and also the 6-dec ERC-20 at 0x3600…0000; the protocol uses the ERC-20 view. Params verified against docs.arc.io + live RPC 2026-09-19."
   },
   "_metadata": {
     "version": "1.0.0",
-    "lastUpdated": "2026-02-19",
+    "lastUpdated": "2026-09-19",
     "totalChains": 9,
-    "productionChains": 4,
+    "productionChains": 5,
     "testnetChains": 5,
-    "production": ["base", "arbitrum", "optimism", "polygon"],
-    "testnets": ["baseSepolia", "arbitrumSepolia", "optimismSepolia", "polygonAmoy", "arc-testnet"],
+    "production": [
+      "base",
+      "arbitrum",
+      "optimism",
+      "polygon",
+      "arc-mainnet"
+    ],
+    "testnets": [
+      "baseSepolia",
+      "arbitrumSepolia",
+      "optimismSepolia",
+      "polygonAmoy",
+      "arc-testnet"
+    ],
     "notes": [
       "All production chains use native USDC via Circle's CCTP",
       "Testnets use USDC faucet tokens (request from faucets)",

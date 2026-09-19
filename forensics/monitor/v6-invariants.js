@@ -19,17 +19,26 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..', '..');
-const ADDR = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/config/arc-testnet-addresses.json')));
+// Network selector: V6_MONITOR_NETWORK=arc-testnet (default) | arc-staging | arc-mainnet.
+// Each maps to an addresses file + default RPC + its own log file so histories don't mix.
+const NETWORKS = {
+    'arc-testnet': { addresses: 'src/config/arc-testnet-addresses.json',    rpcEnv: 'ARC_TESTNET_RPC_URL', rpc: 'https://arc-testnet.drpc.org',   log: 'v6-invariants.log' },
+    'arc-staging': { addresses: 'src/config/arc-testnet-v6-addresses.json', rpcEnv: 'ARC_TESTNET_RPC_URL', rpc: 'https://arc-testnet.drpc.org',   log: 'v6-invariants-arc-staging.log' },
+    'arc-mainnet': { addresses: 'src/config/arc-mainnet-addresses.json',    rpcEnv: 'ARC_MAINNET_RPC_URL', rpc: 'https://rpc.mainnet.arc.io',     log: 'v6-invariants-arc-mainnet.log' },
+};
+const NET = NETWORKS[process.env.V6_MONITOR_NETWORK || 'arc-testnet'];
+if (!NET) { console.error(`Unknown V6_MONITOR_NETWORK; expected one of ${Object.keys(NETWORKS).join(', ')}`); process.exit(1); }
+const ADDR = JSON.parse(fs.readFileSync(path.join(ROOT, NET.addresses)));
 const ABI = JSON.parse(fs.readFileSync(
     path.join(ROOT, 'artifacts/contracts/core/AgentLiquidityMarketplaceV6.sol/AgentLiquidityMarketplaceV6.json'))).abi;
 const REG_ABI = JSON.parse(fs.readFileSync(
     path.join(ROOT, 'artifacts/contracts/core/AgentRegistryV2.sol/AgentRegistryV2.json'))).abi;
 
-const RPC = process.env.ARC_TESTNET_RPC_URL || 'https://arc-testnet.drpc.org';
+const RPC = process.env[NET.rpcEnv] || NET.rpc;
 const V6 = ADDR.agentLiquidityMarketplace_v6;
 const QUIET = process.argv.includes('--quiet');
 const VERBOSE = process.argv.includes('--verbose');
-const LOGFILE = path.join(__dirname, 'v6-invariants.log');
+const LOGFILE = path.join(__dirname, NET.log);
 
 const fmt = v => Number(ethers.formatUnits(v, 6));
 const log = (level, msg, data = {}) => {

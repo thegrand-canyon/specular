@@ -18,18 +18,19 @@ by default), `arcMainnet` hardhat network, `chains.json` arc-mainnet entry.
 | Full unit suite | ✅ 484 passing (+ H-1/H-2/H-3/M-3/lever regression tests) |
 | Slither run + triaged | ✅ register() reentrancy fixed; remaining High/Med are OZ false-positives / accepted (see below) |
 | Deploy script + guards | ✅ `scripts/deploy-arc-mainnet.js` (dry-run default, refuses mock USDC / chain mismatch / non-6-dec token) |
-| **Arc mainnet exists** | ❌ **HARD BLOCKER — Arc mainnet NOT launched yet** (Circle: "testnet only", 2026-08). Everything below is staged for launch. |
+| **Arc mainnet exists** | ✅ **LIVE since 2026-09-16** (chainId 5042, `https://rpc.mainnet.arc.io`, USDC ERC-20 `0x3600…0000` 6-dec). Verified against docs.arc.io + live RPC 2026-09-19; `.env`, `chains.json`, hardhat `arcMainnet` filled. Dry run passes chain/USDC guards. |
 | **External audit of fixed V6** | ❌ **REQUIRED before mainnet money** (owner decision, 2026-08) — 6 fixes since WORLDCLASS |
 | Launch config | ✅ decided: M-1 on, M-2 on (≈1 day), faucet on |
-| Deployer funded on Arc (USDC = gas) | ⏳ at launch |
+| Deployer funded on Arc (USDC = gas) | ❌ **BLOCKER** — secure wallet holds 0 USDC on Arc mainnet (2026-09-19). Full stack + wiring ≈ 9.2M gas ≈ 0.18 USDC @ 20 gwei; fund ≥ 1 USDC. |
 
-**Two gating blockers, both outside code:** (1) Arc mainnet must launch, (2) an
-external re-audit of the 6 post-WORLDCLASS fixes must pass. The repo side is
+**Gating blockers as of 2026-09-19:** (1) ~~Arc mainnet must launch~~ DONE 2026-09-16, (2) an
+external re-audit of the 6 post-WORLDCLASS fixes must pass (owner decision), (3) fund the
+secure wallet with USDC on Arc mainnet (gas). The repo side is
 ready: fixed contracts, deploy script + guards, network scaffolding, this runbook.
 
 ---
 
-## Gate 0 — Arc Mainnet network params (HARD BLOCKER: mainnet not live)
+## Gate 0 — Arc Mainnet network params (✅ CLEARED 2026-09-19 — mainnet live)
 
 **Verified 2026-08 against Circle's official docs (docs.arc.io, circlefin/skills):
 Arc MAINNET HAS NOT LAUNCHED. "Mainnet addresses are not yet available … Arc is
@@ -57,11 +58,10 @@ deployed MockUSDC (`0xf2807…`) rather than the canonical `0x3600…0000` ERC-2
 for mainnet, use Arc's real USDC ERC-20 address.
 
 At launch, fill from Circle's official mainnet docs and set in `.env`:
-- [ ] `ARC_MAINNET_CHAIN_ID` — Arc **mainnet** chain id (not 5042002)
-- [ ] `ARC_MAINNET_RPC_URL` — official mainnet RPC
-- [ ] `ARC_MAINNET_USDC` — the **6-decimal ERC-20** USDC address on Arc mainnet
-      (likely the system address `0x3600…0000`, but CONFIRM — do not assume)
-- [ ] Explorer URL + verification API (for `chains.json` + `hardhat verify`)
+- [x] `ARC_MAINNET_CHAIN_ID=5042` (live RPC returns 5042)
+- [x] `ARC_MAINNET_RPC_URL=https://rpc.mainnet.arc.io` (Circle official; Alchemy/Blockdaemon/dRPC/QuickNode also listed)
+- [x] `ARC_MAINNET_USDC=0x3600000000000000000000000000000000000000` — live `symbol()=USDC`, `decimals()=6`
+- [x] Explorer `https://explorer.arc.io` (Cloudflare-fronted; `/api` verification endpoint assumed Blockscout-style, NOT yet exercised)
 
 The deploy script hard-refuses: the testnet mock USDC, a chainId that doesn't
 match the RPC, and any USDC handle without 6 decimals (blocks the native view).
@@ -95,8 +95,8 @@ tests but **not externally re-audited**:
 ## Gate 2 — Tests + dry run
 
 - [x] `npm test` → 484 passing
-- [ ] Dry run: `node scripts/deploy-arc-mainnet.js` (with Gate-0 env set) — validates
-      chain/USDC/balance and prints a gas estimate. No broadcast.
+- [x] Dry run 2026-09-19: chain + USDC guards pass; halts at the balance check (0 USDC). Re-run after funding.
+      Independent estimate: Registry 2.64M + Reputation 1.68M + Marketplace 3.39M + Faucet 0.79M + wiring ≈ 9.2M gas ≈ 0.18 USDC @ 20 gwei.
 
 ## Gate 3 — Launch config decisions (CONFIRMED 2026-08)
 
@@ -158,14 +158,28 @@ npx hardhat verify --network arcMainnet <FAUCET_ADDR> <REGISTRY_ADDR> <USDC>
 
 ## Post-deploy
 
-- [ ] Ownership of all 4 contracts = secure wallet.
-- [ ] `reputation.authorizePool(marketplace)` confirmed (script does this).
-- [ ] Smoke test: register an agent, supply, borrow small, repay, claim — on mainnet
-      with tiny amounts (mirror the Arc-testnet e2e).
+**DEPLOYED 2026-09-19** (owner chose to launch ahead of Gate 1). Addresses in
+`src/config/arc-mainnet-addresses.json`: RegistryV2 `0x6F1EbF50290f6D4A9947E9EB77f98a683684fBF5`,
+ReputationV3 `0x1577Eb9985CcA859F25ED2EDaeD16A464ADFaE5e`, MarketplaceV6
+`0xb9996de05fD514A0cB2B81fa25448EECD4559Aaa`, Faucet `0xD854F80031A8d0CB166587AafA0969Da8C3757bF`.
+Levers: M-1 on, M-2 86400, F-C 1 USDC, D1 20/day, fee 100 bps, faucet cohort 100 (unfunded).
+Deploy log: /tmp/arc-mainnet-deploy.log (copy into forensics if needed).
+
+- [x] Ownership of all 4 contracts = secure wallet (deployed from it; read back on-chain).
+- [x] `reputation.authorizePool(marketplace)` confirmed on-chain.
+- [x] Smoke test `scripts/smoke-test-arc-mainnet.js`: agentId 1, loans #1/#2 REPAID, interest claimed,
+      full withdraw, §S1 holds, marketplace balance == accumulatedFees (0.001452 USDC protocol fees).
+      Note: a lender top-up AFTER a loan opens forfeits that loan's interest to fees (by design).
 - [ ] Add arc-mainnet to the SDK config loaders (SpecularQuickstart, python client)
       and `chains.json` (fill the real values, flip status → production).
-- [ ] Monitoring: point the v6-invariants monitor at the Arc mainnet marketplace.
-- [ ] Update CLAUDE.md network table with the Arc mainnet addresses.
+- [x] Monitoring: `V6_MONITOR_NETWORK=arc-mainnet node forensics/monitor/v6-invariants.js` (launchd job still points at testnet — add a second job or switch).
+- [x] CLAUDE.md network table updated.
+- [x] Source verification: all 4 contracts **exact_match (creation + runtime) on Sourcify** 2026-09-19
+      (https://repo.sourcify.dev/5042/<addr>). explorer.arc.io's /api is Cloudflare-challenged so
+      `hardhat verify` fails there; hardhat-verify 2.1.3 also uses Sourcify's retired v1 API. Submit
+      via Sourcify v2 (`POST /server/v2/verify/5042/<addr>` with hardhat build-info) if re-verifying.
+- [ ] Fund the faucet (cohort 100 × 10 USDC claimAmount = 1,000 USDC headroom) if grants are wanted at launch.
+- [ ] Rotate/transfer: nothing — deployer == secure wallet.
 
 ## Cost
 
