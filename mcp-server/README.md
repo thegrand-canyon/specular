@@ -56,6 +56,9 @@ Addresses are resolved only from those repo files, never from request input. RPC
 | `get_loan_status` | read | `GET /v1/{network}/loans/{loanId}` |
 | `get_agent_loans` | read | `GET /v1/{network}/agents/{address}/loans` |
 | `get_lending_positions` | read | `GET /v1/{network}/agents/{address}/positions` |
+| `preview_repayment` | read | `GET /v1/{network}/loans/{loanId}/repayment` (V6.1 only: exact amount `repayLoan` pulls now, incl. late interest) |
+| `can_top_up` | read | `GET /v1/{network}/pools/{agentId}/can-top-up/{lender}` (V6.1 only) |
+| `get_active_loan_ids` | read | `GET /v1/{network}/agents/{agentId}/active-loans` (V6.1 only) |
 | `get_transaction` | read | `GET /v1/{network}/tx/{hash}` |
 | `prepare_register_agent` | prepare | `POST /v1/{network}/tx/prepare/register_agent` |
 | `prepare_create_pool` | prepare | `POST /v1/{network}/tx/prepare/create_pool` |

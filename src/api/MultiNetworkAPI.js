@@ -160,7 +160,26 @@ function loadAbi(name) {
     }
 }
 
-const mpAbi = loadAbi('AgentLiquidityMarketplace');
+// V6.1 (2026-09 audit fixes) views. The committed abis/AgentLiquidityMarketplace.json
+// predates them; append the fragments so the preview endpoint can call them. On
+// a pre-V6.1 deployment they revert (no such selector) and the endpoint falls
+// back to the nominal figure, which is what those contracts actually charge.
+const V61_VIEW_FRAGMENTS = [
+    'function VERSION() view returns (string)',
+    'function LATE_INTEREST_CAP() view returns (uint256)',
+    'function previewRepayment(uint256 loanId) view returns (uint256 interest, uint256 total, uint256 chargeableSeconds, uint256 lateSeconds)',
+    'function canTopUp(uint256 agentId, address lender) view returns (bool)',
+    'function getActiveLoanIds(uint256 agentId) view returns (uint256[])',
+    'function calculateInterest(uint256 principal, uint256 annualRateBPS, uint256 durationSeconds) pure returns (uint256)'
+];
+const mpAbiBase = loadAbi('AgentLiquidityMarketplace');
+const mpAbi = (() => {
+    const have = new Set(mpAbiBase.filter(f => f.type === 'function').map(f => f.name));
+    const extra = new ethers.Interface(V61_VIEW_FRAGMENTS).fragments
+        .filter(f => f.type === 'function' && !have.has(f.name))
+        .map(f => JSON.parse(f.format('json')));
+    return [...mpAbiBase, ...extra];
+})();
 const registryAbi = loadAbi('AgentRegistryV2');
 const rmAbi = loadAbi('ReputationManagerV3');
 
@@ -828,6 +847,72 @@ app.get('/agent/:id/loans', validateNetwork, async (req, res) => {
             agentWallet: agentAddress,
             totalLoans: loans.length,
             loans: loans.sort((a, b) => b.startTime - a.startTime) // Most recent first
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// GET /loan/:id/repayment — exact amount repayLoan(id) pulls right now.
+// V6.1: previewRepayment (a LATE loan pays interest on the elapsed time, capped
+// at duration + LATE_INTEREST_CAP). Pre-V6.1: principal + nominal fixed-term
+// interest (what those contracts charge). Size the USDC approval from `total`,
+// never from principal + nominal interest on a V6.1 network.
+app.get('/loan/:id/repayment', validateNetwork, async (req, res) => {
+    try {
+        const networkKey = getNetwork(req);
+        const { marketplace } = getContracts(networkKey);
+        if (!/^\d+$/.test(req.params.id)) return res.status(400).json({ error: 'loanId must be a non-negative integer' });
+        const loanId = BigInt(req.params.id);
+        const loan = await marketplace.loans(loanId);
+        if (!loan.borrower || loan.borrower === ethers.ZeroAddress) {
+            return res.status(404).json({ error: 'Loan not found', network: networkKey, loanId: Number(loanId) });
+        }
+        const states = ['REQUESTED', 'ACTIVE', 'REPAID', 'DEFAULTED'];
+        const state = states[Number(loan.state)] ?? String(loan.state);
+        if (state !== 'ACTIVE') {
+            return res.status(400).json({ error: `Loan ${loanId} is ${state}, not ACTIVE; nothing to repay`, network: networkKey, loanId: Number(loanId), state });
+        }
+        let version = 'V6';
+        try { version = String(await marketplace.VERSION()); } catch (e) { version = 'V6'; }
+        let quote;
+        if (version !== 'V6') {
+            const pv = await marketplace.previewRepayment(loanId);
+            let cap = 30n * 86400n;
+            try { cap = BigInt(await marketplace.LATE_INTEREST_CAP()); } catch (e) { /* default */ }
+            const maxChargeable = BigInt(loan.duration) + cap;
+            quote = {
+                interest: pv.interest, total: pv.total,
+                chargeableSeconds: pv.chargeableSeconds, lateSeconds: pv.lateSeconds,
+                accruing: pv.lateSeconds > 0n && pv.chargeableSeconds < maxChargeable,
+                source: 'previewRepayment'
+            };
+        } else {
+            const interest = await marketplace.calculateInterest(loan.amount, loan.interestRate, loan.duration);
+            quote = { interest, total: BigInt(loan.amount) + interest, chargeableSeconds: BigInt(loan.duration), lateSeconds: 0n, accruing: false, source: 'calculateInterest' };
+        }
+        res.json({
+            network: networkKey,
+            marketplaceVersion: version,
+            loanId: Number(loanId),
+            borrower: loan.borrower,
+            endTime: Number(loan.endTime),
+            principal: loan.amount.toString(),
+            interest: quote.interest.toString(),
+            total: quote.total.toString(),
+            principalUsdc: ethers.formatUnits(loan.amount, 6),
+            interestUsdc: ethers.formatUnits(quote.interest, 6),
+            totalUsdc: ethers.formatUnits(quote.total, 6),
+            chargeableDays: Number(quote.chargeableSeconds) / 86400,
+            lateSeconds: Number(quote.lateSeconds),
+            late: quote.lateSeconds > 0n,
+            accruing: quote.accruing,
+            source: quote.source,
+            note: quote.source === 'previewRepayment'
+                ? (quote.accruing
+                    ? 'LATE: interest accrues per second until it caps at duration + 30 days; the total grows until the repay is mined. Approve total plus a small bounded margin, then revoke the leftover.'
+                    : 'Approve exactly `total` (base units) to the marketplace before repayLoan.')
+                : 'Pre-V6.1 deployment: interest is fixed for the full term. Approve exactly `total` before repayLoan.'
         });
     } catch (error) {
         res.status(500).json({ error: error.message });

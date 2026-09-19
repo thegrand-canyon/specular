@@ -9,9 +9,9 @@
  * Approvals are always EXACT (never MaxUint256) and always to the marketplace.
  */
 import { ethers } from 'ethers';
-import { getContracts } from './chain.js';
+import { getContracts, marketplaceCapabilities } from './chain.js';
 import { IFACE, NetworkConfig } from './networks.js';
-import { LOAN_STATES } from './reads.js';
+import { formatQuote, interestForSeconds, LOAN_STATES, repaymentQuote } from './reads.js';
 import {
   formatUsdc,
   MAX_LOAN_USDC,
@@ -49,6 +49,13 @@ export const ALLOWED_FUNCTIONS: Record<TargetContract, readonly string[]> = {
   registry: ['register'],
   usdc: ['approve'],
 };
+
+/**
+ * Seconds of extra late-interest accrual the repay approve covers between
+ * preparation and mining (V6.1 charges per second on late loans until the cap).
+ * Always clamped to the contract cap (duration + LATE_INTEREST_CAP).
+ */
+export const LATE_REPAY_HEADROOM_SECONDS = 3600;
 
 /** Static gas fallbacks (used when the caller does not ask for simulation). */
 const DEFAULT_GAS: Record<WriteAction, bigint> = {
@@ -241,8 +248,8 @@ export function encodeAction(cfg: NetworkConfig, action: WriteAction, rawArgs: u
         data,
         functionName: 'repayLoan',
         args: { loanId: String(loanId) },
-        description: 'Repay a loan in full (principal + fixed-term interest); collateral is returned and reputation updated.',
-        humanReadableSummary: `Repay loan #${loanId} in full from ${from} on ${cfg.name}. Requires a prior exact USDC approval of principal + interest.`,
+        description: 'Repay a loan in full (principal + interest; on V6.1 a late loan pays for the elapsed time, capped at duration + 30 days); collateral is returned and reputation updated.',
+        humanReadableSummary: `Repay loan #${loanId} in full from ${from} on ${cfg.name}. Requires a prior exact USDC approval of the amount due (see previewRepayment / prerequisite).`,
       };
     }
     case 'claim_interest': {
@@ -291,7 +298,9 @@ const REASON_MAP: Array<[RegExp, string]> = [
   [/Below minimum supply/i, 'Amount is below the pool\'s minimum supply (see get_protocol_status.parameters.minSupplyUsdc).'],
   [/Pool lender capacity reached|Lender cap/i, 'This pool already has the maximum number of lenders (50). Choose another pool.'],
   [/Insufficient balance/i, 'You are withdrawing more than you supplied to this pool.'],
-  [/Not the borrower/i, 'Only the wallet that borrowed this loan can repay it.'],
+  [/Not the borrower/i, 'Only the wallet that borrowed this loan (or, on V6.1, the current holder of the agent NFT) can repay it.'],
+  [/Agent deactivated/i, 'This agent has been deactivated in the registry, so it cannot borrow or create a pool. Existing loans can still be repaid and lenders can still withdraw/claim. Contact the protocol owner to reactivate the agent.'],
+  [/Top-up would forfeit in-flight interest/i, 'Adding to your existing position in this pool right now would forfeit interest already accruing on it, so the contract refuses the top-up. Check can_top_up(agentId, lender) first; wait until the pool\'s older active loans close and try again, or open a fresh position from another address (a first supply is never refused).'],
   [/Loan not active/i, 'This loan is not ACTIVE (already repaid or defaulted).'],
   [/No interest to claim/i, 'There is no claimable interest for this wallet in this pool.'],
   [/Drain underflow/i, 'Pool accounting cannot cover this claim right now; contact the protocol owner.'],
@@ -317,18 +326,20 @@ export function explainRevert(e: unknown): { reason: string; plain: string } {
   if (typeof err?.reason === 'string' && err.reason) reason = err.reason;
   const data = typeof err?.data === 'string' ? err.data : err?.info?.error?.data;
   if (!reason && typeof data === 'string' && data.startsWith('0x') && data.length >= 10) {
-    try {
-      const parsed = CUSTOM_ERRORS.parseError(data);
-      if (parsed) reason = `${parsed.name}(${parsed.args.map(String).join(', ')})`;
-    } catch {
-      /* not a known custom error */
+    // Error(string) first, so a require() reason comes through verbatim (not wrapped as "Error(...)").
+    if (data.startsWith('0x08c379a0')) {
+      try {
+        reason = String(ethers.AbiCoder.defaultAbiCoder().decode(['string'], '0x' + data.slice(10))[0]);
+      } catch {
+        /* malformed Error(string) */
+      }
     }
     if (!reason) {
       try {
-        const builtin = ethers.AbiCoder.defaultAbiCoder().decode(['string'], '0x' + data.slice(10));
-        if (data.startsWith('0x08c379a0')) reason = String(builtin[0]);
+        const parsed = CUSTOM_ERRORS.parseError(data);
+        if (parsed) reason = `${parsed.name}(${parsed.args.map(String).join(', ')})`;
       } catch {
-        /* not Error(string) */
+        /* not a known custom error */
       }
     }
   }
@@ -500,22 +511,68 @@ export async function prepareTx(cfg: NetworkConfig, action: WriteAction, rawArgs
         warnings.push(`Loan #${loanId} does not exist on ${cfg.name}.`);
         break;
       }
+      const caps = await marketplaceCapabilities(cfg);
       const state = LOAN_STATES[Number(l.state)];
-      if (String(l.borrower).toLowerCase() !== from.toLowerCase()) warnings.push(`Loan #${loanId} belongs to ${l.borrower}, not ${from}; the transaction will revert.`);
-      if (state !== 'ACTIVE') warnings.push(`Loan #${loanId} is ${state}, not ACTIVE; the transaction will revert.`);
-      const interest = (await c.marketplace.calculateInterest(l.amount, l.interestRate, l.duration)) as bigint;
-      const total = (l.amount as bigint) + interest;
-      const [allowance, bal] = await Promise.all([c.usdc.allowance(from, mp) as Promise<bigint>, c.usdc.balanceOf(from) as Promise<bigint>]);
-      enc.args.principalUsdc = formatUsdc(l.amount);
-      enc.args.interestUsdc = formatUsdc(interest);
-      enc.args.totalRepaymentUsdc = formatUsdc(total);
-      enc.humanReadableSummary += ` Total due: ${formatUsdc(total)} USDC (${formatUsdc(l.amount)} principal + ${formatUsdc(interest)} interest).`;
-      if (total > bal) warnings.push(`Wallet holds ${formatUsdc(bal)} USDC, less than the ${formatUsdc(total)} USDC due.`);
-      if (state === 'ACTIVE') {
-        const pre = approvePrerequisite(cfg, from, total, allowance, `repayLoan(${loanId})`);
-        prerequisite = pre.tx;
-        if (pre.warning) warnings.push(pre.warning);
+      if (String(l.borrower).toLowerCase() !== from.toLowerCase()) {
+        // V6.1 (F-01): the current holder of the agent NFT may also repay; V6: borrower only.
+        let holderOk = false;
+        if (caps.v61) {
+          try {
+            holderOk = String(await c.registry.ownerOf(l.agentId)).toLowerCase() === from.toLowerCase();
+          } catch {
+            holderOk = false;
+          }
+        }
+        if (holderOk) warnings.push(`Loan #${loanId} was borrowed by ${l.borrower}; ${from} may repay it as the current holder of agent #${Number(l.agentId)} (V6.1). Collateral is returned to ${l.borrower}, not to you.`);
+        else warnings.push(`Loan #${loanId} belongs to ${l.borrower}, not ${from}; the transaction will revert.${caps.v61 ? ' (Only the borrower or the current holder of the agent NFT can repay.)' : ''}`);
       }
+      if (state !== 'ACTIVE') {
+        warnings.push(`Loan #${loanId} is ${state}, not ACTIVE; the transaction will revert.`);
+        enc.args.principalUsdc = formatUsdc(l.amount);
+        break;
+      }
+      // Exact amount the contract will pull: previewRepayment().total on V6.1
+      // (late loans pay for elapsed time, capped at duration + 30 days), the
+      // nominal fixed-term figure on V6. Never MaxUint256.
+      const q = await repaymentQuote(cfg, l, loanId);
+      const total = q.total;
+      let approveAmount = total;
+      if (q.accruing) {
+        // The amount grows per second until the repay is mined. Approve bounded
+        // headroom (interest for LATE_REPAY_HEADROOM_SECONDS more), clamped at
+        // the most the contract could ever pull (duration + LATE_INTEREST_CAP).
+        const cap = BigInt(caps.lateInterestCapSeconds ?? 30 * 86400);
+        let target = q.chargeableSeconds + BigInt(LATE_REPAY_HEADROOM_SECONDS);
+        if (target > q.durationSeconds + cap) target = q.durationSeconds + cap;
+        const withHeadroom = q.principal + interestForSeconds(q.principal, q.interestRateBps, target);
+        if (withHeadroom > approveAmount) approveAmount = withHeadroom;
+        if (approveAmount > q.maxTotal) approveAmount = q.maxTotal;
+      }
+      const [allowance, bal] = await Promise.all([c.usdc.allowance(from, mp) as Promise<bigint>, c.usdc.balanceOf(from) as Promise<bigint>]);
+      const fq = formatQuote(q);
+      enc.args.principalUsdc = fq.principalUsdc;
+      enc.args.interestUsdc = fq.interestUsdc;
+      enc.args.totalRepaymentUsdc = fq.totalRepaymentUsdc;
+      enc.args.repaymentSource = q.source;
+      enc.args.marketplaceVersion = caps.version;
+      if (q.source === 'previewRepayment') {
+        enc.args.chargeableDays = String(fq.chargeableDays);
+        enc.args.lateSeconds = String(fq.lateSeconds);
+        enc.args.maxTotalRepaymentUsdc = fq.maxTotalRepaymentUsdc;
+      }
+      enc.args.approveUsdc = formatUsdc(approveAmount);
+      enc.humanReadableSummary += ` Total due: ${fq.totalRepaymentUsdc} USDC (${fq.principalUsdc} principal + ${fq.interestUsdc} interest${q.lateSeconds > 0n ? `, ${fq.chargeableDays} days charged incl. ${Math.floor(fq.lateSeconds / 86400)} day(s) late` : ''}).`;
+      if (q.lateSeconds > 0n) {
+        warnings.push(
+          q.accruing
+            ? `Loan #${loanId} is ${fq.lateSeconds}s past due: interest accrues per second until it caps at duration + ${(caps.lateInterestCapSeconds ?? 0) / 86400} days. The approve covers ${formatUsdc(approveAmount)} USDC (${LATE_REPAY_HEADROOM_SECONDS / 60} min of headroom, never more than ${fq.maxTotalRepaymentUsdc}); send it and the repay promptly, then revoke any leftover allowance with prepare_approve_usdc amount 0.`
+            : `Loan #${loanId} is late and at the interest cap; the amount due (${fq.totalRepaymentUsdc} USDC) is now constant.`,
+        );
+      }
+      if (approveAmount > bal) warnings.push(`Wallet holds ${formatUsdc(bal)} USDC, less than the ${formatUsdc(approveAmount)} USDC needed.`);
+      const pre = approvePrerequisite(cfg, from, approveAmount, allowance, `repayLoan(${loanId})${q.accruing ? ' incl. late-accrual headroom' : ''}`);
+      prerequisite = pre.tx;
+      if (pre.warning) warnings.push(pre.warning);
       break;
     }
     case 'claim_interest': {

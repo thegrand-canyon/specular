@@ -234,19 +234,144 @@ class SpecularClient:
             raise RuntimeError("LoanRequested event not found in receipt")
         return {"loanId": loan_id, "tx": tx_hash, "explorerUrl": self.explorer_url(tx_hash)}
 
-    def repay(self, loan_id: int) -> str:
-        # Approve exactly the total owed (principal + interest). Interest is
-        # computed from loan.duration (fixed full term), not elapsed time, so the
-        # client figure matches the contract to the base unit.
+    # ------------------------------------------------------------- V6.1 views
+    # V6.1 (2026-09 audit fixes) added VERSION(), previewRepayment, canTopUp and
+    # getActiveLoanIds, and repayLoan now charges interest on max(duration,
+    # elapsed) capped at duration + LATE_INTEREST_CAP. Pre-V6.1 deployments have
+    # none of those selectors, so every new call is version-gated with a fallback.
+
+    #: Seconds of extra accrual covered between preview and mined repay on a LATE
+    #: loan (clamped at the contract cap; leftover allowance is revoked after).
+    LATE_REPAY_HEADROOM_SECONDS = 600
+
+    def marketplace_version(self) -> str:
+        """Marketplace VERSION(); 'V6' when the deployment predates VERSION()."""
+        cached = getattr(self, "_mp_version", None)
+        if cached is None:
+            try:
+                cached = str(self.marketplace.functions.VERSION().call())
+            except Exception:
+                cached = "V6"
+            self._mp_version = cached
+        return cached
+
+    def _has_v61_views(self) -> bool:
+        return self.marketplace_version() != "V6"
+
+    @staticmethod
+    def interest_for_seconds(principal: int, rate_bps: int, seconds: int) -> int:
+        """Mirrors calculateInterest() exactly (divide-before-multiply)."""
+        annual = (int(principal) * int(rate_bps)) // 10_000
+        return (annual * int(seconds)) // (365 * 86_400)
+
+    def preview_repayment(self, loan_id: int) -> dict[str, Any]:
+        """Exact amount repayLoan(loan_id) would pull now (base units).
+
+        V6.1: previewRepayment(loanId). V6: nominal fixed-term interest, which is
+        what V6 actually charges. Keys: principal, interest, total,
+        chargeable_seconds, late_seconds, duration_seconds, interest_rate_bps,
+        source ('previewRepayment' | 'calculateInterest')."""
         # loan tuple: (loanId, borrower, agentId, amount, collateralAmount,
         #              interestRate, startTime, endTime, duration, state)
         loan = self.marketplace.functions.loans(loan_id).call()
-        interest = self.marketplace.functions.calculateInterest(loan[3], loan[5], loan[8]).call()
-        self._approve_exact(loan[3] + interest)
-        return self._send(self.marketplace.functions.repayLoan(loan_id))
+        principal, rate_bps, duration = loan[3], loan[5], loan[8]
+        if self._has_v61_views():
+            try:
+                interest, total, chargeable, late = self.marketplace.functions.previewRepayment(loan_id).call()
+                return {
+                    "principal": principal, "interest": interest, "total": total,
+                    "chargeable_seconds": chargeable, "late_seconds": late,
+                    "duration_seconds": duration, "interest_rate_bps": rate_bps,
+                    "source": "previewRepayment",
+                }
+            except Exception as e:  # a real revert must surface; a missing selector falls back
+                if "Loan not active" in str(e):
+                    raise
+        interest = self.marketplace.functions.calculateInterest(principal, rate_bps, duration).call()
+        return {
+            "principal": principal, "interest": interest, "total": principal + interest,
+            "chargeable_seconds": duration, "late_seconds": 0,
+            "duration_seconds": duration, "interest_rate_bps": rate_bps,
+            "source": "calculateInterest",
+        }
+
+    def _repay_approval(self, loan_id: int) -> tuple[int, dict[str, Any], int]:
+        """(amount_to_approve, preview, headroom). Exactly preview['total'] except
+        for a loan that is late AND under the interest cap, where the interest
+        that can accrue during LATE_REPAY_HEADROOM_SECONDS is added (clamped at
+        duration + LATE_INTEREST_CAP, so never more than the contract could pull)."""
+        pv = self.preview_repayment(loan_id)
+        headroom = 0
+        if pv["source"] == "previewRepayment" and pv["late_seconds"] > 0:
+            try:
+                cap = int(self.marketplace.functions.LATE_INTEREST_CAP().call())
+            except Exception:
+                cap = 30 * 86_400
+            target = min(pv["chargeable_seconds"] + self.LATE_REPAY_HEADROOM_SECONDS, pv["duration_seconds"] + cap)
+            with_headroom = self.interest_for_seconds(pv["principal"], pv["interest_rate_bps"], target)
+            headroom = max(0, with_headroom - pv["interest"])
+        return pv["total"] + headroom, pv, headroom
+
+    def repay(self, loan_id: int) -> str:
+        # Approve exactly what the contract will pull: previewRepayment().total on
+        # V6.1 (late loans pay for elapsed time, capped at duration + 30 days),
+        # principal + nominal interest on V6. Never an unlimited approval.
+        approve, _pv, headroom = self._repay_approval(loan_id)
+        self._approve_exact(approve)
+        tx = self._send(self.marketplace.functions.repayLoan(loan_id))
+        if headroom > 0:
+            # Late-loan headroom may leave a few base units of allowance; clear it.
+            try:
+                self.revoke_approval()
+            except Exception:
+                pass
+        return tx
+
+    def can_top_up(self, agent_id: int, lender: str | None = None) -> bool:
+        """V6.1: whether `lender` (default: this account) can top up the pool now
+        without supplyLiquidity reverting "Top-up would forfeit in-flight
+        interest". Always True on V6 and for a lender with no position."""
+        if not self._has_v61_views():
+            return True
+        try:
+            return bool(self.marketplace.functions.canTopUp(
+                agent_id, Web3.to_checksum_address(lender or self.account.address)).call())
+        except Exception:
+            return True
+
+    def active_loan_ids(self, agent_id: int) -> list[int]:
+        """IDs of the agent's ACTIVE loans (V6.1 getActiveLoanIds; bounded walk on V6)."""
+        if self._has_v61_views():
+            try:
+                return [int(x) for x in self.marketplace.functions.getActiveLoanIds(agent_id).call()]
+            except Exception:
+                pass
+        # pool tuple: (agentId, agentAddress, totalLiquidity, availableLiquidity, totalLoaned, totalEarned, isActive)
+        pool = self.marketplace.functions.agentPools(agent_id).call()
+        addr = pool[1]
+        if not addr or int(addr, 16) == 0:
+            return []
+        out: list[int] = []
+        for idx in range(200):
+            try:
+                lid = self.marketplace.functions.agentLoans(addr, idx).call()
+            except Exception:
+                break
+            if self.marketplace.functions.loans(lid).call()[9] == 1:
+                out.append(int(lid))
+        return out
 
     def supply(self, agent_id: int, amount: float) -> str:
         amt = _usdc_units(amount)
+        if self._has_v61_views():
+            pos = self.marketplace.functions.getLenderPosition(agent_id, self.account.address).call()
+            if pos[0] > 0 and not self.can_top_up(agent_id):
+                raise RuntimeError(
+                    f"topping up pool #{agent_id} now would forfeit in-flight interest and the contract "
+                    "would revert (\"Top-up would forfeit in-flight interest\"). Wait for the pool's older "
+                    "active loans to close (check can_top_up(agent_id) first), or open a fresh position "
+                    "from another address."
+                )
         self._approve_exact(amt)
         return self._send(self.marketplace.functions.supplyLiquidity(agent_id, amt))
 

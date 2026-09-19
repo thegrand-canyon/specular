@@ -1,0 +1,50 @@
+{
+  "name": "@specular/langchain",
+  "version": "1.0.0",
+  "description": "LangChain tool for Specular Protocol - Add on-chain credit to your AI agents",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "example": "node example-usage.js"
+  },
+  "keywords": [
+    "langchain",
+    "ai",
+    "agent",
+    "credit",
+    "defi",
+    "web3",
+    "ethereum",
+    "base",
+    "usdc",
+    "lending",
+    "reputation",
+    "specular"
+  ],
+  "author": "Specular Protocol",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/specular-protocol/specular.git",
+    "directory": "src/integrations/langchain"
+  },
+  "bugs": {
+    "url": "https://github.com/specular-protocol/specular/issues"
+  },
+  "homepage": "https://specular.network",
+  "peerDependencies": {
+    "ethers": "^6.0.0"
+  },
+  "dependencies": {
+    "ethers": "^6.10.0"
+  },
+  "devDependencies": {
+    "dotenv": "^16.3.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

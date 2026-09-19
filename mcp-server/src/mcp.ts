@@ -19,13 +19,14 @@ import { ALL_NETWORKS, getNetwork, NetworkError } from './networks.js';
 import { callTool, ToolDef, toolAnnotations, TOOLS } from './tools.js';
 import { requireObject, validateAddress, validateHexData, ValidationError } from './validate.js';
 
-export const SERVER_VERSION = '2.0.0';
+export const SERVER_VERSION = '2.1.0';
 
 export type Mode = 'local' | 'remote';
 
 const INSTRUCTIONS = `Specular Protocol: on-chain credit for AI agents (borrow USDC against reputation, or lend into agent pools).
 This server is NON-CUSTODIAL. Read tools query the chain. "prepare_*" tools return UNSIGNED transactions that you sign with your own wallet; "broadcast_signed_transaction" relays bytes you signed. Every tool needs an explicit "network": use "arc-staging" (testnet) to experiment; "base" and "arc-mainnet" move real USDC.
-Typical borrower flow: check_credit_score -> (prepare_register_agent, prepare_create_pool once) -> prepare_request_loan (simulate:true) -> sign+send prerequisite approve if present -> sign+send loan tx -> get_transaction -> prepare_repay_loan before the due date.`;
+Typical borrower flow: check_credit_score -> (prepare_register_agent, prepare_create_pool once) -> prepare_request_loan (simulate:true) -> sign+send prerequisite approve if present -> sign+send loan tx -> get_transaction -> prepare_repay_loan before the due date.
+V6.1 deployments charge a LATE loan interest for the elapsed time (capped at duration + 30 days): size the repay approval from preview_repayment / prepare_repay_loan's prerequisite, never from principal + nominal interest. Lenders with an existing position: call can_top_up before prepare_supply_liquidity. preview_repayment, can_top_up and get_active_loan_ids return a "not supported" error on pre-V6.1 deployments.`;
 
 export interface McpFactoryOptions {
   mode: Mode;

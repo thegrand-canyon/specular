@@ -138,5 +138,85 @@ class TestRevokeApproval(unittest.TestCase):
         c.usdc.functions.approve.assert_called_with(c.marketplace_addr, 0)
 
 
+class TestV61Repay(unittest.TestCase):
+    """V6.1: repay approves previewRepayment().total (plus bounded late headroom);
+    V6 (no VERSION()) falls back to the nominal fixed-term figure."""
+
+    P, RATE, DUR = 1_000_000_000, 1500, 7 * 86_400  # 1000 USDC @ 15% for 7 days
+    LOAN = (1, "0x" + "11" * 20, 1, P, 0, RATE, 0, DUR, DUR, 1)
+
+    def _client(self, version, preview=None):
+        c = bare_client()
+        c.marketplace = MagicMock()
+        if version is None:
+            c.marketplace.functions.VERSION.return_value.call.side_effect = Exception("execution reverted")
+        else:
+            c.marketplace.functions.VERSION.return_value.call.return_value = version
+        c.marketplace.functions.loans.return_value.call.return_value = self.LOAN
+        nominal = SpecularClient.interest_for_seconds(self.P, self.RATE, self.DUR)
+        c.marketplace.functions.calculateInterest.return_value.call.return_value = nominal
+        c.marketplace.functions.LATE_INTEREST_CAP.return_value.call.return_value = 30 * 86_400
+        if preview is not None:
+            c.marketplace.functions.previewRepayment.return_value.call.return_value = preview
+        c._approve_exact = MagicMock(return_value=None)
+        c._send = MagicMock(return_value="0xrepay")
+        c.revoke_approval = MagicMock(return_value=None)
+        return c, nominal
+
+    def test_v6_fallback_uses_nominal(self):
+        c, nominal = self._client(None)
+        self.assertEqual(c.marketplace_version(), "V6")
+        pv = c.preview_repayment(1)
+        self.assertEqual(pv["source"], "calculateInterest")
+        self.assertEqual(pv["total"], self.P + nominal)
+        c.repay(1)
+        c._approve_exact.assert_called_once_with(self.P + nominal)
+        c.marketplace.functions.previewRepayment.assert_not_called()
+        c.revoke_approval.assert_not_called()
+
+    def test_v61_on_time_is_exact(self):
+        nominal = SpecularClient.interest_for_seconds(self.P, self.RATE, self.DUR)
+        c, _ = self._client("V6.1", preview=(nominal, self.P + nominal, self.DUR, 0))
+        c.repay(1)
+        c._approve_exact.assert_called_once_with(self.P + nominal)
+        c.revoke_approval.assert_not_called()
+
+    def test_v61_late_adds_bounded_headroom_then_revokes(self):
+        chargeable = 17 * 86_400
+        late_i = SpecularClient.interest_for_seconds(self.P, self.RATE, chargeable)
+        c, _ = self._client("V6.1", preview=(late_i, self.P + late_i, chargeable, 10 * 86_400))
+        c.repay(1)
+        approved = c._approve_exact.call_args[0][0]
+        expected_headroom = SpecularClient.interest_for_seconds(
+            self.P, self.RATE, chargeable + SpecularClient.LATE_REPAY_HEADROOM_SECONDS) - late_i
+        self.assertGreater(expected_headroom, 0)
+        self.assertEqual(approved, self.P + late_i + expected_headroom)
+        # bounded: never beyond the contract cap (duration + 30d)
+        cap_total = self.P + SpecularClient.interest_for_seconds(self.P, self.RATE, self.DUR + 30 * 86_400)
+        self.assertLessEqual(approved, cap_total)
+        c.revoke_approval.assert_called_once()
+
+    def test_v61_late_at_cap_is_exact(self):
+        chargeable = self.DUR + 30 * 86_400
+        capped = SpecularClient.interest_for_seconds(self.P, self.RATE, chargeable)
+        c, _ = self._client("V6.1", preview=(capped, self.P + capped, chargeable, 300 * 86_400))
+        c.repay(1)
+        c._approve_exact.assert_called_once_with(self.P + capped)
+        c.revoke_approval.assert_not_called()
+
+    def test_can_top_up_true_on_v6(self):
+        c, _ = self._client(None)
+        self.assertTrue(c.can_top_up(1))
+        c.marketplace.functions.canTopUp.assert_not_called()
+
+    def test_supply_refused_when_top_up_would_forfeit(self):
+        c, _ = self._client("V6.1")
+        c.marketplace.functions.getLenderPosition.return_value.call.return_value = (5_000_000, 0, 0, 0)
+        c.marketplace.functions.canTopUp.return_value.call.return_value = False
+        with self.assertRaisesRegex(RuntimeError, "forfeit in-flight interest"):
+            c.supply(1, 1)
+        c._approve_exact.assert_not_called()
+
+
 if __name__ == "__main__":
     unittest.main()

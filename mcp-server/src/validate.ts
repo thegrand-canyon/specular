@@ -12,6 +12,14 @@ export class ValidationError extends Error {
   }
 }
 
+/** A V6.1-only feature was requested on a deployment that predates it. 400, same handling as ValidationError. */
+export class UnsupportedOnDeploymentError extends ValidationError {
+  readonly code = 'UNSUPPORTED_ON_DEPLOYMENT';
+  constructor(message: string) {
+    super(message, 'network');
+  }
+}
+
 export const USDC_DECIMALS = 6;
 
 /** Per-call amount sanity caps, in USDC display units. Override with SPECULAR_MAX_AMOUNT_USDC. */

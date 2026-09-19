@@ -3,11 +3,106 @@
  * network. Every result carries `rpc` (block number / age / stale flag).
  */
 import { ethers } from 'ethers';
-import { getContracts, rpcStatus, RpcStatus } from './chain.js';
+import { getContracts, marketplaceCapabilities, rpcStatus, RpcStatus, unsupportedMessage } from './chain.js';
 import { NetworkConfig, publicNetworkInfo } from './networks.js';
-import { formatUsdc, ValidationError } from './validate.js';
+import { formatUsdc, UnsupportedOnDeploymentError, ValidationError } from './validate.js';
 
 export const LOAN_STATES = ['REQUESTED', 'ACTIVE', 'REPAID', 'DEFAULTED'] as const;
+
+// ---------------------------------------------------------------------------
+// Repayment quote (V6.1 previewRepayment with V6 fallback)
+// ---------------------------------------------------------------------------
+
+/** Mirrors the contract's calculateInterest() exactly (divide-before-multiply), in seconds. */
+export function interestForSeconds(principal: bigint, rateBps: bigint, seconds: bigint): bigint {
+  const annual = (principal * rateBps) / 10000n;
+  return (annual * seconds) / BigInt(365 * 86400);
+}
+
+export interface RepaymentQuote {
+  principal: bigint;
+  interest: bigint;
+  /** exactly what repayLoan() pulls at the block the quote was evaluated in */
+  total: bigint;
+  chargeableSeconds: bigint;
+  lateSeconds: bigint;
+  durationSeconds: bigint;
+  interestRateBps: bigint;
+  /** 'previewRepayment' on V6.1, 'calculateInterest' (nominal fixed term — what V6 charges) on V6 */
+  source: 'previewRepayment' | 'calculateInterest';
+  /** true when the amount grows per second (late AND under the cap on V6.1) */
+  accruing: boolean;
+  /** the most repayLoan() could ever pull (principal + interest at duration + LATE_INTEREST_CAP); equals total on V6 */
+  maxTotal: bigint;
+}
+
+/**
+ * Quote for an ACTIVE loan `l` (the loans() tuple). On V6.1 uses previewRepayment
+ * (late loans pay for elapsed time, capped at duration + LATE_INTEREST_CAP); on V6
+ * the nominal fixed-term figure, which is what V6 actually charges.
+ */
+export async function repaymentQuote(cfg: NetworkConfig, l: any, loanId: number): Promise<RepaymentQuote> {
+  const c = getContracts(cfg);
+  const caps = await marketplaceCapabilities(cfg);
+  const principal = l.amount as bigint;
+  const rateBps = l.interestRate as bigint;
+  const duration = l.duration as bigint;
+  if (caps.v61) {
+    const pv = await c.marketplace.previewRepayment(loanId);
+    const cap = BigInt(caps.lateInterestCapSeconds ?? 30 * 86400);
+    const maxChargeable = duration + cap;
+    const chargeable = pv.chargeableSeconds as bigint;
+    return {
+      principal,
+      interest: pv.interest as bigint,
+      total: pv.total as bigint,
+      chargeableSeconds: chargeable,
+      lateSeconds: pv.lateSeconds as bigint,
+      durationSeconds: duration,
+      interestRateBps: rateBps,
+      source: 'previewRepayment',
+      accruing: (pv.lateSeconds as bigint) > 0n && chargeable < maxChargeable,
+      maxTotal: principal + interestForSeconds(principal, rateBps, maxChargeable),
+    };
+  }
+  const interest = (await c.marketplace.calculateInterest(principal, rateBps, duration)) as bigint;
+  return {
+    principal,
+    interest,
+    total: principal + interest,
+    chargeableSeconds: duration,
+    lateSeconds: 0n,
+    durationSeconds: duration,
+    interestRateBps: rateBps,
+    source: 'calculateInterest',
+    accruing: false,
+    maxTotal: principal + interest,
+  };
+}
+
+/** JSON view of a quote (display units). */
+export function formatQuote(q: RepaymentQuote) {
+  const late = q.lateSeconds > 0n;
+  return {
+    principalUsdc: formatUsdc(q.principal),
+    interestUsdc: formatUsdc(q.interest),
+    totalRepaymentUsdc: formatUsdc(q.total),
+    chargeableDays: Number(q.chargeableSeconds) / 86400,
+    lateSeconds: Number(q.lateSeconds),
+    late,
+    accruing: q.accruing,
+    maxTotalRepaymentUsdc: formatUsdc(q.maxTotal),
+    source: q.source,
+    note:
+      q.source === 'calculateInterest'
+        ? 'V6 deployment: interest is fixed for the full term (not pro-rated, no late charge). Approve exactly totalRepaymentUsdc to the marketplace before repayLoan.'
+        : late
+          ? q.accruing
+            ? 'LATE: interest is charged per second on the elapsed time until it caps at duration + 30 days. totalRepaymentUsdc grows until the repay is mined, so approve a little more (prepare_repay_loan adds bounded headroom, never more than maxTotalRepaymentUsdc).'
+            : 'LATE and at the cap (duration + 30 days): the amount is now constant. Approve exactly totalRepaymentUsdc.'
+          : 'Interest is fixed for the full term when repaid on time. Approve exactly totalRepaymentUsdc to the marketplace before repayLoan.',
+  };
+}
 
 export function tierFor(score: number): { tier: string; collateralPct: number; aprPct: number; creditLimitUsdc: number } {
   if (score >= 800) return { tier: 'Excellent', collateralPct: 0, aprPct: 5, creditLimitUsdc: 50_000 };
@@ -258,16 +353,87 @@ export async function readLoan(cfg: NetworkConfig, loanId: number) {
   }
   const loan = formatLoan(l, loanId);
   let repayment: Record<string, unknown> | null = null;
-  if (loan.state === 'ACTIVE') {
-    const interest = (await c.marketplace.calculateInterest(l.amount, l.interestRate, l.duration)) as bigint;
-    repayment = {
-      interestUsdc: formatUsdc(interest),
-      totalRepaymentUsdc: formatUsdc((l.amount as bigint) + interest),
-      note: 'Interest is fixed for the full term (not pro-rated). Approve exactly totalRepaymentUsdc to the marketplace before repayLoan.',
-    };
-  }
+  if (loan.state === 'ACTIVE') repayment = formatQuote(await repaymentQuote(cfg, l, loanId));
   return { network: cfg.name, ...loan, repayment, explorer: `${cfg.explorerAddress}${cfg.addresses.marketplace}`, rpc };
 }
+
+// ---------------------------------------------------------------------------
+// V6.1-only reads (each guarded: a V6 deployment gets a clear 400, not a raw revert)
+// ---------------------------------------------------------------------------
+
+async function requireV61(cfg: NetworkConfig, what: string) {
+  const caps = await marketplaceCapabilities(cfg);
+  if (!caps.v61) throw new UnsupportedOnDeploymentError(unsupportedMessage(cfg, caps, what));
+  return caps;
+}
+
+/** previewRepayment(loanId): exact amount repayLoan would pull now. */
+export async function readRepaymentPreview(cfg: NetworkConfig, loanId: number) {
+  const c = getContracts(cfg);
+  const caps = await requireV61(cfg, 'preview_repayment');
+  const [rpc, l, nextId] = await Promise.all([rpcStatus(cfg), c.marketplace.loans(loanId), c.marketplace.nextLoanId() as Promise<bigint>]);
+  if (loanId >= Number(nextId) || l.borrower === ethers.ZeroAddress) {
+    throw new ValidationError(`Loan ${loanId} does not exist on ${cfg.name} (highest loanId is ${Number(nextId) - 1})`, 'loanId');
+  }
+  const state = LOAN_STATES[Number(l.state)] ?? `UNKNOWN(${l.state})`;
+  if (state !== 'ACTIVE') throw new ValidationError(`Loan ${loanId} is ${state}, not ACTIVE; nothing to repay.`, 'loanId');
+  const q = await repaymentQuote(cfg, l, loanId);
+  return {
+    network: cfg.name,
+    marketplaceVersion: caps.version,
+    loanId,
+    borrower: l.borrower,
+    agentId: Number(l.agentId),
+    endTime: Number(l.endTime),
+    dueDate: new Date(Number(l.endTime) * 1000).toISOString(),
+    lateInterestCapDays: (caps.lateInterestCapSeconds ?? 0) / 86400,
+    ...formatQuote(q),
+    rpc,
+  };
+}
+
+/** canTopUp(agentId, lender): whether supplyLiquidity by an existing lender would be refused right now. */
+export async function readCanTopUp(cfg: NetworkConfig, agentId: number, lender: string) {
+  const c = getContracts(cfg);
+  const caps = await requireV61(cfg, 'can_top_up');
+  const [rpc, pool, ok, pos, pending] = await Promise.all([
+    rpcStatus(cfg),
+    c.marketplace.agentPools(agentId),
+    c.marketplace.canTopUp(agentId, lender) as Promise<boolean>,
+    c.marketplace.getLenderPosition(agentId, lender),
+    c.marketplace.pendingTranche(agentId, lender),
+  ]);
+  if (!pool.isActive) throw new ValidationError(`No active pool for agentId ${agentId} on ${cfg.name}`, 'agentId');
+  const hasPosition = (pos.amount as bigint) > 0n;
+  return {
+    network: cfg.name,
+    marketplaceVersion: caps.version,
+    agentId,
+    lender,
+    canTopUp: ok,
+    hasPosition,
+    suppliedUsdc: formatUsdc(pos.amount),
+    pendingTrancheUsdc: formatUsdc(pending.amount),
+    note: ok
+      ? hasPosition
+        ? 'A top-up now keeps all existing principal qualified for the interest of loans already in flight (nothing is forfeited).'
+        : 'No existing position: a first supply is never refused.'
+      : 'supplyLiquidity would revert "Top-up would forfeit in-flight interest". Wait for the pool\'s older active loans to close and check again, or open a fresh position from another address.',
+    rpc,
+  };
+}
+
+/** getActiveLoanIds(agentId): the agent's ACTIVE loans (<= MAX_ACTIVE_LOANS_PER_AGENT). */
+export async function readActiveLoanIds(cfg: NetworkConfig, agentId: number) {
+  const c = getContracts(cfg);
+  const caps = await requireV61(cfg, 'get_active_loan_ids');
+  const [rpc, pool, idsRaw] = await Promise.all([rpcStatus(cfg), c.marketplace.agentPools(agentId), c.marketplace.getActiveLoanIds(agentId) as Promise<bigint[]>]);
+  if (!pool.isActive) throw new ValidationError(`No active pool for agentId ${agentId} on ${cfg.name}`, 'agentId');
+  const ids = idsRaw.map(Number);
+  const loans = await Promise.all(ids.map(async (id) => formatLoan(await c.marketplace.loans(id), id)));
+  return { network: cfg.name, marketplaceVersion: caps.version, agentId, activeLoans: ids.length, loanIds: ids, loans, rpc };
+}
+
 
 export async function readAgentLoans(cfg: NetworkConfig, address: string, opts: { limit?: number } = {}) {
   const c = getContracts(cfg);

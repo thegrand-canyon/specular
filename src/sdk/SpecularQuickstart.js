@@ -276,19 +276,131 @@ class SpecularQuickstart {
         return { loanId, tx: tx.hash };
     }
 
+    // ------------------------------------------------------------------
+    // V6.1 capability detection (2026-09 audit fixes)
+    //
+    // V6.1 added `VERSION()`, `previewRepayment`, `canTopUp`, `getActiveLoanIds`
+    // and changed `repayLoan` to charge interest on max(duration, elapsed)
+    // (capped at duration + LATE_INTEREST_CAP). Pre-V6.1 deployments (Arc
+    // testnet V6-staging, Base canonical) have none of those selectors, so every
+    // new call is gated on the version and falls back to the V6 computation.
+    // ------------------------------------------------------------------
+
+    /**
+     * Marketplace contract version string. 'V6' for deployments that predate
+     * `VERSION()` (pre-2026-09 code), otherwise whatever the contract reports
+     * (e.g. 'V6.1'). Cached per instance (the contract is not proxied).
+     */
+    async marketplaceVersion() {
+        if (this._mpVersion === undefined) {
+            try {
+                this._mpVersion = String(await this.marketplace.VERSION());
+            } catch (e) {
+                this._mpVersion = 'V6';
+            }
+        }
+        return this._mpVersion;
+    }
+
+    /** True when the deployment exposes the V6.1 views (previewRepayment, canTopUp, getActiveLoanIds). */
+    async _hasV61Views() {
+        return (await this.marketplaceVersion()) !== 'V6';
+    }
+
+    /** Mirrors calculateInterest() exactly (divide-before-multiply), in seconds. */
+    static interestForSeconds(principal, rateBps, seconds) {
+        const annual = (BigInt(principal) * BigInt(rateBps)) / 10000n;
+        return (annual * BigInt(seconds)) / BigInt(365 * 86400);
+    }
+
+    /**
+     * Exact amount `repayLoan(loanId)` would pull right now.
+     *
+     * V6.1: `previewRepayment(loanId)` (interest on max(duration, elapsed),
+     * capped at duration + LATE_INTEREST_CAP). V6: the nominal fixed-term
+     * figure `calculateInterest(amount, rate, duration)` — which is what V6
+     * actually charges. All amounts are bigint base units.
+     *
+     * @returns {Promise<{principal:bigint, interest:bigint, total:bigint, chargeableSeconds:bigint, lateSeconds:bigint, durationSeconds:bigint, interestRateBps:bigint, source:'previewRepayment'|'calculateInterest'}>}
+     */
+    async previewRepayment(loanId) {
+        const loan = await this.marketplace.loans(loanId);
+        if (await this._hasV61Views()) {
+            try {
+                const pv = await this.marketplace.previewRepayment(loanId);
+                return {
+                    principal: loan.amount,
+                    interest: pv.interest,
+                    total: pv.total,
+                    chargeableSeconds: pv.chargeableSeconds,
+                    lateSeconds: pv.lateSeconds,
+                    durationSeconds: loan.duration,
+                    interestRateBps: loan.interestRate,
+                    source: 'previewRepayment'
+                };
+            } catch (e) {
+                // A real contract revert (e.g. "Loan not active") must surface;
+                // only a missing selector (VERSION() present but no view) falls back.
+                if (/Loan not active/i.test(e.message || '') || (e.reason && /Loan not active/i.test(e.reason))) throw e;
+            }
+        }
+        const interest = await this.marketplace.calculateInterest(loan.amount, loan.interestRate, loan.duration);
+        return {
+            principal: loan.amount,
+            interest,
+            total: loan.amount + interest,
+            chargeableSeconds: loan.duration,
+            lateSeconds: 0n,
+            durationSeconds: loan.duration,
+            interestRateBps: loan.interestRate,
+            source: 'calculateInterest'
+        };
+    }
+
+    /**
+     * Seconds of extra accrual to cover between the preview and the mined
+     * repay on a LATE loan (V6.1 charges per second until the cap). Bounded and
+     * clamped to the contract cap; leftover allowance is revoked after repay.
+     */
+    static get LATE_REPAY_HEADROOM_SECONDS() { return 600; }
+
+    /**
+     * Amount to approve for repay(loanId): exactly previewRepayment().total,
+     * plus — only for a loan that is late AND still under the interest cap — the
+     * interest that can accrue during LATE_REPAY_HEADROOM_SECONDS (clamped at
+     * duration + LATE_INTEREST_CAP, so it can never exceed the maximum the
+     * contract could ever pull). On-time loans and cap-hit late loans owe a
+     * constant amount, so their approval is exact to the base unit.
+     * @returns {Promise<{approve:bigint, preview:object, headroom:bigint}>}
+     */
+    async _repayApproval(loanId) {
+        const preview = await this.previewRepayment(loanId);
+        let headroom = 0n;
+        if (preview.source === 'previewRepayment' && preview.lateSeconds > 0n) {
+            let cap;
+            try { cap = BigInt(await this.marketplace.LATE_INTEREST_CAP()); } catch (e) { cap = 30n * 86400n; }
+            const maxChargeable = preview.durationSeconds + cap;
+            let target = preview.chargeableSeconds + BigInt(SpecularQuickstart.LATE_REPAY_HEADROOM_SECONDS);
+            if (target > maxChargeable) target = maxChargeable;
+            const withHeadroom = SpecularQuickstart.interestForSeconds(preview.principal, preview.interestRateBps, target);
+            if (withHeadroom > preview.interest) headroom = withHeadroom - preview.interest;
+        }
+        return { approve: preview.total + headroom, preview, headroom };
+    }
+
     /**
      * Repay a loan. Returns tx hash. Retries on transient "Not the borrower"
      * errors which indicate the prior borrow's storage write is not yet
      * visible from this RPC node.
+     *
+     * Approval policy (exact, never unlimited): `previewRepayment(loanId).total`
+     * on V6.1 (late loans pay for elapsed time, capped at duration + 30 days),
+     * `amount + calculateInterest(amount, rate, duration)` on V6. See
+     * `_repayApproval` for the bounded headroom applied to in-window late loans.
      */
     async repay(loanId) {
-        // Approve exactly the total owed (principal + interest). The contract
-        // computes interest from loan.duration (the FIXED full term), not
-        // elapsed time, so this client-side figure matches to the base unit —
-        // no time-drift, no over-approval.
-        const loan = await this.marketplace.loans(loanId);
-        const interest = await this.marketplace.calculateInterest(loan.amount, loan.interestRate, loan.duration);
-        await this._approveExact(loan.amount + interest);
+        const { approve, preview, headroom } = await this._repayApproval(loanId);
+        await this._approveExact(approve);
 
         let tx, bumped = false;
         for (let i = 0; i < 5; i++) {
@@ -298,11 +410,12 @@ class SpecularQuickstart {
             } catch (e) {
                 const msg = e.message || '';
                 // Same bounded-buffer fallback as borrow: if the contract pulls
-                // slightly more than principal+interest (rounding / drift), bump
-                // the approval by one more interest-worth (bounded) and retry.
+                // more than previewed (rounding / a repay delayed past the late
+                // headroom), bump the approval by one more interest-worth
+                // (bounded) and retry.
                 if (!bumped && /allowance|exceeds|transfer amount/i.test(msg)) {
                     bumped = true;
-                    await this._approveExact(loan.amount + interest * 2n);
+                    await this._approveExact(approve + (preview.interest > 0n ? preview.interest : 1n));
                     continue;
                 }
                 if (i === 4 || !/Not the borrower/.test(msg)) throw e;
@@ -310,16 +423,67 @@ class SpecularQuickstart {
             }
         }
         await tx.wait();
-        // Restore exact-approval if the buffer path was taken (no-op otherwise).
-        if (bumped) await this.revokeApproval().catch(() => {});
+        // Restore exact-approval if the buffer/headroom path was taken (no-op otherwise).
+        if (bumped || headroom > 0n) await this.revokeApproval().catch(() => {});
         return tx.hash;
     }
 
     /**
+     * V6.1: whether `lender` (default: this wallet) can top up `agentId`'s pool
+     * now without `supplyLiquidity` reverting "Top-up would forfeit in-flight
+     * interest". Always true on V6 (no tranche accounting there) and for a
+     * lender with no existing position.
+     */
+    async canTopUp(agentId, lender = this.wallet.address) {
+        if (!(await this._hasV61Views())) return true;
+        try {
+            return Boolean(await this.marketplace.canTopUp(agentId, lender));
+        } catch (e) {
+            return true;
+        }
+    }
+
+    /**
+     * IDs of the agent's currently ACTIVE loans. V6.1: `getActiveLoanIds`;
+     * V6: walks the pool owner's `agentLoans[]` and filters on state.
+     * @returns {Promise<number[]>}
+     */
+    async activeLoanIds(agentId) {
+        if (await this._hasV61Views()) {
+            try {
+                return (await this.marketplace.getActiveLoanIds(agentId)).map(Number);
+            } catch (e) { /* fall back */ }
+        }
+        const pool = await this.marketplace.agentPools(agentId);
+        const addr = pool.agentAddress;
+        if (!addr || addr === ethers.ZeroAddress) return [];
+        const out = [];
+        for (let i = 0; i < 200; i++) {
+            let lid;
+            try { lid = await this.marketplace.agentLoans(addr, i); } catch (e) { break; }
+            const l = await this.marketplace.loans(lid);
+            if (Number(l.state) === 1) out.push(Number(lid));
+        }
+        return out;
+    }
+
+    /**
      * Supply USDC liquidity to an agent's pool. Approves exactly `amt`.
+     * On V6.1 a top-up (existing position) is pre-checked with `canTopUp` so
+     * the caller gets an actionable error instead of an on-chain revert.
      */
     async supply(agentId, amount) {
         const amt = typeof amount === 'bigint' ? amount : ethers.parseUnits(String(amount), this.cfg.decimals);
+        if (await this._hasV61Views()) {
+            const pos = await this.marketplace.getLenderPosition(agentId, this.wallet.address);
+            if (pos.amount > 0n && !(await this.canTopUp(agentId, this.wallet.address))) {
+                throw new Error(
+                    `SpecularQuickstart.supply: topping up pool #${agentId} from ${this.wallet.address} now would forfeit ` +
+                    'in-flight interest and the contract would revert ("Top-up would forfeit in-flight interest"). ' +
+                    'Wait for the pool\'s older active loans to close (check canTopUp(agentId) first), or open a fresh position from another address.'
+                );
+            }
+        }
         await this._approveExact(amt);
         const tx = await this.marketplace.supplyLiquidity(agentId, amt);
         await tx.wait();

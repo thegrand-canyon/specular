@@ -51,6 +51,22 @@ export interface CreditInfo {
 
 export type LoanState = 'REQUESTED' | 'ACTIVE' | 'REPAID' | 'DEFAULTED';
 
+/** Result of previewRepayment(): all amounts in USDC base units (6 decimals). */
+export interface RepaymentPreview {
+    principal: bigint;
+    interest: bigint;
+    /** Exactly what repayLoan() pulls at the block the preview was evaluated in. */
+    total: bigint;
+    /** Seconds of interest charged: duration <= x <= duration + LATE_INTEREST_CAP (V6.1); duration on V6. */
+    chargeableSeconds: bigint;
+    /** Seconds past endTime (0 if on time; always 0 on V6). */
+    lateSeconds: bigint;
+    durationSeconds: bigint;
+    interestRateBps: bigint;
+    /** 'previewRepayment' on V6.1, 'calculateInterest' (nominal fixed term) on V6. */
+    source: 'previewRepayment' | 'calculateInterest';
+}
+
 export interface LoanRecord {
     id: number;
     /** Principal amount as decimal string in USDC */
@@ -88,10 +104,27 @@ export class SpecularQuickstart {
     /** Request a loan. Auto-onboards if needed. */
     borrow(amount: number | string | bigint, durationDays: number): Promise<BorrowResult>;
 
-    /** Repay a loan. Returns tx hash. */
+    /**
+     * Repay a loan. Returns tx hash. Approves exactly what the contract will
+     * pull: `previewRepayment(loanId).total` on V6.1 (late loans pay for
+     * elapsed time, capped at duration + 30 days), the nominal fixed-term
+     * figure on V6. Never an unlimited approval.
+     */
     repay(loanId: number): Promise<string>;
 
-    /** Supply USDC liquidity to an agent's pool. Auto-approves if needed. */
+    /** Marketplace `VERSION()`; 'V6' for deployments that predate the V6.1 (2026-09) fixes. */
+    marketplaceVersion(): Promise<string>;
+
+    /** Exact amount `repayLoan(loanId)` would pull now (V6.1 view, nominal fallback on V6). */
+    previewRepayment(loanId: number): Promise<RepaymentPreview>;
+
+    /** V6.1: whether a top-up by `lender` (default: this wallet) would be refused; always true on V6. */
+    canTopUp(agentId: number, lender?: string): Promise<boolean>;
+
+    /** IDs of the agent's ACTIVE loans (V6.1 `getActiveLoanIds`, bounded walk on V6). */
+    activeLoanIds(agentId: number): Promise<number[]>;
+
+    /** Supply USDC liquidity to an agent's pool. Auto-approves if needed; on V6.1 a top-up is pre-checked with canTopUp. */
     supply(agentId: number, amount: number | string | bigint): Promise<string>;
 
     /** Withdraw lender position. */

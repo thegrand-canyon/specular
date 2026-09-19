@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Specular Protocol Agent API",
-    "version": "2.0.0",
+    "version": "2.1.0",
     "summary": "Non-custodial credit infrastructure for AI agents: reads execute server-side; writes are returned as unsigned transactions for your own wallet.",
     "description": "Every route takes an explicit `network` path segment: `arc-staging` (Arc testnet V6-staging, test USDC), `base` (Base mainnet, REAL USDC) or `arc-mainnet` (Arc mainnet, REAL USDC). There is no default network. POST /v1/{network}/tx/prepare/{action} never executes anything: it returns `{chainId,to,data,value:\"0\",gasEstimate,...}` for you to sign. Approvals are always exact-amount. POST /v1/{network}/tx/broadcast relays a transaction you signed only if it targets a Specular contract on that network.",
     "license": {
@@ -686,7 +686,7 @@
       "get": {
         "operationId": "get_loan_status",
         "summary": "get_loan_status",
-        "description": "Status of a loan by ID: borrower, principal, collateral, APR, due date, state (REQUESTED/ACTIVE/REPAID/DEFAULTED) and, if active, the exact repayment amount.",
+        "description": "Status of a loan by ID: borrower, principal, collateral, APR, due date, state (REQUESTED/ACTIVE/REPAID/DEFAULTED) and, if active, the exact repayment amount (V6.1: previewRepayment incl. any late interest; V6: fixed-term interest).",
         "tags": [
           "read"
         ],
@@ -901,6 +901,280 @@
               "pattern": "^0x[0-9a-fA-F]{40}$"
             },
             "description": "Lender wallet address (0x-prefixed, EIP-55 checksum accepted)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (bad address/amount/network, unknown loan, etc.)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid bearer token (only when SPECULAR_MCP_TOKEN is configured)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (per IP)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream RPC failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/{network}/loans/{loanId}/repayment": {
+      "get": {
+        "operationId": "preview_repayment",
+        "summary": "preview_repayment",
+        "description": "V6.1 only: the EXACT USDC amount repayLoan(loanId) would pull right now (principal + interest on max(duration, elapsed), capped at duration + 30 days). Use this, not principal + nominal interest, to size the repay approval; a late loan owes more and the figure grows per second until it caps. On a V6 deployment this returns a \"not supported\" error (get_loan_status.repayment still works there).",
+        "tags": [
+          "read"
+        ],
+        "parameters": [
+          {
+            "name": "network",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "base",
+                "arc-staging",
+                "arc-mainnet"
+              ]
+            },
+            "description": "REQUIRED, no default. \"arc-staging\" = Arc testnet V6-staging (test USDC, safe to experiment). \"base\" and \"arc-mainnet\" move REAL USDC."
+          },
+          {
+            "name": "loanId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Loan ID (must be ACTIVE)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (bad address/amount/network, unknown loan, etc.)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid bearer token (only when SPECULAR_MCP_TOKEN is configured)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (per IP)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream RPC failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/{network}/pools/{agentId}/can-top-up/{lender}": {
+      "get": {
+        "operationId": "can_top_up",
+        "summary": "can_top_up",
+        "description": "V6.1 only: whether `lender` can add to an EXISTING position in agent pool `agentId` right now without supplyLiquidity reverting \"Top-up would forfeit in-flight interest\". Call before prepare_supply_liquidity when you already have a position; a first supply is never refused. Returns a \"not supported\" error on V6 deployments (which never refuse top-ups).",
+        "tags": [
+          "read"
+        ],
+        "parameters": [
+          {
+            "name": "network",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "base",
+                "arc-staging",
+                "arc-mainnet"
+              ]
+            },
+            "description": "REQUIRED, no default. \"arc-staging\" = Arc testnet V6-staging (test USDC, safe to experiment). \"base\" and \"arc-mainnet\" move REAL USDC."
+          },
+          {
+            "name": "agentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Agent ID of the pool"
+          },
+          {
+            "name": "lender",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^0x[0-9a-fA-F]{40}$"
+            },
+            "description": "Lender wallet address (the one that would send supplyLiquidity) (0x-prefixed, EIP-55 checksum accepted)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (bad address/amount/network, unknown loan, etc.)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid bearer token (only when SPECULAR_MCP_TOKEN is configured)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (per IP)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream RPC failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/{network}/agents/{agentId}/active-loans": {
+      "get": {
+        "operationId": "get_active_loan_ids",
+        "summary": "get_active_loan_ids",
+        "description": "V6.1 only: IDs (and status) of an agent's currently ACTIVE loans, straight from the contract's bounded active set (at most MAX_ACTIVE_LOANS_PER_AGENT). Returns a \"not supported\" error on V6 deployments; use get_agent_loans there.",
+        "tags": [
+          "read"
+        ],
+        "parameters": [
+          {
+            "name": "network",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "base",
+                "arc-staging",
+                "arc-mainnet"
+              ]
+            },
+            "description": "REQUIRED, no default. \"arc-staging\" = Arc testnet V6-staging (test USDC, safe to experiment). \"base\" and \"arc-mainnet\" move REAL USDC."
+          },
+          {
+            "name": "agentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Agent ID"
           }
         ],
         "responses": {
@@ -1752,7 +2026,7 @@
       "post": {
         "operationId": "prepare_repay_loan",
         "summary": "prepare_repay_loan",
-        "description": "Prepare full repayment of a loan (principal + fixed interest); includes the exact approve if the allowance is short. Returns an UNSIGNED transaction {chainId,to,data,value:\"0\",gasEstimate,...} for YOUR wallet to sign; never executes anything. If a USDC approval is needed first, an exact-amount approve is returned in `prerequisite`.",
+        "description": "Prepare full repayment of a loan (principal + interest; on V6.1 a LATE loan pays for the elapsed time, capped at duration + 30 days, sized from previewRepayment). Includes the exact approve if the allowance is short (bounded headroom only for an accruing late loan). Returns an UNSIGNED transaction {chainId,to,data,value:\"0\",gasEstimate,...} for YOUR wallet to sign; never executes anything. If a USDC approval is needed first, an exact-amount approve is returned in `prerequisite`.",
         "tags": [
           "prepare"
         ],

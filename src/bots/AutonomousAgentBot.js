@@ -342,7 +342,9 @@ class AutonomousAgentBot {
             [
                 'function repayLoan(uint256 loanId) external',
                 'function loans(uint256) external view returns (uint256, address, uint256, uint256, uint256, uint256, uint256, uint256, uint256, uint8)',
-                'function calculateInterest(uint256 amount, uint256 rate, uint256 duration) public pure returns (uint256)'
+                'function calculateInterest(uint256 amount, uint256 rate, uint256 duration) public pure returns (uint256)',
+                // V6.1 (2026-09): late loans pay interest on the elapsed time; absent on V6 (call reverts -> fallback)
+                'function previewRepayment(uint256 loanId) view returns (uint256 interest, uint256 total, uint256 chargeableSeconds, uint256 lateSeconds)'
             ],
             this.wallet
         );
@@ -359,9 +361,19 @@ class AutonomousAgentBot {
         const interestRate = loan[5];
         const duration = loan[8];
 
-        // Calculate total repayment
-        const interest = await marketplace.calculateInterest(principal, interestRate, duration);
-        const totalRepayment = principal + interest;
+        // Total repayment: V6.1 previewRepayment (a late loan owes more than
+        // principal + nominal interest); V6 has no such view -> nominal figure,
+        // which is what V6 actually charges. Approval stays exact, never unlimited.
+        let interest, totalRepayment;
+        try {
+            const pv = await marketplace.previewRepayment(loanId);
+            interest = pv.interest;
+            totalRepayment = pv.total;
+            if (pv.lateSeconds > 0n) this.addLog(`   ⚠️ Loan is ${Number(pv.lateSeconds)}s late; interest charged for ${Number(pv.chargeableSeconds) / 86400} days`);
+        } catch (e) {
+            interest = await marketplace.calculateInterest(principal, interestRate, duration);
+            totalRepayment = principal + interest;
+        }
 
         this.addLog(`   Principal: ${ethers.formatUnits(principal, 6)} USDC`);
         this.addLog(`   Interest: ${ethers.formatUnits(interest, 6)} USDC`);

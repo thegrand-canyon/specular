@@ -59,7 +59,9 @@ another contract.
 ## Tool list
 
 Read: `list_networks`, `get_network_info`, `get_protocol_status`, `check_credit_score`, `get_available_liquidity`,
-`get_pool_details`, `get_loan_status`, `get_agent_loans`, `get_lending_positions`, `get_transaction`.
+`get_pool_details`, `get_loan_status`, `get_agent_loans`, `get_lending_positions`, `get_transaction`;
+V6.1-only (clear "not supported" error on older deployments): `preview_repayment` (exact amount `repayLoan` pulls now,
+incl. late interest — size the repay approval from this), `can_top_up`, `get_active_loan_ids`.
 
 Prepare (unsigned): `prepare_register_agent`, `prepare_create_pool`, `prepare_approve_usdc`, `prepare_supply_liquidity`,
 `prepare_withdraw_liquidity`, `prepare_request_loan`, `prepare_repay_loan`, `prepare_claim_interest`.

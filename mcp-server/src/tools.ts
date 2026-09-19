@@ -9,7 +9,9 @@ import { ALL_NETWORKS, enabledNetworks, getNetwork, NetworkConfig, publicNetwork
 import { broadcastSignedTx } from './broadcast.js';
 import { prepareTx, simulateCall, WriteAction } from './prepare.js';
 import {
+  readActiveLoanIds,
   readAgentLoans,
+  readCanTopUp,
   readCredit,
   readLoan,
   readNetworkInfo,
@@ -17,6 +19,7 @@ import {
   readPools,
   readPositions,
   readProtocolStatus,
+  readRepaymentPreview,
   readTransaction,
 } from './reads.js';
 import { optionalNumber, requireObject, validateAddress, validateHexData, validateId, validateTxHash, ValidationError } from './validate.js';
@@ -150,7 +153,7 @@ export const TOOLS: ToolDef[] = [
   {
     name: 'get_loan_status',
     kind: 'read',
-    description: 'Status of a loan by ID: borrower, principal, collateral, APR, due date, state (REQUESTED/ACTIVE/REPAID/DEFAULTED) and, if active, the exact repayment amount.',
+    description: 'Status of a loan by ID: borrower, principal, collateral, APR, due date, state (REQUESTED/ACTIVE/REPAID/DEFAULTED) and, if active, the exact repayment amount (V6.1: previewRepayment incl. any late interest; V6: fixed-term interest).',
     inputSchema: schema({ network: NETWORK_PROP, loanId: ID_PROP('Loan ID') }, ['network', 'loanId']),
     rest: { method: 'GET', path: '/v1/{network}/loans/{loanId}', pathParams: ['network', 'loanId'] },
     handler: async (args) => readLoan(net(args), validateId(args.loanId, 'loanId')),
@@ -170,6 +173,32 @@ export const TOOLS: ToolDef[] = [
     inputSchema: schema({ network: NETWORK_PROP, address: ADDRESS_PROP('Lender wallet address') }, ['network', 'address']),
     rest: { method: 'GET', path: '/v1/{network}/agents/{address}/positions', pathParams: ['network', 'address'] },
     handler: async (args) => readPositions(net(args), validateAddress(args.address)),
+  },
+  {
+    name: 'preview_repayment',
+    kind: 'read',
+    description:
+      'V6.1 only: the EXACT USDC amount repayLoan(loanId) would pull right now (principal + interest on max(duration, elapsed), capped at duration + 30 days). Use this, not principal + nominal interest, to size the repay approval; a late loan owes more and the figure grows per second until it caps. On a V6 deployment this returns a "not supported" error (get_loan_status.repayment still works there).',
+    inputSchema: schema({ network: NETWORK_PROP, loanId: ID_PROP('Loan ID (must be ACTIVE)') }, ['network', 'loanId']),
+    rest: { method: 'GET', path: '/v1/{network}/loans/{loanId}/repayment', pathParams: ['network', 'loanId'] },
+    handler: async (args) => readRepaymentPreview(net(args), validateId(args.loanId, 'loanId')),
+  },
+  {
+    name: 'can_top_up',
+    kind: 'read',
+    description:
+      'V6.1 only: whether `lender` can add to an EXISTING position in agent pool `agentId` right now without supplyLiquidity reverting "Top-up would forfeit in-flight interest". Call before prepare_supply_liquidity when you already have a position; a first supply is never refused. Returns a "not supported" error on V6 deployments (which never refuse top-ups).',
+    inputSchema: schema({ network: NETWORK_PROP, agentId: ID_PROP('Agent ID of the pool'), lender: ADDRESS_PROP('Lender wallet address (the one that would send supplyLiquidity)') }, ['network', 'agentId', 'lender']),
+    rest: { method: 'GET', path: '/v1/{network}/pools/{agentId}/can-top-up/{lender}', pathParams: ['network', 'agentId', 'lender'] },
+    handler: async (args) => readCanTopUp(net(args), validateId(args.agentId, 'agentId'), validateAddress(args.lender, 'lender')),
+  },
+  {
+    name: 'get_active_loan_ids',
+    kind: 'read',
+    description: 'V6.1 only: IDs (and status) of an agent\'s currently ACTIVE loans, straight from the contract\'s bounded active set (at most MAX_ACTIVE_LOANS_PER_AGENT). Returns a "not supported" error on V6 deployments; use get_agent_loans there.',
+    inputSchema: schema({ network: NETWORK_PROP, agentId: ID_PROP('Agent ID') }, ['network', 'agentId']),
+    rest: { method: 'GET', path: '/v1/{network}/agents/{agentId}/active-loans', pathParams: ['network', 'agentId'] },
+    handler: async (args) => readActiveLoanIds(net(args), validateId(args.agentId, 'agentId')),
   },
   {
     name: 'get_transaction',
@@ -225,7 +254,13 @@ export const TOOLS: ToolDef[] = [
     { amount: AMOUNT_PROP('Loan principal'), durationDays: { type: 'integer', minimum: 7, maximum: 365, description: 'Loan term in DAYS (7-365)' } },
     ['amount', 'durationDays'],
   ),
-  prepareTool('repay_loan', 'prepare_repay_loan', 'Prepare full repayment of a loan (principal + fixed interest); includes the exact approve if the allowance is short.', { loanId: ID_PROP('Loan ID to repay') }, ['loanId']),
+  prepareTool(
+    'repay_loan',
+    'prepare_repay_loan',
+    'Prepare full repayment of a loan (principal + interest; on V6.1 a LATE loan pays for the elapsed time, capped at duration + 30 days, sized from previewRepayment). Includes the exact approve if the allowance is short (bounded headroom only for an accruing late loan).',
+    { loanId: ID_PROP('Loan ID to repay') },
+    ['loanId'],
+  ),
   prepareTool('claim_interest', 'prepare_claim_interest', 'Prepare claiming earned lender interest from an agent pool.', { agentId: ID_PROP('Agent ID of the pool') }, ['agentId']),
 
   // --------------------------------------------------------------- simulate
