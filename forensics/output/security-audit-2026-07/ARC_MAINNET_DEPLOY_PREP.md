@@ -158,6 +158,13 @@ npx hardhat verify --network arcMainnet <FAUCET_ADDR> <REGISTRY_ADDR> <USDC>
 
 ## Post-deploy
 
+**2026-09-19 (later): internal audit → V6.1 → marketplace REDEPLOYED on mainnet.**
+New canonical marketplace `0x358c5E69f712A4b3558333090a45A054bAeEb282` (V6.1, Sourcify exact_match, migration
+finalized at deploy → F-08 closed). Old V6.0 `0xb9996de0…9Aaa` retired: fees withdrawn, paused, revokePool.
+Rehearsed first on Arc testnet staging (`0xB2d88bbF…6878`). Smoke 22/22 on new; invariants OK; monitor
+follows the config file so the launchd job now watches the new address. Redeploy log:
+`forensics/output/arc-mainnet-2026-09-19/redeploy-v6.1.log`. See `../audit-2026-09/` for the audit + fix notes.
+
 **DEPLOYED 2026-09-19** (owner chose to launch ahead of Gate 1). Addresses in
 `src/config/arc-mainnet-addresses.json`: RegistryV2 `0x6F1EbF50290f6D4A9947E9EB77f98a683684fBF5`,
 ReputationV3 `0x1577Eb9985CcA859F25ED2EDaeD16A464ADFaE5e`, MarketplaceV6
