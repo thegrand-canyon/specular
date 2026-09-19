@@ -51,10 +51,14 @@ async function main() {
     if (!pool.isActive) await (await mp.createAgentPool()).wait();
     check('pool active', (await mp.agentPools(agentId)).isActive);
 
-    console.log('\n=== 3. F-C lever live: sub-minimum supply reverts ===');
-    let reverted = false;
-    try { await (await mp.supplyLiquidity(agentId, USDC('0.5'))).wait(); } catch { reverted = true; }
-    check('supply < 1 USDC reverts on-chain', reverted);
+    console.log('\n=== 3. F-C lever live: sub-minimum supply reverts (new slot only) ===');
+    if (await mp.isInPoolLenders(agentId, wallet.address)) {
+        console.log('  (skipped: wallet already holds a lender slot; F-C only gates NEW slots)');
+    } else {
+        let reverted = false;
+        try { await (await mp.supplyLiquidity(agentId, USDC('0.5'))).wait(); } catch { reverted = true; }
+        check('supply < 1 USDC reverts on-chain', reverted);
+    }
 
     console.log('\n=== 4. supply → borrow → repay → claim (live lifecycle) ===');
     await (await mp.supplyLiquidity(agentId, USDC(100))).wait();
