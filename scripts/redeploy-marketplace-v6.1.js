@@ -30,6 +30,8 @@ const NETWORKS = {
 const netArg = process.argv[process.argv.indexOf('--network') + 1];
 const NET = NETWORKS[netArg];
 if (!NET) { console.error(`--network required: ${Object.keys(NETWORKS).join(' | ')}`); process.exit(1); }
+// Resume: --new <addr> skips deploy+wiring (already done) and only runs retirement + config write.
+const RESUME_NEW = process.argv.includes('--new') ? ethers.getAddress(process.argv[process.argv.indexOf('--new') + 1]) : null;
 const DRY = process.env.DEPLOY_CONFIRM !== 'YES';
 const LEVERS = {
     bind: (process.env.SPECULAR_BIND_BORROW ?? '1') === '1',
@@ -67,31 +69,46 @@ async function main() {
     const usdc = new ethers.Contract(cfg.usdc, ['function balanceOf(address) view returns (uint256)'], provider);
     const oldBal = await usdc.balanceOf(oldAddr);
     console.log(`old: ${oldVersion}, loans ${next - 1n}, ACTIVE ${active}, balance ${ethers.formatUnits(oldBal, 6)} USDC, fees ${ethers.formatUnits(fees, 6)}, paused ${await old.paused()}`);
-    const retireOld = active === 0;
-    if (!retireOld) console.log('⚠ old marketplace has ACTIVE loans — will NOT pause/revoke it (lenders/borrowers must close first).');
-    if (oldBal - fees > 0n) console.log(`⚠ old marketplace holds ${ethers.formatUnits(oldBal - fees, 6)} USDC of lender/collateral funds — lenders must withdraw from the old one.`);
+    // Retirement policy: pause() freezes lender exits (audit 2026-09 I-5) and revokePool()
+    // makes repayLoan revert on the old contract. So we only retire when NOTHING is left:
+    // no ACTIVE loans AND no lender/collateral funds (balance == accumulatedFees).
+    const lenderFunds = oldBal - fees;
+    const retireOld = active === 0 && lenderFunds === 0n;
+    if (active > 0) console.log('⚠ old marketplace has ACTIVE loans — will NOT pause/revoke it (borrowers must close first).');
+    if (lenderFunds > 0n) console.log(`⚠ old marketplace holds ${ethers.formatUnits(lenderFunds, 6)} USDC of lender/collateral funds — will NOT pause/revoke it (pausing would freeze their exits). Lenders must withdraw; re-run with --new <addr> afterwards to retire it.`);
 
     const factory = new ethers.ContractFactory(M.abi, M.bytecode, wallet);
     const gas = await provider.estimateGas({ ...(await factory.getDeployTransaction(cfg.agentRegistryV2, cfg.reputationManagerV3, cfg.usdc)), from: wallet.address });
     const gp = (await provider.getFeeData()).gasPrice;
-    console.log(`\nplan: deploy V6.1 (~${gas} gas ≈ ${ethers.formatEther(gas * gp)} native) → authorizePool → levers ${JSON.stringify({ ...LEVERS, minHold: String(LEVERS.minHold), minSupply: String(LEVERS.minSupply), feeBps: String(LEVERS.feeBps) })} → setMigrationFinalized → ${retireOld ? 'withdrawFees + pause + revokePool(old)' : '(old left running)'}`);
+    const retirePlan = retireOld ? 'withdrawFees(all) + pause + revokePool(old)' : (fees > 0n ? 'withdrawFees(all) only; old left running' : '(old left running)');
+    console.log(`\nplan: ${RESUME_NEW ? `RESUME with new=${RESUME_NEW} (skip deploy/wiring)` : `deploy V6.1 (~${gas} gas ≈ ${ethers.formatEther(gas * gp)} native) → authorizePool → levers ${JSON.stringify({ ...LEVERS, minHold: String(LEVERS.minHold), minSupply: String(LEVERS.minSupply), feeBps: String(LEVERS.feeBps) })} → setMigrationFinalized`} → ${retirePlan}`);
     if (DRY) { console.log('\nDRY RUN — nothing broadcast. Set DEPLOY_CONFIRM=YES to execute.'); return; }
 
     console.log('\n⚠ broadcasting in 5s...'); await new Promise(r => setTimeout(r, 5000));
-    const mp = await factory.deploy(cfg.agentRegistryV2, cfg.reputationManagerV3, cfg.usdc); await mp.waitForDeployment();
-    const newAddr = await mp.getAddress(); console.log(`✅ V6.1 marketplace ${newAddr} (VERSION ${await mp.VERSION()})`);
-    await (await rep.authorizePool(newAddr)).wait(); console.log('✅ reputation.authorizePool(new)');
-    if (LEVERS.bind) { await (await mp.setBindBorrowToPoolCreator(true)).wait(); console.log('✅ M-1'); }
-    await (await mp.setMinHoldForReputationReward(LEVERS.minHold)).wait(); console.log(`✅ M-2 ${LEVERS.minHold}s`);
-    await (await mp.setMinSupplyAmount(LEVERS.minSupply)).wait(); console.log(`✅ F-C ${LEVERS.minSupply}`);
-    await (await mp.setPlatformFeeRate(LEVERS.feeBps)).wait(); console.log(`✅ fee ${LEVERS.feeBps} bps`);
-    await (await mp.setMigrationFinalized()).wait(); console.log('✅ setMigrationFinalized (F-08 closed on new)');
+    let newAddr;
+    if (RESUME_NEW) {
+        const nm = new ethers.Contract(RESUME_NEW, M.abi, provider);
+        const ver = await nm.VERSION(); const auth = await rep.authorizedPools(RESUME_NEW); const fin = await nm.migrationFinalized();
+        if (ver !== 'V6.1' || !auth || !fin) { console.error(`--new ${RESUME_NEW} not ready: VERSION=${ver} authorized=${auth} migrationFinalized=${fin}`); process.exit(1); }
+        newAddr = RESUME_NEW; console.log(`↩ resuming with V6.1 marketplace ${newAddr} (authorized, migration finalized)`);
+    } else {
+        const mp = await factory.deploy(cfg.agentRegistryV2, cfg.reputationManagerV3, cfg.usdc); await mp.waitForDeployment();
+        newAddr = await mp.getAddress(); console.log(`✅ V6.1 marketplace ${newAddr} (VERSION ${await mp.VERSION()})`);
+        await (await rep.authorizePool(newAddr)).wait(); console.log('✅ reputation.authorizePool(new)');
+        if (LEVERS.bind) { await (await mp.setBindBorrowToPoolCreator(true)).wait(); console.log('✅ M-1'); }
+        await (await mp.setMinHoldForReputationReward(LEVERS.minHold)).wait(); console.log(`✅ M-2 ${LEVERS.minHold}s`);
+        await (await mp.setMinSupplyAmount(LEVERS.minSupply)).wait(); console.log(`✅ F-C ${LEVERS.minSupply}`);
+        await (await mp.setPlatformFeeRate(LEVERS.feeBps)).wait(); console.log(`✅ fee ${LEVERS.feeBps} bps`);
+        await (await mp.setMigrationFinalized()).wait(); console.log('✅ setMigrationFinalized (F-08 closed on new)');
+    }
+    if (fees > 0n) { await (await old.withdrawFees(fees)).wait(); console.log(`✅ old.withdrawFees(${ethers.formatUnits(fees, 6)})`); }
     if (retireOld) {
-        if (fees > 0n) { await (await old.withdrawFees()).wait(); console.log(`✅ old.withdrawFees ${ethers.formatUnits(fees, 6)}`); }
         if (!(await old.paused())) { await (await old.pause()).wait(); console.log('✅ old.pause()'); }
         await (await rep.revokePool(oldAddr)).wait(); console.log('✅ reputation.revokePool(old)');
+    } else {
+        console.log('ℹ old marketplace left running (still authorized, unpaused) until lenders/borrowers exit.');
     }
-    cfg.agentLiquidityMarketplace_v6_0_retired = oldAddr;
+    cfg[retireOld ? 'agentLiquidityMarketplace_v6_0_retired' : 'agentLiquidityMarketplace_v6_0_legacy_still_live'] = oldAddr;
     cfg.agentLiquidityMarketplace_v6 = newAddr;
     cfg.marketplaceVersion = 'V6.1 (2026-09-19 audit fixes F-01/F-02/F-03/F-05/F-07; migration finalized at deploy)';
     cfg.marketplaceRedeployedAt = new Date().toISOString();
