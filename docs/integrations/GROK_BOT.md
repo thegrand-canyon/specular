@@ -68,10 +68,10 @@ explain `simulation.plainLanguage` if a transaction would revert.
 ## Verifying the connection
 
 ```bash
-curl -s -X POST https://<host>/mcp -H 'content-type: application/json' \
+curl -s -X POST https://specular-agent-api-production.up.railway.app/mcp -H 'content-type: application/json' \
   -H 'accept: application/json, text/event-stream' \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | jq '.result.tools | length'   # 20
-curl -s https://<host>/health | jq .
+curl -s https://specular-agent-api-production.up.railway.app/health | jq .
 ```
 
 ## Other platforms

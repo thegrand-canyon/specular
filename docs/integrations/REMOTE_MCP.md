@@ -22,7 +22,7 @@ Each `POST /mcp` carries one JSON-RPC request (`initialize`, `tools/list`, `tool
 (`enableJsonResponse`), which every Streamable-HTTP client accepts.
 
 ```bash
-curl -s -X POST https://<host>/mcp \
+curl -s -X POST https://specular-agent-api-production.up.railway.app/mcp \
   -H 'content-type: application/json' -H 'accept: application/json, text/event-stream' \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"check_credit_score",
        "arguments":{"network":"arc-staging","address":"0x800e305A0caDdE6289dFDFEDF38218f45C06F72C"}}}'
@@ -96,7 +96,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 
 const client = new Client({ name: 'my-agent', version: '1.0.0' });
-await client.connect(new StreamableHTTPClientTransport(new URL('https://<host>/mcp'), {
+await client.connect(new StreamableHTTPClientTransport(new URL('https://specular-agent-api-production.up.railway.app/mcp'), {
   requestInit: { headers: { Authorization: 'Bearer <token-if-required>' } },
 }));
 const prepared = await client.callTool({ name: 'prepare_request_loan',
@@ -110,7 +110,7 @@ await wallet.sendTransaction({ to: tx.to, data: tx.data, gasLimit: BigInt(tx.gas
 
 ```python
 import requests, json
-r = requests.post('https://<host>/mcp', json={
+r = requests.post('https://specular-agent-api-production.up.railway.app/mcp', json={
   'jsonrpc': '2.0', 'id': 1, 'method': 'tools/call',
   'params': {'name': 'get_protocol_status', 'arguments': {'network': 'arc-staging'}}},
   headers={'Accept': 'application/json, text/event-stream'})

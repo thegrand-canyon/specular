@@ -43,6 +43,13 @@ Website: specular.financial | GitHub: thegrand-canyon/specular | Deploy: specula
 - Arc compromised wallet: `0x656086A21073272533c8A3f56A94c1f3D8BCFcE2` (key published; agentId 43, 777+ loans, USDC swept to secure wallet 2026-05-08)
 - Base v4 deployed bytecode was compiled from a stash revision with MAX_LENDERS=50 (matches V6); committed v4 source has MAX_LENDERS=200
 
+### Hosted agent surface (mcp-server/) — LIVE 2026-09-19
+
+- **URL:** `https://specular-agent-api-production.up.railway.app` (Railway project `resplendent-determination`, service `specular-agent-api`, built from `mcp-server/Dockerfile` via `RAILWAY_DOCKERFILE_PATH`; the older `specular` service is the legacy Express API).
+- MCP Streamable HTTP at `/mcp`, REST under `/v1/{network}/…`, `/openapi.json`, `/health`. Networks enabled: `arc-mainnet` (real USDC) + `arc-staging`. No auth token set (open, per-IP rate-limited).
+- **Non-custodial:** reads run server-side; `prepare_*` return unsigned txs for the agent's own wallet; `broadcast_signed_transaction` relays only to Specular contracts. Server refuses to boot if `SPECULAR_PRIVATE_KEY` is set.
+- Deploy: `RAILWAY_TOKEN` (project token, in `.env`) then `railway up --service specular-agent-api --ci` from repo root. Docs: `docs/integrations/{REMOTE_MCP,GROK_BOT,MUSE_CONNECTOR}.md`.
+
 ### SDK (src/)
 
 - `SpecularAgent.js` — main agent interface (`new SpecularAgent(wallet, contracts)`)

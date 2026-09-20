@@ -89,7 +89,7 @@ network.
 
 ```bash
 H='content-type: application/json'
-API=https://<host>
+API=https://specular-agent-api-production.up.railway.app
 
 curl -s $API/v1/arc-staging/agents/0xAGENT/credit | jq '{registered, reputation, credit, wallet}'
 
