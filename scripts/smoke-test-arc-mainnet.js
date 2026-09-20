@@ -33,16 +33,17 @@ async function main() {
     check('reputation authorized marketplace', await reputation.authorizedPools(cfg.agentLiquidityMarketplace_v6));
     check('M-1 bindBorrowToPoolCreator', (await mp.bindBorrowToPoolCreator()) === true);
     check('M-2 minHold = 86400', (await mp.minHoldForReputationReward()) === 86400n);
-    check('F-C minSupplyAmount = 1 USDC', (await mp.minSupplyAmount()) === USDC(1));
+    // Levers tightened 2026-09-19 after the internal audit (F-04 / F-06): 5 pts/day, 10 USDC min supply.
+    check('F-C minSupplyAmount = 10 USDC', (await mp.minSupplyAmount()) === USDC(10));
     check('D1 platformFeeRate = 100 bps', (await mp.platformFeeRate()) === 100n);
-    check('D1 rate limit = 20', (await reputation.maxReputationGainPerWindow()) === 20n);
+    check('D1 rate limit = 5', (await reputation.maxReputationGainPerWindow()) === 5n);
     check('faucet maxEligibleAgentId = 100', (await faucet.maxEligibleAgentId()) === 100n);
     check('not paused', (await mp.paused()) === false);
 
     console.log('\n=== 2. Onboard (exact approval, no MaxUint256) ===');
-    // Budget: 1 supply + 0.5 collateral + ~0.51 repay (principal+interest+fee) < 3. Reset to 0 at the end.
-    await (await usdc.approve(cfg.agentLiquidityMarketplace_v6, USDC(3))).wait();
-    check('allowance = 3 USDC', (await usdc.allowance(wallet.address, cfg.agentLiquidityMarketplace_v6)) === USDC(3));
+    // Budget: 10 supply (minSupply) + 0.5 collateral + ~0.51 repay (principal+interest+fee) < 12. Reset to 0 at the end.
+    await (await usdc.approve(cfg.agentLiquidityMarketplace_v6, USDC(12))).wait();
+    check('allowance = 12 USDC', (await usdc.allowance(wallet.address, cfg.agentLiquidityMarketplace_v6)) === USDC(12));
     let agentId = await registry.addressToAgentId(wallet.address);
     if (agentId === 0n) {
         await (await registry.register('ipfs://specular-arc-mainnet-smoke', [])).wait();
@@ -57,8 +58,8 @@ async function main() {
         console.log('  (skipped: wallet already holds a lender slot; F-C only gates NEW slots — verified on first run)');
     } else {
         let reverted = false;
-        try { await (await mp.supplyLiquidity(agentId, USDC('0.5'))).wait(); } catch { reverted = true; }
-        check('supply < 1 USDC reverts on-chain', reverted);
+        try { await (await mp.supplyLiquidity(agentId, USDC('5'))).wait(); } catch { reverted = true; }
+        check('supply < 10 USDC reverts on-chain', reverted);
     }
 
     console.log('\n=== 4. supply → borrow → repay → claim → withdraw ===');
@@ -69,8 +70,8 @@ async function main() {
     if (loanId != null) {
         console.log(`  (resuming: loan ${loanId} already ACTIVE)`);
     } else {
-        await (await mp.supplyLiquidity(agentId, USDC(1))).wait();
-        check('supplied 1 USDC', ((await mp.positions(agentId, wallet.address)).amount) >= USDC(1));
+        await (await mp.supplyLiquidity(agentId, USDC(10))).wait();
+        check('supplied 10 USDC', ((await mp.positions(agentId, wallet.address)).amount) >= USDC(10));
         const r = await (await mp.requestLoan(USDC('0.5'), 7)).wait(); // score 0 → 100% collateral pulled
         for (const lg of r.logs) { try { const p = mp.interface.parseLog(lg); if (p?.name === 'LoanRequested') { loanId = p.args.loanId; break; } } catch {} }
     }
