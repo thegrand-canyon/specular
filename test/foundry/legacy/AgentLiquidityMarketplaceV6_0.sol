@@ -7,8 +7,8 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "./AgentRegistryV2.sol";
-import "./ReputationManagerV3.sol";
+import "../../../contracts/core/AgentRegistryV2.sol";
+import "../../../contracts/core/ReputationManagerV3.sol";
 
 /**
  * @title AgentLiquidityMarketplaceV6
@@ -27,29 +27,10 @@ import "./ReputationManagerV3.sol";
  *   - `compactPoolLenders(agentId)` — dedup any state seeded from v4
  *   - `setMigrationFinalized()` — irreversibly disables seed* and unlocks normal operation
  *
- * V6.1 (internal audit 2026-09-19, see forensics/output/audit-2026-09/):
- *   F-01 — loan-closing path resolves the agent by `loan.agentId` (via the registry's
- *          `ownerOf`, whose holder always maps back to the id), so an agent-NFT transfer
- *          can no longer freeze `repayLoan`/`liquidateLoan`. Repay is allowed from the
- *          original borrower OR the current NFT holder; collateral always returns to
- *          `loan.borrower` (the address that posted it).
- *   F-02 — a lender top-up while loans are in flight goes into a PENDING tranche; the
- *          previously-qualified principal keeps its `depositTimestamp` and its share of
- *          every in-flight loan. See `supplyLiquidity` for the fold/merge rules.
- *   F-03 — interest is charged on max(duration, elapsed) capped at duration +
- *          `LATE_INTEREST_CAP`; lateness is recorded per loan/agent and emitted.
- *   F-05 — a socialized loss larger than Σ principal is also socialized across
- *          unclaimed `earnedInterest` (exact, no dust), so booked interest is never
- *          unbacked and `claimInterest` is never first-come-first-served.
- *   F-07 — `createAgentPool`/`requestLoan` require the agent to be active in the registry.
- *
  * NOT independently audited. Do not deploy to Base mainnet without external review.
  */
-contract AgentLiquidityMarketplaceV6 is Ownable2Step, ReentrancyGuard, Pausable {
+contract AgentLiquidityMarketplaceV6_0 is Ownable2Step, ReentrancyGuard, Pausable {
     using SafeERC20 for IERC20;
-
-    /// @notice Source version. "V6.1" = V6 + 2026-09-19 internal-audit fixes (F-01/02/03/05/07).
-    string public constant VERSION = "V6.1";
 
     // State variables (set in constructor, immutable for gas savings — slither finding)
     AgentRegistryV2 public immutable agentRegistry;
@@ -69,28 +50,9 @@ contract AgentLiquidityMarketplaceV6 is Ownable2Step, ReentrancyGuard, Pausable 
 
     // Lender position tracking
     struct LenderPosition {
-        uint256 amount;              // USDC supplied to agent (TOTAL principal, incl. any pending tranche)
+        uint256 amount;              // USDC supplied to agent
         uint256 earnedInterest;      // Interest earned so far
-        uint256 depositTimestamp;    // Qualification timestamp of the BASE tranche (amount − pending)
-    }
-
-    // [F-02 fix 2026-09] Pending tranche: the part of `LenderPosition.amount` that was
-    // topped up while loans were in flight. It qualifies for a loan only if
-    // `timestamp <= loan.startTime`, while the base tranche keeps its own
-    // `depositTimestamp` — so a top-up never forfeits the base tranche's share of
-    // in-flight loans (the V6 behaviour reset the whole position's timestamp).
-    // Packed into one slot: amounts are 6-dec USDC (fit uint128), timestamps fit uint128.
-    struct PendingTranche {
-        uint128 amount;
-        uint128 timestamp;
-    }
-
-    // [F-03 fix 2026-09] Per-loan repayment record (kept out of `Loan` so the
-    // `loans()` tuple shape is unchanged for existing consumers).
-    struct RepaymentRecord {
-        uint256 repaidAt;            // block.timestamp of repayLoan
-        uint256 interestPaid;        // interest actually charged (elapsed-time based)
-        uint256 lateSeconds;         // repaidAt − endTime if late, else 0
+        uint256 depositTimestamp;    // When they deposited
     }
 
     // Loan tracking
@@ -164,29 +126,10 @@ contract AgentLiquidityMarketplaceV6 is Ownable2Step, ReentrancyGuard, Pausable 
     // Migration phase — owner can seed* state until finalized; irreversible after finalization
     bool public migrationFinalized;
 
-    // [F-02] agentId => lender => pending (post-loan-start) tranche. Always ⊆ positions[..].amount.
-    mapping(uint256 => mapping(address => PendingTranche)) public pendingTranche;
-
-    // [F-02] agentId => loanIds currently ACTIVE. Bounded by MAX_ACTIVE_LOANS_PER_AGENT
-    // (10). Maintained at _disburseLoan (push) and repay/liquidate (swap-and-pop).
-    // Used to decide whether a pending tranche can be folded/merged losslessly.
-    mapping(uint256 => uint256[]) public activeLoanIds;
-
-    // [F-03] loanId => repayment record; agentId => lateness counters (on-chain
-    // record for a future reputation model / off-chain scoring — ReputationManagerV3
-    // exposes no late-repayment hook and is intentionally NOT modified).
-    mapping(uint256 => RepaymentRecord) public repayments;
-    mapping(uint256 => uint256) public lateRepayCount;
-    mapping(uint256 => uint256) public lateSecondsTotal;
-
     // Constants
     uint256 public constant MAX_INTEREST_RATE = 2000; // 20% max
     uint256 public constant MIN_LOAN_DURATION = 7 days;
     uint256 public constant MAX_LOAN_DURATION = 365 days;
-    // [F-03] Interest keeps accruing past endTime for at most this long. Bounds the
-    // repayment amount so a late borrower is charged for time used but never faces
-    // an unpayable bill (which would only push them into default).
-    uint256 public constant LATE_INTEREST_CAP = 30 days;
     // [H-04 mitigation] Cap lenders per pool to bound _distributeInterest gas cost
     uint256 public constant MAX_LENDERS_PER_POOL = 50;
     // [SECURITY-01] Limit concurrent active loans per agent to prevent credit limit bypass
@@ -207,12 +150,6 @@ contract AgentLiquidityMarketplaceV6 is Ownable2Step, ReentrancyGuard, Pausable 
     event PoolSeeded(uint256 indexed agentId, address indexed agentAddress);
     event PositionSeeded(uint256 indexed agentId, address indexed lender, uint256 amount, uint256 earnedInterest);
     event FeesWithdrawn(address indexed to, uint256 amount);
-    // [F-02] Emitted whenever a lender's pending tranche changes (set, merged, folded, drawn down).
-    event PendingTrancheUpdated(uint256 indexed agentId, address indexed lender, uint256 pendingAmount, uint256 pendingTimestamp);
-    // [F-03] Emitted on a late repayment. `lateInterest` = interest charged beyond the nominal-duration amount.
-    event LoanRepaidLate(uint256 indexed loanId, uint256 indexed agentId, uint256 lateSeconds, uint256 lateInterest);
-    // [F-05] Emitted when a default loss exceeded Σ principal and the excess was socialized across unclaimed interest.
-    event InterestLossSocialized(uint256 indexed agentId, uint256 interestReduced);
 
     constructor(
         address _agentRegistry,
@@ -240,8 +177,6 @@ contract AgentLiquidityMarketplaceV6 is Ownable2Step, ReentrancyGuard, Pausable 
     function createAgentPool() external whenNotPaused {
         uint256 agentId = agentRegistry.addressToAgentId(msg.sender);
         require(agentId != 0, "Not a registered agent");
-        // [F-07 fix 2026-09] Per-agent kill switch: honour registry deactivation.
-        require(agentRegistry.isAgentActive(msg.sender), "Agent deactivated");
         require(!agentPools[agentId].isActive, "Pool already exists");
 
         agentPools[agentId] = AgentPool({
@@ -305,107 +240,16 @@ contract AgentLiquidityMarketplaceV6 is Ownable2Step, ReentrancyGuard, Pausable 
             poolLenders[agentId].push(msg.sender);
             isInPoolLenders[agentId][msg.sender] = true;
         }
-        // CLAUDE_AUDIT_WORLDCLASS W1 mitigation (kept): NEW money is stamped with
-        // block.timestamp so it can never qualify for a loan that is already open —
-        // this blocks the mempool-sandwich (front-run repayLoan with a large supply).
-        //
-        // [F-02 fix 2026-09] What changed: the stamp is no longer applied to the
-        // lender's EXISTING principal. V6 reset the whole position's timestamp on
-        // every supply, so a 1-base-unit top-up forfeited the position's share of
-        // every in-flight loan. Now:
-        //   (a) no qualified principal to protect (fresh position, or no loan in
-        //       flight): everything becomes one base tranche stamped now.
-        //   (b) loans in flight, no pending tranche yet: the base tranche keeps its
-        //       timestamp; the new money becomes a PENDING tranche stamped now.
-        //   (c) a pending tranche exists and no ACTIVE loan started in
-        //       [base.ts, pending.ts): the pending tranche is qualified for exactly
-        //       the loans the base is → fold it into the base (lossless), new money
-        //       becomes the pending tranche.
-        //   (d) else, if no ACTIVE loan started in [pending.ts, now): merging the new
-        //       money into the pending tranche and re-stamping it is lossless.
-        //   (e) else the position would need a third tranche; rather than silently
-        //       forfeit in-flight interest (V6) the top-up is refused. It becomes
-        //       possible again once the older in-flight loans close (see canTopUp).
-        PendingTranche storage pt = pendingTranche[agentId][msg.sender];
-        if (position.amount == 0 || activeLoanCount[agentId] == 0) {
-            if (pt.amount != 0) {
-                delete pendingTranche[agentId][msg.sender];
-                emit PendingTrancheUpdated(agentId, msg.sender, 0, 0);
-            }
-            position.depositTimestamp = block.timestamp;
-        } else if (pt.amount == 0) {
-            pt.amount = _toU128(amount);
-            pt.timestamp = uint128(block.timestamp);
-            emit PendingTrancheUpdated(agentId, msg.sender, amount, block.timestamp);
-        } else if (!_activeLoanStartedIn(agentId, position.depositTimestamp, pt.timestamp)) {
-            // (c) fold: base keeps depositTimestamp; pending := new money only
-            pt.amount = _toU128(amount);
-            pt.timestamp = uint128(block.timestamp);
-            emit PendingTrancheUpdated(agentId, msg.sender, amount, block.timestamp);
-        } else if (!_activeLoanStartedIn(agentId, pt.timestamp, block.timestamp)) {
-            // (d) merge into pending and re-stamp
-            uint256 newPending = uint256(pt.amount) + amount;
-            pt.amount = _toU128(newPending);
-            pt.timestamp = uint128(block.timestamp);
-            emit PendingTrancheUpdated(agentId, msg.sender, newPending, block.timestamp);
-        } else {
-            revert("Top-up would forfeit in-flight interest");
-        }
+        // CLAUDE_AUDIT_WORLDCLASS W1 mitigation: depositTimestamp updated on EVERY supply
+        // (not just first). _distributeInterest uses this to qualify lenders against a
+        // specific loan's startTime — only lenders whose deposits predate the loan share
+        // its interest. Blocks the mempool-sandwich attack pattern where an attacker
+        // front-runs repayLoan to capture interest they didn't earn.
+        // Side effect: also addresses CLAUDE_AUDIT_DEEP F12 (depositTimestamp staleness).
+        position.depositTimestamp = block.timestamp;
         position.amount += amount;
 
         emit LiquiditySupplied(agentId, msg.sender, amount);
-    }
-
-    /// @dev True if any ACTIVE loan of `agentId` started in [lo, hi). ≤ MAX_ACTIVE_LOANS_PER_AGENT reads.
-    function _activeLoanStartedIn(uint256 agentId, uint256 lo, uint256 hi) internal view returns (bool) {
-        uint256[] storage ids = activeLoanIds[agentId];
-        for (uint256 i = 0; i < ids.length; i++) {
-            uint256 s = loans[ids[i]].startTime;
-            if (s >= lo && s < hi) return true;
-        }
-        return false;
-    }
-
-    function _toU128(uint256 x) internal pure returns (uint128) {
-        require(x <= type(uint128).max, "Amount overflow");
-        return uint128(x);
-    }
-
-    /**
-     * @notice [F-02] Whether `lender` can currently top up `agentId`'s pool without
-     *         forfeiting in-flight interest (i.e. `supplyLiquidity` would not revert
-     *         with "Top-up would forfeit in-flight interest"). SDK/MCP pre-check.
-     */
-    function canTopUp(uint256 agentId, address lender) external view returns (bool) {
-        LenderPosition storage p = positions[agentId][lender];
-        PendingTranche storage pt = pendingTranche[agentId][lender];
-        if (p.amount == 0 || activeLoanCount[agentId] == 0 || pt.amount == 0) return true;
-        if (!_activeLoanStartedIn(agentId, p.depositTimestamp, pt.timestamp)) return true;
-        // [fix 2026-09-20, testing round] The supply tx lands in a LATER block than the
-        // one this view is evaluated against, so a loan that started in the current
-        // block (start == block.timestamp) will be inside the tx's half-open
-        // [pending.ts, tx.timestamp) window. Use an inclusive upper bound here so the
-        // pre-check predicts the tx exactly (found by V61PropertyFuzz property (i)).
-        return !_activeLoanStartedIn(agentId, pt.timestamp, block.timestamp + 1);
-    }
-
-    /**
-     * @notice [F-02] Principal of `lender` that qualifies for interest on a loan that
-     *         started at `loanStartTime` (base tranche if its timestamp ≤ start, plus
-     *         the pending tranche if ITS timestamp ≤ start).
-     */
-    function qualifiedAmountAt(uint256 agentId, address lender, uint256 loanStartTime) public view returns (uint256 q) {
-        LenderPosition storage p = positions[agentId][lender];
-        if (p.amount == 0) return 0;
-        PendingTranche storage pt = pendingTranche[agentId][lender];
-        uint256 pend = pt.amount;
-        if (p.depositTimestamp <= loanStartTime) q = p.amount - pend;
-        if (pend > 0 && pt.timestamp <= loanStartTime) q += pend;
-    }
-
-    /// @notice [F-02] Loan ids currently ACTIVE for `agentId` (≤ MAX_ACTIVE_LOANS_PER_AGENT).
-    function getActiveLoanIds(uint256 agentId) external view returns (uint256[] memory) {
-        return activeLoanIds[agentId];
     }
 
     /**
@@ -420,22 +264,7 @@ contract AgentLiquidityMarketplaceV6 is Ownable2Step, ReentrancyGuard, Pausable 
         require(position.amount >= amount, "Insufficient balance");
         require(pool.availableLiquidity >= amount, "Insufficient pool liquidity");
 
-        // Update position. [F-02] Draw down the PENDING (newest, least-qualified)
-        // tranche first, so a lender who tops up and then withdraws the same amount
-        // keeps the base tranche's qualification intact (LIFO). This cannot grant
-        // qualification: the base tranche's timestamp is never moved earlier.
-        PendingTranche storage pt = pendingTranche[agentId][msg.sender];
-        if (pt.amount > 0) {
-            uint256 fromPending = amount < pt.amount ? amount : pt.amount;
-            uint256 newPending = pt.amount - fromPending;
-            if (newPending == 0) {
-                delete pendingTranche[agentId][msg.sender];
-                emit PendingTrancheUpdated(agentId, msg.sender, 0, 0);
-            } else {
-                pt.amount = uint128(newPending);
-                emit PendingTrancheUpdated(agentId, msg.sender, newPending, pt.timestamp);
-            }
-        }
+        // Update position
         position.amount -= amount;
 
         // Update pool.
@@ -490,83 +319,6 @@ contract AgentLiquidityMarketplaceV6 is Ownable2Step, ReentrancyGuard, Pausable 
         isInPoolLenders[agentId][lender] = false;
     }
 
-    /// @dev Swap-and-pop `poolLenders[agentId][idx]` and clear its flag (no search).
-    function _removePoolLenderAt(uint256 agentId, uint256 idx) internal {
-        address[] storage lenders = poolLenders[agentId];
-        address lender = lenders[idx];
-        lenders[idx] = lenders[lenders.length - 1];
-        lenders.pop();
-        isInPoolLenders[agentId][lender] = false;
-    }
-
-    /// @dev [F-02] Keep `pendingTranche ⊆ position.amount` after a principal reduction of
-    ///      `share`: reduce the pending tranche pro-rata (floor), the rest comes off the base.
-    function _shrinkPendingProRata(uint256 agentId, address lender, uint256 share, uint256 amountBefore) internal {
-        PendingTranche storage pt = pendingTranche[agentId][lender];
-        uint256 pend = pt.amount;
-        if (pend == 0) return;
-        uint256 cut = (share * pend) / amountBefore;
-        uint256 newPending = pend - cut;
-        // Never let pending exceed the remaining principal (rounding safety).
-        if (newPending > amountBefore - share) newPending = amountBefore - share;
-        if (newPending == 0) {
-            delete pendingTranche[agentId][lender];
-            emit PendingTrancheUpdated(agentId, lender, 0, 0);
-        } else if (newPending != pend) {
-            pt.amount = uint128(newPending);
-            emit PendingTrancheUpdated(agentId, lender, newPending, pt.timestamp);
-        }
-    }
-
-    /**
-     * @notice [F-05 fix 2026-09] Second-pass socialization: reduce every lender's
-     *         UNCLAIMED `earnedInterest` pro-rata by `loss`, exactly min(loss, Σ earned)
-     *         (floor-division remainder assigned, no dust). Called only for the part of
-     *         a default loss that exceeded Σ principal — i.e. the defaulted loan was
-     *         funded (in part) from lendable unclaimed interest, and without this pass
-     *         the booked interest would be unbacked and `claimInterest` first-come-
-     *         first-served with the last claimant reverting "Drain underflow".
-     */
-    function _socializeInterestLoss(uint256 agentId, uint256 loss) internal returns (uint256 reduced) {
-        address[] storage lenders = poolLenders[agentId];
-        uint256 totalInterest = 0;
-        for (uint256 i = 0; i < lenders.length; i++) {
-            totalInterest += positions[agentId][lenders[i]].earnedInterest;
-        }
-        if (totalInterest == 0) return 0;
-
-        uint256 cappedLoss = loss > totalInterest ? totalInterest : loss;
-        for (uint256 i = 0; i < lenders.length; i++) {
-            LenderPosition storage p = positions[agentId][lenders[i]];
-            if (p.earnedInterest == 0) continue;
-            uint256 share = (cappedLoss * p.earnedInterest) / totalInterest;
-            p.earnedInterest -= share;
-            reduced += share;
-        }
-        uint256 remainder = cappedLoss - reduced;
-        for (uint256 i = 0; i < lenders.length && remainder > 0; i++) {
-            LenderPosition storage p = positions[agentId][lenders[i]];
-            uint256 take = p.earnedInterest < remainder ? p.earnedInterest : remainder;
-            p.earnedInterest -= take;
-            reduced += take;
-            remainder -= take;
-        }
-        return reduced;
-    }
-
-    /// @dev After a loss, free the slots of lenders left with no principal AND no
-    ///      interest (they could never call withdraw/claim to free it themselves).
-    ///      Iterates from the end so swap-and-pop is safe. Bounded by MAX_LENDERS_PER_POOL.
-    function _pruneEmptyLenders(uint256 agentId) internal {
-        address[] storage lenders = poolLenders[agentId];
-        for (uint256 i = lenders.length; i > 0; i--) {
-            LenderPosition storage p = positions[agentId][lenders[i - 1]];
-            if (p.amount == 0 && p.earnedInterest == 0) {
-                _removePoolLenderAt(agentId, i - 1);
-            }
-        }
-    }
-
     /**
      * @notice [audit 2026-08 D4] Reduce every lender's principal position in a
      *         pool pro-rata by `loss`, distributing a defaulted-loan shortfall
@@ -591,7 +343,6 @@ contract AgentLiquidityMarketplaceV6 is Ownable2Step, ReentrancyGuard, Pausable 
             if (p.amount == 0) continue;
             // Proportional share; floor division means Σshares ≤ cappedLoss.
             uint256 share = (cappedLoss * p.amount) / totalPrincipal;
-            _shrinkPendingProRata(agentId, lenders[i], share, p.amount);
             p.amount -= share;
             reduced += share;
         }
@@ -602,8 +353,6 @@ contract AgentLiquidityMarketplaceV6 is Ownable2Step, ReentrancyGuard, Pausable 
             for (uint256 i = 0; i < lenders.length && remainder > 0; i++) {
                 LenderPosition storage p = positions[agentId][lenders[i]];
                 uint256 take = p.amount < remainder ? p.amount : remainder;
-                if (take == 0) continue;
-                _shrinkPendingProRata(agentId, lenders[i], take, p.amount);
                 p.amount -= take;
                 reduced += take;
                 remainder -= take;
@@ -620,9 +369,6 @@ contract AgentLiquidityMarketplaceV6 is Ownable2Step, ReentrancyGuard, Pausable 
         require(amount > 0, "Amount must be > 0");
         uint256 agentId = agentRegistry.addressToAgentId(msg.sender);
         require(agentId != 0, "Not a registered agent");
-        // [F-07 fix 2026-09] Per-agent kill switch: a registry-deactivated agent
-        // cannot open new loans (it can still repay — the closing path must stay live).
-        require(agentRegistry.isAgentActive(msg.sender), "Agent deactivated");
         require(agentPools[agentId].isActive, "No pool for agent");
 
         AgentPool storage pool = agentPools[agentId];
@@ -708,8 +454,6 @@ contract AgentLiquidityMarketplaceV6 is Ownable2Step, ReentrancyGuard, Pausable 
 
         // §S5 FIX: increment counter on transition to ACTIVE
         activeLoanCount[loan.agentId]++;
-        // [F-02] Track the active set (bounded by MAX_ACTIVE_LOANS_PER_AGENT).
-        activeLoanIds[loan.agentId].push(loanId);
 
         // [H-3 fix] Track aggregate outstanding principal for the credit check.
         outstandingPrincipal[loan.agentId] += loan.amount;
@@ -728,22 +472,15 @@ contract AgentLiquidityMarketplaceV6 is Ownable2Step, ReentrancyGuard, Pausable 
      */
     function repayLoan(uint256 loanId) external nonReentrant whenNotPaused {
         Loan storage loan = loans[loanId];
+        require(msg.sender == loan.borrower, "Not the borrower");
         require(loan.state == LoanState.ACTIVE, "Loan not active");
-        // [F-01 fix 2026-09] Repayer policy: the ORIGINAL borrower address (the
-        // party that received the principal and posted the collateral) OR the
-        // CURRENT holder of the agent NFT (after a legitimate sale the buyer may
-        // want to clear the agent's debt to protect its reputation). Anyone else is
-        // refused. The registry guarantees `addressToAgentId[ownerOf(id)] == id`,
-        // so `holder` is always a resolvable agent for the reputation manager —
-        // the loan can be closed regardless of where the NFT went.
-        address holder = agentRegistry.ownerOf(loan.agentId);
-        require(msg.sender == loan.borrower || msg.sender == holder, "Not the borrower");
 
-        // [F-03 fix 2026-09] Interest is charged on the time actually used:
-        // max(duration, elapsed), capped at duration + LATE_INTEREST_CAP. An early
-        // repayment still pays the full nominal term (unchanged); a late one pays
-        // for the overrun so overdue credit is no longer free.
-        (uint256 interest, , uint256 lateSeconds) = _interestDue(loan);
+        // Calculate interest
+        uint256 interest = calculateInterest(
+            loan.amount,
+            loan.interestRate,
+            loan.duration
+        );
 
         uint256 totalRepayment = loan.amount + interest;
 
@@ -759,19 +496,9 @@ contract AgentLiquidityMarketplaceV6 is Ownable2Step, ReentrancyGuard, Pausable 
 
         // §S5 FIX: decrement counter on transition out of ACTIVE
         activeLoanCount[loan.agentId]--;
-        _removeActiveLoanId(loan.agentId, loanId);
 
         // [H-3 fix] Principal repaid — free the borrower's aggregate exposure.
         outstandingPrincipal[loan.agentId] -= loan.amount;
-
-        // [F-03] Record lateness on-chain (the loan tuple is unchanged; see `repayments`).
-        repayments[loanId] = RepaymentRecord({ repaidAt: block.timestamp, interestPaid: interest, lateSeconds: lateSeconds });
-        if (lateSeconds > 0) {
-            lateRepayCount[loan.agentId] += 1;
-            lateSecondsTotal[loan.agentId] += lateSeconds;
-            uint256 nominal = calculateInterest(loan.amount, loan.interestRate, loan.duration);
-            emit LoanRepaidLate(loanId, loan.agentId, lateSeconds, interest - nominal);
-        }
 
         // Update pool
         AgentPool storage pool = agentPools[loan.agentId];
@@ -786,19 +513,12 @@ contract AgentLiquidityMarketplaceV6 is Ownable2Step, ReentrancyGuard, Pausable 
         // Accumulate platform fees
         accumulatedFees += platformFee;
 
-        // INTERACTIONS: return collateral last.
-        // [F-01] Collateral ALWAYS goes back to `loan.borrower` — the address that
-        // posted it. An NFT transfer moves the agent identity, not USDC held in
-        // escrow for a specific wallet; a new holder who chooses to repay is
-        // settling the agent's debt and must arrange any collateral transfer with
-        // the seller off-chain. (No theft vector either way: repaying costs
-        // principal + interest for collateral ≤ principal.)
+        // INTERACTIONS: return collateral last
         if (loan.collateralAmount > 0) {
             usdcToken.safeTransfer(loan.borrower, loan.collateralAmount);
         }
 
-        // Record with reputation manager — keyed by the agent NFT's CURRENT holder,
-        // i.e. by loan.agentId (F-01), never by the historical borrower address.
+        // Record with reputation manager.
         // [M-2 lever] Only reward reputation if the loan was held long enough —
         // blunts request→repay farming. recordLoanCompletion applies NO penalty
         // when the flag is false, so a too-fast on-time repay simply earns no
@@ -807,58 +527,13 @@ contract AgentLiquidityMarketplaceV6 is Ownable2Step, ReentrancyGuard, Pausable 
         // zero-interest (sub-rounding) dust loan earns no reputation. Combined
         // with the principal-scaled bonus in the reputation manager, this makes
         // reputation reflect real economic activity, not free loop count.
-        // [F-03] A late repayment earns no bonus (onTime=false). ReputationManagerV3
-        // has no late-penalty hook; lateness is recorded above for a future model.
-        bool onTime = block.timestamp <= loan.endTime; // == (lateSeconds == 0)
+        bool onTime = block.timestamp <= loan.endTime;
         bool heldLongEnough = minHoldForReputationReward == 0
             || (block.timestamp - loan.startTime) >= minHoldForReputationReward;
         bool paidInterest = interest > 0;
-        reputationManager.recordLoanCompletion(holder, loan.amount, onTime && heldLongEnough && paidInterest);
+        reputationManager.recordLoanCompletion(loan.borrower, loan.amount, onTime && heldLongEnough && paidInterest);
 
         emit LoanRepaid(loanId, loan.amount, interest);
-    }
-
-    /// @dev [F-03] Interest due now on an ACTIVE loan: max(duration, elapsed) capped at
-    ///      duration + LATE_INTEREST_CAP, at the rate locked at request time.
-    function _interestDue(Loan storage loan)
-        internal view returns (uint256 interest, uint256 chargeableSeconds, uint256 lateSeconds)
-    {
-        uint256 elapsed = block.timestamp - loan.startTime;
-        chargeableSeconds = elapsed > loan.duration ? elapsed : loan.duration;
-        uint256 cap = loan.duration + LATE_INTEREST_CAP;
-        if (chargeableSeconds > cap) chargeableSeconds = cap;
-        lateSeconds = block.timestamp > loan.endTime ? block.timestamp - loan.endTime : 0;
-        interest = calculateInterest(loan.amount, loan.interestRate, chargeableSeconds);
-    }
-
-    /**
-     * @notice [F-03] Amount `repayLoan(loanId)` would pull right now. SDK/MCP must
-     *         approve `total` (not principal + nominal interest) for a late loan.
-     * @return interest          interest that would be charged now
-     * @return total             principal + interest
-     * @return chargeableSeconds seconds of interest charged (duration ≤ x ≤ duration + LATE_INTEREST_CAP)
-     * @return lateSeconds       seconds past endTime (0 if on time)
-     */
-    function previewRepayment(uint256 loanId)
-        external view returns (uint256 interest, uint256 total, uint256 chargeableSeconds, uint256 lateSeconds)
-    {
-        Loan storage loan = loans[loanId];
-        require(loan.state == LoanState.ACTIVE, "Loan not active");
-        (interest, chargeableSeconds, lateSeconds) = _interestDue(loan);
-        total = loan.amount + interest;
-    }
-
-    /// @dev [F-02] Remove `loanId` from the agent's active set (≤ 10 entries).
-    function _removeActiveLoanId(uint256 agentId, uint256 loanId) internal {
-        uint256[] storage ids = activeLoanIds[agentId];
-        uint256 n = ids.length;
-        for (uint256 i = 0; i < n; i++) {
-            if (ids[i] == loanId) {
-                ids[i] = ids[n - 1];
-                ids.pop();
-                return;
-            }
-        }
     }
 
     /**
@@ -877,15 +552,13 @@ contract AgentLiquidityMarketplaceV6 is Ownable2Step, ReentrancyGuard, Pausable 
     function _distributeInterest(uint256 agentId, uint256 totalInterest, uint256 loanStartTime) internal {
         address[] storage lenders = poolLenders[agentId];
 
-        // First pass: compute each lender's qualified amount and the qualified total.
-        // [F-02] Qualification is per TRANCHE (base and pending have their own
-        // timestamps) — see qualifiedAmountAt. Cached in memory for the second pass.
-        uint256 n = lenders.length;
-        uint256[] memory q = new uint256[](n);
+        // First pass: compute qualified-total (lenders supplied at or before loanStartTime)
         uint256 qualifiedTotal = 0;
-        for (uint256 i = 0; i < n; i++) {
-            q[i] = qualifiedAmountAt(agentId, lenders[i], loanStartTime);
-            qualifiedTotal += q[i];
+        for (uint256 i = 0; i < lenders.length; i++) {
+            LenderPosition storage p = positions[agentId][lenders[i]];
+            if (p.amount > 0 && p.depositTimestamp <= loanStartTime) {
+                qualifiedTotal += p.amount;
+            }
         }
 
         if (qualifiedTotal == 0) {
@@ -906,11 +579,13 @@ contract AgentLiquidityMarketplaceV6 is Ownable2Step, ReentrancyGuard, Pausable 
 
         // Second pass: distribute to qualified lenders proportionally
         uint256 distributed = 0;
-        for (uint256 i = 0; i < n; i++) {
-            if (q[i] == 0) continue;
-            uint256 share = (totalInterest * q[i]) / qualifiedTotal;
-            positions[agentId][lenders[i]].earnedInterest += share;
-            distributed += share;
+        for (uint256 i = 0; i < lenders.length; i++) {
+            LenderPosition storage p = positions[agentId][lenders[i]];
+            if (p.amount > 0 && p.depositTimestamp <= loanStartTime) {
+                uint256 share = (totalInterest * p.amount) / qualifiedTotal;
+                p.earnedInterest += share;
+                distributed += share;
+            }
         }
 
         // [H-01 FIX preserved] Rounding dust → platform fees rather than trapped.
@@ -954,18 +629,9 @@ contract AgentLiquidityMarketplaceV6 is Ownable2Step, ReentrancyGuard, Pausable 
         // regardless of withdrawal order. Bounded by MAX_LENDERS_PER_POOL (50).
         if (loss > 0) {
             uint256 reduced = _socializeLoss(loan.agentId, loss);
-            // Keep totalLiquidity == Σ position.amount. reduced == min(loss, Σ principal).
+            // Keep totalLiquidity == Σ position.amount. reduced ≈ loss (± rounding
+            // dust when totalPrincipal < loss, i.e. positions already near zero).
             pool.totalLiquidity = reduced >= pool.totalLiquidity ? 0 : pool.totalLiquidity - reduced;
-            // [F-05 fix 2026-09] Whatever principal could not absorb came out of
-            // lendable UNCLAIMED INTEREST (the only other backing of availableLiquidity),
-            // so socialize the excess across earnedInterest too. Keeps
-            // availableLiquidity + totalLoaned == Σ amount + Σ earnedInterest exact,
-            // and therefore every remaining claim backed.
-            if (loss > reduced) {
-                uint256 interestReduced = _socializeInterestLoss(loan.agentId, loss - reduced);
-                if (interestReduced > 0) emit InterestLossSocialized(loan.agentId, interestReduced);
-            }
-            _pruneEmptyLenders(loan.agentId);
         }
 
         // Update loaned amount
@@ -976,16 +642,12 @@ contract AgentLiquidityMarketplaceV6 is Ownable2Step, ReentrancyGuard, Pausable 
 
         // §S5 FIX: decrement counter on transition out of ACTIVE
         activeLoanCount[loan.agentId]--;
-        _removeActiveLoanId(loan.agentId, loanId);
 
         // [H-3 fix] Defaulted principal is no longer outstanding for credit purposes.
         outstandingPrincipal[loan.agentId] -= loan.amount;
 
-        // Record default with reputation manager — against the agent NFT's current
-        // holder, i.e. keyed by loan.agentId (F-01). The registry guarantees the
-        // holder resolves to this agentId, so liquidation never depends on the
-        // historical borrower address still being registered.
-        reputationManager.recordDefault(agentRegistry.ownerOf(loan.agentId), loan.amount);
+        // Record default with reputation manager
+        reputationManager.recordDefault(loan.borrower, loan.amount);
 
         emit LoanDefaulted(loanId);
     }
@@ -1222,7 +884,6 @@ contract AgentLiquidityMarketplaceV6 is Ownable2Step, ReentrancyGuard, Pausable 
             earnedInterest: earnedInterest,
             depositTimestamp: depositTimestamp
         });
-        delete pendingTranche[agentId][lender]; // [F-02] seeded positions are a single base tranche
 
         if (!isInPoolLenders[agentId][lender]) {
             require(poolLenders[agentId].length < MAX_LENDERS_PER_POOL, "Lender cap");
