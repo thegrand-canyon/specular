@@ -80,13 +80,31 @@ const NETNAME = process.env.V6_MONITOR_NETWORK || 'arc-testnet';
 const NET = NETWORKS[NETNAME];
 if (!NET) { console.error(`Unknown V6_MONITOR_NETWORK; expected one of ${Object.keys(NETWORKS).join(', ')}`); process.exit(2); }
 const ADDR = JSON.parse(fs.readFileSync(path.join(ROOT, NET.addresses)));
-const ABI = JSON.parse(fs.readFileSync(
+// Merge the V6.1 and V6.2 ABIs (dedup by selector-ish key) so one monitor can read
+// either generation. V6.2-only calls are still probed defensively — a V6.1 deployment
+// simply has no code at those selectors.
+const _abiV61 = JSON.parse(fs.readFileSync(
     path.join(ROOT, 'artifacts/contracts/core/AgentLiquidityMarketplaceV6.sol/AgentLiquidityMarketplaceV6.json'))).abi;
+let _abiV62 = [];
+try {
+    _abiV62 = JSON.parse(fs.readFileSync(
+        path.join(ROOT, 'artifacts/contracts/core/AgentLiquidityMarketplaceV62.sol/AgentLiquidityMarketplaceV62.json'))).abi;
+} catch { /* V6.2 not compiled in this checkout — V6.1-only monitoring still works */ }
+const _sig = f => `${f.type}:${f.name}:${(f.inputs || []).map(i => i.type).join(',')}`;
+const _seen = new Set();
+const ABI = [..._abiV61, ..._abiV62].filter(f => { const k = _sig(f); if (_seen.has(k)) return false; _seen.add(k); return true; });
 const REG_ABI = JSON.parse(fs.readFileSync(
     path.join(ROOT, 'artifacts/contracts/core/AgentRegistryV2.sol/AgentRegistryV2.json'))).abi;
 
 const RPC = process.env[NET.rpcEnv] || NET.rpc;
-const V6 = ADDR.agentLiquidityMarketplace_v6;
+// Which address in the config to watch. Defaults to the canonical pointer, but a
+// superseded deployment must not silently stop being monitored just because the
+// pointer moved on — it can still hold lender funds and open loans. Example:
+//   V6_MONITOR_MARKETPLACE_KEY=agentLiquidityMarketplace_v61_legacy
+// or an explicit address via V6_MONITOR_MARKETPLACE.
+const MP_KEY = process.env.V6_MONITOR_MARKETPLACE_KEY || 'agentLiquidityMarketplace_v6';
+const V6 = process.env.V6_MONITOR_MARKETPLACE || ADDR[MP_KEY];
+if (!V6) { console.error(`No marketplace address: key "${MP_KEY}" absent from ${NET.addresses}`); process.exit(2); }
 const QUIET = process.argv.includes('--quiet');
 const VERBOSE = process.argv.includes('--verbose');
 const NO_ALERT = process.argv.includes('--no-alert');
@@ -209,6 +227,13 @@ async function snapshot(mp, reg, usdc) {
             lateRepayCount: await withRetry(() => mp.lateRepayCount(aid), `lateRepayCount[${aid}]`),
             lateSecondsTotal: await withRetry(() => mp.lateSecondsTotal(aid), `lateSecondsTotal[${aid}]`),
         });
+        // [V6.2/M2] Self-stake. Absent on V6.1 — leave undefined and the check skips.
+        const last = pools[pools.length - 1];
+        try {
+            const ss = await withRetry(() => mp.selfStake(aid), `selfStake[${aid}]`);
+            last.selfStake = { amount: ss.amount ?? ss[0], locked: ss.locked ?? ss[1] };
+            last.requiredSelfStake = await withRetry(() => mp.requiredSelfStake(aid, 0n), `requiredSelfStake[${aid}]`);
+        } catch { /* V6.1 deployment */ }
     }
 
     let totalAgents = 0;
@@ -381,6 +406,46 @@ function checkPendingTranche(s) {
             if (l.pendingAmount === 0n && l.pendingTimestamp !== 0n) {
                 violate('WARN', 'PT-GHOST', '[V6.1] pendingTranche has a timestamp but zero amount (stale slot)', row);
             }
+        }
+    }
+    return rows;
+}
+
+// [V6.2 / M2] Self-stake is the whole basis of the V7 fix for F-04: the pool
+// creator's own position must be LOCKED while it has outstanding principal, and it is
+// the first-loss tranche on default. If the lock silently stops holding, the attacker
+// can withdraw their seed again and the economics revert to the pre-V7 state — which
+// is the 200,000:1 extraction the audit measured. Nothing else would notice.
+function checkSelfStake(s) {
+    const rows = [];
+    for (const p of s.pools) {
+        if (!p.selfStake) continue;                       // V6.1 deployment
+        const creatorPos = p.lenders.find(l => l.address.toLowerCase() === p.agentAddress.toLowerCase());
+        const row = {
+            agentId: p.agentId.toString(), creator: p.agentAddress,
+            selfStake: fmt(p.selfStake.amount), locked: p.selfStake.locked,
+            outstandingPrincipal: fmt(p.outstandingPrincipal),
+            required: p.requiredSelfStake !== undefined ? fmt(p.requiredSelfStake) : null,
+            creatorPosition: creatorPos ? fmt(creatorPos.amount) : null,
+        };
+        rows.push(row);
+
+        // The lock must be engaged exactly while the agent owes principal.
+        if (p.outstandingPrincipal > 0n && !p.selfStake.locked) {
+            violate('CRITICAL', 'SS-UNLOCKED', '[V6.2] self-stake is NOT locked while the agent has outstanding principal — the first-loss tranche can be withdrawn', row);
+        }
+        // selfStake must track the creator's actual lender position.
+        if (creatorPos && p.selfStake.amount !== creatorPos.amount) {
+            violate('CRITICAL', 'SS-MISMATCH', '[V6.2] selfStake disagrees with the creator position in poolLenders', row);
+        }
+        if (!creatorPos && p.selfStake.amount > 0n) {
+            violate('CRITICAL', 'SS-ORPHAN', '[V6.2] selfStake is non-zero but the creator holds no lender slot', row);
+        }
+        // Cover: with principal outstanding, the stake must still meet the requirement
+        // that admitted the loan. WARN, not CRITICAL — the requirement is tier-derived
+        // and a tier change by the owner can legitimately move it under a live loan.
+        if (p.outstandingPrincipal > 0n && p.requiredSelfStake !== undefined && p.selfStake.amount < p.requiredSelfStake) {
+            violate('WARN', 'SS-SHORT', '[V6.2] self-stake is below the current requirement for the outstanding principal', row);
         }
     }
     return rows;
@@ -576,6 +641,7 @@ function writeState(s, block) {
         const ctl = checkControlPlane(s);
         const fee = checkFees(s);
         const pt = checkPendingTranche(s);
+        const ss = checkSelfStake(s);
         const qual = await checkQualified(s, mp);
         const late = checkLateness(s, prevState);
         const nft = await checkNftMoves(s, reg);
@@ -599,6 +665,7 @@ function writeState(s, block) {
         emit('CONTROL', !(has('OWN') || has('PAUS')), ctl, 'OWN');
         emit('FEES', !has('FEE'), fee, 'FEE');
         emit('V6.1-PENDING', !has('PT'), { tranches: pt }, 'PT');
+        if (ss.length || s.pools.some(p => p.selfStake)) emit('V6.2-SELFSTAKE', !has('SS'), { stakes: ss }, 'SS');
         emit('V6.1-QUALIFIED', !has('QUAL'), { loans: qual }, 'QUAL');
         emit('V6.1-LATENESS', !has('LATE'), { agents: late }, 'LATE');
         emit('F-01-NFT', !has('NFT'), { agents: nft }, 'NFT');

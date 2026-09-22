@@ -110,5 +110,11 @@ async function main() {
     cfg.v7Note = 'Reputation did NOT migrate from the V3 manager; agents restart at score 0. Legacy contracts remain live under *_legacy keys.';
     fs.writeFileSync(cfgPath, JSON.stringify(cfg, null, 2) + '\n');
     console.log(`\n✅ ${NET.file} updated. Next: Sourcify-verify both, run the E2E rehearsal, update CLAUDE.md.`);
+    console.log('\n⚠️  MONITORING: the canonical pointer now names the V6.2 marketplace, so the');
+    console.log('    invariant monitor follows V7 and STOPS WATCHING the superseded deployment —');
+    console.log('    which still holds lender funds and may have open loans. Add a second job:');
+    console.log(`      V6_MONITOR_NETWORK=${netArg} V6_MONITOR_MARKETPLACE_KEY=agentLiquidityMarketplace_v61_legacy \\`);
+    console.log('        node forensics/monitor/v6-invariants.js');
+    console.log('    Keep it running until that contract is drained and retired.');
 }
 main().catch((e) => { console.error(e); process.exit(1); });
