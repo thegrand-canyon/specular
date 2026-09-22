@@ -239,7 +239,37 @@ async function snapshot(mp, reg, usdc) {
     let totalAgents = 0;
     try { totalAgents = Number(await withRetry(() => reg.totalAgents(), 'totalAgents')); } catch {}
 
-    return { totalPools, nextLoanId, mpBal, fees, owner, pendingOwner, paused, cap, loans, pools, totalAgents };
+    // [V7] Credit policy from the reputation manager. Absent on V3 — the checks skip.
+    let creditPolicy;
+    try {
+        const repAddr = await withRetry(() => mp.reputationManager(), 'reputationManager');
+        const rep = new ethers.Contract(repAddr, [
+            'function tierLimits(uint256) view returns (uint256)',
+            'function MAX_TIER_LIMIT() view returns (uint256)',
+            'function creditMultiple() view returns (uint256)',
+            'function growthStep() view returns (uint256)',
+            'function bootstrapLimit() view returns (uint256)',
+            'function defaultLockout() view returns (uint256)',
+            'function calculateCreditLimit(address) view returns (uint256)',
+        ], mp.runner);
+        const maxTierLimit = (await withRetry(() => rep.MAX_TIER_LIMIT(), 'MAX_TIER_LIMIT')).toString();
+        const tierLimits = [];
+        for (let i = 0; i < 6; i++) tierLimits.push((await withRetry(() => rep.tierLimits(i), `tierLimits[${i}]`)).toString());
+        const agentLimits = [];
+        for (const p of pools) {
+            try { agentLimits.push({ agentId: p.agentId.toString(), creditLimit: (await rep.calculateCreditLimit(p.agentAddress)).toString() }); } catch {}
+        }
+        creditPolicy = {
+            reputationManager: repAddr, maxTierLimit, tierLimits,
+            creditMultiple: (await withRetry(() => rep.creditMultiple(), 'creditMultiple')).toString(),
+            growthStep: (await withRetry(() => rep.growthStep(), 'growthStep')).toString(),
+            bootstrapLimit: (await withRetry(() => rep.bootstrapLimit(), 'bootstrapLimit')).toString(),
+            defaultLockout: (await withRetry(() => rep.defaultLockout(), 'defaultLockout')).toString(),
+            agentLimits,
+        };
+    } catch { /* ReputationManagerV3: no tier table on chain */ }
+
+    return { totalPools, nextLoanId, mpBal, fees, owner, pendingOwner, paused, cap, loans, pools, totalAgents, creditPolicy };
 }
 
 // -----------------------------------------------------------------------------------
@@ -590,8 +620,51 @@ function writeState(s, block) {
         fs.writeFileSync(STATEFILE, JSON.stringify({
             ts: new Date().toISOString(), blockNumber: block.number, blockTimestamp: Number(block.timestamp),
             owner: s.owner, paused: s.paused, nextLoanId: s.nextLoanId, lateness,
+            creditPolicy: s.creditPolicy || null,
         }, null, 2));
     } catch {}
+}
+
+// [V7 / ReputationManagerV4] The credit policy is the control that BOUNDS the F-04
+// attack: the tier table caps the prize, and the ladder parameters price the path. Both
+// are owner-settable, so a single compromised or careless owner tx can undo the entire
+// mitigation silently — nothing on the marketplace side would change. Two checks:
+//   (a) hard bound — no tier limit, and no agent's computed limit, may exceed the
+//       immutable MAX_TIER_LIMIT. A breach means the contract is not what we think it is.
+//   (b) change detection — any drift in the tier table or ladder parameters since the
+//       previous run is surfaced. Intentional owner changes are expected to be rare, so a
+//       WARN that a human acknowledges is the right severity.
+function checkCreditPolicy(s, prevState) {
+    if (!s.creditPolicy) return null;                    // V3 reputation manager
+    const cp = s.creditPolicy;
+    const row = {
+        tierLimits: cp.tierLimits.map(v => fmt(BigInt(v))),
+        maxTierLimit: fmt(BigInt(cp.maxTierLimit)),
+        creditMultiple: cp.creditMultiple, growthStep: fmt(BigInt(cp.growthStep)),
+        bootstrapLimit: fmt(BigInt(cp.bootstrapLimit)), defaultLockout: cp.defaultLockout,
+    };
+
+    for (let i = 0; i < cp.tierLimits.length; i++) {
+        if (BigInt(cp.tierLimits[i]) > BigInt(cp.maxTierLimit)) {
+            violate('CRITICAL', 'CP-CAP', `[V7] tier limit ${i} exceeds the immutable MAX_TIER_LIMIT`, { ...row, tier: i });
+        }
+    }
+    for (const a of cp.agentLimits || []) {
+        if (BigInt(a.creditLimit) > BigInt(cp.maxTierLimit)) {
+            violate('CRITICAL', 'CP-AGENT', '[V7] an agent credit limit exceeds MAX_TIER_LIMIT', { agentId: a.agentId, creditLimit: fmt(BigInt(a.creditLimit)), maxTierLimit: row.maxTierLimit });
+        }
+    }
+
+    const prev = prevState && prevState.creditPolicy;
+    if (prev) {
+        const cmp = (k, a, b) => { if (JSON.stringify(a) !== JSON.stringify(b)) violate('WARN', 'CP-CHANGED', `[V7] credit policy changed since the previous run: ${k}`, { field: k, previous: a, current: b }); };
+        cmp('tierLimits', prev.tierLimits, cp.tierLimits);
+        cmp('creditMultiple', prev.creditMultiple, cp.creditMultiple);
+        cmp('growthStep', prev.growthStep, cp.growthStep);
+        cmp('bootstrapLimit', prev.bootstrapLimit, cp.bootstrapLimit);
+        cmp('defaultLockout', prev.defaultLockout, cp.defaultLockout);
+    }
+    return row;
 }
 
 // -----------------------------------------------------------------------------------
@@ -642,6 +715,7 @@ function writeState(s, block) {
         const fee = checkFees(s);
         const pt = checkPendingTranche(s);
         const ss = checkSelfStake(s);
+        const cp = checkCreditPolicy(s, prevState);
         const qual = await checkQualified(s, mp);
         const late = checkLateness(s, prevState);
         const nft = await checkNftMoves(s, reg);
@@ -666,6 +740,7 @@ function writeState(s, block) {
         emit('FEES', !has('FEE'), fee, 'FEE');
         emit('V6.1-PENDING', !has('PT'), { tranches: pt }, 'PT');
         if (ss.length || s.pools.some(p => p.selfStake)) emit('V6.2-SELFSTAKE', !has('SS'), { stakes: ss }, 'SS');
+        if (cp) emit('V7-CREDIT-POLICY', !has('CP'), { policy: cp }, 'CP');
         emit('V6.1-QUALIFIED', !has('QUAL'), { loans: qual }, 'QUAL');
         emit('V6.1-LATENESS', !has('LATE'), { agents: late }, 'LATE');
         emit('F-01-NFT', !has('NFT'), { agents: nft }, 'NFT');
