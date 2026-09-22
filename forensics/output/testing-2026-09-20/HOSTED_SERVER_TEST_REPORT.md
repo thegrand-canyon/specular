@@ -521,6 +521,16 @@ Two environment notes on that run, neither of which affects what is being tested
 - `unit.hardening.test.mjs` now deletes any ambient `SPECULAR_RPC_ARC_STAGING` at the top, so H-3's
   "the public default RPC is shown verbatim" assertion is hermetic regardless of the environment.
 
+A confirmation run of plain `npm test` on the default endpoint was attempted at the end of the session
+and still could not complete: **61 pass, 7 fail**, every failure carrying
+`{"error":"RPC endpoint rate-limited this server; try again shortly."}` and a bare `curl` to
+`arc-testnet.drpc.org` returning `{"error":{"code":429,"message":"Too many requests"}}`. dRPC's
+throttling is bursty — an occasional single request gets through — but it will not carry the suite's
+volume from this IP today. Nothing in those 7 failures is a code regression: they are the same
+integration tests that pass on the substitute endpoint, failing at the upstream. **The 68/68 run above
+is the authoritative result**; re-run `npm test` unmodified once the quota window resets, or from CI,
+which has its own egress address.
+
 Hardening regressions specifically (all green):
 
 ```

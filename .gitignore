@@ -45,3 +45,4 @@ forensics/output/**/*-agent.json
 forensics/output/**/*-lender.json
 __pycache__/
 *.pyc
+forensics/output/testing-2026-09-20/e2e-wallets.json
