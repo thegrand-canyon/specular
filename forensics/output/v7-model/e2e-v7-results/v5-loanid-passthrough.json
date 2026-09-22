@@ -1,0 +1,137 @@
+{
+  "scenario": "v5-loanid-passthrough",
+  "title": "M2-d loanId pass-through: concurrent equal-size loans, out-of-order repayment (on-chain)",
+  "chainId": 5042002,
+  "marketplace": "0xa736EE7BB1BFB21bD294B220Bd7027B6Fe266300",
+  "reputation": "0x66977dF45F38D8b0Dc463817C4B46a7E08ddbdFB",
+  "startedAt": "2026-09-22T17:54:17.335Z",
+  "finishedAt": "2026-09-22T17:56:20.210Z",
+  "passed": 15,
+  "failed": 0,
+  "blocked": 0,
+  "checks": [
+    {
+      "label": "bonus levers for this run",
+      "ok": null,
+      "detail": "onTimeBonus 50, bonusReferenceAmount 1.0 USDC, refDuration 600s → bonus = 50·min(held,600)/600"
+    },
+    {
+      "label": "precondition: no active loans on agent B",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "both loans are the SAME amount (the case amount-matching cannot resolve)",
+      "ok": true,
+      "detail": "200.0 == 200.0"
+    },
+    {
+      "label": "recordBorrow created a per-loanId open-loan record for EACH loan",
+      "ok": true,
+      "detail": "X{start 1790099663, amt 200.0, agent 52}  Y{start 1790099728, amt 200.0, agent 52}"
+    },
+    {
+      "label": "the younger loan has a strictly later recordBorrow timestamp",
+      "ok": true,
+      "detail": "1790099663 -> 1790099728 (+65s)"
+    },
+    {
+      "label": "both loans are ACTIVE concurrently",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "LoanCompleted carries the repaid loanId (indexed), not an amount match",
+      "ok": true,
+      "detail": "loanId 19"
+    },
+    {
+      "label": "score delta on repaying Y == bonus from Y's OWN hold time (41s → 3 pts)",
+      "ok": true,
+      "detail": "delta 3, expected 3"
+    },
+    {
+      "label": "FIFO/amount-matching counterfactual would have paid 8 pts (X's 106s hold) — strictly more, so attribution is by loanId",
+      "ok": true,
+      "detail": "byLoanId 3 < FIFO 8"
+    },
+    {
+      "label": "openLoans(Y) deleted by the repayment",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "openLoans(X) UNTOUCHED: same start, amount and agentId as at recordBorrow",
+      "ok": true,
+      "detail": "start 1790099663 amt 200.0"
+    },
+    {
+      "label": "the older loan is still ACTIVE on the marketplace",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "LoanCompleted for the older loan carries ITS loanId",
+      "ok": true,
+      "detail": "loanId 18"
+    },
+    {
+      "label": "score delta on repaying X == bonus from X's own 112s hold (9 pts)",
+      "ok": true,
+      "detail": "delta 9, expected 9"
+    },
+    {
+      "label": "openLoans(X) deleted; no open-loan records remain for this agent",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "per-pool conservation exact at the end",
+      "ok": true,
+      "detail": "Σamt 1650.0 Σearned 21.131737"
+    }
+  ],
+  "txs": [
+    {
+      "label": "requestLoan X -> #18",
+      "hash": "0xeb714ede0472a0471654fc3de3f1791dfbf9f66a2842e000a7bc240c9a337bd4",
+      "gasUsed": "499732"
+    },
+    {
+      "label": "requestLoan Y -> #19",
+      "hash": "0x9737c909ae294465232bde5d7cf1fb9ad68b31adac80e4b6ba11fbf342144966",
+      "gasUsed": "431332"
+    },
+    {
+      "label": "repay Y (#19)",
+      "hash": "0xcc1643b9882c93e64032274599e81998616a41a0a5e6ea109c391f7e6d08201b",
+      "gasUsed": "261460"
+    },
+    {
+      "label": "repay X (#18)",
+      "hash": "0xd234162098db3648e52082c64f71cdbe2f344ab3463cf04bd5d3ee287c19b7db",
+      "gasUsed": "239807"
+    }
+  ],
+  "cumulativeSpend": {
+    "nativeFromDeployer": "9.2466589",
+    "usdcMinted": "13700.0"
+  },
+  "agentId": 52,
+  "loanX": 18,
+  "loanY": 19,
+  "timings": {
+    "startX": 1790099663,
+    "startY": 1790099728,
+    "repayY": 1790099769,
+    "repayX": 1790099775,
+    "heldY": 41,
+    "heldX": 112,
+    "heldFifoCounterfactual": 106
+  },
+  "bonuses": {
+    "byLoanId": "3",
+    "fifoCounterfactual": "8",
+    "olderLoan": "9"
+  }
+}

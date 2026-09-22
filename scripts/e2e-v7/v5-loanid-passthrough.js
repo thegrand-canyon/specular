@@ -1,0 +1,129 @@
+/**
+ * V5 — M2-d: the marketplace passes `loanId` into every reputation call.
+ *
+ * ON-CHAIN (arc-staging). Two loans of the SAME amount are opened concurrently on one
+ * agent and repaid in the OPPOSITE order. Under V3's amount-matching this was ambiguous
+ * (the report's scratch contract resolved it oldest-first / FIFO), which is why the
+ * signature changed. Two independent proofs that the attribution is exact:
+ *
+ *  (1) STATE — `openLoans(loanId)` is keyed by loanId. Repaying the YOUNGER loan clears
+ *      the younger record and leaves the older record's `start` untouched. FIFO would
+ *      have consumed the older one.
+ *  (2) HOLD TIME — the M1-1 bonus is `onTimeBonus · min(amt,ref)/ref · min(held,refDuration)/refDuration`
+ *      with `held` taken from THAT loanId's recordBorrow timestamp. The score delta on the
+ *      first repayment matches the YOUNGER loan's hold time exactly, and is strictly
+ *      smaller than the FIFO counterfactual computed from the older loan's timestamp.
+ *
+ * `refDuration` is set to 600 s for this script (restored at the end) purely so hold
+ * time is measurable inside a single run; it is a clock lever, not a model parameter.
+ */
+const L = require('./_lib');
+const { USDC, fmt } = L;
+const S = 'v5-loanid-passthrough';
+const AMOUNT = 200;          // both loans, deliberately identical
+const REF_DURATION = 600;    // seconds, for this script only
+const GAP_SECONDS = 60;      // between the two borrows
+const HOLD_SECONDS = 36;     // before the first (younger-loan) repayment
+
+const bonusOf = (onTimeBonus, held, rd) => (BigInt(onTimeBonus) * BigInt(Math.min(held, rd))) / BigInt(rd);
+
+async function main() {
+    await L.assertStaging();
+    const R = new L.Results(S, 'M2-d loanId pass-through: concurrent equal-size loans, out-of-order repayment (on-chain)');
+    const { mp, rep, reg } = L.contracts();
+    const B = L.roleWallet('B');
+    const mpB = L.contracts(B).mp, repOwner = L.contracts(L.deployer).rep;
+    const bId = Number(await reg.addressToAgentId(B.address));
+
+    const rdBefore = await rep.refDuration();
+    await L.send(S, `setLadderParameters(refDuration = ${REF_DURATION}s) — hold time measurable in one run`,
+        repOwner.setLadderParameters(L.LIVE_LEVERS.rep.creditMultiple, L.LIVE_LEVERS.rep.growthStep, L.LIVE_LEVERS.rep.bootstrapLimit, REF_DURATION));
+
+    try {
+        const onTimeBonus = await rep.onTimeRepaymentBonus();
+        const bonusRef = await rep.bonusReferenceAmount();
+        R.note('bonus levers for this run', `onTimeBonus ${onTimeBonus}, bonusReferenceAmount ${fmt(bonusRef)} USDC, refDuration ${REF_DURATION}s → bonus = ${onTimeBonus}·min(held,${REF_DURATION})/${REF_DURATION}`);
+
+        let st = await L.creditState(bId, B.address);
+        R.check('precondition: no active loans on agent B', st.outstanding === 0n);
+        const need = await mp.requiredSelfStake(bId, USDC(2 * AMOUNT));
+        if (st.selfStake < need) R.tx('top up self-stake', await L.send(S, `B top self-stake to ${fmt(need)}`, mpB.supplyLiquidity(bId, need - st.selfStake)));
+
+        // ------------------------------------------------- two identical concurrent loans
+        const rc1 = await L.send(S, `B requestLoan ${AMOUNT} USDC (loan X, older)`, mpB.requestLoan(USDC(AMOUNT), 7));
+        const loanX = L.loanIdFromReceipt(mp, rc1);
+        R.tx(`requestLoan X -> #${loanX}`, rc1);
+        console.log(`    waiting ${GAP_SECONDS}s before the second borrow...`);
+        await L.sleep(GAP_SECONDS * 1000);
+        const rc2 = await L.send(S, `B requestLoan ${AMOUNT} USDC (loan Y, younger)`, mpB.requestLoan(USDC(AMOUNT), 7));
+        const loanY = L.loanIdFromReceipt(mp, rc2);
+        R.tx(`requestLoan Y -> #${loanY}`, rc2);
+
+        const olX = await rep.openLoans(loanX), olY = await rep.openLoans(loanY);
+        R.check('both loans are the SAME amount (the case amount-matching cannot resolve)',
+            (await mp.loans(loanX)).amount === (await mp.loans(loanY)).amount, `${fmt(olX.amount)} == ${fmt(olY.amount)}`);
+        R.check('recordBorrow created a per-loanId open-loan record for EACH loan',
+            olX.start > 0n && olY.start > 0n && olX.agentId === BigInt(bId) && olY.agentId === BigInt(bId) &&
+            olX.amount === USDC(AMOUNT) && olY.amount === USDC(AMOUNT),
+            `X{start ${olX.start}, amt ${fmt(olX.amount)}, agent ${olX.agentId}}  Y{start ${olY.start}, amt ${fmt(olY.amount)}, agent ${olY.agentId}}`);
+        R.check('the younger loan has a strictly later recordBorrow timestamp', olY.start > olX.start, `${olX.start} -> ${olY.start} (+${olY.start - olX.start}s)`);
+        R.check('both loans are ACTIVE concurrently', (await mp.activeLoanCount(bId)) === 2n && (await mp.outstandingPrincipal(bId)) === USDC(2 * AMOUNT));
+
+        // ------------------------------------------------- repay the YOUNGER first
+        console.log(`    holding ${HOLD_SECONDS}s before repaying the younger loan...`);
+        await L.sleep(HOLD_SECONDS * 1000);
+        const scoreBefore = await rep['getReputationScore(uint256)'](bId);
+        const rcRY = await L.send(S, `B repayLoan ${loanY} (the YOUNGER loan, out of order)`, mpB.repayLoan(loanY));
+        R.tx(`repay Y (#${loanY})`, rcRY);
+        const blkY = await L.provider.getBlock(rcRY.blockNumber);
+        const scoreAfterY = await rep['getReputationScore(uint256)'](bId);
+
+        const heldY = blkY.timestamp - Number(olY.start);
+        const heldFifo = blkY.timestamp - Number(olX.start);
+        const expY = bonusOf(onTimeBonus, heldY, REF_DURATION);
+        const expFifo = bonusOf(onTimeBonus, heldFifo, REF_DURATION);
+
+        const completedY = L.eventFromReceipt(rep.interface, rcRY, 'LoanCompleted');
+        R.check('LoanCompleted carries the repaid loanId (indexed), not an amount match',
+            completedY !== null && Number(completedY.args.loanId) === loanY, completedY ? `loanId ${completedY.args.loanId}` : 'no event');
+        R.check(`score delta on repaying Y == bonus from Y's OWN hold time (${heldY}s → ${expY} pts)`,
+            scoreAfterY - scoreBefore === expY, `delta ${scoreAfterY - scoreBefore}, expected ${expY}`);
+        R.check(`FIFO/amount-matching counterfactual would have paid ${expFifo} pts (X's ${heldFifo}s hold) — strictly more, so attribution is by loanId`,
+            expFifo > expY && scoreAfterY - scoreBefore !== expFifo, `byLoanId ${expY} < FIFO ${expFifo}`);
+
+        const olYAfter = await rep.openLoans(loanY), olXAfter = await rep.openLoans(loanX);
+        R.check('openLoans(Y) deleted by the repayment', olYAfter.start === 0n && olYAfter.amount === 0n);
+        R.check('openLoans(X) UNTOUCHED: same start, amount and agentId as at recordBorrow',
+            olXAfter.start === olX.start && olXAfter.amount === olX.amount && olXAfter.agentId === olX.agentId,
+            `start ${olXAfter.start} amt ${fmt(olXAfter.amount)}`);
+        R.check('the older loan is still ACTIVE on the marketplace', (await mp.activeLoanCount(bId)) === 1n && (await mp.outstandingPrincipal(bId)) === USDC(AMOUNT));
+
+        // ------------------------------------------------- then the older one
+        const rcRX = await L.send(S, `B repayLoan ${loanX} (the OLDER loan)`, mpB.repayLoan(loanX));
+        R.tx(`repay X (#${loanX})`, rcRX);
+        const blkX = await L.provider.getBlock(rcRX.blockNumber);
+        const scoreAfterX = await rep['getReputationScore(uint256)'](bId);
+        const heldX = blkX.timestamp - Number(olX.start);
+        const expX = bonusOf(onTimeBonus, heldX, REF_DURATION);
+        const completedX = L.eventFromReceipt(rep.interface, rcRX, 'LoanCompleted');
+        R.check('LoanCompleted for the older loan carries ITS loanId',
+            completedX !== null && Number(completedX.args.loanId) === loanX, completedX ? `loanId ${completedX.args.loanId}` : 'no event');
+        R.check(`score delta on repaying X == bonus from X's own ${heldX}s hold (${expX} pts)`,
+            scoreAfterX - scoreAfterY === expX, `delta ${scoreAfterX - scoreAfterY}, expected ${expX}`);
+        R.check('openLoans(X) deleted; no open-loan records remain for this agent',
+            (await rep.openLoans(loanX)).start === 0n && (await mp.activeLoanCount(bId)) === 0n);
+
+        const cons = await L.poolConservation(bId);
+        R.check('per-pool conservation exact at the end', cons.conserved, `Σamt ${fmt(cons.sumAmt)} Σearned ${fmt(cons.sumEarned)}`);
+
+        R.finish({
+            agentId: bId, loanX, loanY,
+            timings: { startX: Number(olX.start), startY: Number(olY.start), repayY: blkY.timestamp, repayX: blkX.timestamp, heldY, heldX, heldFifoCounterfactual: heldFifo },
+            bonuses: { byLoanId: expY.toString(), fifoCounterfactual: expFifo.toString(), olderLoan: expX.toString() }
+        });
+    } finally {
+        await L.send(S, `restore setLadderParameters(refDuration = ${rdBefore})`,
+            repOwner.setLadderParameters(L.LIVE_LEVERS.rep.creditMultiple, L.LIVE_LEVERS.rep.growthStep, L.LIVE_LEVERS.rep.bootstrapLimit, rdBefore));
+    }
+}
+main().catch(e => { console.error(e); process.exit(1); });

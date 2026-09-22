@@ -1,0 +1,84 @@
+{
+  "scenario": "v9-minhold-ladder-coupling",
+  "title": "minHoldForReputationReward also gates the credit ladder (observation, live levers)",
+  "chainId": 5042002,
+  "marketplace": "0xa736EE7BB1BFB21bD294B220Bd7027B6Fe266300",
+  "reputation": "0x66977dF45F38D8b0Dc463817C4B46a7E08ddbdFB",
+  "startedAt": "2026-09-22T18:08:23.649Z",
+  "finishedAt": "2026-09-22T18:08:40.243Z",
+  "passed": 7,
+  "failed": 0,
+  "blocked": 0,
+  "checks": [
+    {
+      "label": "running at LIVE levers: minHold 86400 s, refDuration 7 d, rate limit 5/day, onTimeBonus 10",
+      "ok": true,
+      "detail": "minHold 86400 refDur 604800"
+    },
+    {
+      "label": "agent C before",
+      "ok": null,
+      "detail": "score 100 maxRepaid 0.0 ladder 100.0 limit 100.0 coll 100%"
+    },
+    {
+      "label": "precondition: agent is at the bootstrap rung (maxRepaidPrincipal 0, limit 100 USDC)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "the repayment was genuinely ON TIME (lateSeconds == 0, well before endTime)",
+      "ok": true,
+      "detail": "held 5s, term 604800s"
+    },
+    {
+      "label": "held for less than minHoldForReputationReward",
+      "ok": true,
+      "detail": "5s < 86400s"
+    },
+    {
+      "label": "OBSERVATION: the ladder did NOT advance — maxRepaidPrincipal is still 0 after an on-time repayment",
+      "ok": true,
+      "detail": "maxRepaid 0.0 ladder 100.0 limit 100.0"
+    },
+    {
+      "label": "no LoanCompleted(onTime = true) and no CreditCapacityUpdated were emitted",
+      "ok": true,
+      "detail": "LoanCompleted.onTime == false"
+    },
+    {
+      "label": "the score is unchanged too (no bonus, and no penalty — a neutral outcome)",
+      "ok": true,
+      "detail": "100 -> 100"
+    },
+    {
+      "label": "reading",
+      "ok": null,
+      "detail": "M-2 is documented as an anti-farming lever for the reputation BONUS; on V6.2/V4 it also gates capacity growth, because the ladder advance sits inside the same `else if (onTime)` branch. At the live minHold of 1 day, no loan held under 24 h can ever raise a credit line."
+    }
+  ],
+  "txs": [
+    {
+      "label": "fund C pool",
+      "hash": "0x9a520197988855e5b95fabad57a5fd19e6f95f5c6ba64f72aae7125229fc3e3f",
+      "gasUsed": "82070"
+    },
+    {
+      "label": "requestLoan -> #27",
+      "hash": "0x68c168007c31e783e011484e9dded4832d085c503bb3f7771e84b21de58c7716",
+      "gasUsed": "580748"
+    },
+    {
+      "label": "repayLoan 27",
+      "hash": "0x3490064fbfd2c6b560b16a78ff76002d3b2fa62f8f613e22dca9ccff9ce76e15",
+      "gasUsed": "274880"
+    }
+  ],
+  "cumulativeSpend": {
+    "nativeFromDeployer": "9.2466589",
+    "usdcMinted": "13700.0"
+  },
+  "agentId": 53,
+  "loanId": 27,
+  "heldSeconds": 5,
+  "minHold": "86400"
+}

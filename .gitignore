@@ -46,3 +46,4 @@ forensics/output/**/*-lender.json
 __pycache__/
 *.pyc
 forensics/output/testing-2026-09-20/e2e-wallets.json
+scripts/sim/out/slither-v7.json

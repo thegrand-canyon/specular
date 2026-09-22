@@ -1,0 +1,103 @@
+{
+  "scenario": "v6-minsupply-creator-exempt",
+  "title": "creator exemption from minSupplyAmount (on-chain)",
+  "chainId": 5042002,
+  "marketplace": "0xa736EE7BB1BFB21bD294B220Bd7027B6Fe266300",
+  "reputation": "0x66977dF45F38D8b0Dc463817C4B46a7E08ddbdFB",
+  "startedAt": "2026-09-22T17:56:53.056Z",
+  "finishedAt": "2026-09-22T17:57:28.311Z",
+  "passed": 11,
+  "failed": 0,
+  "blocked": 0,
+  "checks": [
+    {
+      "label": "live lever minSupplyAmount == 10 USDC",
+      "ok": true,
+      "detail": "10.0"
+    },
+    {
+      "label": "agents",
+      "ok": null,
+      "detail": "creator C = #53 (0x60C4274B7A793a075780Aef0059d8e487d12c769), third party T2 = 0x6b5122E84e31c57541d32942A4523f8dDf3eD5D6, foreign pool A = #51"
+    },
+    {
+      "label": "precondition: creator has no position yet in its own pool (a NEW slot)",
+      "ok": true,
+      "detail": "0.0"
+    },
+    {
+      "label": "the seed is genuinely below the minimum",
+      "ok": true,
+      "detail": "5.0 < 10.0"
+    },
+    {
+      "label": "creator CAN seed below minSupplyAmount, and it registers as the self-stake",
+      "ok": true,
+      "detail": "selfStake 5.0"
+    },
+    {
+      "label": "a THIRD PARTY opening a new slot with the same 5 USDC REVERTS \"Below minimum supply\"",
+      "ok": true,
+      "detail": "Below minimum supply | execution reverted: \"Below minimum supply\" | execution reverted: \"Below minimum supply\" (action=\"estimateGa"
+    },
+    {
+      "label": "the refused supply created no position",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "the third party succeeds at exactly minSupplyAmount",
+      "ok": true,
+      "detail": "10.0"
+    },
+    {
+      "label": "an EXISTING third-party lender may top up below the minimum",
+      "ok": true,
+      "detail": "11.0"
+    },
+    {
+      "label": "creator may keep topping its stake below the minimum",
+      "ok": true,
+      "detail": "7.0"
+    },
+    {
+      "label": "C is NOT exempt in a pool it does not own (agent A's pool) — \"Below minimum supply\"",
+      "ok": true,
+      "detail": "Below minimum supply | execution reverted: \"Below minimum supply\" | execution reverted: \"Below minimum supply\" (action=\"estimateGa"
+    },
+    {
+      "label": "per-pool conservation exact",
+      "ok": true,
+      "detail": "avail 18.0 Σamt 18.0"
+    }
+  ],
+  "txs": [
+    {
+      "label": "creator seed below minSupply",
+      "hash": "0x1f1ce26b52d13e26a0e0da783cc6fc2dc005a9d2addc9a8877b1df3c8c897fba",
+      "gasUsed": "215591"
+    },
+    {
+      "label": "third party at the minimum",
+      "hash": "0x572c080357afc89caab6bca9d711bd43403c48af66620dfb067c80fd9ad174e7",
+      "gasUsed": "164324"
+    },
+    {
+      "label": "third-party top-up below minimum",
+      "hash": "0xb22ead087b9dc4e899c3615b8977bac813896eabd06592db48fdd7af6a67fafe",
+      "gasUsed": "82070"
+    },
+    {
+      "label": "creator top-up below minimum",
+      "hash": "0x2b3e1ddafd0a0bd5c9f6a32aeb18d336d7ec9053cc39e2e118151d918a28b962",
+      "gasUsed": "82070"
+    }
+  ],
+  "cumulativeSpend": {
+    "nativeFromDeployer": "9.2466589",
+    "usdcMinted": "13700.0"
+  },
+  "agentId": 53,
+  "minSupplyAmount": "10000000",
+  "creatorSeed": "5000000"
+}

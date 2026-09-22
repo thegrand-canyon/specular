@@ -1,7 +1,7 @@
 {
-  "ts": "2026-09-22T00:10:33.231Z",
-  "blockNumber": 22090366,
-  "blockTimestamp": 1790035831,
+  "ts": "2026-09-22T18:12:06.830Z",
+  "blockNumber": 22218261,
+  "blockTimestamp": 1790100724,
   "owner": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
   "paused": false,
   "nextLoanId": 2,
@@ -10,5 +10,6 @@
       "count": 0,
       "seconds": 0
     }
-  }
+  },
+  "creditPolicy": null
 }

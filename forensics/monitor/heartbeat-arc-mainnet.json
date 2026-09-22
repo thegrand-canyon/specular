@@ -1,9 +1,9 @@
 {
   "network": "arc-mainnet",
-  "ts": "2026-09-22T00:10:33.232Z",
-  "epoch": 1790035833232,
+  "ts": "2026-09-22T18:12:06.830Z",
+  "epoch": 1790100726830,
   "lastExitCode": 0,
-  "block": 22090366,
+  "block": 22218261,
   "findings": 0,
   "alerted": false
 }

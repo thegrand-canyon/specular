@@ -1,0 +1,81 @@
+{
+  "scenario": "99-restore-levers",
+  "title": "restore live staging levers",
+  "chainId": 5042002,
+  "marketplace": "0xa736EE7BB1BFB21bD294B220Bd7027B6Fe266300",
+  "reputation": "0x66977dF45F38D8b0Dc463817C4B46a7E08ddbdFB",
+  "startedAt": "2026-09-22T18:02:13.911Z",
+  "finishedAt": "2026-09-22T18:02:41.918Z",
+  "passed": 7,
+  "failed": 0,
+  "blocked": 0,
+  "checks": [
+    {
+      "label": "levers before restore",
+      "ok": null,
+      "detail": "{\"rep\":{\"onTimeBonus\":\"50\",\"defaultPenaltyBase\":\"50\",\"defaultPenaltyLarge\":\"100\",\"largeLoanThreshold\":\"1000000000\",\"bonusReferenceAmount\":\"1000000\",\"creditMultiple\":\"2\",\"growthStep\":\"100000000\",\"bootstrapLimit\":\"100000000\",\"refDuration\":\"1\",\"rateMaxGain\":\"0\",\"rateWindow\":\"86400\",\"defaultLockout\":\"15552000\"},\"mp\":{\"minHold\":\"0\",\"minSupply\":\"10000000\",\"feeBps\":\"100\",\"bind\":true}}"
+    },
+    {
+      "label": "onTimeRepaymentBonus restored to 10",
+      "ok": true,
+      "detail": "10"
+    },
+    {
+      "label": "bonusReferenceAmount restored to 100 USDC",
+      "ok": true,
+      "detail": "100.0"
+    },
+    {
+      "label": "refDuration restored to 7 days (604800 s)",
+      "ok": true,
+      "detail": "604800"
+    },
+    {
+      "label": "reputation rate limit restored to 5 per 86400 s",
+      "ok": true,
+      "detail": "5/86400"
+    },
+    {
+      "label": "minHoldForReputationReward restored to 86400 s",
+      "ok": true,
+      "detail": "86400"
+    },
+    {
+      "label": "never-touched levers still at their live values: k=2, step=100, bootstrap=100, lockout=180d, fee=100bps, minSupply=10, bind=true",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "defaultPenaltyBase/Large and largeLoanThreshold at shipped values (50 / 100 / 1000 USDC)",
+      "ok": true,
+      "detail": ""
+    }
+  ],
+  "txs": [],
+  "cumulativeSpend": {
+    "nativeFromDeployer": "9.2466589",
+    "usdcMinted": "13700.0"
+  },
+  "leversAfter": {
+    "rep": {
+      "onTimeBonus": "10",
+      "defaultPenaltyBase": "50",
+      "defaultPenaltyLarge": "100",
+      "largeLoanThreshold": "1000000000",
+      "bonusReferenceAmount": "100000000",
+      "creditMultiple": "2",
+      "growthStep": "100000000",
+      "bootstrapLimit": "100000000",
+      "refDuration": "604800",
+      "rateMaxGain": "5",
+      "rateWindow": "86400",
+      "defaultLockout": "15552000"
+    },
+    "mp": {
+      "minHold": "86400",
+      "minSupply": "10000000",
+      "feeBps": "100",
+      "bind": true
+    }
+  }
+}

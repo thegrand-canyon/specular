@@ -1,0 +1,52 @@
+{
+  "ts": "2026-09-22T17:59:03.717Z",
+  "blockNumber": 63459477,
+  "blockTimestamp": 1790099931,
+  "owner": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+  "paused": false,
+  "nextLoanId": 20,
+  "lateness": {
+    "51": {
+      "count": 0,
+      "seconds": 0
+    },
+    "52": {
+      "count": 0,
+      "seconds": 0
+    },
+    "53": {
+      "count": 0,
+      "seconds": 0
+    }
+  },
+  "creditPolicy": {
+    "reputationManager": "0x66977dF45F38D8b0Dc463817C4B46a7E08ddbdFB",
+    "maxTierLimit": "10000000000",
+    "tierLimits": [
+      "1000000000",
+      "5000000000",
+      "10000000000",
+      "10000000000",
+      "2500000000",
+      "5000000000"
+    ],
+    "creditMultiple": "2",
+    "growthStep": "100000000",
+    "bootstrapLimit": "100000000",
+    "defaultLockout": "15552000",
+    "agentLimits": [
+      {
+        "agentId": "51",
+        "creditLimit": "1000000000"
+      },
+      {
+        "agentId": "52",
+        "creditLimit": "2100000000"
+      },
+      {
+        "agentId": "53",
+        "creditLimit": "100000000"
+      }
+    ]
+  }
+}

@@ -943,5 +943,473 @@
     "gasUsed": "55337",
     "status": 1,
     "at": "2026-09-22T17:52:08.251Z"
+  },
+  {
+    "scenario": "v4-tier-cap",
+    "label": "setTierLimits tier5 = MAX_TIER_LIMIT (valid owner change)",
+    "hash": "0x1b38afa985afb7722c9d04cde26eca095f3ea43661e01a04568d4476d16407c5",
+    "block": 63458797,
+    "gasUsed": "45081",
+    "status": 1,
+    "at": "2026-09-22T17:53:09.879Z"
+  },
+  {
+    "scenario": "v4-tier-cap",
+    "label": "setTierLimits restore to the shipped table",
+    "hash": "0xb88d9bb5b922a76e0f19407e654f8706ffab38eb5aca5d0a0cc1595b9d820980",
+    "block": 63458806,
+    "gasUsed": "45081",
+    "status": 1,
+    "at": "2026-09-22T17:53:14.749Z"
+  },
+  {
+    "scenario": "v5-loanid-passthrough",
+    "label": "setLadderParameters(refDuration = 600s) — hold time measurable in one run",
+    "hash": "0x06ec533d460eeb782f3d07c5bc8df93e6bc429ab968f0fa78fc7654c240ac8a8",
+    "block": 63458940,
+    "gasUsed": "38068",
+    "status": 1,
+    "at": "2026-09-22T17:54:22.427Z"
+  },
+  {
+    "scenario": "v5-loanid-passthrough",
+    "label": "B requestLoan 200 USDC (loan X, older)",
+    "hash": "0xeb714ede0472a0471654fc3de3f1791dfbf9f66a2842e000a7bc240c9a337bd4",
+    "block": 63458950,
+    "gasUsed": "499732",
+    "status": 1,
+    "at": "2026-09-22T17:54:27.670Z"
+  },
+  {
+    "scenario": "v5-loanid-passthrough",
+    "label": "B requestLoan 200 USDC (loan Y, younger)",
+    "hash": "0x9737c909ae294465232bde5d7cf1fb9ad68b31adac80e4b6ba11fbf342144966",
+    "block": 63459077,
+    "gasUsed": "431332",
+    "status": 1,
+    "at": "2026-09-22T17:55:32.413Z"
+  },
+  {
+    "scenario": "v5-loanid-passthrough",
+    "label": "B repayLoan 19 (the YOUNGER loan, out of order)",
+    "hash": "0xcc1643b9882c93e64032274599e81998616a41a0a5e6ea109c391f7e6d08201b",
+    "block": 63459158,
+    "gasUsed": "261460",
+    "status": 1,
+    "at": "2026-09-22T17:56:13.793Z"
+  },
+  {
+    "scenario": "v5-loanid-passthrough",
+    "label": "B repayLoan 18 (the OLDER loan)",
+    "hash": "0xd234162098db3648e52082c64f71cdbe2f344ab3463cf04bd5d3ee287c19b7db",
+    "block": 63459169,
+    "gasUsed": "239807",
+    "status": 1,
+    "at": "2026-09-22T17:56:19.157Z"
+  },
+  {
+    "scenario": "v5-loanid-passthrough",
+    "label": "restore setLadderParameters(refDuration = 1)",
+    "hash": "0x75269c6f15b23bc6dcf23bc59c5e1a8e3090fc0b81e1f5603f4ab3261197fc41",
+    "block": 63459180,
+    "gasUsed": "38056",
+    "status": 1,
+    "at": "2026-09-22T17:56:24.914Z"
+  },
+  {
+    "scenario": "v6-minsupply-creator-exempt",
+    "label": "register agent C-minsupply (0x60C4274B7A793a075780Aef0059d8e487d12c769)",
+    "hash": "0x67bb76522da55e54f1930e5bdb288e7fd3d2329de0a7d099caf2deaf2792e83e",
+    "block": 63459246,
+    "gasUsed": "260459",
+    "status": 1,
+    "at": "2026-09-22T17:56:57.892Z"
+  },
+  {
+    "scenario": "v6-minsupply-creator-exempt",
+    "label": "initializeReputation agent 53",
+    "hash": "0x00cbb5ad7ccf9d7e07a7e1439794a99c0068bbcb6275c9e0517c51095b4f1f63",
+    "block": 63459256,
+    "gasUsed": "74347",
+    "status": 1,
+    "at": "2026-09-22T17:57:02.730Z"
+  },
+  {
+    "scenario": "v6-minsupply-creator-exempt",
+    "label": "createAgentPool agent 53",
+    "hash": "0x4dcaed1157bd39885fac0c77029b73050c8120cdab0d18d90db4510a5481557d",
+    "block": 63459265,
+    "gasUsed": "138698",
+    "status": 1,
+    "at": "2026-09-22T17:57:07.466Z"
+  },
+  {
+    "scenario": "v6-minsupply-creator-exempt",
+    "label": "C supply 5.0 USDC into its OWN pool #53",
+    "hash": "0x1f1ce26b52d13e26a0e0da783cc6fc2dc005a9d2addc9a8877b1df3c8c897fba",
+    "block": 63459274,
+    "gasUsed": "215591",
+    "status": 1,
+    "at": "2026-09-22T17:57:12.212Z"
+  },
+  {
+    "scenario": "v6-minsupply-creator-exempt",
+    "label": "T2 supply 10.0 USDC (exactly the minimum)",
+    "hash": "0x572c080357afc89caab6bca9d711bd43403c48af66620dfb067c80fd9ad174e7",
+    "block": 63459285,
+    "gasUsed": "164324",
+    "status": 1,
+    "at": "2026-09-22T17:57:17.570Z"
+  },
+  {
+    "scenario": "v6-minsupply-creator-exempt",
+    "label": "T2 top up 1 USDC (existing slot, F-C gates only NEW slots)",
+    "hash": "0xb22ead087b9dc4e899c3615b8977bac813896eabd06592db48fdd7af6a67fafe",
+    "block": 63459294,
+    "gasUsed": "82070",
+    "status": 1,
+    "at": "2026-09-22T17:57:22.360Z"
+  },
+  {
+    "scenario": "v6-minsupply-creator-exempt",
+    "label": "C top up 2 USDC into its own pool",
+    "hash": "0x2b3e1ddafd0a0bd5c9f6a32aeb18d336d7ec9053cc39e2e118151d918a28b962",
+    "block": 63459303,
+    "gasUsed": "82070",
+    "status": 1,
+    "at": "2026-09-22T17:57:27.408Z"
+  },
+  {
+    "scenario": "v8-prior-fixes-regression",
+    "label": "register agent D-nft (0xbbA70F6A1FcaA22FF4d8dc5d2A202511207052a0)",
+    "hash": "0xaf06ed5492515e7ce6959778e3e7f5c7e1675d3ce33b3f487479ae44a52320a5",
+    "block": 63459484,
+    "gasUsed": "260387",
+    "status": 1,
+    "at": "2026-09-22T17:59:00.298Z"
+  },
+  {
+    "scenario": "v8-prior-fixes-regression",
+    "label": "initializeReputation agent 54",
+    "hash": "0x24dc0d8374e0f03e5c272a33069cb06159789c1465eab9457ffb67056553980d",
+    "block": 63459497,
+    "gasUsed": "74347",
+    "status": 1,
+    "at": "2026-09-22T17:59:05.412Z"
+  },
+  {
+    "scenario": "v8-prior-fixes-regression",
+    "label": "createAgentPool agent 54",
+    "hash": "0xe375195d200f537edac800a3ea49419f08e49ec5e0826128ded77aaf7c4aed22",
+    "block": 63459507,
+    "gasUsed": "138698",
+    "status": 1,
+    "at": "2026-09-22T17:59:10.248Z"
+  },
+  {
+    "scenario": "v8-prior-fixes-regression",
+    "label": "LF supply 400 USDC to pool #54",
+    "hash": "0x0965d7502f12d55e6cb8d1e3be8d9e6c49b85b5793300947dc8facb53d52191e",
+    "block": 63459516,
+    "gasUsed": "215624",
+    "status": 1,
+    "at": "2026-09-22T17:59:15.012Z"
+  },
+  {
+    "scenario": "v8-prior-fixes-regression",
+    "label": "D requestLoan 100 (ladder rung 0)",
+    "hash": "0x06ac28985ada77643d44e7be69fe1bd7ede91555dde43defc91174920a2ef04a",
+    "block": 63459526,
+    "gasUsed": "580748",
+    "status": 1,
+    "at": "2026-09-22T17:59:20.017Z"
+  },
+  {
+    "scenario": "v8-prior-fixes-regression",
+    "label": "D repayLoan 20",
+    "hash": "0xc21851cf508d7923e67d4c2bb53091cb8c0dc848e20190361c32c3d302915852",
+    "block": 63459540,
+    "gasUsed": "284245",
+    "status": 1,
+    "at": "2026-09-22T17:59:27.181Z"
+  },
+  {
+    "scenario": "v8-prior-fixes-regression",
+    "label": "D requestLoan 100 USDC (loan 1/3, pre-transfer)",
+    "hash": "0x92c9a6d5af65217de58e8c8b3622a35e78e61e8bcaaafb44c98148b040f63002",
+    "block": 63459549,
+    "gasUsed": "529448",
+    "status": 1,
+    "at": "2026-09-22T17:59:32.067Z"
+  },
+  {
+    "scenario": "v8-prior-fixes-regression",
+    "label": "D requestLoan 100 USDC (loan 2/3, pre-transfer)",
+    "hash": "0x67d6efe4b437581e68ce7aaffffb50838c47a38dc9053a932e3171e42fbf43c3",
+    "block": 63459558,
+    "gasUsed": "461048",
+    "status": 1,
+    "at": "2026-09-22T17:59:37.205Z"
+  },
+  {
+    "scenario": "v8-prior-fixes-regression",
+    "label": "D requestLoan 100 USDC (loan 3/3, pre-transfer)",
+    "hash": "0xaddc22c8b132677493c0de35b20060a7d1205aee0683abb504dcf25ded10e563",
+    "block": 63459569,
+    "gasUsed": "461048",
+    "status": 1,
+    "at": "2026-09-22T17:59:42.114Z"
+  },
+  {
+    "scenario": "v8-prior-fixes-regression",
+    "label": "transferFrom agent #54: D -> E",
+    "hash": "0x568e6a65aec58fdf7a7a807d8d4215ca46ad70f609c7a7edb7cc5d066c384f53",
+    "block": 63459578,
+    "gasUsed": "82421",
+    "status": 1,
+    "at": "2026-09-22T17:59:46.919Z"
+  },
+  {
+    "scenario": "v8-prior-fixes-regression",
+    "label": "original borrower D repays loan 21 after the transfer",
+    "hash": "0x36d5712ac1157feaf39844496f6952ec5080d7971970821067f89604ad2c823b",
+    "block": 63459589,
+    "gasUsed": "235468",
+    "status": 1,
+    "at": "2026-09-22T17:59:52.109Z"
+  },
+  {
+    "scenario": "v8-prior-fixes-regression",
+    "label": "new holder E repays loan 22",
+    "hash": "0x4f114bc14ac0fbb8613e492af4a0298d3b7fbc7bd3593d5f1d7854fdc6132efd",
+    "block": 63459599,
+    "gasUsed": "237961",
+    "status": 1,
+    "at": "2026-09-22T17:59:57.499Z"
+  },
+  {
+    "scenario": "v8-prior-fixes-regression",
+    "label": "E repays the last loan 23",
+    "hash": "0xade83bcd50156906237511f2e6dddb495384becbb474862f4a031925f74252f6",
+    "block": 63459610,
+    "gasUsed": "216308",
+    "status": 1,
+    "at": "2026-09-22T18:00:02.811Z"
+  },
+  {
+    "scenario": "v8-prior-fixes-regression",
+    "label": "A requestLoan 100 USDC (loan #1)",
+    "hash": "0x2773c974ceec3d406b463ac9da91037d97f6be914117e7decb695c032740d001",
+    "block": 63459621,
+    "gasUsed": "529452",
+    "status": 1,
+    "at": "2026-09-22T18:00:08.455Z"
+  },
+  {
+    "scenario": "v8-prior-fixes-regression",
+    "label": "LA top up 20 USDC during loan #1",
+    "hash": "0x05ff97d7dbe6c5bc92742db3f6852a10f080f3fe8a4d4bd5e5aefceab58a5440",
+    "block": 63459631,
+    "gasUsed": "99345",
+    "status": 1,
+    "at": "2026-09-22T18:00:13.456Z"
+  },
+  {
+    "scenario": "v8-prior-fixes-regression",
+    "label": "A requestLoan 100 USDC (loan #2, starts after the pending stamp)",
+    "hash": "0x8b8efafee7d85d73a3714d36d41850e9e9b2385e3cb2d18083856983482f69cf",
+    "block": 63459641,
+    "gasUsed": "461052",
+    "status": 1,
+    "at": "2026-09-22T18:00:18.163Z"
+  },
+  {
+    "scenario": "v8-prior-fixes-regression",
+    "label": "A repayLoan 24",
+    "hash": "0xbd9bd71cd8ad9135a3da09a37925e2f8e369687fd1990f651c9fc8e3286da84e",
+    "block": 63459650,
+    "gasUsed": "235502",
+    "status": 1,
+    "at": "2026-09-22T18:00:23.418Z"
+  },
+  {
+    "scenario": "v8-prior-fixes-regression",
+    "label": "A repayLoan 25",
+    "hash": "0xd47f9f9c03da2c30ed4e88445d05571e03746cb0d21096b9b6d797fbe9449ffb",
+    "block": 63459660,
+    "gasUsed": "211568",
+    "status": 1,
+    "at": "2026-09-22T18:00:27.981Z"
+  },
+  {
+    "scenario": "v8-prior-fixes-regression",
+    "label": "register agent F-deactivate (0xb48827C51d70B3454e79350B48E08288692c5C76)",
+    "hash": "0x0ab522dbc0ab725dd75aeb5cb5a4be6ad64af41dc60cf8327f6b96bd19b9bf3d",
+    "block": 63459669,
+    "gasUsed": "260471",
+    "status": 1,
+    "at": "2026-09-22T18:00:32.761Z"
+  },
+  {
+    "scenario": "v8-prior-fixes-regression",
+    "label": "initializeReputation agent 55",
+    "hash": "0x3dda6d0402997c8210f6c7252a2f833a1f6c3cf0fa8f6e17bd3df24eab7c9778",
+    "block": 63459678,
+    "gasUsed": "74347",
+    "status": 1,
+    "at": "2026-09-22T18:00:37.582Z"
+  },
+  {
+    "scenario": "v8-prior-fixes-regression",
+    "label": "createAgentPool agent 55",
+    "hash": "0xa81f7e7ba08aa8ce571d46afe1c6d2851ba903eb67b78123e762fbfbc53dce8d",
+    "block": 63459687,
+    "gasUsed": "138698",
+    "status": 1,
+    "at": "2026-09-22T18:00:42.351Z"
+  },
+  {
+    "scenario": "v8-prior-fixes-regression",
+    "label": "LF supply 200 USDC to pool #55",
+    "hash": "0xb9276db9c18c6fc8cdcbc766e56450145657e8780733aaf6f3e3c70d644f6760",
+    "block": 63459697,
+    "gasUsed": "210824",
+    "status": 1,
+    "at": "2026-09-22T18:00:47.407Z"
+  },
+  {
+    "scenario": "v8-prior-fixes-regression",
+    "label": "F seed 50 USDC into its own pool #55",
+    "hash": "0xb319550d106a8ee39f9ca8d7604baff1cd534a6266252bf2c53f1fb3f27b0941",
+    "block": 63459707,
+    "gasUsed": "164303",
+    "status": 1,
+    "at": "2026-09-22T18:00:52.219Z"
+  },
+  {
+    "scenario": "v8-prior-fixes-regression",
+    "label": "F requestLoan 100 USDC (while active)",
+    "hash": "0x280599bcaac55d8892d35b9a4db2529027e485f36ab0a43e1a75036086226fd8",
+    "block": 63459716,
+    "gasUsed": "580748",
+    "status": 1,
+    "at": "2026-09-22T18:00:56.747Z"
+  },
+  {
+    "scenario": "v8-prior-fixes-regression",
+    "label": "registry.deactivateAgent(#55)",
+    "hash": "0xbd0c3b6f7cdcb509089627319afc258b57f50561859c5d7ad06a79bc7be67136",
+    "block": 63459725,
+    "gasUsed": "27465",
+    "status": 1,
+    "at": "2026-09-22T18:01:01.373Z"
+  },
+  {
+    "scenario": "v8-prior-fixes-regression",
+    "label": "F repayLoan 26 while deactivated",
+    "hash": "0xc2f7517e5e94a34250f6a32ca767cd4ee0585f82e817b7c6c8e660aef2fec4ea",
+    "block": 63459734,
+    "gasUsed": "316954",
+    "status": 1,
+    "at": "2026-09-22T18:01:06.203Z"
+  },
+  {
+    "scenario": "v8-prior-fixes-regression",
+    "label": "LF withdraw 50 USDC from the deactivated agent's pool",
+    "hash": "0x95cee0f9cd5eabee99cb2ebf51c602f5289da5a50c66396b20cac11e291fba67",
+    "block": 63459744,
+    "gasUsed": "81585",
+    "status": 1,
+    "at": "2026-09-22T18:01:10.936Z"
+  },
+  {
+    "scenario": "v8-prior-fixes-regression",
+    "label": "F withdraw its own 50 USDC stake (principal now clear)",
+    "hash": "0xff3e46a9e8b583d19f0c837c9ab07298b18b1f966212663cdf1abbebd4099b4e",
+    "block": 63459753,
+    "gasUsed": "63996",
+    "status": 1,
+    "at": "2026-09-22T18:01:15.639Z"
+  },
+  {
+    "scenario": "v8-prior-fixes-regression",
+    "label": "registry.reactivateAgent(#55)",
+    "hash": "0xbca9af6a4b1e453a34209ba0d7ea2f63b5fb4aaf76003746b7841186511b22cc",
+    "block": 63459762,
+    "gasUsed": "50003",
+    "status": 1,
+    "at": "2026-09-22T18:01:20.265Z"
+  },
+  {
+    "scenario": "99-restore-levers",
+    "label": "setScoringParameters(onTimeBonus=10)",
+    "hash": "0x73e8d51b6f3f2d95ae9505d84aa3f17a60c9c530ade5bf17df3d0797a8744e16",
+    "block": 63459886,
+    "gasUsed": "38237",
+    "status": 1,
+    "at": "2026-09-22T18:02:22.627Z"
+  },
+  {
+    "scenario": "99-restore-levers",
+    "label": "setBonusReferenceAmount(100.0)",
+    "hash": "0xb3eda75d907ba46ef074c1f8dac62cd78b203999b681db34d8c578d576406628",
+    "block": 63459894,
+    "gasUsed": "29631",
+    "status": 1,
+    "at": "2026-09-22T18:02:27.173Z"
+  },
+  {
+    "scenario": "99-restore-levers",
+    "label": "setLadderParameters(k=2, step=100, boot=100, refDuration=604800)",
+    "hash": "0x6f7df7bbd5d231a18246caee344ddad05ab73b3b4bc392d60735f2e9687b9ae0",
+    "block": 63459903,
+    "gasUsed": "38080",
+    "status": 1,
+    "at": "2026-09-22T18:02:31.685Z"
+  },
+  {
+    "scenario": "99-restore-levers",
+    "label": "setReputationRateLimit(5, 86400)",
+    "hash": "0x5d3ce160be244a0d863c8e417e745575ee9c23a5b983ea47de4b2f1922da1856",
+    "block": 63459912,
+    "gasUsed": "50226",
+    "status": 1,
+    "at": "2026-09-22T18:02:36.180Z"
+  },
+  {
+    "scenario": "99-restore-levers",
+    "label": "setMinHoldForReputationReward(86400)",
+    "hash": "0x2df4a4f7bdf9e0cfa0a4b4a056dc161ed131be02c61451ddbfd93f9a89fe413b",
+    "block": 63459921,
+    "gasUsed": "47420",
+    "status": 1,
+    "at": "2026-09-22T18:02:40.731Z"
+  },
+  {
+    "scenario": "v9-minhold-ladder-coupling",
+    "label": "T2 supply 120 USDC to pool #53",
+    "hash": "0x9a520197988855e5b95fabad57a5fd19e6f95f5c6ba64f72aae7125229fc3e3f",
+    "block": 63460610,
+    "gasUsed": "82070",
+    "status": 1,
+    "at": "2026-09-22T18:08:29.915Z"
+  },
+  {
+    "scenario": "v9-minhold-ladder-coupling",
+    "label": "C requestLoan 100 USDC / 7 days",
+    "hash": "0x68c168007c31e783e011484e9dded4832d085c503bb3f7771e84b21de58c7716",
+    "block": 63460620,
+    "gasUsed": "580748",
+    "status": 1,
+    "at": "2026-09-22T18:08:35.024Z"
+  },
+  {
+    "scenario": "v9-minhold-ladder-coupling",
+    "label": "C repayLoan 27 well inside the 7-day term",
+    "hash": "0x3490064fbfd2c6b560b16a78ff76002d3b2fa62f8f613e22dca9ccff9ce76e15",
+    "block": 63460629,
+    "gasUsed": "274880",
+    "status": 1,
+    "at": "2026-09-22T18:08:39.611Z"
   }
 ]

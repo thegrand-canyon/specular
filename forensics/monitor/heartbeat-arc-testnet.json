@@ -1,0 +1,9 @@
+{
+  "network": "arc-testnet",
+  "ts": "2026-09-22T17:49:15.733Z",
+  "epoch": 1790099355733,
+  "lastExitCode": 2,
+  "block": 63458342,
+  "findings": 1,
+  "alerted": true
+}
