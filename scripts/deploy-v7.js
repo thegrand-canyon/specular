@@ -99,8 +99,25 @@ async function main() {
     for (let i = 0; i < 6; i++) tiers.push(String(await rep.tierLimits(i)));
     console.log(`✅ tier limits on-chain: [${tiers.join(', ')}] (MAX_TIER_LIMIT ${String(await rep.MAX_TIER_LIMIT())})`);
 
-    cfg[`reputationManagerV3_legacy`] = cfg.reputationManagerV3;
-    cfg[`agentLiquidityMarketplace_v61_legacy`] = cfg.agentLiquidityMarketplace_v6;
+    // Superseded deployments APPEND to a list; they must never overwrite each other.
+    // A fixed `*_legacy` key loses the previous generation on the second redeploy — that
+    // happened on Arc staging 2026-09-22 and dropped the last reference to a marketplace
+    // still holding lender funds. An address we cannot name is an address we cannot
+    // monitor, drain or retire.
+    cfg.supersededDeployments = Array.isArray(cfg.supersededDeployments) ? cfg.supersededDeployments : [];
+    const alreadyRecorded = (a) => cfg.supersededDeployments.some(d => (d.marketplace || '').toLowerCase() === (a || '').toLowerCase());
+    if (cfg.agentLiquidityMarketplace_v6 && !alreadyRecorded(cfg.agentLiquidityMarketplace_v6)) {
+        cfg.supersededDeployments.push({
+            supersededAt: new Date().toISOString(),
+            marketplace: cfg.agentLiquidityMarketplace_v6,
+            reputationManager: cfg.reputationManagerV3,
+            version: cfg.marketplaceVersion || 'unknown',
+            note: 'Left running and authorized on purpose: pause() freezes lender exits and revoking its pool breaks repayment. Monitor it (V6_MONITOR_MARKETPLACE) until drained, then retire.',
+        });
+    }
+    // Back-compat single-value pointers to the MOST RECENT superseded stack.
+    cfg.reputationManagerPrevious = cfg.reputationManagerV3;
+    cfg.agentLiquidityMarketplacePrevious = cfg.agentLiquidityMarketplace_v6;
     cfg.reputationManagerV4 = repAddr;
     cfg.agentLiquidityMarketplace_v62 = mpAddr;
     cfg.agentLiquidityMarketplace_v6 = mpAddr;   // canonical pointer clients follow
