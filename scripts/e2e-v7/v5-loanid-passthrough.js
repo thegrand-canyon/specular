@@ -6,7 +6,7 @@
  * (the report's scratch contract resolved it oldest-first / FIFO), which is why the
  * signature changed. Two independent proofs that the attribution is exact:
  *
- *  (1) STATE — `openLoans(loanId)` is keyed by loanId. Repaying the YOUNGER loan clears
+ *  (1) STATE — `openLoans(pool, loanId)` is keyed by (marketplace, loanId). Repaying the YOUNGER loan clears
  *      the younger record and leaves the older record's `start` untouched. FIFO would
  *      have consumed the older one.
  *  (2) HOLD TIME — the M1-1 bonus is `onTimeBonus · min(amt,ref)/ref · min(held,refDuration)/refDuration`
@@ -59,7 +59,8 @@ async function main() {
         const loanY = L.loanIdFromReceipt(mp, rc2);
         R.tx(`requestLoan Y -> #${loanY}`, rc2);
 
-        const olX = await rep.openLoans(loanX), olY = await rep.openLoans(loanY);
+        const MP_ADDR = await mp.getAddress();
+        const olX = await rep.openLoans(MP_ADDR, loanX), olY = await rep.openLoans(MP_ADDR, loanY);
         R.check('both loans are the SAME amount (the case amount-matching cannot resolve)',
             (await mp.loans(loanX)).amount === (await mp.loans(loanY)).amount, `${fmt(olX.amount)} == ${fmt(olY.amount)}`);
         R.check('recordBorrow created a per-loanId open-loan record for EACH loan',
@@ -91,7 +92,7 @@ async function main() {
         R.check(`FIFO/amount-matching counterfactual would have paid ${expFifo} pts (X's ${heldFifo}s hold) — strictly more, so attribution is by loanId`,
             expFifo > expY && scoreAfterY - scoreBefore !== expFifo, `byLoanId ${expY} < FIFO ${expFifo}`);
 
-        const olYAfter = await rep.openLoans(loanY), olXAfter = await rep.openLoans(loanX);
+        const olYAfter = await rep.openLoans(MP_ADDR, loanY), olXAfter = await rep.openLoans(MP_ADDR, loanX);
         R.check('openLoans(Y) deleted by the repayment', olYAfter.start === 0n && olYAfter.amount === 0n);
         R.check('openLoans(X) UNTOUCHED: same start, amount and agentId as at recordBorrow',
             olXAfter.start === olX.start && olXAfter.amount === olX.amount && olXAfter.agentId === olX.agentId,

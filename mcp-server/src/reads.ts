@@ -250,6 +250,43 @@ export async function creditTierTable(cfg: NetworkConfig): Promise<CreditTierTab
 
 const MAX_LIST = 200;
 
+/**
+ * Active agent/pool ids, bounded at the CHAIN call.
+ *
+ * The zero-arg `getActiveAgents()` returns the whole array and the scale round measured
+ * it becoming uncallable past roughly 5,472 pools — an `eth_call` gas failure, so every
+ * caller here (protocol status, pool list, positions) would have started returning errors
+ * rather than degraded results. Slicing afterwards, which is what these call sites used to
+ * do, does not help: the array is already built before it reaches us.
+ *
+ * V6.2 added a paginated overload. Use it when present and fall back to the legacy call on
+ * V6/V6.1 deployments, where the pool counts are small and the ceiling is not reachable.
+ * `total` lets callers say honestly that a result was truncated.
+ */
+const paginatedActiveAgents = new Map<string, boolean>();
+
+async function activeAgentIds(
+  c: ReturnType<typeof getContracts>,
+  cfg: NetworkConfig,
+  limit = MAX_LIST,
+): Promise<{ ids: bigint[]; total: number; truncated: boolean }> {
+  // Probe for the METHOD, not for a version flag. Pagination arrived in a later V6.2
+  // revision than the one first deployed to Arc staging, so `caps.v62` does NOT imply it
+  // — assuming it did made every read on that deployment fail with a 502. Try the
+  // paginated overload once per network and remember the answer.
+  if (paginatedActiveAgents.get(cfg.name) !== false) {
+    try {
+      const [ids, total] = (await c.marketplace['getActiveAgents(uint256,uint256)'](0, limit)) as [bigint[], bigint];
+      paginatedActiveAgents.set(cfg.name, true);
+      return { ids, total: Number(total), truncated: Number(total) > ids.length };
+    } catch {
+      paginatedActiveAgents.set(cfg.name, false);
+    }
+  }
+  const all = (await c.marketplace['getActiveAgents()']()) as bigint[];
+  return { ids: all.slice(0, limit), total: all.length, truncated: all.length > limit };
+}
+
 export async function readNetworkInfo(cfg: NetworkConfig) {
   const rpc = await rpcStatus(cfg);
   return { ...publicNetworkInfo(cfg), rpc };
@@ -273,14 +310,14 @@ export async function readProtocolStatus(cfg: NetworkConfig) {
     c.marketplace.minHoldForReputationReward() as Promise<bigint>,
     c.marketplace.platformFeeRate() as Promise<bigint>,
     c.marketplace.MAX_ACTIVE_LOANS_PER_AGENT() as Promise<bigint>,
-    c.marketplace.getActiveAgents() as Promise<bigint[]>,
+    activeAgentIds(c, cfg),
   ]);
 
   // TVL = sum of pool totalLiquidity across active pools (bounded walk).
   let tvl = 0n;
   let available = 0n;
   let loaned = 0n;
-  const ids = activeAgents.slice(0, MAX_LIST);
+  const ids = activeAgents.ids;
   const pools = await Promise.all(ids.map((id) => c.marketplace.agentPools(id)));
   for (const p of pools) {
     tvl += p.totalLiquidity as bigint;
@@ -295,7 +332,7 @@ export async function readProtocolStatus(cfg: NetworkConfig) {
     marketplace: cfg.addresses.marketplace,
     paused,
     totalPools: Number(totalPools),
-    activePools: activeAgents.length,
+    activePools: activeAgents.total,
     totalLoans: Number(nextLoanId) - 1,
     totalAgents: Number(totalAgents),
     tvlUsdc: formatUsdc(tvl),
@@ -328,7 +365,7 @@ export async function readProtocolStatus(cfg: NetworkConfig) {
      * must not carry a hardcoded copy.
      */
     creditTiers: tierTable,
-    truncated: activeAgents.length > MAX_LIST ? `TVL computed over first ${MAX_LIST} pools only` : undefined,
+    truncated: activeAgents.truncated ? `TVL computed over the first ${ids.length} of ${activeAgents.total} pools` : undefined,
     rpc,
   };
 }
@@ -495,7 +532,8 @@ async function poolSummary(c: ReturnType<typeof getContracts>, agentId: number):
 
 export async function readPools(cfg: NetworkConfig, opts: { minAvailableUsdc?: number; limit?: number } = {}) {
   const c = getContracts(cfg);
-  const [rpc, ids] = await Promise.all([rpcStatus(cfg), c.marketplace.getActiveAgents() as Promise<bigint[]>]);
+  const [rpc, active] = await Promise.all([rpcStatus(cfg), activeAgentIds(c, cfg)]);
+  const ids = active.ids;
   const limit = Math.min(opts.limit ?? 50, MAX_LIST);
   const minBase = opts.minAvailableUsdc !== undefined ? ethers.parseUnits(opts.minAvailableUsdc.toString(), 6) : 0n;
   const all = await Promise.all(ids.slice(0, MAX_LIST).map((id) => poolSummary(c, Number(id))));
@@ -839,7 +877,8 @@ export async function readAgentLoans(cfg: NetworkConfig, address: string, opts: 
 
 export async function readPositions(cfg: NetworkConfig, address: string) {
   const c = getContracts(cfg);
-  const [rpc, ids] = await Promise.all([rpcStatus(cfg), c.marketplace.getActiveAgents() as Promise<bigint[]>]);
+  const [rpc, active] = await Promise.all([rpcStatus(cfg), activeAgentIds(c, cfg)]);
+  const ids = active.ids;
   const positions: Array<Record<string, unknown>> = [];
   let totalSupplied = 0n;
   let totalEarned = 0n;
