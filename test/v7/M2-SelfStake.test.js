@@ -294,7 +294,7 @@ describe("V7 / M2 — AgentLiquidityMarketplaceV62 self-stake + L7", function ()
             const r = await tx.wait();
             const id = r.logs.map(l => { try { return v62.interface.parseLog(l); } catch { return null; } })
                 .find(e => e && e.name === "LoanRequested").args[0];
-            const ol = await rep.openLoans(id);
+            const ol = await rep.openLoans(await v62.getAddress(), id);
             expect(ol.amount).to.equal(USDC(500));
             expect(ol.agentId).to.equal(agentId);
         });
@@ -354,7 +354,7 @@ describe("V7 / M2 — AgentLiquidityMarketplaceV62 self-stake + L7", function ()
             expect(await rep.maxRepaidPrincipal(agentId)).to.equal(0n);
             expect(await rep.calculateCreditLimit(agent.address)).to.equal(0n);
             expect(await rep.isLockedOut(agentId)).to.equal(true);
-            expect((await rep.openLoans(id)).start).to.equal(0n);
+            expect((await rep.openLoans(await v62.getAddress(), id)).start).to.equal(0n);
         });
 
         it("a locked-out agent cannot open any loan", async function () {

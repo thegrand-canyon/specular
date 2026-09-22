@@ -54,7 +54,7 @@ describe("V6.2 — prior audit fixes still hold", function () {
 
         it("the reputation credit lands on the agentId (its current holder), via loanId", async () => {
             expect(await f.reputation.maxRepaidPrincipal(agentId)).to.equal(USDC(500));
-            expect((await f.reputation.openLoans(loanId)).start).to.equal(0n);
+            expect((await f.reputation.openLoans(await f.v62.getAddress(), loanId)).start).to.equal(0n);
         });
 
         it("the CURRENT NFT holder may also repay; a third party may not", async () => {

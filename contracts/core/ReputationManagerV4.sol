@@ -187,16 +187,27 @@ contract ReputationManagerV4 is Ownable2Step {
 
     // ---------------------------------------------------------- loan registry
 
-    /// @dev [M1-1] Open-loan record, keyed by the marketplace's loanId. V6.2 passes
-    ///      the loanId on every call, so hold time is exact — the scratch model in
-    ///      the report matched repayments to borrows BY AMOUNT, which is ambiguous
-    ///      with concurrent equal-sized loans.
+    /// @dev [M1-1] Open-loan record. V6.2 passes the loanId on every call, so hold
+    ///      time is exact — the scratch model in the report matched repayments to
+    ///      borrows BY AMOUNT, which is ambiguous with concurrent equal-sized loans.
+    ///
+    ///      [D9 fix 2026-09-22] The key is NAMESPACED PER AUTHORIZED MARKETPLACE:
+    ///      `keccak256(pool, loanId)`, not the bare loanId. Every marketplace starts
+    ///      `nextLoanId` at 1, so two marketplaces authorized on one manager (the
+    ///      side-by-side pattern the migration runbook uses) previously collided:
+    ///      the second one's `requestLoan` reverted "Loan already recorded" for any
+    ///      id currently open on the first, and recovered on its own when that loan
+    ///      closed — intermittent, and therefore hard to diagnose. Namespacing is
+    ///      preferred over forbidding a second marketplace because V4 ships NO
+    ///      reputation seeder by design (that is the F-08 owner-drain shape), so
+    ///      running two marketplaces side by side is the ONLY way to upgrade the
+    ///      marketplace without wiping every agent's score.
     struct OpenLoan {
         uint128 amount;
         uint64 start;
         uint64 agentId;
     }
-    mapping(uint256 => OpenLoan) public openLoans; // loanId => record
+    mapping(uint256 => OpenLoan) public openLoansByKey; // loanKey(pool, loanId) => record
 
     // ---------------------------------------------------------------- events
 
@@ -395,11 +406,14 @@ contract ReputationManagerV4 is Ownable2Step {
     function recordBorrow(address borrower, uint256 loanId, uint256 amount) external onlyAuthorizedPool {
         uint256 agentId = agentRegistry.addressToAgentId(borrower);
         require(agentId != 0, "Not an agent");
-        require(openLoans[loanId].start == 0, "Loan already recorded");
+        // [D9 fix] keyed by (marketplace, loanId), so a second authorized
+        // marketplace can never collide with the first one's open ids.
+        uint256 key = loanKey(msg.sender, loanId);
+        require(openLoansByKey[key].start == 0, "Loan already recorded");
 
         totalBorrowed[agentId] += amount;
         loanCount[agentId] += 1;
-        openLoans[loanId] = OpenLoan({
+        openLoansByKey[key] = OpenLoan({
             amount: uint128(amount),
             start: uint64(block.timestamp),
             agentId: uint64(agentId)
@@ -525,13 +539,39 @@ contract ReputationManagerV4 is Ownable2Step {
     /// @dev Close the open-loan record for `loanId` and return its start timestamp.
     ///      Falls back to `block.timestamp` (zero hold ⇒ zero bonus) if the loan was
     ///      never recorded — e.g. a loan disbursed before this manager was authorized.
+    ///      [D9] Resolved in the CALLING marketplace's namespace, so one marketplace
+    ///      can never close another's record.
     function _closeOpenLoan(uint256 loanId, uint256 agentId) internal returns (uint256 start) {
-        OpenLoan storage ol = openLoans[loanId];
+        uint256 key = loanKey(msg.sender, loanId);
+        OpenLoan storage ol = openLoansByKey[key];
         start = ol.start;
         if (start == 0) return block.timestamp;
         // Defence in depth: the record must belong to this agent.
         require(ol.agentId == uint64(agentId), "Loan/agent mismatch");
-        delete openLoans[loanId];
+        delete openLoansByKey[key];
+    }
+
+    /**
+     * @notice [D9 fix] Storage key of the open-loan record for `loanId` on `pool`.
+     *         Clients that read `openLoansByKey` directly must derive the key with
+     *         this function; the convenience accessor `openLoans(pool, loanId)`
+     *         below does it for them.
+     */
+    function loanKey(address pool, uint256 loanId) public pure returns (uint256) {
+        return uint256(keccak256(abi.encode(pool, loanId)));
+    }
+
+    /**
+     * @notice The open-loan record a given marketplace holds for `loanId`.
+     * @dev CLIENT-VISIBLE CHANGE: this replaces the old one-argument
+     *      `openLoans(loanId)` getter. The old form is gone rather than silently
+     *      returning zeros for a raw id, so a stale client fails loudly.
+     */
+    function openLoans(address pool, uint256 loanId)
+        external view returns (uint128 amount, uint64 start, uint64 agentId)
+    {
+        OpenLoan storage ol = openLoansByKey[loanKey(pool, loanId)];
+        return (ol.amount, ol.start, ol.agentId);
     }
 
     // ================================================================ views
@@ -607,11 +647,30 @@ contract ReputationManagerV4 is Ownable2Step {
     }
 
     function calculateCollateralRequirement(address agent) external view returns (uint256) {
-        return tierCollateralPct[tierOf(agentReputation[agentRegistry.addressToAgentId(agent)])];
+        return collateralRequirementOf(agentRegistry.addressToAgentId(agent));
+    }
+
+    /**
+     * @notice [D13 fix 2026-09-22] agentId-keyed collateral requirement, mirroring
+     *         `creditLimitOf`. The address-keyed form resolves through
+     *         `addressToAgentId`, which the registry DELETES for the seller when an
+     *         agent NFT is transferred — so any caller holding only the pool's
+     *         recorded `agentAddress` (e.g. the marketplace's `requiredSelfStake`
+     *         view) silently fell back to agentId 0 → score 0 → 100 % collateral →
+     *         "no self-stake required", disagreeing with the transaction path.
+     *         Resolve by id and the view and the tx always agree.
+     */
+    function collateralRequirementOf(uint256 agentId) public view returns (uint256) {
+        return tierCollateralPct[tierOf(agentReputation[agentId])];
     }
 
     function calculateInterestRate(address agent) external view returns (uint256) {
-        return tierInterestBps[tierOf(agentReputation[agentRegistry.addressToAgentId(agent)])];
+        return interestRateOf(agentRegistry.addressToAgentId(agent));
+    }
+
+    /// @notice [D13 fix] agentId-keyed interest rate, for the same reason as above.
+    function interestRateOf(uint256 agentId) public view returns (uint256) {
+        return tierInterestBps[tierOf(agentReputation[agentId])];
     }
 
     /// @notice True while `agentId` is frozen after a default.

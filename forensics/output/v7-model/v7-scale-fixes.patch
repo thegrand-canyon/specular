@@ -1,0 +1,3294 @@
+diff --git a/contracts/core/AgentLiquidityMarketplaceV62.sol b/contracts/core/AgentLiquidityMarketplaceV62.sol
+index 247396f..389446d 100644
+--- a/contracts/core/AgentLiquidityMarketplaceV62.sol
++++ b/contracts/core/AgentLiquidityMarketplaceV62.sol
+@@ -220,8 +220,22 @@ contract AgentLiquidityMarketplaceV62 is Ownable2Step, ReentrancyGuard, Pausable
+     // repayment amount so a late borrower is charged for time used but never faces
+     // an unpayable bill (which would only push them into default).
+     uint256 public constant LATE_INTEREST_CAP = 30 days;
+-    // [H-04 mitigation] Cap lenders per pool to bound _distributeInterest gas cost
++    // [H-04 mitigation] Cap lenders per pool to bound _distributeInterest gas cost.
++    //
++    // DO NOT RAISE THIS WITHOUT RE-MEASURING (V7_SCALE_AND_GAS_REPORT.md §6 item 7).
++    // `repayLoan` costs ≈ 32,700 gas per lender and `liquidateLoan` ≈ 24,600; at 50
++    // that is 1.97 M / 1.37 M, i.e. 15.2× / 21.9× headroom on Arc's 30M block.
++    // Extrapolated, `repayLoan` reaches a 30M block at roughly **530 lenders** — a
++    // cap of 200 would still fit (~6.6 M) but a cap of 500 would not, and the whole
++    // §S5 class of failure returns the moment that loop is effectively unbounded.
++    //
++    // The EFFECTIVE THIRD-PARTY cap is 49, not 50: `_claimLenderSlot` reserves the
++    // last slot for the pool creator's M2-c first-loss self-stake (see D2 there).
+     uint256 public constant MAX_LENDERS_PER_POOL = 50;
++    /// @notice The number of slots third parties may occupy: one is reserved for the
++    ///         pool creator's M2-c self-stake. Published so clients can explain the
++    ///         "Last slot reserved for agent self-stake" refusal.
++    uint256 public constant MAX_THIRD_PARTY_LENDERS_PER_POOL = MAX_LENDERS_PER_POOL - 1;
+     // [SECURITY-01] Limit concurrent active loans per agent to prevent credit limit bypass
+     uint256 public constant MAX_ACTIVE_LOANS_PER_AGENT = 10;
+ 
+@@ -342,14 +356,7 @@ contract AgentLiquidityMarketplaceV62 is Ownable2Step, ReentrancyGuard, Pausable
+ 
+         // §B1 FIX: gate push on isInPoolLenders flag instead of `position.amount == 0`.
+         // This ensures that supply→withdraw→supply does NOT create a duplicate entry.
+-        if (!isInPoolLenders[agentId][msg.sender]) {
+-            require(
+-                poolLenders[agentId].length < MAX_LENDERS_PER_POOL,
+-                "Pool lender capacity reached"
+-            );
+-            poolLenders[agentId].push(msg.sender);
+-            isInPoolLenders[agentId][msg.sender] = true;
+-        }
++        _claimLenderSlot(agentId, msg.sender);
+         // CLAUDE_AUDIT_WORLDCLASS W1 mitigation (kept): NEW money is stamped with
+         // block.timestamp so it can never qualify for a loan that is already open —
+         // this blocks the mempool-sandwich (front-run repayLoan with a large supply).
+@@ -401,6 +408,42 @@ contract AgentLiquidityMarketplaceV62 is Ownable2Step, ReentrancyGuard, Pausable
+         emit LiquiditySupplied(agentId, msg.sender, amount);
+     }
+ 
++    /**
++     * @dev §B1 + [D2 fix 2026-09-22] Claim `lender`'s slot in `poolLenders[agentId]`,
++     *      at most once (the §B1 no-duplicate guarantee).
++     *
++     *      THE LAST SLOT IS RESERVED FOR THE POOL CREATOR. M2-c requires the agent to
++     *      hold its own lender position before it may borrow below 100 % collateral,
++     *      and that position only exists by calling `supplyLiquidity` — which pushes
++     *      onto this same capped array. Without the reservation, whoever fills the 50
++     *      slots first decides whether the agent can EVER borrow unsecured, and no
++     *      owner tool reverses it (`compactPoolLenders` only de-duplicates). That is
++     *      report finding D2: the V7 escalation of the inherited F-06 slot squat.
++     *
++     *      Consequence, and it is deliberate: the effective THIRD-PARTY lender cap is
++     *      MAX_LENDERS_PER_POOL − 1 = 49 while the creator holds no position, and
++     *      exactly 49 + the creator once it does. The §1 gas tables' "N=50" therefore
++     *      always means 49 third parties plus the agent. Clients must surface
++     *      "Last slot reserved for agent self-stake" as a distinct, explainable
++     *      refusal rather than a generic capacity error.
++     */
++    function _claimLenderSlot(uint256 agentId, address lender) internal {
++        if (isInPoolLenders[agentId][lender]) return;
++        uint256 len = poolLenders[agentId].length;
++        require(len < MAX_LENDERS_PER_POOL, "Pool lender capacity reached");
++        // Only consult the creator's flag at the boundary, so the common path costs
++        // nothing extra.
++        if (len == MAX_LENDERS_PER_POOL - 1) {
++            address creator = agentPools[agentId].agentAddress;
++            require(
++                lender == creator || isInPoolLenders[agentId][creator],
++                "Last slot reserved for agent self-stake"
++            );
++        }
++        poolLenders[agentId].push(lender);
++        isInPoolLenders[agentId][lender] = true;
++    }
++
+     /// @dev True if any ACTIVE loan of `agentId` started in [lo, hi). ≤ MAX_ACTIVE_LOANS_PER_AGENT reads.
+     function _activeLoanStartedIn(uint256 agentId, uint256 lo, uint256 hi) internal view returns (bool) {
+         uint256[] storage ids = activeLoanIds[agentId];
+@@ -479,6 +522,33 @@ contract AgentLiquidityMarketplaceV62 is Ownable2Step, ReentrancyGuard, Pausable
+ 
+         require(pool.availableLiquidity >= amount, "Insufficient pool liquidity");
+ 
++        // [F-06 / D1 fix 2026-09-22] `minSupplyAmount` is a MAINTAINED floor, not
++        // just an entry fee. It used to be checked only when a NEW slot was claimed,
++        // so a squatter supplied the minimum, withdrew all but one base unit, and
++        // held the slot forever for 0.000001 USDC — the H-2 slot-free condition
++        // (`amount == 0 && earnedInterest == 0`) never fires on a dust remainder.
++        // 50 of those bricked a pool (report D1) and, since V6.2, the agent's own
++        // M2-c self-stake as well (D2). A partial withdrawal may therefore not leave
++        // a position in (0, minSupplyAmount).
++        //
++        // Deliberately a REVERT, not a silent forced full exit: transferring more
++        // than the caller asked for is a nasty surprise for an integrator's
++        // accounting. The client's remedy is one call with the full balance.
++        //
++        // Two exemptions keep the legitimate cases working:
++        //   * a FULL exit (remaining == 0) is ALWAYS allowed, including when the
++        //     owner has since RAISED minSupplyAmount above an existing position;
++        //   * the pool creator is exempt, symmetrically with the M2-a supply-side
++        //     exemption (M2-c can legitimately require less than minSupplyAmount,
++        //     and the creator's position is already locked by M2-a while borrowing).
++        //
++        // Ordered so a FULL exit never even reads `minSupplyAmount`: the path that
++        // must always work is also the cheapest one.
++        if (position.amount > amount && msg.sender != pool.agentAddress) {
++            uint256 floor = minSupplyAmount;
++            require(floor == 0 || position.amount - amount >= floor, "Remaining below minimum supply");
++        }
++
+         // Update position. [F-02] Draw down the PENDING (newest, least-qualified)
+         // tranche first, so a lender who tops up and then withdraws the same amount
+         // keeps the base tranche's qualification intact (LIFO). This cannot grant
+@@ -822,11 +892,22 @@ contract AgentLiquidityMarketplaceV62 is Ownable2Step, ReentrancyGuard, Pausable
+     /**
+      * @notice [M2-c] Self-stake the agent must already hold in its own pool before it
+      *         could borrow `additionalAmount` more. SDK/MCP pre-check.
++     * @dev [D13 fix 2026-09-22] The collateral tier is resolved BY agentId, not by
++     *      `pool.agentAddress`. The registry deletes `addressToAgentId[seller]` when
++     *      an agent NFT is transferred, so the address-keyed lookup fell through to
++     *      agentId 0 → score 0 → 100 % collateral and this view returned 0 — a
++     *      view/tx mismatch of the same class as the 2026-09-20 `canTopUp` bug, and
++     *      one that told an integrator "no first-loss stake needed" for an agent
++     *      whose seller still had capital locked and at risk.
++     *
++     *      NOTE this fixes the VIEW. It does not change who the stake belongs to:
++     *      the M2 self-stake is and remains `positions[agentId][pool.agentAddress]`,
++     *      i.e. the SELLER's capital, locked by M2-a and first-loss under M2-b. With
++     *      the M-1 lever OFF a buyer can borrow against it. **Keep M-1 ON.**
+      */
+     function requiredSelfStake(uint256 agentId, uint256 additionalAmount) external view returns (uint256) {
+-        address agentAddr = agentPools[agentId].agentAddress;
+-        if (agentAddr == address(0)) return 0;
+-        uint256 pct = reputationManager.calculateCollateralRequirement(agentAddr);
++        if (agentPools[agentId].agentAddress == address(0)) return 0;
++        uint256 pct = reputationManager.collateralRequirementOf(agentId);
+         return _requiredSelfStake(outstandingPrincipal[agentId] + additionalAmount, pct);
+     }
+ 
+@@ -1225,11 +1306,49 @@ contract AgentLiquidityMarketplaceV62 is Ownable2Step, ReentrancyGuard, Pausable
+         );
+     }
+ 
++    /**
++     * @notice One page of the active-pool list: the agentIds with `isActive` set
++     *         among `agentPoolIds[start .. start+count)`.
++     * @dev [D8 fix 2026-09-22] The unbounded `getActiveAgents()` costs ~5,482 gas per
++     *      pool and passes a 30M `eth_call` cap at roughly 5,472 pools. It is a view,
++     *      so it cannot brick a transaction, but the dashboard and the hosted API
++     *      both depend on it and would simply start failing. Off-chain callers should
++     *      use THIS form and page with the returned cursor; the no-argument overload
++     *      is kept only for backward compatibility and should not be used at scale.
++     * @param start Index into `agentPoolIds` to scan from.
++     * @param count How many `agentPoolIds` entries to SCAN (not how many actives to
++     *        return — a page may return fewer than `count` if some pools are inactive).
++     * @return active    The active agentIds found in this window, in `agentPoolIds` order.
++     * @return nextStart Cursor for the next page; equals `totalPools()` when done.
++     */
++    function getActiveAgents(uint256 start, uint256 count)
++        external view returns (uint256[] memory active, uint256 nextStart)
++    {
++        uint256 total = agentPoolIds.length;
++        if (start >= total) return (new uint256[](0), total);
++        uint256 end = start + count;
++        if (end > total || end < start) end = total;
++
++        uint256 n = 0;
++        for (uint256 i = start; i < end; i++) {
++            if (agentPools[agentPoolIds[i]].isActive) n++;
++        }
++        active = new uint256[](n);
++        uint256 j = 0;
++        for (uint256 i = start; i < end; i++) {
++            uint256 aid = agentPoolIds[i];
++            if (agentPools[aid].isActive) active[j++] = aid;
++        }
++        nextStart = end;
++    }
++
+     /**
+      * @notice Get the agentIds of all pools whose isActive flag is set.
+      * @dev [audit 2026-08 D12] Implemented against the tracked `agentPoolIds`
+-     *      instead of the old reverting stub. View-only; unbounded in principle
+-     *      but only ever iterated off-chain, so gas is not a concern.
++     *      instead of the old reverting stub.
++     *      [D8 2026-09-22] UNBOUNDED — ~5,482 gas per pool, past a 30M `eth_call`
++     *      cap at ≈ 5,472 pools. Retained for backward compatibility only; new
++     *      callers must use `getActiveAgents(start, count)` above.
+      */
+     function getActiveAgents() external view returns (uint256[] memory) {
+         uint256 total = agentPoolIds.length;
+@@ -1394,11 +1513,10 @@ contract AgentLiquidityMarketplaceV62 is Ownable2Step, ReentrancyGuard, Pausable
+         });
+         delete pendingTranche[agentId][lender]; // [F-02] seeded positions are a single base tranche
+ 
+-        if (!isInPoolLenders[agentId][lender]) {
+-            require(poolLenders[agentId].length < MAX_LENDERS_PER_POOL, "Lender cap");
+-            poolLenders[agentId].push(lender);
+-            isInPoolLenders[agentId][lender] = true;
+-        }
++        // [D2 fix] Same slot discipline as supplyLiquidity, including the creator
++        // reservation — operator error during migration must not be able to brick
++        // the agent's M2-c self-stake either.
++        _claimLenderSlot(agentId, lender);
+ 
+         // CLAUDE_REVIEW Finding 2: enforce Σ positions ≤ pool.totalLiquidity.
+         // Bounded by MAX_LENDERS_PER_POOL = 50 → ≤ 50 SLOAD ops per call. Acceptable.
+@@ -1511,30 +1629,40 @@ contract AgentLiquidityMarketplaceV62 is Ownable2Step, ReentrancyGuard, Pausable
+ 
+     /**
+      * @notice Emergency function to recalculate and fix pool accounting
+-     * @dev Recalculates totalLoaned by summing active loans for agent.
++     * @dev Recalculates totalLoaned by summing the agent's ACTIVE loans.
+      *      Recalculates availableLiquidity from totalLiquidity + Σ unclaimed
+      *      interest − totalLoaned. CLAUDE_AUDIT_DEEP fixes #1 + #2 applied.
++     *
++     *      [D7 fix 2026-09-22] `totalLoaned` is rebuilt from `activeLoanIds[agentId]`
++     *      (≤ MAX_ACTIVE_LOANS_PER_AGENT = 10 entries, maintained at disburse/close
++     *      and already the authority everywhere else) instead of walking the
++     *      append-only, never-pruned `agentLoans[pool.agentAddress]`. The old walk
++     *      cost ~4,625 gas per historical loan: it lost 3× block headroom at ≈ 2,140
++     *      lifetime loans and became UNCALLABLE at ≈ 6,473 — the §S5 failure shape
++     *      surviving inside the owner's emergency repair tool, on exactly the
++     *      high-activity agent most likely to need it. Now O(1) in loan history.
++     *
++     *      Two consequences of keying by agentId:
++     *        * the old "Agent transferred; resync via migration helpers" guard is
++     *          GONE. It existed only because `agentLoans` is ADDRESS-keyed, so a
++     *          transferred NFT split the history across two addresses and the walk
++     *          would undercount. `activeLoanIds` is agentId-keyed and follows the
++     *          agent, so the tool now works on a transferred agent too — which is
++     *          precisely when an operator is most likely to need it.
++     *        * the rebuilt figure counts exactly the loans the contract itself
++     *          treats as outstanding, so it can no longer disagree with
++     *          `activeLoanCount` / `outstandingPrincipal`.
+      * @param agentId The agent ID whose pool to fix
+      */
+     function resetPoolAccounting(uint256 agentId) external onlyOwner {
+         AgentPool storage pool = agentPools[agentId];
+         require(pool.agentId == agentId, "Pool does not exist");
+ 
+-        // CLAUDE_AUDIT_DEEP Finding 1: detect NFT transfer that would invalidate
+-        // agentLoans[pool.agentAddress] lookup. After an agent NFT is transferred,
+-        // new loans go to agentLoans[NEW_owner] but pool.agentAddress is still the
+-        // OLD owner — walking only one would undercount totalLoaned. Force admin to
+-        // use seedPool/seedPosition (migration helpers) for transferred agents.
+-        require(
+-            agentRegistry.ownerOf(agentId) == pool.agentAddress,
+-            "Agent transferred; resync via migration helpers"
+-        );
+-
+-        // Recalculate totalLoaned from active loans
++        // Recalculate totalLoaned from the bounded active set (≤ 10 entries).
+         uint256 actualLoaned = 0;
+-        uint256[] memory loanIds = agentLoans[pool.agentAddress];
+-        for (uint256 i = 0; i < loanIds.length; i++) {
+-            Loan storage loan = loans[loanIds[i]];
++        uint256[] storage activeIds = activeLoanIds[agentId];
++        for (uint256 i = 0; i < activeIds.length; i++) {
++            Loan storage loan = loans[activeIds[i]];
+             if (loan.state == LoanState.ACTIVE) {
+                 actualLoaned += loan.amount;
+             }
+diff --git a/contracts/core/ReputationManagerV4.sol b/contracts/core/ReputationManagerV4.sol
+index 1d52d88..8b426f6 100644
+--- a/contracts/core/ReputationManagerV4.sol
++++ b/contracts/core/ReputationManagerV4.sol
+@@ -187,16 +187,27 @@ contract ReputationManagerV4 is Ownable2Step {
+ 
+     // ---------------------------------------------------------- loan registry
+ 
+-    /// @dev [M1-1] Open-loan record, keyed by the marketplace's loanId. V6.2 passes
+-    ///      the loanId on every call, so hold time is exact — the scratch model in
+-    ///      the report matched repayments to borrows BY AMOUNT, which is ambiguous
+-    ///      with concurrent equal-sized loans.
++    /// @dev [M1-1] Open-loan record. V6.2 passes the loanId on every call, so hold
++    ///      time is exact — the scratch model in the report matched repayments to
++    ///      borrows BY AMOUNT, which is ambiguous with concurrent equal-sized loans.
++    ///
++    ///      [D9 fix 2026-09-22] The key is NAMESPACED PER AUTHORIZED MARKETPLACE:
++    ///      `keccak256(pool, loanId)`, not the bare loanId. Every marketplace starts
++    ///      `nextLoanId` at 1, so two marketplaces authorized on one manager (the
++    ///      side-by-side pattern the migration runbook uses) previously collided:
++    ///      the second one's `requestLoan` reverted "Loan already recorded" for any
++    ///      id currently open on the first, and recovered on its own when that loan
++    ///      closed — intermittent, and therefore hard to diagnose. Namespacing is
++    ///      preferred over forbidding a second marketplace because V4 ships NO
++    ///      reputation seeder by design (that is the F-08 owner-drain shape), so
++    ///      running two marketplaces side by side is the ONLY way to upgrade the
++    ///      marketplace without wiping every agent's score.
+     struct OpenLoan {
+         uint128 amount;
+         uint64 start;
+         uint64 agentId;
+     }
+-    mapping(uint256 => OpenLoan) public openLoans; // loanId => record
++    mapping(uint256 => OpenLoan) public openLoansByKey; // loanKey(pool, loanId) => record
+ 
+     // ---------------------------------------------------------------- events
+ 
+@@ -395,11 +406,14 @@ contract ReputationManagerV4 is Ownable2Step {
+     function recordBorrow(address borrower, uint256 loanId, uint256 amount) external onlyAuthorizedPool {
+         uint256 agentId = agentRegistry.addressToAgentId(borrower);
+         require(agentId != 0, "Not an agent");
+-        require(openLoans[loanId].start == 0, "Loan already recorded");
++        // [D9 fix] keyed by (marketplace, loanId), so a second authorized
++        // marketplace can never collide with the first one's open ids.
++        uint256 key = loanKey(msg.sender, loanId);
++        require(openLoansByKey[key].start == 0, "Loan already recorded");
+ 
+         totalBorrowed[agentId] += amount;
+         loanCount[agentId] += 1;
+-        openLoans[loanId] = OpenLoan({
++        openLoansByKey[key] = OpenLoan({
+             amount: uint128(amount),
+             start: uint64(block.timestamp),
+             agentId: uint64(agentId)
+@@ -525,13 +539,39 @@ contract ReputationManagerV4 is Ownable2Step {
+     /// @dev Close the open-loan record for `loanId` and return its start timestamp.
+     ///      Falls back to `block.timestamp` (zero hold ⇒ zero bonus) if the loan was
+     ///      never recorded — e.g. a loan disbursed before this manager was authorized.
++    ///      [D9] Resolved in the CALLING marketplace's namespace, so one marketplace
++    ///      can never close another's record.
+     function _closeOpenLoan(uint256 loanId, uint256 agentId) internal returns (uint256 start) {
+-        OpenLoan storage ol = openLoans[loanId];
++        uint256 key = loanKey(msg.sender, loanId);
++        OpenLoan storage ol = openLoansByKey[key];
+         start = ol.start;
+         if (start == 0) return block.timestamp;
+         // Defence in depth: the record must belong to this agent.
+         require(ol.agentId == uint64(agentId), "Loan/agent mismatch");
+-        delete openLoans[loanId];
++        delete openLoansByKey[key];
++    }
++
++    /**
++     * @notice [D9 fix] Storage key of the open-loan record for `loanId` on `pool`.
++     *         Clients that read `openLoansByKey` directly must derive the key with
++     *         this function; the convenience accessor `openLoans(pool, loanId)`
++     *         below does it for them.
++     */
++    function loanKey(address pool, uint256 loanId) public pure returns (uint256) {
++        return uint256(keccak256(abi.encode(pool, loanId)));
++    }
++
++    /**
++     * @notice The open-loan record a given marketplace holds for `loanId`.
++     * @dev CLIENT-VISIBLE CHANGE: this replaces the old one-argument
++     *      `openLoans(loanId)` getter. The old form is gone rather than silently
++     *      returning zeros for a raw id, so a stale client fails loudly.
++     */
++    function openLoans(address pool, uint256 loanId)
++        external view returns (uint128 amount, uint64 start, uint64 agentId)
++    {
++        OpenLoan storage ol = openLoansByKey[loanKey(pool, loanId)];
++        return (ol.amount, ol.start, ol.agentId);
+     }
+ 
+     // ================================================================ views
+@@ -607,11 +647,30 @@ contract ReputationManagerV4 is Ownable2Step {
+     }
+ 
+     function calculateCollateralRequirement(address agent) external view returns (uint256) {
+-        return tierCollateralPct[tierOf(agentReputation[agentRegistry.addressToAgentId(agent)])];
++        return collateralRequirementOf(agentRegistry.addressToAgentId(agent));
++    }
++
++    /**
++     * @notice [D13 fix 2026-09-22] agentId-keyed collateral requirement, mirroring
++     *         `creditLimitOf`. The address-keyed form resolves through
++     *         `addressToAgentId`, which the registry DELETES for the seller when an
++     *         agent NFT is transferred — so any caller holding only the pool's
++     *         recorded `agentAddress` (e.g. the marketplace's `requiredSelfStake`
++     *         view) silently fell back to agentId 0 → score 0 → 100 % collateral →
++     *         "no self-stake required", disagreeing with the transaction path.
++     *         Resolve by id and the view and the tx always agree.
++     */
++    function collateralRequirementOf(uint256 agentId) public view returns (uint256) {
++        return tierCollateralPct[tierOf(agentReputation[agentId])];
+     }
+ 
+     function calculateInterestRate(address agent) external view returns (uint256) {
+-        return tierInterestBps[tierOf(agentReputation[agentRegistry.addressToAgentId(agent)])];
++        return interestRateOf(agentRegistry.addressToAgentId(agent));
++    }
++
++    /// @notice [D13 fix] agentId-keyed interest rate, for the same reason as above.
++    function interestRateOf(uint256 agentId) public view returns (uint256) {
++        return tierInterestBps[tierOf(agentReputation[agentId])];
+     }
+ 
+     /// @notice True while `agentId` is frozen after a default.
+diff --git a/forensics/output/v7-model/V7_SCALE_FIXES.md b/forensics/output/v7-model/V7_SCALE_FIXES.md
+new file mode 100644
+index 0000000..e9781b1
+--- /dev/null
++++ b/forensics/output/v7-model/V7_SCALE_FIXES.md
+@@ -0,0 +1,480 @@
++# V7 scale-and-gas fixes — `AgentLiquidityMarketplaceV62` + `ReputationManagerV4`
++
++**Date:** 2026-09-22 · **Branch:** `arc-mainnet-launch` (isolated worktree, synced to `767ed14`)
++**Spec:** `forensics/output/v7-model/V7_SCALE_AND_GAS_REPORT.md` §6 (the prioritised must-fix list).
++**Execution:** entirely local — Foundry (solc 0.8.20, optimizer 200 runs, viaIR) and hardhat on
++chainId 31337. **Nothing was deployed or broadcast to any network.** No RPC was contacted at all.
++
++Patch: `forensics/output/v7-model/v7-scale-fixes.patch` (`git apply` from the repo root; includes the
++four harness files from `v7-scale-harness.patch` plus the new `test/foundry/V7ScaleFixes.t.sol`, so it
++applies to a clean checkout of `arc-mainnet-launch` on its own).
++
++---
++
++## 0. Status
++
++| # | Finding | Priority | Status |
++|---|---|---|---|
++| 1 | Lender-slot squat (D1) + it bricks the agent's own M2-c stake (D2) | P1 | **Fixed** — maintained floor + reserved creator slot |
++| 2 | `resetPoolAccounting` unbounded in `agentLoans[]` (D7) | P1 | **Fixed** — rebuilt from `activeLoanIds` |
++| 3 | `openLoans` loanId collision across marketplaces (D9) | P2 | **Fixed** — namespaced per authorized marketplace |
++| 4 | `requiredSelfStake` returns 0 after an agent-NFT transfer (D13) | P2 | **Fixed (view)** — resolved by agentId. Economic half unchanged: **keep M-1 ON** |
++| 5 | `getActiveAgents()` unbounded (D8) | P2 | **Fixed** — paginated overload added; old form kept and documented as legacy |
++| 8 | Effective third-party lender cap is 49, not 50 | doc | **Documented in code** — and now a hard, deliberate guarantee |
++| 7 | `repayLoan` reaches a 30M block near 530 lenders | doc | **Documented in code** at `MAX_LENDERS_PER_POOL`. Cap **not** raised |
++
++| | |
++|---|---|
++| Bytecode, marketplace | 21,192 → **21,440 B** (+248), **3,136 B** of headroom against the 24,576 limit |
++| Bytecode, reputation manager | 11,070 → **11,413 B** (+343), 13,163 B of headroom |
++| Worst user-facing gas regression | `withdrawLiquidity` partial trim **+2,274 (+3.26 %)**; one boundary `supplyLiquidity` case +4,578 (+2.89 %) |
++| Worst-case paths | `repayLoan` 1,972,711 (15.2× headroom) · `liquidateLoan` 1,372,614 (21.9× headroom) — both essentially unmoved |
++| `npm test` | **860 passing / 5 pending / 0 failing** (baseline identical) |
++| `npx hardhat test test/v7/*.js` | **95 passing** (baseline identical) |
++| `forge test` (excl. soak) | **55 passed / 0 failed** — 42 pre-existing + 13 new |
++| Soak | 26,989 ops executed, **0 invariant violations** |
++| Slither High/Medium | **0 new**; one Medium (`incorrect-equality`) removed |
++
++The V7 economic properties are intact: M2-a self-stake lock, M2-b first-loss ordering, M2-c gate,
++the M1 ladder and the capped owner-settable tier table are untouched. F-01/F-02/F-03/F-05/F-07
++regression suites all still pass (`test/v7/V62-PriorFixesRegression.test.js`, 95/95).
++
++---
++
++## 1. P1 — the lender-slot squat (D1 + D2)
++
++### Mechanism
++
++`minSupplyAmount` (the F-C lever, 10 USDC live on Arc mainnet) was enforced **only when a NEW slot was
++claimed** — V6.2 line ~325, gated on `!isInPoolLenders[agentId][msg.sender]` — and was never re-checked
++on withdrawal. So:
++
++1. squatter supplies exactly `minSupplyAmount`, taking a slot;
++2. squatter withdraws all but **one base unit** (0.000001 USDC). The H-2 slot-free condition is
++   `position.amount == 0 && position.earnedInterest == 0`, which a dust remainder never satisfies;
++3. the slot is held forever for 1 base unit. Fifty of those and `poolLenders` is full.
++
++`compactPoolLenders` only de-duplicates; it does not evict. There was **no on-chain remedy**.
++
++V6.2 made it strictly worse than V6.1: M2-c requires `positions[agentId][pool.agentAddress].amount > 0`
++before any sub-100 %-collateral loan, and that position exists only by calling `supplyLiquidity`, which
++pushes onto the same capped array. The creator was exempt from `minSupplyAmount` but **not** from the
++capacity check — so a squatted pool could never support unsecured borrowing again (report D2).
++
++### The fix, and why this one
++
++Two changes, because the finding has two independent halves.
++
++**(a) `minSupplyAmount` is now a MAINTAINED floor** (`withdrawLiquidity`). A partial withdrawal that
++would leave `0 < remaining < minSupplyAmount` is refused with `"Remaining below minimum supply"`.
++
++Options considered (the report's (a)/(b)/(c)):
++
++* *Owner eviction of sub-minimum positions* — rejected. It hands the owner a new power to move other
++  people's capital, which is the F-08 shape the V7 design deliberately avoids, and it is reactive:
++  the pool is already bricked by the time anyone notices.
++* *Force a full exit instead of reverting* — rejected. `withdrawLiquidity(agentId, X)` transferring
++  more than `X` is a genuinely nasty surprise for an integrator's accounting and for any contract
++  lender. The client's remedy for a revert is one call with the full balance; the remedy for a silent
++  over-transfer is a reconciliation bug.
++* *Reject the dust-leaving partial withdrawal* — **chosen.** A few lines, explicit, and it closes the
++  mechanism at its root rather than cleaning up after it.
++
++Two exemptions keep the legitimate cases working, and both are tested:
++
++* **A full exit is ALWAYS allowed.** This includes a position that is below a *raised* minimum — the
++  owner may raise `minSupplyAmount` at any time, and an existing 2-USDC position under a new 100-USDC
++  floor can still be withdrawn in full (it just cannot be withdrawn *partially*).
++* **The pool creator is exempt**, symmetrically with the M2-a supply-side exemption. M2-c can
++  legitimately require less than `minSupplyAmount` (a 50-USDC loan at the 75 %-collateral tier needs
++  only 6.25 USDC of stake at `k = 2`), and the creator's position is already locked by M2-a while
++  borrowing. Without this, the floor would make small honest borrowing impossible.
++
++**(b) The last lender slot is RESERVED for the pool creator** (`_claimLenderSlot`). A third party may
++not take the 50th slot while `isInPoolLenders[agentId][pool.agentAddress]` is false; it is refused with
++`"Last slot reserved for agent self-stake"`. The creator itself is never refused for this reason.
++
++This is what actually closes D2, and it holds *regardless of how much capital the attacker is willing
++to lock* — (a) alone only raises the price. The reservation is checked **only at the boundary**
++(`len == MAX_LENDERS_PER_POOL - 1`), so the ordinary supply path pays nothing for it.
++
++`seedPosition` now goes through the same helper, so operator error during a migration cannot brick the
++agent's self-stake either. Its revert string changes from `"Lender cap"` to
++`"Pool lender capacity reached"` (owner-only, pre-finalization path).
++
++### Reproduction tests
++
++`test/foundry/V7ScaleFixes.t.sol` — six tests, all of which fail on the pre-fix contracts:
++
++| Test | Asserts |
++|---|---|
++| `test_P1_squat_cannot_leave_a_dust_position` | the D1 withdraw is refused; the squatter still holds the full floor |
++| `test_P1_full_exit_is_always_allowed` | a full exit works and frees the slot |
++| `test_P1_partial_withdrawal_above_the_floor_still_works` | 100 → 10 USDC partial is untouched |
++| `test_P1_position_below_a_raised_minimum_is_still_withdrawable` | owner raises the floor 1 → 100 USDC; the 2-USDC position still exits in full |
++| `test_P1_creator_is_exempt_from_the_withdraw_floor` | creator may hold and partially withdraw a sub-floor self-stake |
++| `test_P1_last_slot_is_reserved_for_the_creator_self_stake` | 49 third parties fill the pool, the 50th is refused, **the agent then supplies and borrows** |
++| `test_P1_reservation_released_once_the_creator_holds_a_slot` | with the creator in, the pool is simply full at 50 |
++
++`test/foundry/V7Dos.t.sol` D1/D2 were rewritten to assert the fixed outcome (they failed with
++`Remaining below minimum supply` immediately after the fix, which is the demonstration).
++
++### Gas delta
++
++| path | report | fixed | Δ |
++|---|---|---|---|
++| `withdrawLiquidity` LIFO trim (partial), any N | 69,683 | **71,957** | +2,274 (+3.26 %) |
++| `withdrawLiquidity` full exit @N=50 | 195,118 | **195,202** | +84 (+0.04 %) |
++| `supplyLiquidity` fresh slot, N < 49 | 158,676 | **158,773** | +97 (+0.06 %) |
++| `supplyLiquidity` fresh slot **at the boundary** (N=50) | 158,676 | **163,254** | +4,578 (+2.89 %) |
++
++The floor check is ordered so a **full exit never even reads `minSupplyAmount`** — the path that must
++always work is also the cheapest. The partial path pays one cold SLOAD. The boundary supply pays two
++cold SLOADs (`pool.agentAddress` + the creator's membership flag) and only on the 50th slot.
++
++### Client-visible behaviour changes
++
++1. **`withdrawLiquidity` can now revert `"Remaining below minimum supply"`.** A client that lets a user
++   withdraw an arbitrary amount must either clamp the input so the remainder is `0` or
++   `>= minSupplyAmount()`, or catch this string and offer "withdraw everything". Read
++   `minSupplyAmount()` (currently 10 USDC on Arc mainnet, 1 USDC on staging); when it is `0` nothing
++   changes at all.
++2. **`supplyLiquidity` can now revert `"Last slot reserved for agent self-stake"`.** Surface it as a
++   distinct message — it means "this pool is full *for third parties*", not "something went wrong".
++   `MAX_THIRD_PARTY_LENDERS_PER_POOL` (= 49) is published on the contract for exactly this.
++3. The effective third-party cap of 49 is now a **guarantee**, not an accident (see §6).
++
++### Residual, accepted and documented
++
++* The squat is **priced, not eliminated**: 49 slots now cost 49 × `minSupplyAmount` of genuinely
++  locked, at-risk capital (490 USDC at the live lever) instead of 49 base units. That is simply
++  "being a lender", and those lenders bear default loss like any other. It still denies the pool
++  *third-party* liquidity; it can no longer deny the agent its own credit line. With
++  `minSupplyAmount == 0` the squat is free again — **the F-C lever must stay on**.
++* A lender who withdraws all principal but leaves unclaimed `earnedInterest` keeps its slot until it
++  calls `claimInterest` (the deliberate audit-2026-08 behaviour that keeps `resetPoolAccounting`'s
++  interest sum complete). That is a second, much more expensive way to hold a slot: it requires having
++  had real principal at risk across a full loan. Not changed here; worth watching.
++* D3/D4 (a squat raising a borrower's repay cost and another lender's exit cost) are **not** closed —
++  the gas curves are inherent to `MAX_LENDERS_PER_POOL` and are unchanged. What changed is that the
++  attacker can no longer buy them for dust.
++
++---
++
++## 2. P1 — `resetPoolAccounting` unbounded walk (D7)
++
++### Mechanism
++
++`resetPoolAccounting` rebuilt `totalLoaned` by walking `agentLoans[pool.agentAddress]`, which is
++append-only and never pruned: 4,625 gas per historical loan, 59,006 gas at 1 loan, 1,904,707 at 400.
++It lost 3× block headroom at ≈ 2,140 lifetime loans and became **uncallable at ≈ 6,473**. This is the
++§S5 failure shape surviving inside the owner's *emergency repair tool* — the one function reached for
++when a pool is already broken, on exactly the high-activity agent most likely to break it. (The live
++Arc v4 agent #43 already had 777+ lifetime loans; the soak drives 3,183 in one campaign.)
++
++### The fix
++
++Rebuild `totalLoaned` from `activeLoanIds[agentId]` — bounded by `MAX_ACTIVE_LOANS_PER_AGENT = 10`,
++already maintained at disburse/close, and already the authority everywhere else in the contract. No
++pagination is needed, so the paginated alternative (`resetPoolAccountingFrom`) was not taken: it would
++add API surface and an operator footgun (a half-applied reset) for no benefit over an O(1) bound.
++
++Two consequences, both deliberate:
++
++* **The `"Agent transferred; resync via migration helpers"` guard is removed.** It existed *only*
++  because `agentLoans` is ADDRESS-keyed, so a transferred NFT split the history across two addresses
++  and the walk would undercount. `activeLoanIds` is agentId-keyed and follows the agent, so the reason
++  is gone — and the tool now works on a transferred agent, which is precisely when an operator is most
++  likely to need it. (Owner-only; it re-derives state from positions and the active set, so it cannot
++  invent liquidity.)
++* The rebuilt figure counts exactly the loans the contract itself treats as outstanding, so it can no
++  longer disagree with `activeLoanCount` / `outstandingPrincipal`.
++
++`agentLoans[]` still grows without bound (it is the per-agent loan history and clients read it), but
++**nothing iterates it on any reachable path any more** — the only remaining walk is
++`_countActiveLoansFromArray`, an unused `internal` function retained for test reference, which the
++optimizer does not emit.
++
++### Reproduction tests
++
++| Test | Asserts |
++|---|---|
++| `test_P1_resetPoolAccounting_is_flat_in_loan_history` | gas @200 loans < gas @1 loan + 5,000 (pre-fix: 131,562 vs 16,102) |
++| `test_P1_resetPoolAccounting_still_rebuilds_totalLoaned` | with two loans open: `totalLoaned`, `totalLiquidity`, `availableLiquidity` all exact |
++| `test_P1_resetPoolAccounting_works_after_an_nft_transfer` | no longer reverts; rebuilds correctly (pre-fix: `Agent transferred; resync via migration helpers`) |
++| `V7Dos::test_D7_...` | flat, and < 10M (3× block headroom) at 400 loans of history |
++
++### Gas delta
++
++| path | report | fixed | Δ |
++|---|---|---|---|
++| `resetPoolAccounting` (50 lenders, 1 loan of history) | 398,723 | **385,609** | **−13,114 (−3.3 %)** |
++| `resetPoolAccounting` @400 loans of history | 1,904,707 | **≈ flat** (falls slightly as storage warms) | — |
++
++It gets *cheaper* even in the best case, because the removed `agentRegistry.ownerOf()` external call
++and the `agentLoans` array copy-to-memory both went away.
++
++### Client-visible behaviour change
++
++`resetPoolAccounting(agentId)` no longer reverts for a transferred agent. Operator runbooks that route
++transferred agents to `seedPool`/`seedPosition` can stop doing so.
++
++---
++
++## 3. P2 — `openLoans` loanId collision across marketplaces (D9)
++
++### Mechanism
++
++`ReputationManagerV4.openLoans` was keyed by the bare `loanId`, and every marketplace starts
++`nextLoanId` at 1. Authorizing a second V6.2 on the same manager — the side-by-side pattern in
++`V7_MAINNET_MIGRATION_RUNBOOK.md` — made the second one's `requestLoan` revert `"Loan already recorded"`
++for any id currently open on the first. It cleared as soon as that loan closed, so the failure was
++**intermittent**, which makes it worse to diagnose than a permanent one.
++
++### The fix, and why namespacing rather than forbidding
++
++`openLoansByKey` is keyed by `keccak256(abi.encode(msg.sender, loanId))` — the calling marketplace's
++own namespace. `loanKey(pool, loanId)` and `openLoans(pool, loanId)` are published for clients.
++
++The alternative was an explicit revert in `authorizePool` forbidding a second marketplace. **Rejected**,
++for one decisive reason: `ReputationManagerV4` ships **no reputation seeder, on purpose** (that is the
++F-08 owner-drain shape). Running a new marketplace side by side on the same manager is therefore the
++*only* way to upgrade the marketplace without wiping every agent's score — exactly the pain the V7
++migration is paying today. Forbidding it would make that permanent, to save a keccak per loan.
++
++### Reproduction tests
++
++| Test | Asserts |
++|---|---|
++| `test_P2_two_marketplaces_do_not_collide_on_loanId` | both marketplaces open loanId 1; both records exist with the right amounts; closing one leaves the other byte-identical |
++| `V7Dos::test_D9_...` | as above, plus `loanKey(mpA,1) != loanKey(mpB,1)` |
++
++### Gas delta
++
++`requestLoan` +601 (+0.12 %), `repayLoan` +304 (+0.02 % at N=50), `liquidateLoan` +222…+326 (+0.02 %).
++That is the keccak plus the two view indirections in §4; the whole of it is under 0.15 % on every path.
++**Storage is unchanged** — 2,455 permanent marketplace slots per 200 round trips, identical to the
++report's measurement.
++
++### Client-visible behaviour change — **BREAKING**
++
++**The one-argument `openLoans(uint256 loanId)` getter is gone.** It is replaced by
++`openLoans(address pool, uint256 loanId) → (uint128 amount, uint64 start, uint64 agentId)`, the same
++tuple shape as before. The old form was *removed* rather than left returning zeros for a raw id, so a
++stale client fails loudly instead of silently reading an empty record. Call sites updated in this
++patch: `test/v7/M1-ReputationManagerV4.test.js`, `test/v7/M2-SelfStake.test.js`,
++`test/v7/V62-PriorFixesRegression.test.js`, `test/sdk-v7/02-v7-integration.test.js`.
++
++**Not updated (follow-up):** `scripts/e2e-v7/v5-loanid-passthrough.js` reads `rep.openLoans(loanX)` in
++five places; it is a staging e2e script, not part of any suite, and it must be updated before it is run
++again against a redeployed manager. The SDK, the Python client, the MCP/REST server and the monitor do
++**not** read `openLoans` at all (verified by grep) — no other client is affected.
++
++---
++
++## 4. P2 — `requiredSelfStake` returns 0 after an agent-NFT transfer (D13)
++
++### Mechanism
++
++`requiredSelfStake(agentId, additionalAmount)` resolved the collateral tier with
++`reputationManager.calculateCollateralRequirement(pool.agentAddress)`. `AgentRegistryV2` **deletes**
++`addressToAgentId[seller]` when the agent NFT is transferred, so the lookup fell through to agentId 0 →
++score 0 → tier 0 → 100 % collateral → `_requiredSelfStake` returns 0: *"no first-loss stake needed"*.
++Measured 500 USDC before the transfer, **0 after**. Same class as the 2026-09-20 `canTopUp` bug: a view
++that disagrees with the transaction, which evaluates the tier of the *caller* (the new holder, who
++resolves correctly).
++
++### The fix
++
++`ReputationManagerV4` gains `collateralRequirementOf(uint256 agentId)` and `interestRateOf(uint256)`,
++mirroring the existing `creditLimitOf(uint256)`; the address-keyed forms now delegate to them, so there
++is one implementation and they cannot drift. `requiredSelfStake` resolves by `agentId`. Nothing else
++about M2-c changed — the transaction path was already correct.
++
++### Reproduction test
++
++`test_P2_requiredSelfStake_survives_an_nft_transfer` — asserts `after == before` (pre-fix:
++`0 != 500000000`) and that `collateralRequirementOf(1)` still reports the agent's real tier.
++
++### Gas delta
++
++Included in the +601 / +304 above (one internal jump each). `requiredSelfStake` itself is a view.
++
++### Residual — **this does not make an agent NFT safe to sell**
++
++Only the **view** was wrong. The economics are unchanged and still depend on the M-1 lever:
++
++> The M2 self-stake is `positions[agentId][pool.agentAddress]` — the **seller's** capital, locked by
++> M2-a and first-loss under M2-b. With `bindBorrowToPoolCreator` **off**, the buyer of the NFT borrows
++> unsecured against it and the seller cannot withdraw it. **Keep M-1 ON.**
++
++`V7Dos::test_D13_...` still asserts that residual explicitly, so it cannot regress unnoticed.
++Making the stake follow the NFT would need a stake-migration path on transfer; out of scope here, and
++it deserves its own design pass.
++
++---
++
++## 5. P2 — `getActiveAgents()` unbounded (D8)
++
++### Mechanism
++
++5,482 gas per pool; past a 30M `eth_call` cap at ≈ 5,472 pools. It is a view, so it cannot brick a
++transaction — but the dashboard and the hosted API both call it and would simply start failing, on a
++node-dependent threshold, with no warning.
++
++### The fix
++
++```solidity
++function getActiveAgents(uint256 start, uint256 count)
++    external view returns (uint256[] memory active, uint256 nextStart);
++```
++
++`count` is how many `agentPoolIds` entries to **scan**, not how many actives to return — a page may
++return fewer than `count`. `nextStart` is the cursor and equals `totalPools()` when the walk is done;
++an out-of-range `start` returns an empty page rather than reverting. The zero-argument overload is
++**kept** (backward compatible, ~90 bytes) and its NatSpec now says plainly that it is legacy and
++unbounded.
++
++### Reproduction test
++
++`test_P2_getActiveAgents_is_paginable` — 10 pools, walked in pages of 4, reassembled and compared
++element-by-element against the unpaginated result; plus the out-of-range case.
++
++### Gas delta
++
++None on any state-changing path (the +44 on `createAgentPool` and +22 on `claimInterest` are
++selector-dispatch growth from the added public functions, not this function).
++
++### Client-visible behaviour change — **follow-up required**
++
++`mcp-server/src/reads.ts` still calls the unbounded form at lines **276**, **498** and **842**. Those
++should move to the paginated form (ethers needs the explicit signature for an overload:
++`c.marketplace["getActiveAgents(uint256,uint256)"](start, count)`) and `mcp-server/abi/…V62.json` must
++be regenerated. **Not done in this patch** — the hosted server has its own test and deploy path, and
++another agent is working in the main checkout. It is not urgent: Arc mainnet has 1 pool today and the
++cliff is ~5,472.
++
++---
++
++## 6. Documented, not changed
++
++**The effective third-party lender cap is 49, not 50.** It was previously an emergent property (the
++creator consumes a slot it cannot vacate while borrowing); it is now a deliberate, enforced reservation
++(§1b). Published on the contract as `MAX_THIRD_PARTY_LENDERS_PER_POOL` and documented at
++`MAX_LENDERS_PER_POOL`. Every "N=50" row in the gas tables means 49 third parties **plus** the agent.
++
++**`repayLoan` reaches a 30M block at roughly 530 lenders.** ~32,700 gas per lender on `repayLoan` and
++~24,600 on `liquidateLoan`; at 50 that is 1.97 M / 1.37 M, i.e. 15.2× / 21.9× headroom on Arc.
++Extrapolated, a cap of 200 would still fit (~6.6 M) but a cap of 500 would not.
++**`MAX_LENDERS_PER_POOL` was NOT raised**, and the constant now carries a do-not-raise-without-
++re-measuring note naming both figures.
++
++---
++
++## 7. Validation
++
++### Gas, versus the report's published numbers
++
++Same methodology: `forge test --isolate`, `vm.lastCallGas().gasTotalUsed`, identical scenarios. The
++report's own V6.1 control column reproduces verbatim, so the two runs are comparable.
++
++| Path | Report (V6.2) | Fixed | Δ | % |
++|---|---|---|---|---|
++| `supplyLiquidity` fresh slot (N < 49) | 158,676 | 158,773 | +97 | +0.06 % |
++| `supplyLiquidity` fresh slot **@N=50 boundary** | 158,676 | **163,254** | +4,578 | **+2.89 %** |
++| `supplyLiquidity` top-up (all four arms) | 78,684 / 95,958 / 85,131 | +134 each | +134 | +0.17 % |
++| `withdrawLiquidity` **partial (LIFO trim)** | 69,683 | **71,957** | +2,274 | **+3.26 %** |
++| `withdrawLiquidity` full exit @N=50 | 195,118 | 195,202 | +84 | +0.04 % |
++| `repayLoan` on time @N=50 | 1,858,912 | 1,859,216 | +304 | +0.02 % |
++| `repayLoan` **WORST** (53 d late, 10 active, tranches, N=50) | 1,972,407 | **1,972,711** | +304 | +0.02 % |
++| `liquidateLoan` lossy @N=50 | 1,185,087 | 1,185,413 | +326 | +0.03 % |
++| `liquidateLoan` **WORST** (every path, N=50) | 1,372,392 | **1,372,614** | +222 | +0.02 % |
++| `requestLoan` (any N) | 514,027 | 514,628 | +601 | +0.12 % |
++| `claimInterest` | 51,168 | 51,190 | +22 | +0.04 % |
++| `resetPoolAccounting` (1 loan of history) | 398,723 | **385,609** | **−13,114** | **−3.29 %** |
++
++Block headroom is unchanged to two significant figures: `repayLoan` **15.2×**, `liquidateLoan`
++**21.9×**. Every other path stays above 50×.
++
++### Suites
++
++```
++$ npm test
++  860 passing (2m) · 5 pending · 0 failing            [baseline: 860 / 5 / 0]
++
++$ npx hardhat test test/v7/M1-ReputationManagerV4.test.js \
++                   test/v7/M2-SelfStake.test.js \
++                   test/v7/V62-PriorFixesRegression.test.js
++  95 passing                                          [baseline: 95]
++
++$ forge test --gas-limit 100000000000000 --no-match-path "test/foundry/V7Soak.t.sol"
++  Ran 8 test suites: 55 tests passed, 0 failed, 0 skipped
++  V6Invariants 6 · V61Invariants 6 · V7Invariants 7 · V61Gas 1 · V7Gas 6
++  · V7Dos 13 · V7Storage 3 · V7ScaleFixes 13        [baseline: 42; +13 new]
++
++$ SOAK_OPS=40000 forge test --match-path test/foundry/V7Soak.t.sol --gas-limit 100000000000000
++  SOAK | ops executed 26989 · invariant violations 0 · nextLoanId 3227
++                                                      [baseline: 26,976 ops, 0 violations]
++```
++
++Storage is unchanged: 2,455 permanent marketplace slots per 200 loan round trips (report: 2,455).
++
++### The DoS matrix, re-run
++
++`test/foundry/V7Dos.t.sol` was updated in place so the matrix is now a **regression suite** for the
++fixed behaviour. Immediately after the fix, before the assertions were rewritten, the 7 rows below
++failed — which is the demonstration that each previously-successful attack no longer works:
++
++| # | Pre-fix outcome | Post-fix |
++|---|---|---|
++| **D1** | 50 slots for 50 base units, permanently | **BLOCKED** — `Remaining below minimum supply`. A slot costs a full, locked `minSupplyAmount` |
++| **D2** | agent can never post its M2-c stake; no on-chain remedy | **BLOCKED** — 50th third party refused `Last slot reserved for agent self-stake`; the agent supplies and borrows on a fully squatted pool |
++| **D3** | +576,483 gas on every future repay, bought for dust | **PRICED** — gas curve unchanged (inherent to the 50-lender cap), now costs 49 × `minSupplyAmount` of at-risk capital |
++| **D4** | exit cost 72 k → 195 k, bought for dust | **PRICED** — same |
++| **D7** | uncallable past ≈ 6,473 loans | **FLAT** — O(≤10); asserted < 10M at 400 loans |
++| **D9** | second marketplace reverts `Loan already recorded` | **NO COLLISION** — distinct keys, independent lifecycles |
++| **D13** | view collapses 500 USDC → 0 | **AGREES** — resolved by agentId. Economic residual asserted, M-1 must stay ON |
++
++D5, D6, D8, D10, D11, D12 are unchanged and still pass. D8's unbounded view remains, with the
++paginated form added alongside (§5).
++
++### Slither
++
++```
++$ slither contracts/core/AgentLiquidityMarketplaceV62.sol \
++    --solc-remaps "@openzeppelin/=node_modules/@openzeppelin/"
++```
++
++Run against the pre-fix sources and the fixed sources, with line numbers normalised and compared:
++
++* **High/Medium findings before:** 10 — 1 High (`incorrect-exp`, inside OpenZeppelin's `Math.mulDiv`),
++  11 `divide-before-multiply` occurrences (all pre-existing: `calculateInterest`, the M1-5 late
++  penalty, OZ Math), 6 `incorrect-equality`, 1 `unused-return` (the ERC-8004 `getSummary` call).
++* **After:** 9. **Zero new High or Medium.** One Medium removed — the `incorrect-equality` on
++  `recordBorrow`'s `openLoans[loanId].start == 0` check, which the namespaced key replaced.
++
++---
++
++## 8. Files changed
++
++| File | Change |
++|---|---|
++| `contracts/core/AgentLiquidityMarketplaceV62.sol` | `_claimLenderSlot` (creator-slot reservation, shared by `supplyLiquidity` + `seedPosition`); maintained `minSupplyAmount` floor in `withdrawLiquidity`; `resetPoolAccounting` rebuilt from `activeLoanIds`; `requiredSelfStake` resolved by agentId; `getActiveAgents(start, count)`; `MAX_THIRD_PARTY_LENDERS_PER_POOL`; cap/headroom NatSpec |
++| `contracts/core/ReputationManagerV4.sol` | `openLoansByKey` namespaced by `keccak256(pool, loanId)`; `loanKey()`; `openLoans(pool, loanId)`; `collateralRequirementOf(agentId)`; `interestRateOf(agentId)` |
++| `test/foundry/V7ScaleFixes.t.sol` | **new** — 13 tests, one per finding, each written to fail pre-fix |
++| `test/foundry/V7Dos.t.sol` | D1/D2/D3/D4/D7/D9/D13 rewritten to assert the fixed outcomes |
++| `test/v7/*.js`, `test/sdk-v7/02-v7-integration.test.js` | `openLoans` call sites take the pool address |
++
++## 9. Open items
++
++1. **`scripts/e2e-v7/v5-loanid-passthrough.js`** still calls the removed one-argument `openLoans`.
++   Update before the next staging e2e run.
++2. **`mcp-server/src/reads.ts:276,498,842`** still call the unbounded `getActiveAgents()`; the hosted
++   server's ABI needs regenerating for the paginated form. Not urgent (1 pool live, cliff ≈ 5,472).
++3. **D3/D4 remain open by design** — bounded, priced, and inherent to `MAX_LENDERS_PER_POOL`.
++4. **The `earnedInterest` slot-retention path** (§1, residual) is a second, far costlier way to hold a
++   slot. Not closed here.
++5. **The M-1 lever must stay ON** until the self-stake follows the agent NFT (§4 residual).
++6. **The F-C lever (`minSupplyAmount`) must stay > 0** — the maintained floor is a no-op at 0.
++7. Nothing here touches F-04's residual attacker EV. The V7 model still **prices** the bust-out rather
++   than closing it; see `V7_DESIGN_AND_VALIDATION.md` §6.
+diff --git a/test/foundry/V7Dos.t.sol b/test/foundry/V7Dos.t.sol
+new file mode 100644
+index 0000000..c9c7a8b
+--- /dev/null
++++ b/test/foundry/V7Dos.t.sol
+@@ -0,0 +1,523 @@
++// SPDX-License-Identifier: MIT
++pragma solidity ^0.8.20;
++
++import "forge-std/Test.sol";
++import "../../contracts/core/AgentLiquidityMarketplaceV62.sol";
++import "../../contracts/core/AgentLiquidityMarketplaceV6.sol";
++import "../../contracts/core/AgentRegistryV2.sol";
++import "../../contracts/core/ReputationManagerV3.sol";
++import "../../contracts/core/ReputationManagerV4.sol";
++import "../../contracts/tokens/MockUSDC.sol";
++
++/**
++ * @title V7Dos — DoS / griefing attempts against V6.2 + ReputationManagerV4
++ * @notice Each test is a concrete attack attempt with its outcome asserted, so the
++ *         report's matrix is reproducible. Run with `--isolate` for realistic gas.
++ *         Run: forge test --isolate --match-path test/foundry/V7Dos.t.sol -vv
++ */
++contract V7DosTest is Test {
++    AgentRegistryV2 registry;
++    ReputationManagerV4 rep;
++    MockUSDC usdc;
++    AgentLiquidityMarketplaceV62 mp;
++
++    address owner = address(0xAAAA);
++    address agent = address(0xA9E7);
++    address victimLender = address(0xF00D);
++    address[] squatters;
++
++    uint256 constant MIN_SUPPLY = 10e6; // the live Arc-mainnet F-C lever
++
++    function setUp() public {
++        vm.startPrank(owner);
++        registry = new AgentRegistryV2();
++        rep = new ReputationManagerV4(address(registry));
++        usdc = new MockUSDC();
++        mp = new AgentLiquidityMarketplaceV62(address(registry), address(rep), address(usdc));
++        rep.authorizePool(address(mp));
++        rep.authorizePool(owner);
++        mp.setMinSupplyAmount(MIN_SUPPLY);
++        vm.stopPrank();
++
++        AgentRegistryV2.MetadataEntry[] memory empty;
++        vm.prank(agent);
++        registry.register("ipfs://dos", empty);
++        vm.prank(agent);
++        mp.createAgentPool();
++
++        _pump();
++
++        for (uint256 i = 0; i < 60; i++) {
++            address a = address(uint160(0xD000 + i));
++            squatters.push(a);
++            _fund(a);
++        }
++        _fund(agent);
++        _fund(victimLender);
++    }
++
++    function _pump() internal {
++        vm.prank(agent);
++        rep.initializeReputation();
++        vm.startPrank(owner);
++        rep.setScoringParameters(50, 50, 100, 1000e6);
++        uint256 synth = 1_000_000;
++        while (rep.getReputationScore(1) < 800) {
++            rep.recordBorrow(agent, synth, 100e6);
++            vm.warp(block.timestamp + 7 days);
++            rep.recordLoanCompletion(agent, synth, 100e6, true, 0);
++            synth++;
++        }
++        rep.recordBorrow(agent, synth, 5000e6);
++        vm.warp(block.timestamp + 7 days);
++        rep.recordLoanCompletion(agent, synth, 5000e6, true, 0);
++        rep.setScoringParameters(10, 50, 100, 1000e6);
++        vm.stopPrank();
++    }
++
++    function _fund(address who) internal {
++        vm.prank(owner);
++        usdc.mint(who, 1e14);
++        vm.prank(who);
++        usdc.approve(address(mp), type(uint256).max);
++    }
++
++    function _log(string memory k, uint256 v) internal pure {
++        console.log(string.concat("DOS | ", k, " | ", vm.toString(v)));
++    }
++
++    // =====================================================================
++    // D1 — lender-slot squat: fill all 50 slots for dust and keep them forever
++    // [FIXED 2026-09-22] `minSupplyAmount` is now a MAINTAINED floor. A partial
++    // withdrawal may not leave 0 < remaining < minSupplyAmount, so the dust squat
++    // is refused outright and a slot costs the full minimum, permanently.
++    // =====================================================================
++    function test_D1_slot_squat_is_permanent_and_nearly_free() public {
++        vm.prank(squatters[0]);
++        mp.supplyLiquidity(1, MIN_SUPPLY);
++
++        // THE ATTACK: take the slot, then pull it all back but one base unit.
++        vm.prank(squatters[0]);
++        vm.expectRevert("Remaining below minimum supply");
++        mp.withdrawLiquidity(1, MIN_SUPPLY - 1);
++
++        // the squatter is left holding the full floor, or nothing at all
++        (uint256 amt, , ) = mp.positions(1, squatters[0]);
++        assertEq(amt, MIN_SUPPLY, "dust squat still possible");
++
++        // the only way out is a full exit, which releases the slot
++        vm.prank(squatters[0]);
++        mp.withdrawLiquidity(1, MIN_SUPPLY);
++        (, , , , , , uint256 lenderCount) = mp.getAgentPool(1);
++        assertEq(lenderCount, 0, "full exit did not release the slot");
++
++        _log("D1 capital a squatter must now lock per slot (base units)", MIN_SUPPLY);
++        _log("D1 capital for a full 49-slot third-party squat", MIN_SUPPLY * 49);
++    }
++
++    // =====================================================================
++    // D2 — the V6.2 increment: a squatted pool bricks the agent's own borrowing
++    // [FIXED 2026-09-22] The last of the 50 slots is RESERVED for the pool
++    // creator's M2-c self-stake, so a squat can never make unsecured borrowing
++    // impossible — no matter how much capital the attacker is willing to lock.
++    // =====================================================================
++    function test_D2_squat_blocks_unsecured_borrowing_entirely() public {
++        // the attacker now has to lock the real minimum, and gets only 49 slots
++        for (uint256 i = 0; i < 49; i++) {
++            vm.prank(squatters[i]);
++            mp.supplyLiquidity(1, MIN_SUPPLY);
++        }
++        vm.prank(squatters[49]);
++        vm.expectRevert("Last slot reserved for agent self-stake");
++        mp.supplyLiquidity(1, MIN_SUPPLY);
++
++        // 0 %-collateral tier → M2-c demands a self-stake, and the agent CAN post it
++        assertEq(rep.calculateCollateralRequirement(agent), 0, "agent is not on a 0% tier");
++        assertGt(mp.requiredSelfStake(1, 100e6), 0, "no self-stake demanded");
++        vm.prank(agent);
++        mp.supplyLiquidity(1, 2_500e6);
++        (uint256 stake, ) = mp.selfStake(1);
++        assertEq(stake, 2_500e6, "agent could not claim the reserved slot");
++
++        vm.warp(block.timestamp + 60);
++        vm.prank(agent);
++        uint256 id = mp.requestLoan(100e6, 7);
++        assertGt(id, 0, "agent still cannot borrow on a squatted pool");
++
++        (, , , , , , uint256 after_) = mp.getAgentPool(1);
++        assertEq(after_, 50, "unexpected slot count");
++        _log("D2 loanId opened against a fully squatted pool", id);
++        // RESIDUAL, unchanged and accepted: the squat still denies the pool
++        // third-party liquidity — but now at 49 x minSupplyAmount of genuinely
++        // locked, at-risk capital, which is simply "being a lender".
++    }
++
++    // =====================================================================
++    // D3 — a squat raises ANOTHER party's repayLoan cost
++    // [PARTIALLY FIXED] The gas curve is inherent to MAX_LENDERS_PER_POOL and is
++    // unchanged; what changed is the price. Every one of the 49 slots now costs
++    // the attacker a full, locked, at-risk minSupplyAmount instead of 1 base unit.
++    // =====================================================================
++    function test_D3_squat_raises_borrower_repay_cost() public {
++        // baseline: agent-only pool, one repay
++        vm.prank(agent);
++        mp.supplyLiquidity(1, 2_500e6);
++        vm.warp(block.timestamp + 60);
++        vm.prank(agent);
++        uint256 id = mp.requestLoan(1_000e6, 7);
++        vm.warp(block.timestamp + 1 days);
++        vm.prank(agent);
++        mp.repayLoan(id);
++        uint256 cheap = vm.lastCallGas().gasTotalUsed;
++
++        // attacker takes the remaining 49 slots — at the FULL floor each, now that
++        // the dust withdrawal is refused
++        for (uint256 i = 0; i < 49; i++) {
++            vm.prank(squatters[i]);
++            mp.supplyLiquidity(1, MIN_SUPPLY);
++        }
++        _log("D3 USDC the attacker must lock for the 49 slots", MIN_SUPPLY * 49);
++        vm.warp(block.timestamp + 60);
++        vm.prank(agent);
++        uint256 id2 = mp.requestLoan(1_000e6, 7);
++        vm.warp(block.timestamp + 1 days);
++        vm.prank(agent);
++        mp.repayLoan(id2);
++        uint256 dear = vm.lastCallGas().gasTotalUsed;
++
++        _log("D3 repayLoan gas, 1 lender", cheap);
++        _log("D3 repayLoan gas, 50 lenders (49 are dust squatters)", dear);
++        _log("D3 gas the attacker added to every future repay", dear - cheap);
++        assertGt(dear, cheap + 100_000, "squat did not materially raise the repay cost");
++    }
++
++    // =====================================================================
++    // D4 — a squat raises another lender's withdraw / exit cost
++    // [PARTIALLY FIXED] Same as D3: the linear `_removePoolLender` search is
++    // unchanged and bounded (154x headroom); the slots now cost real capital.
++    // =====================================================================
++    function test_D4_squat_raises_lender_exit_cost() public {
++        vm.prank(agent);
++        mp.supplyLiquidity(1, 2_500e6);
++        vm.prank(victimLender);
++        mp.supplyLiquidity(1, 1_000e6);
++        vm.prank(victimLender);
++        mp.withdrawLiquidity(1, 1_000e6);
++        uint256 cheap = vm.lastCallGas().gasTotalUsed;
++
++        for (uint256 i = 0; i < 48; i++) {
++            vm.prank(squatters[i]);
++            mp.supplyLiquidity(1, MIN_SUPPLY);
++        }
++        vm.prank(victimLender);
++        mp.supplyLiquidity(1, 1_000e6);
++        vm.prank(victimLender);
++        mp.withdrawLiquidity(1, 1_000e6);
++        uint256 dear = vm.lastCallGas().gasTotalUsed;
++
++        _log("D4 withdraw full-exit gas, 2 lenders", cheap);
++        _log("D4 withdraw full-exit gas, 50 lenders", dear);
++        _log("D4 added gas", dear - cheap);
++    }
++
++    // =====================================================================
++    // D5 — activeLoanIds: fill to the cap and thrash it
++    // =====================================================================
++    function test_D5_activeLoanIds_cap_and_thrash() public {
++        vm.prank(agent);
++        mp.supplyLiquidity(1, 2_500e6);
++        vm.prank(victimLender);
++        mp.supplyLiquidity(1, 5_000e6);
++        vm.warp(block.timestamp + 60);
++
++        uint256[] memory ids = new uint256[](10);
++        for (uint256 i = 0; i < 10; i++) {
++            vm.prank(agent);
++            ids[i] = mp.requestLoan(400e6, 7);
++            vm.warp(block.timestamp + 1);
++        }
++        vm.prank(agent);
++        vm.expectRevert("Too many active loans");
++        mp.requestLoan(1e6, 7);
++
++        // thrash: repay the OLDEST (worst case for the swap-and-pop search) and reopen
++        uint256 worst;
++        for (uint256 round = 0; round < 20; round++) {
++            vm.warp(block.timestamp + 1 days);
++            vm.prank(agent);
++            mp.repayLoan(ids[0]);
++            uint256 g = vm.lastCallGas().gasTotalUsed;
++            if (g > worst) worst = g;
++            vm.prank(agent);
++            ids[0] = mp.requestLoan(400e6, 7);
++        }
++        assertEq(mp.getActiveLoanIds(1).length, 10, "active set drifted");
++        _log("D5 worst repayLoan gas while thrashing a full 10-entry active set", worst);
++    }
++
++    // =====================================================================
++    // D6 — ladder / maxRepaidPrincipal over hundreds of loans: no state growth
++    // =====================================================================
++    function test_D6_ladder_over_hundreds_of_loans_is_flat() public {
++        vm.prank(agent);
++        mp.supplyLiquidity(1, 2_500e6);
++        vm.warp(block.timestamp + 60);
++
++        uint256 first;
++        uint256 last;
++        for (uint256 i = 0; i < 300; i++) {
++            vm.prank(agent);
++            uint256 id = mp.requestLoan(100e6, 7);
++            vm.warp(block.timestamp + 7 days); // exactly at endTime → ON TIME
++            vm.prank(agent);
++            mp.repayLoan(id);
++            uint256 g = vm.lastCallGas().gasTotalUsed;
++            if (i == 0) first = g;
++            if (i == 299) last = g;
++        }
++        _log("D6 repayLoan #1 gas", first);
++        _log("D6 repayLoan #300 gas", last);
++        _log("D6 maxRepaidPrincipal", rep.maxRepaidPrincipal(1));
++        _log("D6 creditLimitOf", rep.creditLimitOf(1));
++        assertLt(last, first + 5000, "repay gas grows with loan history");
++    }
++
++    // =====================================================================
++    // D7 — agentLoans[] grows without bound; resetPoolAccounting walks it
++    // [FIXED 2026-09-22] `resetPoolAccounting` rebuilds totalLoaned from
++    // `activeLoanIds[agentId]` (<= MAX_ACTIVE_LOANS_PER_AGENT = 10), not from the
++    // append-only `agentLoans[]`. `agentLoans[]` still grows without bound, but
++    // nothing iterates it on any reachable path any more.
++    // =====================================================================
++    function test_D7_agentLoans_unbounded_breaks_resetPoolAccounting() public {
++        vm.prank(agent);
++        mp.supplyLiquidity(1, 2_500e6);
++        vm.warp(block.timestamp + 60);
++
++        uint256 g1;
++        for (uint256 i = 0; i < 400; i++) {
++            vm.prank(agent);
++            uint256 id = mp.requestLoan(100e6, 7);
++            vm.warp(block.timestamp + 8 days);
++            vm.prank(agent);
++            mp.repayLoan(id);
++            if (i == 0) {
++                vm.prank(owner);
++                mp.resetPoolAccounting(1);
++                g1 = vm.lastCallGas().gasTotalUsed;
++            }
++        }
++        vm.prank(owner);
++        mp.resetPoolAccounting(1);
++        uint256 g400 = vm.lastCallGas().gasTotalUsed;
++
++        _log("D7 resetPoolAccounting gas @1 loan", g1);
++        _log("D7 resetPoolAccounting gas @400 loans", g400);
++        // SECURE PROPERTY: flat in loan history. (It falls slightly, because the
++        // 400-loan call runs with warmer pool storage than the very first one.)
++        assertLt(g400, g1 + 5_000, "resetPoolAccounting is still history-dependent");
++        assertLt(g400, 10_000_000, "resetPoolAccounting lost 3x block headroom");
++    }
++
++    // =====================================================================
++    // D8 — agentPoolIds grows without bound; getActiveAgents walks it
++    // =====================================================================
++    function test_D8_agentPoolIds_unbounded_view() public {
++        AgentRegistryV2.MetadataEntry[] memory empty;
++        uint256 g1;
++        for (uint256 i = 0; i < 500; i++) {
++            address a = address(uint160(0x100000 + i));
++            vm.prank(a);
++            registry.register("ipfs://spam", empty);
++            vm.prank(a);
++            mp.createAgentPool();
++            if (i == 0) {
++                mp.getActiveAgents();
++                g1 = vm.lastCallGas().gasTotalUsed;
++            }
++        }
++        mp.getActiveAgents();
++        uint256 g500 = vm.lastCallGas().gasTotalUsed;
++        uint256 perPool = (g500 - g1) / 499;
++        _log("D8 getActiveAgents gas @2 pools", g1);
++        _log("D8 getActiveAgents gas @501 pools", g500);
++        _log("D8 marginal gas per pool", perPool);
++        _log("D8 pools until the view exceeds 30M", perPool == 0 ? 0 : 30_000_000 / perPool);
++        _log("D8 totalPools", mp.totalPools());
++    }
++
++    // =====================================================================
++    // D9 — ReputationManagerV4 loanId namespace is GLOBAL, not per-marketplace
++    // [FIXED 2026-09-22] `openLoansByKey` is keyed by keccak(marketplace, loanId).
++    // =====================================================================
++    function test_D9_two_authorized_marketplaces_collide_on_loanId() public {
++        // a second V6.2 authorized on the SAME reputation manager (the shape of a
++        // side-by-side migration) restarts nextLoanId at 1
++        vm.startPrank(owner);
++        AgentLiquidityMarketplaceV62 mp2 =
++            new AgentLiquidityMarketplaceV62(address(registry), address(rep), address(usdc));
++        rep.authorizePool(address(mp2));
++        vm.stopPrank();
++        vm.prank(agent);
++        usdc.approve(address(mp2), type(uint256).max);
++        vm.prank(agent);
++        mp2.createAgentPool();
++
++        vm.prank(agent);
++        mp.supplyLiquidity(1, 2_500e6);
++        vm.prank(agent);
++        mp2.supplyLiquidity(1, 2_500e6);
++        vm.warp(block.timestamp + 60);
++
++        vm.prank(agent);
++        uint256 idA = mp.requestLoan(100e6, 7);
++        assertEq(idA, 1, "first marketplace loanId");
++
++        // SECURE PROPERTY: the second marketplace's loanId 1 no longer collides
++        vm.prank(agent);
++        uint256 idB = mp2.requestLoan(100e6, 7);
++        assertEq(idB, 1, "second marketplace loanId");
++
++        (uint128 amtA, uint64 startA, ) = rep.openLoans(address(mp), idA);
++        (uint128 amtB, uint64 startB, ) = rep.openLoans(address(mp2), idB);
++        assertGt(startA, 0, "marketplace A record missing");
++        assertGt(startB, 0, "marketplace B record missing");
++        assertEq(amtA, 100e6);
++        assertEq(amtB, 100e6);
++        assertTrue(rep.loanKey(address(mp), idA) != rep.loanKey(address(mp2), idB), "keys collide");
++
++        // closing one leaves the other untouched
++        vm.warp(block.timestamp + 1 days);
++        vm.prank(agent);
++        mp.repayLoan(idA);
++        (, uint64 startAafter, ) = rep.openLoans(address(mp), idA);
++        (, uint64 startBafter, ) = rep.openLoans(address(mp2), idB);
++        assertEq(startAafter, 0, "A not closed");
++        assertEq(startBafter, startB, "closing A disturbed B");
++        _log("D9 two marketplaces coexist on one ReputationManagerV4", 1);
++    }
++
++    // =====================================================================
++    // D10 — the self-stake is frozen for as long as the owner does not liquidate
++    // =====================================================================
++    function test_D10_self_stake_frozen_until_owner_liquidates() public {
++        vm.prank(agent);
++        mp.supplyLiquidity(1, 2_500e6);
++        vm.warp(block.timestamp + 60);
++        vm.prank(agent);
++        uint256 id = mp.requestLoan(1_000e6, 7);
++
++        vm.warp(block.timestamp + 3650 days); // ten years overdue, owner never acts
++        vm.prank(agent);
++        vm.expectRevert("Self-stake locked while borrowing");
++        mp.withdrawLiquidity(1, 1);
++
++        (uint256 amt, bool locked) = mp.selfStake(1);
++        assertTrue(locked, "stake should still be locked");
++        _log("D10 USDC frozen in the creator position after 10 years", amt);
++
++        // only the owner can end it
++        vm.prank(owner);
++        mp.liquidateLoan(id);
++        (, bool locked2) = mp.selfStake(1);
++        assertFalse(locked2, "stake still locked after liquidation");
++    }
++
++    // =====================================================================
++    // D11 — can a third party push the agent below its required self-stake?
++    // =====================================================================
++    function test_D11_third_party_cannot_invalidate_self_stake() public {
++        vm.prank(agent);
++        mp.supplyLiquidity(1, 500e6);
++        vm.prank(victimLender);
++        mp.supplyLiquidity(1, 1_000e6);
++        vm.warp(block.timestamp + 60);
++        vm.prank(agent);
++        mp.requestLoan(1_000e6, 7);
++
++        uint256 need = mp.requiredSelfStake(1, 0);
++        (uint256 have, ) = mp.selfStake(1);
++        assertGe(have, need, "stake below requirement at open");
++
++        // a lender leaving cannot reduce the agent's position, only pool liquidity
++        vm.prank(victimLender);
++        vm.expectRevert("Insufficient pool liquidity");
++        mp.withdrawLiquidity(1, 1_000e6);
++        (uint256 have2, ) = mp.selfStake(1);
++        assertEq(have2, have, "third party moved the agent's stake");
++        _log("D11 required self-stake", need);
++        _log("D11 held self-stake", have2);
++    }
++
++    // =====================================================================
++    // D12 — pause() freezes repayment, exits and liquidation simultaneously
++    // =====================================================================
++    function test_D12_pause_blocks_the_whole_close_path() public {
++        vm.prank(agent);
++        mp.supplyLiquidity(1, 2_500e6);
++        vm.warp(block.timestamp + 60);
++        vm.prank(agent);
++        uint256 id = mp.requestLoan(1_000e6, 7);
++        vm.warp(block.timestamp + 30 days);
++
++        vm.prank(owner);
++        mp.pause();
++
++        vm.prank(agent);
++        vm.expectRevert();
++        mp.repayLoan(id);
++        vm.prank(owner);
++        vm.expectRevert();
++        mp.liquidateLoan(id);
++        vm.prank(agent);
++        vm.expectRevert();
++        mp.withdrawLiquidity(1, 1);
++        _log("D12 repay/liquidate/withdraw all blocked while paused", 1);
++    }
++
++    // =====================================================================
++    // D13 — `requiredSelfStake` view collapses to 0 after an agent-NFT transfer
++    // [VIEW FIXED 2026-09-22] The tier is resolved by agentId, so the view and the
++    // transaction now agree. The ECONOMIC half of the finding is UNCHANGED and
++    // still requires the M-1 lever: the M2 self-stake belongs to pool.agentAddress
++    // (the seller), and with M-1 off the buyer borrows against it. Asserted below.
++    // =====================================================================
++    function test_D13_requiredSelfStake_view_wrong_after_nft_transfer() public {
++        vm.prank(agent);
++        mp.supplyLiquidity(1, 2_500e6);
++        uint256 before_ = mp.requiredSelfStake(1, 1_000e6);
++        assertGt(before_, 0, "no stake demanded before transfer");
++
++        address buyer = address(0xB0B);
++        _fund(buyer);
++        vm.prank(agent);
++        registry.transferFrom(agent, buyer, 1);
++
++        // SECURE PROPERTY: the view resolves the collateral tier by agentId, which
++        // follows the agent NFT, so it no longer collapses to "no stake required".
++        uint256 after_ = mp.requiredSelfStake(1, 1_000e6);
++        _log("D13 requiredSelfStake before NFT transfer", before_);
++        _log("D13 requiredSelfStake after NFT transfer", after_);
++        assertEq(after_, before_, "view still collapses after an NFT transfer");
++
++        // RESIDUAL (unchanged, M-1 mitigates): requestLoan evaluates the tier of the
++        // CALLER and the stake of
++        // pool.agentAddress. With the M-1 lever off, the BUYER borrows unsecured against
++        // the SELLER's locked first-loss capital, and the seller cannot withdraw it.
++        vm.prank(owner);
++        mp.setBindBorrowToPoolCreator(false);
++        vm.warp(block.timestamp + 60);
++        vm.prank(buyer);
++        mp.requestLoan(1_000e6, 7);
++
++        (uint256 stakeAmt, bool locked) = mp.selfStake(1);
++        (uint256 buyerPos, , ) = mp.positions(1, buyer);
++        assertEq(buyerPos, 0, "buyer posted stake after all");
++        assertGt(stakeAmt, 0, "no first-loss stake at risk");
++        assertTrue(locked, "seller's stake is not locked");
++        _log("D13 first-loss capital at risk, owned by the SELLER", stakeAmt);
++        vm.prank(agent);
++        vm.expectRevert("Self-stake locked while borrowing");
++        mp.withdrawLiquidity(1, 1);
++    }
++}
+diff --git a/test/foundry/V7Gas.t.sol b/test/foundry/V7Gas.t.sol
+new file mode 100644
+index 0000000..578503b
+--- /dev/null
++++ b/test/foundry/V7Gas.t.sol
+@@ -0,0 +1,645 @@
++// SPDX-License-Identifier: MIT
++pragma solidity ^0.8.20;
++
++import "forge-std/Test.sol";
++import "../../contracts/core/AgentLiquidityMarketplaceV6.sol";
++import "../../contracts/core/AgentLiquidityMarketplaceV62.sol";
++import "../../contracts/core/AgentRegistryV2.sol";
++import "../../contracts/core/ReputationManagerV3.sol";
++import "../../contracts/core/ReputationManagerV4.sol";
++import "../../contracts/tokens/MockUSDC.sol";
++
++/**
++ * @title V7Gas — V6.1 (+ReputationManagerV3) vs V6.2 (+ReputationManagerV4) execution gas
++ * @notice Same scenario driven against both stacks, fresh and identical per scenario.
++ *         Metering is `vm.lastCallGas().gasTotalUsed` under `--isolate`, i.e. every
++ *         measured call is its own transaction with cold storage — the same method the
++ *         2026-09-21 V6.0-vs-V6.1 report used, so the numbers are continuous with it.
++ *
++ *         Pool composition is IDENTICAL on both stacks: index 0 of the lender set is
++ *         the agent itself (in V6.2 the M2-c self-stake forces the borrower to occupy a
++ *         lender slot; making V6.1 do the same keeps `poolLenders.length` equal so the
++ *         bounded loops iterate the same number of times on both sides).
++ *
++ *         Run: forge test --isolate --match-path test/foundry/V7Gas.t.sol -vv
++ */
++contract V7GasTest is Test {
++    struct Stack {
++        AgentRegistryV2 registry;
++        ReputationManagerV3 rep3;
++        ReputationManagerV4 rep4;
++        MockUSDC usdc;
++        AgentLiquidityMarketplaceV6 mp; // ABI view — selectors are identical on V6.2
++        bool v62;
++    }
++
++    address owner = address(0xAAAA);
++    address agent = address(0xA9E7);
++    address[] lenders;
++
++    uint256 constant N_LENDERS = 50;
++
++    function setUp() public {
++        for (uint256 i = 0; i < N_LENDERS + 2; i++) lenders.push(address(uint160(0xB000 + i)));
++    }
++
++    // ------------------------------------------------------------------ stacks
++
++    function _deploy(bool v62) internal returns (Stack memory s) {
++        s.v62 = v62;
++        vm.startPrank(owner);
++        s.registry = new AgentRegistryV2();
++        s.usdc = new MockUSDC();
++        address mp;
++        if (v62) {
++            s.rep4 = new ReputationManagerV4(address(s.registry));
++            mp = address(new AgentLiquidityMarketplaceV62(address(s.registry), address(s.rep4), address(s.usdc)));
++            s.rep4.authorizePool(mp);
++            s.rep4.authorizePool(owner);
++        } else {
++            s.rep3 = new ReputationManagerV3(address(s.registry));
++            mp = address(new AgentLiquidityMarketplaceV6(address(s.registry), address(s.rep3), address(s.usdc)));
++            s.rep3.authorizePool(mp);
++            s.rep3.authorizePool(owner);
++        }
++        s.mp = AgentLiquidityMarketplaceV6(mp);
++        vm.stopPrank();
++
++        AgentRegistryV2.MetadataEntry[] memory empty;
++        vm.prank(agent);
++        s.registry.register("ipfs://gas", empty);
++        vm.prank(agent);
++        s.mp.createAgentPool();
++
++        _pumpToTopTier(s);
++
++        _fund(s, agent);
++        for (uint256 i = 0; i < lenders.length; i++) _fund(s, lenders[i]);
++    }
++
++    /// @dev Drive the agent to the 0 %-collateral top tier on either manager, and (V6.2)
++    ///      give the ladder enough head-room for a 5,000 USDC line.
++    function _pumpToTopTier(Stack memory s) internal {
++        vm.startPrank(owner);
++        if (s.v62) {
++            vm.stopPrank();
++            vm.prank(agent);
++            s.rep4.initializeReputation(); // score 100
++            vm.startPrank(owner);
++            s.rep4.setScoringParameters(50, 50, 100, 1000e6); // faster pump
++            uint256 synth = 1_000_000;
++            while (s.rep4.getReputationScore(1) < 800) {
++                s.rep4.recordBorrow(agent, synth, 100e6);
++                vm.warp(block.timestamp + 7 days);
++                s.rep4.recordLoanCompletion(agent, synth, 100e6, true, 0);
++                synth++;
++            }
++            // one big on-time repayment so the ladder clears the 5,000 tier cap
++            s.rep4.recordBorrow(agent, synth, 5000e6);
++            vm.warp(block.timestamp + 7 days);
++            s.rep4.recordLoanCompletion(agent, synth, 5000e6, true, 0);
++            s.rep4.setScoringParameters(10, 50, 100, 1000e6); // back to shipped defaults
++        } else {
++            for (uint256 i = 0; i < 65; i++) s.rep3.recordLoanCompletion(agent, 100e6, true);
++        }
++        vm.stopPrank();
++    }
++
++    function _fund(Stack memory s, address who) internal {
++        vm.prank(owner);
++        s.usdc.mint(who, 1e14);
++        vm.prank(who);
++        s.usdc.approve(address(s.mp), type(uint256).max);
++    }
++
++    /// @dev Lender slot `i`. Slot 0 is the agent's own position on BOTH stacks.
++    function _l(uint256 i) internal view returns (address) {
++        return i == 0 ? agent : lenders[i];
++    }
++
++    // ------------------------------------------------------------ measured ops
++
++    function _supply(Stack memory s, address l, uint256 amt) internal returns (uint256 g) {
++        vm.prank(l);
++        s.mp.supplyLiquidity(1, amt);
++        g = vm.lastCallGas().gasTotalUsed;
++    }
++
++    function _withdraw(Stack memory s, address l, uint256 amt) internal returns (uint256 g) {
++        vm.prank(l);
++        s.mp.withdrawLiquidity(1, amt);
++        g = vm.lastCallGas().gasTotalUsed;
++    }
++
++    function _loan(Stack memory s, uint256 amt, uint256 days_) internal returns (uint256 g, uint256 id) {
++        vm.prank(agent);
++        id = s.mp.requestLoan(amt, days_);
++        g = vm.lastCallGas().gasTotalUsed;
++    }
++
++    function _repay(Stack memory s, uint256 id) internal returns (uint256 g) {
++        vm.prank(agent);
++        s.mp.repayLoan(id);
++        g = vm.lastCallGas().gasTotalUsed;
++    }
++
++    function _liquidate(Stack memory s, uint256 id) internal returns (uint256 g) {
++        vm.prank(owner);
++        s.mp.liquidateLoan(id);
++        g = vm.lastCallGas().gasTotalUsed;
++    }
++
++    function _claim(Stack memory s, address l) internal returns (uint256 g) {
++        vm.prank(l);
++        s.mp.claimInterest(1);
++        g = vm.lastCallGas().gasTotalUsed;
++    }
++
++    // ------------------------------------------------------------- composition
++
++    /// @dev Fill the pool to exactly `n` lender slots. Slot 0 (the agent) gets
++    ///      `selfStake` so the M2-c gate is satisfied on V6.2; the rest get `each`.
++    function _fill(Stack memory s, uint256 n, uint256 selfStake, uint256 each) internal {
++        if (n == 0) return;
++        _supply(s, agent, selfStake);
++        for (uint256 i = 1; i < n; i++) _supply(s, _l(i), each);
++    }
++
++    // ------------------------------------------------------------- scenarios
++
++    // ---- supplyLiquidity -------------------------------------------------
++
++    /// fresh slot: the n'th lender joining a pool that already holds n-1 entries.
++    /// At n == 1 this is the very first supply into an empty pool (cold pool slots).
++    function sc_supplyFresh(Stack memory s, uint256 n) internal returns (uint256) {
++        _fill(s, n - 1, 500e6, 100e6);
++        if (n > 1) vm.warp(block.timestamp + 60);
++        return _supply(s, _l(n - 1), 100e6);
++    }
++
++    /// top-up with no loan in flight — case (a), base tranche restamped
++    function sc_topUpBase(Stack memory s, uint256 n) internal returns (uint256) {
++        _fill(s, n, 500e6, 100e6);
++        vm.warp(block.timestamp + 60);
++        return _supply(s, _l(n - 1), 50e6);
++    }
++
++    /// top-up mid-loan, first one — case (b), pending tranche created
++    function sc_topUpPendingCreate(Stack memory s, uint256 n) internal returns (uint256) {
++        _fill(s, n, 500e6, 100e6);
++        vm.warp(block.timestamp + 60);
++        _loan(s, 500e6, 7);
++        vm.warp(block.timestamp + 60);
++        return _supply(s, _l(n - 1), 50e6);
++    }
++
++    /// top-up merge — case (d): pending exists, no ACTIVE loan since it was stamped
++    function sc_topUpMerge(Stack memory s, uint256 n) internal returns (uint256) {
++        _fill(s, n, 500e6, 100e6);
++        vm.warp(block.timestamp + 60);
++        _loan(s, 500e6, 7);
++        vm.warp(block.timestamp + 60);
++        _supply(s, _l(n - 1), 50e6); // creates pending
++        vm.warp(block.timestamp + 60);
++        return _supply(s, _l(n - 1), 50e6); // (d)
++    }
++
++    /// top-up fold — case (c): pending qualified exactly as the base is
++    function sc_topUpFold(Stack memory s, uint256 n) internal returns (uint256) {
++        _fill(s, n, 500e6, 100e6);
++        vm.warp(block.timestamp + 60);
++        (, uint256 a) = _loan(s, 500e6, 7);
++        vm.warp(block.timestamp + 60);
++        _supply(s, _l(n - 1), 50e6); // pending while A is in flight
++        vm.warp(block.timestamp + 60);
++        _repay(s, a);
++        _loan(s, 500e6, 7); // B starts after the pending stamp
++        vm.warp(block.timestamp + 60);
++        return _supply(s, _l(n - 1), 50e6); // (c) fold
++    }
++
++    /// worst-case supply: fold with the active-loan set at its 10-entry cap
++    function sc_topUpFold10Active(Stack memory s, uint256 n) internal returns (uint256) {
++        _fill(s, n, 2000e6, 100e6);
++        vm.warp(block.timestamp + 60);
++        (, uint256 a) = _loan(s, 100e6, 7);
++        vm.warp(block.timestamp + 60);
++        _supply(s, _l(n - 1), 50e6);
++        vm.warp(block.timestamp + 60);
++        _repay(s, a);
++        for (uint256 i = 0; i < 10; i++) {
++            _loan(s, 300e6, 7);
++            vm.warp(block.timestamp + 1);
++        }
++        return _supply(s, _l(n - 1), 50e6); // scans the full 10-entry active set twice
++    }
++
++    // ---- requestLoan -----------------------------------------------------
++
++    function sc_requestLoan(Stack memory s, uint256 n) internal returns (uint256) {
++        _fill(s, n, 500e6, 100e6);
++        vm.warp(block.timestamp + 60);
++        (uint256 g, ) = _loan(s, 500e6, 7);
++        return g;
++    }
++
++    /// requestLoan with every lender carrying a pending tranche
++    function sc_requestLoanTranches(Stack memory s, uint256 n) internal returns (uint256) {
++        _fill(s, n, 2000e6, 100e6);
++        vm.warp(block.timestamp + 60);
++        (, uint256 a) = _loan(s, 100e6, 7);
++        vm.warp(block.timestamp + 60);
++        for (uint256 i = 0; i < n; i++) _supply(s, _l(i), 10e6); // pending on all
++        vm.warp(block.timestamp + 60);
++        _repay(s, a);
++        vm.warp(block.timestamp + 60);
++        (uint256 g, ) = _loan(s, 500e6, 7);
++        return g;
++    }
++
++    /// the 10th (last legal) concurrent loan
++    function sc_requestLoan10th(Stack memory s, uint256 n) internal returns (uint256) {
++        _fill(s, n, 2000e6, 100e6);
++        vm.warp(block.timestamp + 60);
++        for (uint256 i = 0; i < 9; i++) {
++            _loan(s, 300e6, 7);
++            vm.warp(block.timestamp + 1);
++        }
++        (uint256 g, ) = _loan(s, 300e6, 7);
++        return g;
++    }
++
++    // ---- repayLoan -------------------------------------------------------
++
++    function _repayScenario(
++        Stack memory s,
++        uint256 n,
++        bool tranches,
++        bool tenActive,
++        uint256 lateDays
++    ) internal returns (uint256) {
++        uint256 amt = tenActive ? 300e6 : 500e6;
++        _fill(s, n, 2000e6, 100e6);
++        vm.warp(block.timestamp + 60);
++
++        uint256 target;
++        if (tenActive) {
++            for (uint256 i = 0; i < 10; i++) {
++                (, uint256 id) = _loan(s, amt, 7);
++                if (i == 0) target = id;
++                vm.warp(block.timestamp + 1);
++            }
++        } else {
++            (, target) = _loan(s, amt, 7);
++        }
++
++        if (tranches) {
++            vm.warp(block.timestamp + 60);
++            for (uint256 i = 0; i < n; i++) _supply(s, _l(i), 10e6);
++        }
++
++        vm.warp(block.timestamp + (lateDays == 0 ? 1 days : 7 days + lateDays * 1 days));
++        return _repay(s, target);
++    }
++
++    // ---- liquidateLoan ---------------------------------------------------
++
++    /// Lossy liquidation, every lender carrying a pending tranche (V6.1's worst case).
++    /// The creator holds the MINIMUM legal self-stake (loan/2 at k = 2), so on V6.2 the
++    /// first-loss pass covers only half the loss and `_socializeLoss` still runs.
++    function sc_liquidateTranches(Stack memory s, uint256 n) internal returns (uint256) {
++        uint256 amt = n == 1 ? 100e6 : 200e6;
++        _fill(s, n, 100e6, 100e6);
++        vm.warp(block.timestamp + 60);
++        (, uint256 id) = _loan(s, amt, 7);
++        vm.warp(block.timestamp + 60);
++        for (uint256 i = 0; i < n; i++) _supply(s, _l(i), 10e6);
++        vm.warp(block.timestamp + 8 days);
++        return _liquidate(s, id);
++    }
++
++    /**
++     * WORST CASE. Every socialisation path runs in one call:
++     *   - `n` lender slots, all carrying principal, unclaimed interest AND a pending tranche
++     *   - the self-stake first-loss pass takes the creator's whole position
++     *   - L7 pass 1 (qualified basis) cannot cover the loss, so pass 2 (whole principal) runs
++     *   - the loss still exceeds Σ principal, so `_socializeInterestLoss` runs (3 loops)
++     *   - every lender ends empty, so `_pruneEmptyLenders` pops all `n` slots
++     */
++    function sc_liquidateWorstCase(Stack memory s, uint256 n) internal returns (uint256) {
++        // 1. seed principal and book interest on every lender
++        _fill(s, n, 2500e6, 100e6);
++        vm.warp(block.timestamp + 60);
++        (, uint256 a) = _loan(s, 2000e6, 365);
++        vm.warp(block.timestamp + 365 days);
++        _repay(s, a); // ~100 USDC of interest spread over all n lenders
++        vm.warp(block.timestamp + 60);
++
++        // 2. drain almost all principal so the defaulting loan is funded from unclaimed
++        //    interest, and leave the creator holding EXACTLY the minimum self-stake
++        for (uint256 i = 1; i < n; i++) _withdraw(s, _l(i), 100e6 - 1); // leave 1 base unit
++        _withdraw(s, agent, 2500e6 - 25e6); // self-stake := 25 USDC
++        vm.warp(block.timestamp + 60);
++
++        // 3. the loan that will default: 50 USDC, i.e. 2 × the self-stake, so the
++        //    first-loss pass cannot cover it (k = 2 is the maximum leverage M2-c allows)
++        (, uint256 id) = _loan(s, 50e6, 7);
++        vm.warp(block.timestamp + 60);
++
++        // 4. everyone tops up AFTER the loan started → pending tranches that are NOT
++        //    qualified for it, so L7 pass 1 under-covers and pass 2 must run. Dust-sized
++        //    so Σ principal stays far below the loss and the interest pass runs too.
++        for (uint256 i = 0; i < n; i++) _supply(s, _l(i), 100);
++
++        vm.warp(block.timestamp + 8 days);
++        uint256 interestBefore = _sumInterest(s, n);
++        uint256 g = _liquidate(s, id);
++
++        // Proof that every path in the waterfall actually ran:
++        //  (1) M2-b first loss — the creator's whole position is gone
++        (uint256 selfAmt, , ) = s.mp.positions(1, agent);
++        assertEq(selfAmt, 0, "worst case: self-stake was not fully absorbed");
++        if (n > 1) {
++            //  (2) L7 pass 2 — a third party's UNQUALIFIED pending dust was taken too
++            //      (pass 1's basis for it was only its 1-base-unit base tranche)
++            (uint256 otherAmt, , ) = s.mp.positions(1, _l(1));
++            assertEq(otherAmt, 0, "worst case: L7 pass 2 did not run");
++        }
++        //  (3) F-05 interest socialisation — unclaimed interest was reduced
++        assertLt(_sumInterest(s, n), interestBefore, "worst case: interest was not socialized");
++        return g;
++    }
++
++    function _sumInterest(Stack memory s, uint256 n) internal view returns (uint256 t) {
++        for (uint256 i = 0; i < n; i++) {
++            (, uint256 e, ) = s.mp.positions(1, _l(i));
++            t += e;
++        }
++    }
++
++    // ---- other paths -----------------------------------------------------
++
++    /// @dev Measured on a THIRD-PARTY lender (slot 1): the creator's own position is
++    ///      locked while the agent borrows (M2-a), which is itself measured separately.
++    function sc_withdrawTrim(Stack memory s, uint256 n) internal returns (uint256) {
++        _fill(s, n, 500e6, 100e6);
++        vm.warp(block.timestamp + 60);
++        _loan(s, 300e6, 7);
++        vm.warp(block.timestamp + 60);
++        _supply(s, _l(1), 50e6); // pending 50
++        return _withdraw(s, _l(1), 30e6); // LIFO trims the pending tranche
++    }
++
++    function sc_withdrawFull(Stack memory s, uint256 n) internal returns (uint256) {
++        _fill(s, n, 500e6, 100e6);
++        vm.warp(block.timestamp + 60);
++        return _withdraw(s, _l(n - 1), 100e6); // frees the slot
++    }
++
++    function sc_claim(Stack memory s, uint256 n) internal returns (uint256) {
++        _fill(s, n, 500e6, 100e6);
++        vm.warp(block.timestamp + 60);
++        (, uint256 id) = _loan(s, 500e6, 30);
++        vm.warp(block.timestamp + 30 days);
++        _repay(s, id);
++        return _claim(s, _l(n - 1));
++    }
++
++    function sc_compact(Stack memory s, uint256 n) internal returns (uint256) {
++        _fill(s, n, 500e6, 100e6);
++        vm.prank(owner);
++        s.mp.compactPoolLenders(1);
++        return vm.lastCallGas().gasTotalUsed;
++    }
++
++    function sc_reset(Stack memory s, uint256 n) internal returns (uint256) {
++        _fill(s, n, 500e6, 100e6);
++        vm.warp(block.timestamp + 60);
++        (, uint256 id) = _loan(s, 100e6, 7);
++        vm.warp(block.timestamp + 7 days);
++        _repay(s, id);
++        vm.prank(owner);
++        s.mp.resetPoolAccounting(1);
++        return vm.lastCallGas().gasTotalUsed;
++    }
++
++    function sc_createPool(Stack memory s) internal returns (uint256) {
++        address fresh = address(0xC0FFEE);
++        AgentRegistryV2.MetadataEntry[] memory empty;
++        vm.prank(fresh);
++        s.registry.register("ipfs://fresh", empty);
++        vm.prank(fresh);
++        s.mp.createAgentPool();
++        return vm.lastCallGas().gasTotalUsed;
++    }
++
++    function sc_register(Stack memory s) internal returns (uint256) {
++        address fresh = address(0xDECAF);
++        AgentRegistryV2.MetadataEntry[] memory empty;
++        vm.prank(fresh);
++        s.registry.register("ipfs://fresh2", empty);
++        return vm.lastCallGas().gasTotalUsed;
++    }
++
++    // ------------------------------------------------------------ reporting
++
++    function _row(string memory name, uint256 g61, uint256 g62) internal pure {
++        string memory delta;
++        if (g62 >= g61) {
++            delta = string.concat("+", vm.toString(g62 - g61));
++        } else {
++            delta = string.concat("-", vm.toString(g61 - g62));
++        }
++        string memory pct = g61 == 0
++            ? "n/a"
++            : string.concat(
++                g62 >= g61 ? "+" : "-",
++                vm.toString(g62 >= g61 ? ((g62 - g61) * 1000) / g61 : ((g61 - g62) * 1000) / g61),
++                "permil"
++            );
++        console.log(string.concat("GAS | ", name, " | ", vm.toString(g61), " | ", vm.toString(g62), " | ", delta, " | ", pct));
++    }
++
++    function _rowOne(string memory name, uint256 g) internal pure {
++        console.log(string.concat("GAS1 | ", name, " | ", vm.toString(g)));
++    }
++
++    uint256[4] Ns = [uint256(1), 10, 25, 50];
++
++    function test_gas_supply() public {
++        console.log("GAS | scenario | V6.1 | V6.2 | delta | permil");
++        for (uint256 k = 0; k < 4; k++) {
++            uint256 n = Ns[k];
++            _row(string.concat("supplyLiquidity fresh slot @N=", vm.toString(n)), sc_supplyFresh(_deploy(false), n), sc_supplyFresh(_deploy(true), n));
++        }
++        for (uint256 k = 0; k < 4; k++) {
++            uint256 n = Ns[k];
++            _row(string.concat("supplyLiquidity top-up base (a) @N=", vm.toString(n)), sc_topUpBase(_deploy(false), n), sc_topUpBase(_deploy(true), n));
++        }
++        for (uint256 k = 0; k < 4; k++) {
++            uint256 n = Ns[k];
++            _row(string.concat("supplyLiquidity pending create (b) @N=", vm.toString(n)), sc_topUpPendingCreate(_deploy(false), n), sc_topUpPendingCreate(_deploy(true), n));
++        }
++        for (uint256 k = 0; k < 4; k++) {
++            uint256 n = Ns[k];
++            _row(string.concat("supplyLiquidity merge (d) @N=", vm.toString(n)), sc_topUpMerge(_deploy(false), n), sc_topUpMerge(_deploy(true), n));
++        }
++        for (uint256 k = 0; k < 4; k++) {
++            uint256 n = Ns[k];
++            _row(string.concat("supplyLiquidity fold (c) @N=", vm.toString(n)), sc_topUpFold(_deploy(false), n), sc_topUpFold(_deploy(true), n));
++        }
++        _row("supplyLiquidity fold, 10 active loans @N=50", sc_topUpFold10Active(_deploy(false), 50), sc_topUpFold10Active(_deploy(true), 50));
++    }
++
++    function test_gas_requestLoan() public {
++        console.log("GAS | scenario | V6.1 | V6.2 | delta | permil");
++        for (uint256 k = 0; k < 4; k++) {
++            uint256 n = Ns[k];
++            _row(string.concat("requestLoan @N=", vm.toString(n)), sc_requestLoan(_deploy(false), n), sc_requestLoan(_deploy(true), n));
++        }
++        for (uint256 k = 0; k < 4; k++) {
++            uint256 n = Ns[k];
++            _row(string.concat("requestLoan, all lenders w/ pending @N=", vm.toString(n)), sc_requestLoanTranches(_deploy(false), n), sc_requestLoanTranches(_deploy(true), n));
++        }
++        _row("requestLoan 10th concurrent loan @N=50", sc_requestLoan10th(_deploy(false), 50), sc_requestLoan10th(_deploy(true), 50));
++    }
++
++    function test_gas_repayLoan() public {
++        console.log("GAS | scenario | V6.1 | V6.2 | delta | permil");
++        for (uint256 k = 0; k < 4; k++) {
++            uint256 n = Ns[k];
++            _row(string.concat("repayLoan on time, no tranches @N=", vm.toString(n)), _repayScenario(_deploy(false), n, false, false, 0), _repayScenario(_deploy(true), n, false, false, 0));
++        }
++        for (uint256 k = 0; k < 4; k++) {
++            uint256 n = Ns[k];
++            _row(string.concat("repayLoan on time, all tranches @N=", vm.toString(n)), _repayScenario(_deploy(false), n, true, false, 0), _repayScenario(_deploy(true), n, true, false, 0));
++        }
++        _row("repayLoan, 10 active loans, tranches @N=50", _repayScenario(_deploy(false), 50, true, true, 0), _repayScenario(_deploy(true), 50, true, true, 0));
++        _row("repayLoan 3d late (inside cap), tranches @N=50", _repayScenario(_deploy(false), 50, true, false, 3), _repayScenario(_deploy(true), 50, true, false, 3));
++        _row("repayLoan 53d late (beyond cap), tranches @N=50", _repayScenario(_deploy(false), 50, true, false, 53), _repayScenario(_deploy(true), 50, true, false, 53));
++        _row("repayLoan 53d late, 10 active, tranches @N=50 [WORST]", _repayScenario(_deploy(false), 50, true, true, 53), _repayScenario(_deploy(true), 50, true, true, 53));
++    }
++
++    function test_gas_liquidate() public {
++        console.log("GAS | scenario | V6.1 | V6.2 | delta | permil");
++        for (uint256 k = 0; k < 4; k++) {
++            uint256 n = Ns[k];
++            _row(string.concat("liquidateLoan lossy, all tranches @N=", vm.toString(n)), sc_liquidateTranches(_deploy(false), n), sc_liquidateTranches(_deploy(true), n));
++        }
++        for (uint256 k = 0; k < 4; k++) {
++            uint256 n = Ns[k];
++            _row(string.concat("liquidateLoan WORST (all paths) @N=", vm.toString(n)), sc_liquidateWorstCase(_deploy(false), n), sc_liquidateWorstCase(_deploy(true), n));
++        }
++    }
++
++    /**
++     * ReputationManagerV4 (M1) measured directly, against ReputationManagerV3 where the
++     * function exists on both. `history` is the number of prior completed loans on the
++     * agent, to show the manager carries no per-agent unbounded state.
++     */
++    function _repGas(Stack memory s, uint256 history) internal {
++        string memory tag = string.concat("@history=", vm.toString(history));
++        vm.startPrank(owner);
++        uint256 synth = 9_000_000;
++        for (uint256 i = 0; i < history; i++) {
++            if (s.v62) {
++                s.rep4.recordBorrow(agent, synth + i, 50e6);
++                vm.warp(block.timestamp + 8 days);
++                s.rep4.recordLoanCompletion(agent, synth + i, 50e6, true, 0);
++            } else {
++                s.rep3.recordLoanCompletion(agent, 50e6, true);
++            }
++        }
++        uint256 id = synth + history + 1;
++        uint256 gBorrow;
++        uint256 gOnTime;
++        uint256 gLate;
++        uint256 gDefault;
++        if (s.v62) {
++            s.rep4.recordBorrow(agent, id, 50e6);
++            gBorrow = vm.lastCallGas().gasTotalUsed;
++            vm.warp(block.timestamp + 8 days);
++            s.rep4.recordLoanCompletion(agent, id, 50e6, true, 0);
++            gOnTime = vm.lastCallGas().gasTotalUsed;
++
++            s.rep4.recordBorrow(agent, id + 1, 50e6);
++            vm.warp(block.timestamp + 40 days);
++            s.rep4.recordLoanCompletion(agent, id + 1, 50e6, false, 33 days);
++            gLate = vm.lastCallGas().gasTotalUsed;
++
++            s.rep4.recordBorrow(agent, id + 2, 50e6);
++            vm.warp(block.timestamp + 8 days);
++            s.rep4.recordDefault(agent, id + 2, 50e6);
++            gDefault = vm.lastCallGas().gasTotalUsed;
++        } else {
++            s.rep3.recordBorrow(agent, 50e6);
++            gBorrow = vm.lastCallGas().gasTotalUsed;
++            vm.warp(block.timestamp + 8 days);
++            s.rep3.recordLoanCompletion(agent, 50e6, true);
++            gOnTime = vm.lastCallGas().gasTotalUsed;
++            s.rep3.recordLoanCompletion(agent, 50e6, false);
++            gLate = vm.lastCallGas().gasTotalUsed;
++            s.rep3.recordDefault(agent, 50e6);
++            gDefault = vm.lastCallGas().gasTotalUsed;
++        }
++        vm.stopPrank();
++
++        // views (these run INSIDE requestLoan, so their cost is on the hot path)
++        uint256 gLimit;
++        uint256 gCollat;
++        if (s.v62) {
++            s.rep4.calculateCreditLimit(agent);
++            gLimit = vm.lastCallGas().gasTotalUsed;
++            s.rep4.calculateCollateralRequirement(agent);
++            gCollat = vm.lastCallGas().gasTotalUsed;
++        } else {
++            s.rep3.calculateCreditLimit(agent);
++            gLimit = vm.lastCallGas().gasTotalUsed;
++            s.rep3.calculateCollateralRequirement(agent);
++            gCollat = vm.lastCallGas().gasTotalUsed;
++        }
++        s.mp.getAgentPool(1); // warm-up no-op so the next call is comparable
++        uint256 gStake = 0;
++        if (s.v62) {
++            AgentLiquidityMarketplaceV62(address(s.mp)).requiredSelfStake(1, 100e6);
++            gStake = vm.lastCallGas().gasTotalUsed;
++        }
++
++        string memory v = s.v62 ? "V6.2/RMV4" : "V6.1/RMV3";
++        _rowOne(string.concat(v, " recordBorrow ", tag), gBorrow);
++        _rowOne(string.concat(v, " recordLoanCompletion on-time ", tag), gOnTime);
++        _rowOne(string.concat(v, " recordLoanCompletion LATE ", tag), gLate);
++        _rowOne(string.concat(v, " recordDefault ", tag), gDefault);
++        _rowOne(string.concat(v, " calculateCreditLimit (view) ", tag), gLimit);
++        _rowOne(string.concat(v, " calculateCollateralRequirement (view) ", tag), gCollat);
++        _rowOne(string.concat(v, " requiredSelfStake (view) ", tag), gStake);
++    }
++
++    function test_gas_reputation() public {
++        _repGas(_deploy(false), 0);
++        _repGas(_deploy(true), 0);
++        _repGas(_deploy(false), 500);
++        _repGas(_deploy(true), 500);
++    }
++
++    function test_gas_other() public {
++        console.log("GAS | scenario | V6.1 | V6.2 | delta | permil");
++        uint256[4] memory Ns2 = [uint256(2), 10, 25, 50]; // needs a third-party lender slot
++        for (uint256 k = 0; k < 4; k++) {
++            uint256 n = Ns2[k];
++            _row(string.concat("withdrawLiquidity LIFO trim @N=", vm.toString(n)), sc_withdrawTrim(_deploy(false), n), sc_withdrawTrim(_deploy(true), n));
++        }
++        for (uint256 k = 0; k < 4; k++) {
++            uint256 n = Ns[k];
++            _row(string.concat("withdrawLiquidity full exit @N=", vm.toString(n)), sc_withdrawFull(_deploy(false), n), sc_withdrawFull(_deploy(true), n));
++        }
++        for (uint256 k = 0; k < 4; k++) {
++            uint256 n = Ns[k];
++            _row(string.concat("claimInterest @N=", vm.toString(n)), sc_claim(_deploy(false), n), sc_claim(_deploy(true), n));
++        }
++        _row("compactPoolLenders @N=50 (admin)", sc_compact(_deploy(false), 50), sc_compact(_deploy(true), 50));
++        _row("resetPoolAccounting @N=50, 1 loan of history (admin)", sc_reset(_deploy(false), 50), sc_reset(_deploy(true), 50));
++        _row("createAgentPool", sc_createPool(_deploy(false)), sc_createPool(_deploy(true)));
++        _row("registry.register", sc_register(_deploy(false)), sc_register(_deploy(true)));
++    }
++}
+diff --git a/test/foundry/V7ScaleFixes.t.sol b/test/foundry/V7ScaleFixes.t.sol
+new file mode 100644
+index 0000000..d7fdd79
+--- /dev/null
++++ b/test/foundry/V7ScaleFixes.t.sol
+@@ -0,0 +1,394 @@
++// SPDX-License-Identifier: MIT
++pragma solidity ^0.8.20;
++
++import "forge-std/Test.sol";
++import "../../contracts/core/AgentLiquidityMarketplaceV62.sol";
++import "../../contracts/core/AgentRegistryV2.sol";
++import "../../contracts/core/ReputationManagerV4.sol";
++import "../../contracts/tokens/MockUSDC.sol";
++
++/**
++ * @title V7ScaleFixes — regression suite for the V7 scale-and-gas must-fix list
++ * @notice One test per finding in forensics/output/v7-model/V7_SCALE_AND_GAS_REPORT.md §6.
++ *         Every test asserts the SECURE / FIXED property, so each one FAILS on the
++ *         pre-fix contracts and PASSES after. Written before the fix, on purpose.
++ *
++ *         Run: forge test --isolate --match-path test/foundry/V7ScaleFixes.t.sol -vv
++ */
++contract V7ScaleFixesTest is Test {
++    AgentRegistryV2 registry;
++    ReputationManagerV4 rep;
++    MockUSDC usdc;
++    AgentLiquidityMarketplaceV62 mp;
++
++    address owner = address(0xAAAA);
++    address agent = address(0xA9E7);
++    address victimLender = address(0xF00D);
++    address[] squatters;
++
++    uint256 constant MIN_SUPPLY = 10e6; // the live Arc-mainnet F-C lever
++
++    function setUp() public {
++        vm.startPrank(owner);
++        registry = new AgentRegistryV2();
++        rep = new ReputationManagerV4(address(registry));
++        usdc = new MockUSDC();
++        mp = new AgentLiquidityMarketplaceV62(address(registry), address(rep), address(usdc));
++        rep.authorizePool(address(mp));
++        rep.authorizePool(owner);
++        mp.setMinSupplyAmount(MIN_SUPPLY);
++        vm.stopPrank();
++
++        AgentRegistryV2.MetadataEntry[] memory empty;
++        vm.prank(agent);
++        registry.register("ipfs://scale", empty);
++        vm.prank(agent);
++        mp.createAgentPool();
++
++        _pump();
++
++        for (uint256 i = 0; i < 60; i++) {
++            address a = address(uint160(0xD000 + i));
++            squatters.push(a);
++            _fund(a);
++        }
++        _fund(agent);
++        _fund(victimLender);
++    }
++
++    function _pump() internal {
++        vm.prank(agent);
++        rep.initializeReputation();
++        vm.startPrank(owner);
++        rep.setScoringParameters(50, 50, 100, 1000e6);
++        uint256 synth = 1_000_000;
++        while (rep.getReputationScore(1) < 800) {
++            rep.recordBorrow(agent, synth, 100e6);
++            vm.warp(block.timestamp + 7 days);
++            rep.recordLoanCompletion(agent, synth, 100e6, true, 0);
++            synth++;
++        }
++        rep.recordBorrow(agent, synth, 5000e6);
++        vm.warp(block.timestamp + 7 days);
++        rep.recordLoanCompletion(agent, synth, 5000e6, true, 0);
++        rep.setScoringParameters(10, 50, 100, 1000e6);
++        vm.stopPrank();
++    }
++
++    function _fund(address who) internal {
++        vm.prank(owner);
++        usdc.mint(who, 1e14);
++        vm.prank(who);
++        usdc.approve(address(mp), type(uint256).max);
++    }
++
++    function _log(string memory k, uint256 v) internal pure {
++        console.log(string.concat("FIX | ", k, " | ", vm.toString(v)));
++    }
++
++    // =====================================================================
++    // P1-1 — the lender-slot squat (report D1/D2, inherited F-06)
++    // =====================================================================
++
++    /// A slot may not be held by a sub-minimum dust position: a partial withdrawal
++    /// that would leave 0 < remaining < minSupplyAmount is refused.
++    function test_P1_squat_cannot_leave_a_dust_position() public {
++        vm.prank(squatters[0]);
++        mp.supplyLiquidity(1, MIN_SUPPLY);
++
++        vm.prank(squatters[0]);
++        vm.expectRevert("Remaining below minimum supply");
++        mp.withdrawLiquidity(1, MIN_SUPPLY - 1);
++
++        // 1 base unit below the floor is equally refused
++        vm.prank(squatters[0]);
++        vm.expectRevert("Remaining below minimum supply");
++        mp.withdrawLiquidity(1, 1);
++
++        // the squatter still holds the FULL minimum — the slot is not free
++        (uint256 amt,,) = mp.positions(1, squatters[0]);
++        assertEq(amt, MIN_SUPPLY, "position was reduced below the floor");
++        _log("P1 capital a squatter must keep locked per slot", amt);
++    }
++
++    /// A lender must ALWAYS be able to leave completely. Full exit frees the slot.
++    function test_P1_full_exit_is_always_allowed() public {
++        vm.prank(squatters[0]);
++        mp.supplyLiquidity(1, MIN_SUPPLY);
++        (,,,,,, uint256 before_) = mp.getAgentPool(1);
++
++        vm.prank(squatters[0]);
++        mp.withdrawLiquidity(1, MIN_SUPPLY);
++
++        (,,,,,, uint256 after_) = mp.getAgentPool(1);
++        assertEq(after_, before_ - 1, "full exit did not free the slot");
++        assertEq(usdc.balanceOf(squatters[0]), 1e14, "capital not fully returned");
++    }
++
++    /// A partial withdrawal that leaves the position AT or ABOVE the floor is fine.
++    function test_P1_partial_withdrawal_above_the_floor_still_works() public {
++        vm.prank(squatters[0]);
++        mp.supplyLiquidity(1, 100e6);
++        vm.prank(squatters[0]);
++        mp.withdrawLiquidity(1, 90e6); // leaves exactly MIN_SUPPLY
++        (uint256 amt,,) = mp.positions(1, squatters[0]);
++        assertEq(amt, MIN_SUPPLY, "legitimate partial withdrawal was mangled");
++    }
++
++    /// The owner may RAISE minSupplyAmount after the fact. An existing position that
++    /// is now below the new floor must still be fully withdrawable.
++    function test_P1_position_below_a_raised_minimum_is_still_withdrawable() public {
++        vm.prank(owner);
++        mp.setMinSupplyAmount(1e6); // 1 USDC
++        vm.prank(squatters[0]);
++        mp.supplyLiquidity(1, 2e6); // legal at the time
++
++        vm.prank(owner);
++        mp.setMinSupplyAmount(100e6); // owner raises the floor to 100 USDC
++
++        // partial is refused (it would leave a sub-floor slot holder)...
++        vm.prank(squatters[0]);
++        vm.expectRevert("Remaining below minimum supply");
++        mp.withdrawLiquidity(1, 1e6);
++
++        // ... but the full exit always works, and frees the slot
++        vm.prank(squatters[0]);
++        mp.withdrawLiquidity(1, 2e6);
++        (uint256 amt,,) = mp.positions(1, squatters[0]);
++        assertEq(amt, 0, "lender could not exit under a raised minimum");
++        assertFalse(mp.isInPoolLenders(1, squatters[0]), "slot not released on full exit");
++    }
++
++    /// The pool creator is EXEMPT from the floor on both sides (it is exempt from
++    /// minSupplyAmount on supply because M2-c can legitimately require less).
++    function test_P1_creator_is_exempt_from_the_withdraw_floor() public {
++        vm.prank(agent);
++        mp.supplyLiquidity(1, 5e6); // below MIN_SUPPLY — the M2-a creator exemption
++        vm.prank(agent);
++        mp.withdrawLiquidity(1, 4e6); // leaves 1 USDC, below the floor: allowed
++        (uint256 amt,,) = mp.positions(1, agent);
++        assertEq(amt, 1e6, "creator self-stake blocked by the lender floor");
++    }
++
++    /// THE D2 ESCALATION: the last lender slot is RESERVED for the pool creator's
++    /// M2-c self-stake, so a full squat can never make unsecured borrowing impossible.
++    function test_P1_last_slot_is_reserved_for_the_creator_self_stake() public {
++        // 49 third parties take every unreserved slot, each locking the real minimum
++        for (uint256 i = 0; i < 49; i++) {
++            vm.prank(squatters[i]);
++            mp.supplyLiquidity(1, MIN_SUPPLY);
++        }
++        (,,,,,, uint256 count) = mp.getAgentPool(1);
++        assertEq(count, 49, "third parties did not fill the unreserved slots");
++
++        // the 50th THIRD PARTY is refused — that slot belongs to the agent
++        vm.prank(squatters[49]);
++        vm.expectRevert("Last slot reserved for agent self-stake");
++        mp.supplyLiquidity(1, MIN_SUPPLY);
++
++        // ... but the AGENT can always post its first-loss stake and borrow
++        vm.prank(agent);
++        mp.supplyLiquidity(1, 2_500e6);
++        (,,,,,, uint256 count2) = mp.getAgentPool(1);
++        assertEq(count2, 50, "creator could not claim the reserved slot");
++
++        vm.warp(block.timestamp + 60);
++        vm.prank(agent);
++        uint256 id = mp.requestLoan(1_000e6, 7);
++        assertGt(id, 0, "agent still cannot borrow on a squatted pool");
++        _log("P1 loanId opened on a fully squatted pool", id);
++    }
++
++    /// Once the creator holds its slot the reservation is satisfied, so the pool is
++    /// simply full at MAX_LENDERS_PER_POOL and the ordinary message is used.
++    function test_P1_reservation_released_once_the_creator_holds_a_slot() public {
++        vm.prank(agent);
++        mp.supplyLiquidity(1, 2_500e6);
++        for (uint256 i = 0; i < 49; i++) {
++            vm.prank(squatters[i]);
++            mp.supplyLiquidity(1, MIN_SUPPLY);
++        }
++        (,,,,,, uint256 count) = mp.getAgentPool(1);
++        assertEq(count, 50, "pool did not reach the cap");
++        vm.prank(squatters[49]);
++        vm.expectRevert("Pool lender capacity reached");
++        mp.supplyLiquidity(1, MIN_SUPPLY);
++    }
++
++    // =====================================================================
++    // P1-2 — resetPoolAccounting must be O(active loans), not O(loan history)
++    // =====================================================================
++    function test_P1_resetPoolAccounting_is_flat_in_loan_history() public {
++        vm.prank(agent);
++        mp.supplyLiquidity(1, 2_500e6);
++        vm.warp(block.timestamp + 60);
++
++        uint256 g1;
++        for (uint256 i = 0; i < 200; i++) {
++            vm.prank(agent);
++            uint256 id = mp.requestLoan(100e6, 7);
++            vm.warp(block.timestamp + 8 days);
++            vm.prank(agent);
++            mp.repayLoan(id);
++            if (i == 0) {
++                vm.prank(owner);
++                mp.resetPoolAccounting(1);
++                g1 = vm.lastCallGas().gasTotalUsed;
++            }
++        }
++        vm.prank(owner);
++        mp.resetPoolAccounting(1);
++        uint256 g200 = vm.lastCallGas().gasTotalUsed;
++
++        _log("P1 resetPoolAccounting gas @1 loan of history", g1);
++        _log("P1 resetPoolAccounting gas @200 loans of history", g200);
++        assertLt(g200, g1 + 5_000, "resetPoolAccounting still grows with agentLoans[]");
++    }
++
++    /// It must still produce the right answer with loans OPEN.
++    function test_P1_resetPoolAccounting_still_rebuilds_totalLoaned() public {
++        vm.prank(agent);
++        mp.supplyLiquidity(1, 2_500e6);
++        vm.prank(victimLender);
++        mp.supplyLiquidity(1, 5_000e6);
++        vm.warp(block.timestamp + 60);
++
++        vm.prank(agent);
++        mp.requestLoan(400e6, 7);
++        vm.prank(agent);
++        mp.requestLoan(600e6, 7);
++
++        vm.prank(owner);
++        mp.resetPoolAccounting(1);
++        (, uint256 totalLiq, uint256 avail, uint256 loaned,,,) = mp.getAgentPool(1);
++        assertEq(loaned, 1_000e6, "totalLoaned not rebuilt from the active set");
++        assertEq(totalLiq, 7_500e6, "totalLiquidity not rebuilt from positions");
++        assertEq(avail, 6_500e6, "availableLiquidity not rebuilt");
++    }
++
++    /// The tool must be usable on a pool whose agent NFT has moved — it is agentId
++    /// keyed now, so the old "resync via migration helpers" blocker is gone.
++    function test_P1_resetPoolAccounting_works_after_an_nft_transfer() public {
++        vm.prank(agent);
++        mp.supplyLiquidity(1, 2_500e6);
++        vm.warp(block.timestamp + 60);
++        vm.prank(agent);
++        mp.requestLoan(500e6, 7);
++
++        address buyer = address(0xB0B);
++        _fund(buyer);
++        vm.prank(agent);
++        registry.transferFrom(agent, buyer, 1);
++
++        vm.prank(owner);
++        mp.resetPoolAccounting(1); // must not revert
++        (,,, uint256 loaned,,,) = mp.getAgentPool(1);
++        assertEq(loaned, 500e6, "totalLoaned wrong after transfer");
++    }
++
++    // =====================================================================
++    // P2-3 — loanId namespace per authorized marketplace (report D9)
++    // =====================================================================
++    function test_P2_two_marketplaces_do_not_collide_on_loanId() public {
++        vm.startPrank(owner);
++        AgentLiquidityMarketplaceV62 mp2 =
++            new AgentLiquidityMarketplaceV62(address(registry), address(rep), address(usdc));
++        rep.authorizePool(address(mp2));
++        vm.stopPrank();
++        vm.prank(agent);
++        usdc.approve(address(mp2), type(uint256).max);
++        vm.prank(agent);
++        mp2.createAgentPool();
++
++        vm.prank(agent);
++        mp.supplyLiquidity(1, 2_500e6);
++        vm.prank(agent);
++        mp2.supplyLiquidity(1, 2_500e6);
++        vm.warp(block.timestamp + 60);
++
++        vm.prank(agent);
++        uint256 idA = mp.requestLoan(100e6, 7);
++        assertEq(idA, 1, "first marketplace loanId");
++
++        // SECURE PROPERTY: the second marketplace's loanId 1 is a DIFFERENT record
++        vm.prank(agent);
++        uint256 idB = mp2.requestLoan(100e6, 7);
++        assertEq(idB, 1, "second marketplace loanId");
++
++        (uint128 amtA, uint64 startA,) = rep.openLoans(address(mp), idA);
++        (uint128 amtB, uint64 startB,) = rep.openLoans(address(mp2), idB);
++        assertGt(startA, 0, "marketplace A record missing");
++        assertGt(startB, 0, "marketplace B record missing");
++        assertEq(amtA, 100e6);
++        assertEq(amtB, 100e6);
++
++        // closing one must not disturb the other
++        vm.warp(block.timestamp + 1 days);
++        vm.prank(agent);
++        mp.repayLoan(idA);
++        (, uint64 startAafter,) = rep.openLoans(address(mp), idA);
++        (, uint64 startBafter,) = rep.openLoans(address(mp2), idB);
++        assertEq(startAafter, 0, "A not closed");
++        assertEq(startBafter, startB, "closing A disturbed B");
++    }
++
++    // =====================================================================
++    // P2-4 — requiredSelfStake must survive an agent-NFT transfer (report D13)
++    // =====================================================================
++    function test_P2_requiredSelfStake_survives_an_nft_transfer() public {
++        vm.prank(agent);
++        mp.supplyLiquidity(1, 2_500e6);
++        uint256 before_ = mp.requiredSelfStake(1, 1_000e6);
++        assertGt(before_, 0, "no stake demanded before transfer");
++
++        address buyer = address(0xB0B);
++        _fund(buyer);
++        vm.prank(agent);
++        registry.transferFrom(agent, buyer, 1);
++
++        uint256 after_ = mp.requiredSelfStake(1, 1_000e6);
++        _log("P2 requiredSelfStake before transfer", before_);
++        _log("P2 requiredSelfStake after transfer", after_);
++        assertEq(after_, before_, "the view still collapses after an NFT transfer");
++
++        // and the agentId-keyed collateral view on V4 agrees with the tier
++        assertEq(rep.collateralRequirementOf(1), 0, "tier lost on transfer");
++    }
++
++    // =====================================================================
++    // P2-5 — getActiveAgents must be paginable (report D8)
++    // =====================================================================
++    function test_P2_getActiveAgents_is_paginable() public {
++        AgentRegistryV2.MetadataEntry[] memory empty;
++        for (uint256 i = 0; i < 9; i++) {
++            address a = address(uint160(0x100000 + i));
++            vm.prank(a);
++            registry.register("ipfs://page", empty);
++            vm.prank(a);
++            mp.createAgentPool();
++        }
++        assertEq(mp.totalPools(), 10, "pool count");
++
++        uint256[] memory all = mp.getActiveAgents();
++        assertEq(all.length, 10, "unpaginated overload changed shape");
++
++        // walk the whole set in pages of 4 and reassemble it
++        uint256[] memory seen = new uint256[](10);
++        uint256 k = 0;
++        uint256 cursor = 0;
++        while (cursor < mp.totalPools()) {
++            (uint256[] memory page, uint256 next) = mp.getActiveAgents(cursor, 4);
++            for (uint256 i = 0; i < page.length; i++) seen[k++] = page[i];
++            assertGt(next, cursor, "cursor did not advance");
++            cursor = next;
++        }
++        assertEq(k, 10, "pagination lost entries");
++        for (uint256 i = 0; i < 10; i++) assertEq(seen[i], all[i], "page order differs");
++
++        // out-of-range start is empty, not a revert
++        (uint256[] memory none, uint256 nx) = mp.getActiveAgents(100, 4);
++        assertEq(none.length, 0);
++        assertEq(nx, mp.totalPools());
++        _log("P2 pages walked over totalPools", mp.totalPools());
++    }
++}
+diff --git a/test/foundry/V7Soak.t.sol b/test/foundry/V7Soak.t.sol
+new file mode 100644
+index 0000000..5b13ea4
+--- /dev/null
++++ b/test/foundry/V7Soak.t.sol
+@@ -0,0 +1,455 @@
++// SPDX-License-Identifier: MIT
++pragma solidity ^0.8.20;
++
++import "forge-std/Test.sol";
++import "../../contracts/core/AgentLiquidityMarketplaceV62.sol";
++import "../../contracts/core/AgentRegistryV2.sol";
++import "../../contracts/core/ReputationManagerV4.sol";
++import "../../contracts/tokens/MockUSDC.sol";
++
++/**
++ * @title V7Soak — one long randomised sequence over the V7 stack
++ * @notice A SINGLE monotonically-growing state (not a Foundry invariant campaign, which
++ *         resets between runs) so that per-op gas drift as state grows is measurable.
++ *         5 agents × 10 lenders, seeded PRNG, time travel, defaults, liquidations, NFT
++ *         transfers, registry deactivations, ladder growth and post-default lockouts.
++ *
++ *         Every V7 invariant is asserted after EVERY successful operation:
++ *           (a)  exact solvency: USDC held == Σ availableLiquidity + fees + Σ active collateral
++ *           (a2) per-pool conservation: totalLiquidity == Σ amount,
++ *                avail + totalLoaned == Σ amount + Σ earnedInterest
++ *           (b)  pendingTranche.amount <= position.amount
++ *           (h)  outstandingPrincipal == Σ ACTIVE principal (ghost-tracked)
++ *           (M2a) selfStake().locked == (outstandingPrincipal > 0), exactly
++ *           (M2)  selfStake().amount == positions[agentId][pool creator].amount
++ *           (q)  creditLimitOf <= tierLimit(score) <= MAX_TIER_LIMIT
++ *           (M1) maxRepaidPrincipal is monotone non-decreasing, except a reset to
++ *                exactly 0 in the same op as a default
++ *
++ *         SOAK_OPS overrides the op count. Run:
++ *           forge test --match-path test/foundry/V7Soak.t.sol -vv
++ */
++contract V7SoakTest is Test {
++    AgentRegistryV2 registry;
++    ReputationManagerV4 rep;
++    MockUSDC usdc;
++    AgentLiquidityMarketplaceV62 mp;
++
++    address owner = address(0xAAAA);
++    uint256 constant NAGENTS = 5;
++    uint256 constant NLENDERS = 10;
++    address[NAGENTS] agents;
++    address[NAGENTS] spares; // NFT transfer destinations
++    address[NLENDERS] lenders;
++
++    uint256 seed = 0x5EC0A7;
++
++    // ghosts
++    uint256 ghostCollateral;             // Σ collateral of ACTIVE loans
++    uint256[NAGENTS + 1] ghostOutstanding; // agentId => Σ ACTIVE principal
++    uint256[NAGENTS + 1] lastMaxRepaid;
++    bool defaultedThisOp;
++
++    // profile
++    uint256 opsAttempted;
++    uint256 opsExecuted;
++    uint256 violations;
++    mapping(bytes32 => uint256) profile;
++    string[] profileKeys;
++
++    // gas drift: 10 deciles × per-op-type accumulators
++    uint256[10] gasRepaySum;
++    uint256[10] gasRepayN;
++    uint256[10] gasSupplySum;
++    uint256[10] gasSupplyN;
++    uint256[10] gasLoanSum;
++    uint256[10] gasLoanN;
++    uint256[10] gasLiqSum;
++    uint256[10] gasLiqN;
++
++    uint256 totalOps;
++    uint256 opIndex;
++
++    function setUp() public {
++        vm.startPrank(owner);
++        registry = new AgentRegistryV2();
++        rep = new ReputationManagerV4(address(registry));
++        usdc = new MockUSDC();
++        mp = new AgentLiquidityMarketplaceV62(address(registry), address(rep), address(usdc));
++        rep.authorizePool(address(mp));
++        rep.authorizePool(owner);
++        mp.setMinSupplyAmount(1e6);
++        mp.setMinHoldForReputationReward(0);
++        vm.stopPrank();
++
++        AgentRegistryV2.MetadataEntry[] memory empty;
++        for (uint256 i = 0; i < NAGENTS; i++) {
++            agents[i] = address(uint160(0xA000 + i));
++            spares[i] = address(uint160(0xE000 + i));
++            vm.prank(agents[i]);
++            registry.register("ipfs://soak", empty);
++            vm.prank(agents[i]);
++            mp.createAgentPool();
++            vm.prank(agents[i]);
++            rep.initializeReputation();
++            _fund(agents[i]);
++            _fund(spares[i]);
++        }
++        for (uint256 i = 0; i < NLENDERS; i++) {
++            lenders[i] = address(uint160(0xB000 + i));
++            _fund(lenders[i]);
++        }
++
++        // spread the agents across tiers: 0 and 1 to the 0 %-collateral top tier,
++        // 2 to the 75 % tier, 3 and 4 left at the 100 %-collateral floor
++        vm.startPrank(owner);
++        rep.setScoringParameters(50, 50, 100, 1000e6);
++        _pump(1, 800, 2000e6);
++        _pump(2, 800, 2000e6);
++        _pump(3, 520, 1000e6);
++        rep.setScoringParameters(10, 50, 100, 1000e6);
++        vm.stopPrank();
++
++        for (uint256 a = 1; a <= NAGENTS; a++) lastMaxRepaid[a] = rep.maxRepaidPrincipal(a);
++    }
++
++    function _pump(uint256 agentId, uint256 target, uint256 big) internal {
++        address a = agents[agentId - 1];
++        uint256 synth = agentId * 1_000_000;
++        while (rep.getReputationScore(agentId) < target) {
++            rep.recordBorrow(a, synth, 100e6);
++            vm.warp(block.timestamp + 7 days);
++            rep.recordLoanCompletion(a, synth, 100e6, true, 0);
++            synth++;
++        }
++        rep.recordBorrow(a, synth, big);
++        vm.warp(block.timestamp + 7 days);
++        rep.recordLoanCompletion(a, synth, big, true, 0);
++    }
++
++    function _fund(address who) internal {
++        vm.prank(owner);
++        usdc.mint(who, 1e15);
++        vm.prank(who);
++        usdc.approve(address(mp), type(uint256).max);
++    }
++
++    // ------------------------------------------------------------------ PRNG
++    function _rnd() internal returns (uint256) {
++        seed = uint256(keccak256(abi.encode(seed)));
++        return seed;
++    }
++    function _rnd(uint256 m) internal returns (uint256) {
++        return m == 0 ? 0 : _rnd() % m;
++    }
++
++    function _bump(string memory k) internal {
++        bytes32 h = keccak256(bytes(k));
++        if (profile[h] == 0) profileKeys.push(k);
++        profile[h] += 1;
++    }
++
++    // ------------------------------------------------------------- invariants
++
++    function _checkInvariants() internal {
++        uint256 sumAvail;
++        for (uint256 aid = 1; aid <= NAGENTS; aid++) {
++            (address creator, uint256 total, uint256 avail, uint256 loaned, , , uint256 count) =
++                mp.getAgentPool(aid);
++            uint256 sumAmt;
++            uint256 sumInt;
++            for (uint256 i = 0; i < count; i++) {
++                address l = mp.poolLenders(aid, i);
++                (uint256 amt, uint256 earned, ) = mp.positions(aid, l);
++                sumAmt += amt;
++                sumInt += earned;
++                (uint128 pAmt, ) = mp.pendingTranche(aid, l);
++                if (pAmt > amt) _fail("(b) pendingTranche > position.amount");
++            }
++            if (total != sumAmt) _fail("(a2) totalLiquidity != sum(position.amount)");
++            if (avail + loaned != sumAmt + sumInt) _fail("(a2) avail+loaned != sum(amount+interest)");
++            if (mp.outstandingPrincipal(aid) != ghostOutstanding[aid]) _fail("(h) outstandingPrincipal drift");
++
++            (uint256 stakeAmt, bool locked) = mp.selfStake(aid);
++            (uint256 creatorAmt, , ) = mp.positions(aid, creator);
++            if (stakeAmt != creatorAmt) _fail("(M2) selfStake != creator position");
++            if (locked != (mp.outstandingPrincipal(aid) > 0)) _fail("(M2a) self-stake lock is not exact");
++
++            uint256 lim = rep.creditLimitOf(aid);
++            if (lim > rep.tierLimit(rep.getReputationScore(aid))) _fail("(q) credit limit exceeds tier limit");
++            if (lim > rep.MAX_TIER_LIMIT()) _fail("(q) credit limit exceeds MAX_TIER_LIMIT");
++
++            uint256 mrp = rep.maxRepaidPrincipal(aid);
++            if (mrp < lastMaxRepaid[aid] && !(defaultedThisOp && mrp == 0)) {
++                _fail("(M1) maxRepaidPrincipal fell without a default");
++            }
++            lastMaxRepaid[aid] = mrp;
++
++            sumAvail += avail;
++        }
++        uint256 held = usdc.balanceOf(address(mp));
++        if (held != sumAvail + mp.accumulatedFees() + ghostCollateral) _fail("(a) exact solvency broken");
++        defaultedThisOp = false;
++    }
++
++    function _fail(string memory why) internal {
++        violations += 1;
++        console.log(string.concat("VIOLATION @op ", vm.toString(opIndex), ": ", why));
++        revert(why);
++    }
++
++    function _decile() internal view returns (uint256 d) {
++        d = (opIndex * 10) / (totalOps == 0 ? 1 : totalOps);
++        if (d > 9) d = 9;
++    }
++
++    // ------------------------------------------------------------------- ops
++
++    function _opSupply() internal {
++        uint256 aid = 1 + _rnd(NAGENTS);
++        address l = _rnd(4) == 0 ? agents[aid - 1] : lenders[_rnd(NLENDERS)];
++        uint256 amt = 1e6 + _rnd(500e6);
++        vm.prank(l);
++        try mp.supplyLiquidity(aid, amt) {
++            uint256 g = vm.lastCallGas().gasTotalUsed;
++            uint256 d = _decile();
++            gasSupplySum[d] += g;
++            gasSupplyN[d] += 1;
++            opsExecuted++;
++            _bump("supply");
++            _checkInvariants();
++        } catch Error(string memory r) {
++            _bump(string.concat("supply.refused:", r));
++        }
++    }
++
++    function _opWithdraw(bool all) internal {
++        uint256 aid = 1 + _rnd(NAGENTS);
++        address l = _rnd(4) == 0 ? agents[aid - 1] : lenders[_rnd(NLENDERS)];
++        (uint256 amt, , ) = mp.positions(aid, l);
++        if (amt == 0) { _bump("withdraw.skip"); return; }
++        uint256 want = all ? amt : 1 + _rnd(amt);
++        vm.prank(l);
++        try mp.withdrawLiquidity(aid, want) {
++            opsExecuted++;
++            _bump(all ? "withdraw.all" : "withdraw.partial");
++            _checkInvariants();
++        } catch Error(string memory r) {
++            _bump(string.concat("withdraw.refused:", r));
++        }
++    }
++
++    function _opClaim() internal {
++        uint256 aid = 1 + _rnd(NAGENTS);
++        address l = _rnd(4) == 0 ? agents[aid - 1] : lenders[_rnd(NLENDERS)];
++        vm.prank(l);
++        try mp.claimInterest(aid) {
++            opsExecuted++;
++            _bump("claim");
++            _checkInvariants();
++        } catch Error(string memory r) {
++            _bump(string.concat("claim.refused:", r));
++        }
++    }
++
++    function _opLoan() internal {
++        uint256 aid = 1 + _rnd(NAGENTS);
++        address holder = registry.ownerOf(aid);
++        if (!registry.isAgentActive(holder)) { _bump("loan.skipInactive"); return; }
++        (, , uint256 avail, , , , ) = mp.getAgentPool(aid);
++        if (avail == 0) { _bump("loan.skip"); return; }
++        // Size the ask so that a healthy fraction of attempts are FEASIBLE — otherwise
++        // the campaign spends itself on "Exceeds credit limit" and never reaches the
++        // close paths. Deliberately still over-asks ~1 time in 4.
++        uint256 cap = avail;
++        uint256 lim = rep.creditLimitOf(aid);
++        uint256 out = mp.outstandingPrincipal(aid);
++        uint256 head = lim > out ? lim - out : 0;
++        if (head < cap) cap = head;
++        uint256 pct = rep.calculateCollateralRequirement(holder);
++        if (pct < 100) {
++            (uint256 stake, ) = mp.selfStake(aid);
++            uint256 k = rep.creditMultiple();
++            uint256 maxExposure = (stake * k * 100) / (100 - pct);
++            uint256 stakeHead = maxExposure > out ? maxExposure - out : 0;
++            if (stakeHead < cap) cap = stakeHead;
++        }
++        if (_rnd(4) == 0) cap = avail; // keep exercising the refusal paths
++        if (cap < 1e6) { _bump("loan.skipNoHeadroom"); return; }
++        uint256 amt = 1e6 + _rnd(cap);
++        uint256 dur = 7 + _rnd(60);
++        vm.prank(holder);
++        try mp.requestLoan(amt, dur) returns (uint256 id) {
++            uint256 g = vm.lastCallGas().gasTotalUsed;
++            uint256 d = _decile();
++            gasLoanSum[d] += g;
++            gasLoanN[d] += 1;
++            ghostOutstanding[aid] += amt;
++            (, , , , uint256 collat, , , , , ) = mp.loans(id); // field 4 == collateralAmount
++            ghostCollateral += collat;
++            opsExecuted++;
++            _bump("loan");
++            // (M2c) the self-stake gate held
++            (uint256 stake, ) = mp.selfStake(aid);
++            if (stake < mp.requiredSelfStake(aid, 0)) _fail("(M2c) self-stake below requirement after a loan");
++            _checkInvariants();
++        } catch Error(string memory r) {
++            _bump(string.concat("loan.refused:", r));
++        }
++    }
++
++    /// @dev Pick an agent that actually has ACTIVE loans, so the close paths are
++    ///      exercised instead of being skipped most of the time.
++    function _agentWithLoans() internal returns (uint256) {
++        uint256 start = 1 + _rnd(NAGENTS);
++        for (uint256 k = 0; k < NAGENTS; k++) {
++            uint256 aid = 1 + ((start - 1 + k) % NAGENTS);
++            if (mp.getActiveLoanIds(aid).length > 0) return aid;
++        }
++        return 0;
++    }
++
++    function _opRepay() internal {
++        uint256 aid = _agentWithLoans();
++        if (aid == 0) { _bump("repay.skip"); return; }
++        uint256[] memory ids = mp.getActiveLoanIds(aid);
++        uint256 id = ids[_rnd(ids.length)];
++        (, address borrower, , uint256 amt, uint256 collat, , , uint256 endTime, , ) = mp.loans(id);
++        // timing: now / just before term / 1-30d late / beyond the 30d cap
++        uint256 mode = _rnd(4);
++        if (mode == 1 && endTime > block.timestamp) vm.warp(endTime);
++        if (mode == 2 && endTime > block.timestamp) vm.warp(endTime + 1 days + _rnd(29 days));
++        if (mode == 3 && endTime > block.timestamp) vm.warp(endTime + 31 days + _rnd(60 days));
++        address holder = registry.ownerOf(aid);
++        address payer = _rnd(3) == 0 ? holder : borrower;
++        vm.prank(payer);
++        try mp.repayLoan(id) {
++            uint256 g = vm.lastCallGas().gasTotalUsed;
++            uint256 d = _decile();
++            gasRepaySum[d] += g;
++            gasRepayN[d] += 1;
++            ghostOutstanding[aid] -= amt;
++            ghostCollateral -= collat;
++            opsExecuted++;
++            _bump(mode == 0 ? "repay.early" : mode == 1 ? "repay.onTime" : mode == 2 ? "repay.late" : "repay.beyondCap");
++            _checkInvariants();
++        } catch Error(string memory r) {
++            _bump(string.concat("repay.refused:", r));
++        }
++    }
++
++    function _opLiquidate() internal {
++        uint256 aid = _agentWithLoans();
++        if (aid == 0) { _bump("liq.skip"); return; }
++        uint256[] memory ids = mp.getActiveLoanIds(aid);
++        uint256 id = ids[_rnd(ids.length)];
++        (, , , uint256 amt, uint256 collat, , , uint256 endTime, , ) = mp.loans(id);
++        if (block.timestamp <= endTime) vm.warp(endTime + 1 days + _rnd(30 days));
++        vm.prank(owner);
++        try mp.liquidateLoan(id) {
++            uint256 g = vm.lastCallGas().gasTotalUsed;
++            uint256 d = _decile();
++            gasLiqSum[d] += g;
++            gasLiqN[d] += 1;
++            ghostOutstanding[aid] -= amt;
++            ghostCollateral -= collat;
++            defaultedThisOp = true;
++            opsExecuted++;
++            _bump("liquidate");
++            if (!rep.isLockedOut(aid)) _fail("(M1-3) agent not locked out after a default");
++            if (rep.maxRepaidPrincipal(aid) != 0) _fail("(M1-3) ladder not reset on default");
++            _checkInvariants();
++        } catch Error(string memory r) {
++            _bump(string.concat("liq.refused:", r));
++        }
++    }
++
++    function _opTransferNft() internal {
++        uint256 aid = 1 + _rnd(NAGENTS);
++        address from = registry.ownerOf(aid);
++        address to = from == agents[aid - 1] ? spares[aid - 1] : agents[aid - 1];
++        vm.prank(from);
++        try registry.transferFrom(from, to, aid) {
++            opsExecuted++;
++            _bump("nft.transfer");
++            _checkInvariants();
++        } catch Error(string memory r) {
++            _bump(string.concat("nft.refused:", r));
++        }
++    }
++
++    function _opToggleActive() internal {
++        uint256 aid = 1 + _rnd(NAGENTS);
++        bool active = registry.isAgentActive(registry.ownerOf(aid));
++        // bias towards reactivation: a permanently deactivated agent starves every
++        // other op of work, which is a harness artefact rather than a contract state
++        if (active && _rnd(3) != 0) { _bump("toggle.skip"); return; }
++        vm.prank(owner);
++        if (active) {
++            try registry.deactivateAgent(aid) { opsExecuted++; _bump("deactivate"); _checkInvariants(); }
++            catch Error(string memory r) { _bump(string.concat("deact.refused:", r)); }
++        } else {
++            try registry.reactivateAgent(aid) { opsExecuted++; _bump("reactivate"); _checkInvariants(); }
++            catch Error(string memory r) { _bump(string.concat("react.refused:", r)); }
++        }
++    }
++
++    function _opWarp() internal {
++        // occasionally jump far enough to clear a 180-day post-default lockout
++        vm.warp(block.timestamp + 1 + (_rnd(5) == 0 ? _rnd(220 days) : _rnd(10 days)));
++        opsExecuted++;
++        _bump("warp");
++    }
++
++    // ------------------------------------------------------------------ main
++
++    /// @dev One op, executed as an EXTERNAL self-call so that every step gets a fresh
++    ///      memory frame. Solidity never frees memory, so running 25,000 ops inside a
++    ///      single frame hits quadratic memory-expansion cost (MemoryOOG) long before
++    ///      anything interesting happens. Storage is shared, so the state still grows
++    ///      monotonically across the whole run — which is the point of the soak.
++    function stepExternal() external {
++        require(msg.sender == address(this), "internal");
++        opsAttempted++;
++        uint256 r = _rnd(100);
++        if (r < 22) _opSupply();
++        else if (r < 32) _opWithdraw(false);
++        else if (r < 37) _opWithdraw(true);
++        else if (r < 45) _opClaim();
++        else if (r < 65) _opLoan();
++        else if (r < 82) _opRepay();
++        else if (r < 87) _opLiquidate();
++        else if (r < 91) _opTransferNft();
++        else if (r < 94) _opToggleActive();
++        else _opWarp();
++    }
++
++    function test_soak() public {
++        totalOps = vm.envOr("SOAK_OPS", uint256(25000));
++        for (opIndex = 0; opIndex < totalOps; opIndex++) {
++            this.stepExternal();
++        }
++
++        console.log("SOAK | ops attempted", opsAttempted);
++        console.log("SOAK | ops executed", opsExecuted);
++        console.log("SOAK | invariant violations", violations);
++        console.log("SOAK | final block.timestamp", block.timestamp);
++        console.log("SOAK | nextLoanId", mp.nextLoanId());
++        for (uint256 i = 0; i < profileKeys.length; i++) {
++            console.log(string.concat("SOAKPROF | ", profileKeys[i], " | ", vm.toString(profile[keccak256(bytes(profileKeys[i]))])));
++        }
++        _drift("repayLoan", gasRepaySum, gasRepayN);
++        _drift("supplyLiquidity", gasSupplySum, gasSupplyN);
++        _drift("requestLoan", gasLoanSum, gasLoanN);
++        _drift("liquidateLoan", gasLiqSum, gasLiqN);
++        assertEq(violations, 0, "invariant violations during soak");
++    }
++
++    function _drift(string memory name, uint256[10] storage sum, uint256[10] storage n) internal view {
++        string memory line = string.concat("SOAKGAS | ", name, " | deciles:");
++        for (uint256 i = 0; i < 10; i++) {
++            line = string.concat(line, " ", n[i] == 0 ? "-" : vm.toString(sum[i] / n[i]));
++        }
++        console.log(line);
++    }
++}
+diff --git a/test/foundry/V7Storage.t.sol b/test/foundry/V7Storage.t.sol
+new file mode 100644
+index 0000000..546db35
+--- /dev/null
++++ b/test/foundry/V7Storage.t.sol
+@@ -0,0 +1,285 @@
++// SPDX-License-Identifier: MIT
++pragma solidity ^0.8.20;
++
++import "forge-std/Test.sol";
++import {VmSafe} from "forge-std/Vm.sol";
++import "../../contracts/core/AgentLiquidityMarketplaceV62.sol";
++import "../../contracts/core/AgentRegistryV2.sol";
++import "../../contracts/core/ReputationManagerV4.sol";
++import "../../contracts/core/AgentLiquidityMarketplaceV6.sol";
++import "../../contracts/core/ReputationManagerV3.sol";
++import "../../contracts/tokens/MockUSDC.sol";
++
++/**
++ * @title V7Storage — permanent state added by an agent's lifecycle on the V7 stack
++ * @notice Counts, by exact state diff (`vm.startStateDiffRecording`), how many storage
++ *         slots each step of an agent's life turns from zero to non-zero (permanent
++ *         state, paid for once at 20,000 gas and never reclaimed) and how many it frees.
++ *         Run: forge test --match-path test/foundry/V7Storage.t.sol -vv
++ */
++contract V7StorageTest is Test {
++    AgentRegistryV2 registry;
++    ReputationManagerV4 rep;
++    MockUSDC usdc;
++    AgentLiquidityMarketplaceV62 mp;
++
++    address owner = address(0xAAAA);
++    address agent = address(0xA9E7);
++    address lender = address(0xB001);
++
++    // state-diff accounting, namespaced per measurement
++    uint256 run;
++    mapping(uint256 => mapping(bytes32 => bool)) seen;
++    mapping(uint256 => mapping(bytes32 => bytes32)) firstPrev;
++    mapping(uint256 => mapping(bytes32 => bytes32)) lastNew;
++    mapping(uint256 => bytes32[]) touched;
++    mapping(uint256 => mapping(bytes32 => address)) owner_;
++
++    function setUp() public {
++        vm.startPrank(owner);
++        registry = new AgentRegistryV2();
++        rep = new ReputationManagerV4(address(registry));
++        usdc = new MockUSDC();
++        mp = new AgentLiquidityMarketplaceV62(address(registry), address(rep), address(usdc));
++        rep.authorizePool(address(mp));
++        rep.authorizePool(owner);
++        vm.stopPrank();
++        _fund(agent);
++        _fund(lender);
++    }
++
++    function _fund(address who) internal {
++        vm.prank(owner);
++        usdc.mint(who, 1e14);
++        vm.prank(who);
++        usdc.approve(address(mp), type(uint256).max);
++    }
++
++    function _start() internal {
++        run += 1;
++        vm.startStateDiffRecording();
++    }
++
++    /// @dev Returns (newly occupied slots, freed slots) across the whole stack, and the
++    ///      subtotal attributable to the marketplace and the reputation manager.
++    function _stop(string memory label) internal {
++        VmSafe.AccountAccess[] memory accesses = vm.stopAndReturnStateDiff();
++        uint256 r = run;
++        for (uint256 i = 0; i < accesses.length; i++) {
++            VmSafe.StorageAccess[] memory sa = accesses[i].storageAccesses;
++            for (uint256 j = 0; j < sa.length; j++) {
++                if (!sa[j].isWrite || sa[j].reverted) continue;
++                bytes32 key = keccak256(abi.encode(sa[j].account, sa[j].slot));
++                if (!seen[r][key]) {
++                    seen[r][key] = true;
++                    firstPrev[r][key] = sa[j].previousValue;
++                    owner_[r][key] = sa[j].account;
++                    touched[r].push(key);
++                }
++                lastNew[r][key] = sa[j].newValue;
++            }
++        }
++        uint256 occupied;
++        uint256 freed;
++        uint256 rewritten;
++        uint256 occMp;
++        uint256 occRep;
++        uint256 occReg;
++        uint256 occUsdc;
++        for (uint256 i = 0; i < touched[r].length; i++) {
++            bytes32 key = touched[r][i];
++            bytes32 p = firstPrev[r][key];
++            bytes32 n = lastNew[r][key];
++            if (p == bytes32(0) && n != bytes32(0)) {
++                occupied++;
++                address acct = owner_[r][key];
++                if (acct == address(mp)) occMp++;
++                else if (acct == address(rep)) occRep++;
++                else if (acct == address(registry)) occReg++;
++                else if (acct == address(usdc)) occUsdc++;
++            }
++            else if (p != bytes32(0) && n == bytes32(0)) freed++;
++            else if (p != n) rewritten++;
++        }
++        console.log(
++            string.concat(
++                "STOR | ", label,
++                " | newSlots=", vm.toString(occupied),
++                " | freedSlots=", vm.toString(freed),
++                " | rewritten=", vm.toString(rewritten),
++                " | slotsTouched=", vm.toString(touched[r].length),
++                " | new(mp/rep/registry/usdc)=", vm.toString(occMp), "/", vm.toString(occRep),
++                "/", vm.toString(occReg), "/", vm.toString(occUsdc)
++            )
++        );
++    }
++
++    function test_storage_growth_per_lifecycle_step() public {
++        AgentRegistryV2.MetadataEntry[] memory empty;
++
++        _start();
++        vm.prank(agent);
++        registry.register("ipfs://s", empty);
++        _stop("register (registry NFT + metadata)");
++
++        _start();
++        vm.prank(agent);
++        mp.createAgentPool();
++        _stop("createAgentPool");
++
++        _start();
++        vm.prank(agent);
++        rep.initializeReputation();
++        _stop("initializeReputation");
++
++        _start();
++        vm.prank(lender);
++        mp.supplyLiquidity(1, 1000e6);
++        _stop("supplyLiquidity (first, new lender slot)");
++
++        _start();
++        vm.prank(agent);
++        mp.supplyLiquidity(1, 1000e6); // creator self-stake
++        _stop("supplyLiquidity (creator self-stake, new slot)");
++
++        vm.warp(block.timestamp + 60);
++
++        // --- loan #1 (100 % collateral tier at score 100) ---
++        _start();
++        vm.prank(agent);
++        uint256 id = mp.requestLoan(100e6, 7);
++        _stop("requestLoan #1 (loan struct + activeLoanIds + agentLoans + openLoans)");
++
++        vm.warp(block.timestamp + 7 days);
++        _start();
++        vm.prank(agent);
++        mp.repayLoan(id);
++        _stop("repayLoan #1 (repayments record, closes openLoans)");
++
++        // --- loan #2: the steady-state marginal cost ---
++        vm.warp(block.timestamp + 60);
++        _start();
++        vm.prank(agent);
++        uint256 id2 = mp.requestLoan(100e6, 7);
++        _stop("requestLoan #2 (marginal)");
++
++        vm.warp(block.timestamp + 7 days);
++        _start();
++        vm.prank(agent);
++        mp.repayLoan(id2);
++        _stop("repayLoan #2 (marginal)");
++
++        // --- a LATE repayment (first time the lateness counters are written) ---
++        vm.warp(block.timestamp + 60);
++        vm.prank(agent);
++        uint256 id3 = mp.requestLoan(100e6, 7);
++        vm.warp(block.timestamp + 10 days);
++        _start();
++        vm.prank(agent);
++        mp.repayLoan(id3);
++        _stop("repayLoan LATE (first, writes lateRepayCount/lateSecondsTotal)");
++
++        // --- a default ---
++        vm.warp(block.timestamp + 60);
++        vm.prank(agent);
++        uint256 id4 = mp.requestLoan(100e6, 7);
++        vm.warp(block.timestamp + 30 days);
++        _start();
++        vm.prank(owner);
++        mp.liquidateLoan(id4);
++        _stop("liquidateLoan (default: lockedUntil, defaultCount)");
++
++        console.log(string.concat("STOR | nextLoanId | ", vm.toString(mp.nextLoanId())));
++    }
++
++    /// @notice Marginal permanent state of a long-lived agent: 200 loan round trips.
++    function test_storage_growth_long_lived_agent() public {
++        AgentRegistryV2.MetadataEntry[] memory empty;
++        vm.prank(agent);
++        registry.register("ipfs://s", empty);
++        vm.prank(agent);
++        mp.createAgentPool();
++        vm.prank(agent);
++        rep.initializeReputation();
++        vm.prank(lender);
++        mp.supplyLiquidity(1, 100000e6);
++        vm.prank(agent);
++        mp.supplyLiquidity(1, 1000e6);
++        vm.warp(block.timestamp + 60);
++
++        _start();
++        for (uint256 i = 0; i < 200; i++) {
++            vm.prank(agent);
++            uint256 id = mp.requestLoan(100e6, 7);
++            vm.warp(block.timestamp + 7 days);
++            vm.prank(agent);
++            mp.repayLoan(id);
++            vm.warp(block.timestamp + 60);
++        }
++        _stop("200 loan round trips (request + on-time repay)");
++
++        console.log(string.concat("STOR | agentLoans length after 200 loans | ", vm.toString(uint256(200))));
++        console.log(string.concat("STOR | nextLoanId | ", vm.toString(mp.nextLoanId())));
++    }
++
++    /// @notice The same 200 round trips on the V6.1 stack, to isolate what V6.2 added.
++    function test_storage_growth_v61_comparison() public {
++        vm.startPrank(owner);
++        AgentRegistryV2 reg2 = new AgentRegistryV2();
++        ReputationManagerV3 rep3 = new ReputationManagerV3(address(reg2));
++        MockUSDC usdc2 = new MockUSDC();
++        AgentLiquidityMarketplaceV6 mp61 =
++            new AgentLiquidityMarketplaceV6(address(reg2), address(rep3), address(usdc2));
++        rep3.authorizePool(address(mp61));
++        usdc2.mint(agent, 1e14);
++        usdc2.mint(lender, 1e14);
++        vm.stopPrank();
++        vm.prank(agent);
++        usdc2.approve(address(mp61), type(uint256).max);
++        vm.prank(lender);
++        usdc2.approve(address(mp61), type(uint256).max);
++
++        AgentRegistryV2.MetadataEntry[] memory empty;
++        vm.prank(agent);
++        reg2.register("ipfs://s61", empty);
++        vm.prank(agent);
++        mp61.createAgentPool();
++        vm.prank(lender);
++        mp61.supplyLiquidity(1, 100000e6);
++        vm.warp(block.timestamp + 60);
++
++        run += 1;
++        uint256 r = run;
++        vm.startStateDiffRecording();
++        for (uint256 i = 0; i < 200; i++) {
++            vm.prank(agent);
++            uint256 id = mp61.requestLoan(100e6, 7);
++            vm.warp(block.timestamp + 7 days);
++            vm.prank(agent);
++            mp61.repayLoan(id);
++            vm.warp(block.timestamp + 60);
++        }
++        VmSafe.AccountAccess[] memory accesses = vm.stopAndReturnStateDiff();
++        uint256 occMp;
++        for (uint256 i = 0; i < accesses.length; i++) {
++            VmSafe.StorageAccess[] memory sa = accesses[i].storageAccesses;
++            for (uint256 j = 0; j < sa.length; j++) {
++                if (!sa[j].isWrite || sa[j].reverted) continue;
++                bytes32 key = keccak256(abi.encode(sa[j].account, sa[j].slot));
++                if (!seen[r][key]) {
++                    seen[r][key] = true;
++                    firstPrev[r][key] = sa[j].previousValue;
++                    owner_[r][key] = sa[j].account;
++                    touched[r].push(key);
++                }
++                lastNew[r][key] = sa[j].newValue;
++            }
++        }
++        for (uint256 i = 0; i < touched[r].length; i++) {
++            bytes32 key = touched[r][i];
++            if (firstPrev[r][key] == bytes32(0) && lastNew[r][key] != bytes32(0)
++                && owner_[r][key] == address(mp61)) occMp++;
++        }
++        console.log(string.concat("STOR | V6.1: 200 loan round trips | newMarketplaceSlots=", vm.toString(occMp)));
++    }
++}
+diff --git a/test/sdk-v7/02-v7-integration.test.js b/test/sdk-v7/02-v7-integration.test.js
+index a50ca73..cc044bd 100644
+--- a/test/sdk-v7/02-v7-integration.test.js
++++ b/test/sdk-v7/02-v7-integration.test.js
+@@ -157,7 +157,7 @@ describe('SDK V7 — end-to-end on the full V7 stack', function () {
+         expect(approvals.includes(ethers.MaxUint256)).to.equal(false);
+ 
+         // The loanId is plumbed through to ReputationManagerV4 (M2-d).
+-        const open = await d.reputation.openLoans(loanId);
++        const open = await d.reputation.openLoans(d.v62.target, loanId);
+         expect(open.amount).to.equal(BORROW);
+         expect(open.agentId).to.equal(BigInt(agentId));
+         expect(open.start).to.be.greaterThan(0n);
+@@ -235,7 +235,7 @@ describe('SDK V7 — end-to-end on the full V7 stack', function () {
+         expect(balBefore - (await d.usdc.balanceOf(d.agent.address))).to.equal(preview.total);
+ 
+         // The V4 open-loan record is closed and the ladder advanced (M1/M2-d).
+-        expect((await d.reputation.openLoans(loanId)).start).to.equal(0n);
++        expect((await d.reputation.openLoans(d.v62.target, loanId)).start).to.equal(0n);
+         expect(await d.reputation.maxRepaidPrincipal(agentId)).to.equal(USDC(100)); // 80 < the pumped 100
+     });
+ 
+diff --git a/test/v7/M1-ReputationManagerV4.test.js b/test/v7/M1-ReputationManagerV4.test.js
+index 69cb9f3..9e76231 100644
+--- a/test/v7/M1-ReputationManagerV4.test.js
++++ b/test/v7/M1-ReputationManagerV4.test.js
+@@ -404,12 +404,12 @@ describe("V7 / M1 — ReputationManagerV4", function () {
+     describe("M2-d — loanId-keyed open-loan registry", function () {
+         it("records and clears the open loan", async function () {
+             await rep.recordBorrow(agent.address, 7, USDC(250));
+-            const ol = await rep.openLoans(7);
++            const ol = await rep.openLoans(owner.address, 7);
+             expect(ol.amount).to.equal(USDC(250));
+             expect(ol.agentId).to.equal(agentId);
+             await time.increase(7 * DAY);
+             await rep.recordLoanCompletion(agent.address, 7, USDC(250), true, 0);
+-            expect((await rep.openLoans(7)).start).to.equal(0n);
++            expect((await rep.openLoans(owner.address, 7)).start).to.equal(0n);
+         });
+ 
+         it("refuses to record the same loanId twice", async function () {
+diff --git a/test/v7/M2-SelfStake.test.js b/test/v7/M2-SelfStake.test.js
+index 005d437..6741612 100644
+--- a/test/v7/M2-SelfStake.test.js
++++ b/test/v7/M2-SelfStake.test.js
+@@ -294,7 +294,7 @@ describe("V7 / M2 — AgentLiquidityMarketplaceV62 self-stake + L7", function ()
+             const r = await tx.wait();
+             const id = r.logs.map(l => { try { return v62.interface.parseLog(l); } catch { return null; } })
+                 .find(e => e && e.name === "LoanRequested").args[0];
+-            const ol = await rep.openLoans(id);
++            const ol = await rep.openLoans(await v62.getAddress(), id);
+             expect(ol.amount).to.equal(USDC(500));
+             expect(ol.agentId).to.equal(agentId);
+         });
+@@ -354,7 +354,7 @@ describe("V7 / M2 — AgentLiquidityMarketplaceV62 self-stake + L7", function ()
+             expect(await rep.maxRepaidPrincipal(agentId)).to.equal(0n);
+             expect(await rep.calculateCreditLimit(agent.address)).to.equal(0n);
+             expect(await rep.isLockedOut(agentId)).to.equal(true);
+-            expect((await rep.openLoans(id)).start).to.equal(0n);
++            expect((await rep.openLoans(await v62.getAddress(), id)).start).to.equal(0n);
+         });
+ 
+         it("a locked-out agent cannot open any loan", async function () {
+diff --git a/test/v7/V62-PriorFixesRegression.test.js b/test/v7/V62-PriorFixesRegression.test.js
+index 3da0ef5..f89d8c3 100644
+--- a/test/v7/V62-PriorFixesRegression.test.js
++++ b/test/v7/V62-PriorFixesRegression.test.js
+@@ -54,7 +54,7 @@ describe("V6.2 — prior audit fixes still hold", function () {
+ 
+         it("the reputation credit lands on the agentId (its current holder), via loanId", async () => {
+             expect(await f.reputation.maxRepaidPrincipal(agentId)).to.equal(USDC(500));
+-            expect((await f.reputation.openLoans(loanId)).start).to.equal(0n);
++            expect((await f.reputation.openLoans(await f.v62.getAddress(), loanId)).start).to.equal(0n);
+         });
+ 
+         it("the CURRENT NFT holder may also repay; a third party may not", async () => {

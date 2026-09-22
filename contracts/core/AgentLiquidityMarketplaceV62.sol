@@ -220,8 +220,22 @@ contract AgentLiquidityMarketplaceV62 is Ownable2Step, ReentrancyGuard, Pausable
     // repayment amount so a late borrower is charged for time used but never faces
     // an unpayable bill (which would only push them into default).
     uint256 public constant LATE_INTEREST_CAP = 30 days;
-    // [H-04 mitigation] Cap lenders per pool to bound _distributeInterest gas cost
+    // [H-04 mitigation] Cap lenders per pool to bound _distributeInterest gas cost.
+    //
+    // DO NOT RAISE THIS WITHOUT RE-MEASURING (V7_SCALE_AND_GAS_REPORT.md §6 item 7).
+    // `repayLoan` costs ≈ 32,700 gas per lender and `liquidateLoan` ≈ 24,600; at 50
+    // that is 1.97 M / 1.37 M, i.e. 15.2× / 21.9× headroom on Arc's 30M block.
+    // Extrapolated, `repayLoan` reaches a 30M block at roughly **530 lenders** — a
+    // cap of 200 would still fit (~6.6 M) but a cap of 500 would not, and the whole
+    // §S5 class of failure returns the moment that loop is effectively unbounded.
+    //
+    // The EFFECTIVE THIRD-PARTY cap is 49, not 50: `_claimLenderSlot` reserves the
+    // last slot for the pool creator's M2-c first-loss self-stake (see D2 there).
     uint256 public constant MAX_LENDERS_PER_POOL = 50;
+    /// @notice The number of slots third parties may occupy: one is reserved for the
+    ///         pool creator's M2-c self-stake. Published so clients can explain the
+    ///         "Last slot reserved for agent self-stake" refusal.
+    uint256 public constant MAX_THIRD_PARTY_LENDERS_PER_POOL = MAX_LENDERS_PER_POOL - 1;
     // [SECURITY-01] Limit concurrent active loans per agent to prevent credit limit bypass
     uint256 public constant MAX_ACTIVE_LOANS_PER_AGENT = 10;
 
@@ -342,14 +356,7 @@ contract AgentLiquidityMarketplaceV62 is Ownable2Step, ReentrancyGuard, Pausable
 
         // §B1 FIX: gate push on isInPoolLenders flag instead of `position.amount == 0`.
         // This ensures that supply→withdraw→supply does NOT create a duplicate entry.
-        if (!isInPoolLenders[agentId][msg.sender]) {
-            require(
-                poolLenders[agentId].length < MAX_LENDERS_PER_POOL,
-                "Pool lender capacity reached"
-            );
-            poolLenders[agentId].push(msg.sender);
-            isInPoolLenders[agentId][msg.sender] = true;
-        }
+        _claimLenderSlot(agentId, msg.sender);
         // CLAUDE_AUDIT_WORLDCLASS W1 mitigation (kept): NEW money is stamped with
         // block.timestamp so it can never qualify for a loan that is already open —
         // this blocks the mempool-sandwich (front-run repayLoan with a large supply).
@@ -399,6 +406,42 @@ contract AgentLiquidityMarketplaceV62 is Ownable2Step, ReentrancyGuard, Pausable
         position.amount += amount;
 
         emit LiquiditySupplied(agentId, msg.sender, amount);
+    }
+
+    /**
+     * @dev §B1 + [D2 fix 2026-09-22] Claim `lender`'s slot in `poolLenders[agentId]`,
+     *      at most once (the §B1 no-duplicate guarantee).
+     *
+     *      THE LAST SLOT IS RESERVED FOR THE POOL CREATOR. M2-c requires the agent to
+     *      hold its own lender position before it may borrow below 100 % collateral,
+     *      and that position only exists by calling `supplyLiquidity` — which pushes
+     *      onto this same capped array. Without the reservation, whoever fills the 50
+     *      slots first decides whether the agent can EVER borrow unsecured, and no
+     *      owner tool reverses it (`compactPoolLenders` only de-duplicates). That is
+     *      report finding D2: the V7 escalation of the inherited F-06 slot squat.
+     *
+     *      Consequence, and it is deliberate: the effective THIRD-PARTY lender cap is
+     *      MAX_LENDERS_PER_POOL − 1 = 49 while the creator holds no position, and
+     *      exactly 49 + the creator once it does. The §1 gas tables' "N=50" therefore
+     *      always means 49 third parties plus the agent. Clients must surface
+     *      "Last slot reserved for agent self-stake" as a distinct, explainable
+     *      refusal rather than a generic capacity error.
+     */
+    function _claimLenderSlot(uint256 agentId, address lender) internal {
+        if (isInPoolLenders[agentId][lender]) return;
+        uint256 len = poolLenders[agentId].length;
+        require(len < MAX_LENDERS_PER_POOL, "Pool lender capacity reached");
+        // Only consult the creator's flag at the boundary, so the common path costs
+        // nothing extra.
+        if (len == MAX_LENDERS_PER_POOL - 1) {
+            address creator = agentPools[agentId].agentAddress;
+            require(
+                lender == creator || isInPoolLenders[agentId][creator],
+                "Last slot reserved for agent self-stake"
+            );
+        }
+        poolLenders[agentId].push(lender);
+        isInPoolLenders[agentId][lender] = true;
     }
 
     /// @dev True if any ACTIVE loan of `agentId` started in [lo, hi). ≤ MAX_ACTIVE_LOANS_PER_AGENT reads.
@@ -478,6 +521,33 @@ contract AgentLiquidityMarketplaceV62 is Ownable2Step, ReentrancyGuard, Pausable
         );
 
         require(pool.availableLiquidity >= amount, "Insufficient pool liquidity");
+
+        // [F-06 / D1 fix 2026-09-22] `minSupplyAmount` is a MAINTAINED floor, not
+        // just an entry fee. It used to be checked only when a NEW slot was claimed,
+        // so a squatter supplied the minimum, withdrew all but one base unit, and
+        // held the slot forever for 0.000001 USDC — the H-2 slot-free condition
+        // (`amount == 0 && earnedInterest == 0`) never fires on a dust remainder.
+        // 50 of those bricked a pool (report D1) and, since V6.2, the agent's own
+        // M2-c self-stake as well (D2). A partial withdrawal may therefore not leave
+        // a position in (0, minSupplyAmount).
+        //
+        // Deliberately a REVERT, not a silent forced full exit: transferring more
+        // than the caller asked for is a nasty surprise for an integrator's
+        // accounting. The client's remedy is one call with the full balance.
+        //
+        // Two exemptions keep the legitimate cases working:
+        //   * a FULL exit (remaining == 0) is ALWAYS allowed, including when the
+        //     owner has since RAISED minSupplyAmount above an existing position;
+        //   * the pool creator is exempt, symmetrically with the M2-a supply-side
+        //     exemption (M2-c can legitimately require less than minSupplyAmount,
+        //     and the creator's position is already locked by M2-a while borrowing).
+        //
+        // Ordered so a FULL exit never even reads `minSupplyAmount`: the path that
+        // must always work is also the cheapest one.
+        if (position.amount > amount && msg.sender != pool.agentAddress) {
+            uint256 floor = minSupplyAmount;
+            require(floor == 0 || position.amount - amount >= floor, "Remaining below minimum supply");
+        }
 
         // Update position. [F-02] Draw down the PENDING (newest, least-qualified)
         // tranche first, so a lender who tops up and then withdraws the same amount
@@ -822,11 +892,22 @@ contract AgentLiquidityMarketplaceV62 is Ownable2Step, ReentrancyGuard, Pausable
     /**
      * @notice [M2-c] Self-stake the agent must already hold in its own pool before it
      *         could borrow `additionalAmount` more. SDK/MCP pre-check.
+     * @dev [D13 fix 2026-09-22] The collateral tier is resolved BY agentId, not by
+     *      `pool.agentAddress`. The registry deletes `addressToAgentId[seller]` when
+     *      an agent NFT is transferred, so the address-keyed lookup fell through to
+     *      agentId 0 → score 0 → 100 % collateral and this view returned 0 — a
+     *      view/tx mismatch of the same class as the 2026-09-20 `canTopUp` bug, and
+     *      one that told an integrator "no first-loss stake needed" for an agent
+     *      whose seller still had capital locked and at risk.
+     *
+     *      NOTE this fixes the VIEW. It does not change who the stake belongs to:
+     *      the M2 self-stake is and remains `positions[agentId][pool.agentAddress]`,
+     *      i.e. the SELLER's capital, locked by M2-a and first-loss under M2-b. With
+     *      the M-1 lever OFF a buyer can borrow against it. **Keep M-1 ON.**
      */
     function requiredSelfStake(uint256 agentId, uint256 additionalAmount) external view returns (uint256) {
-        address agentAddr = agentPools[agentId].agentAddress;
-        if (agentAddr == address(0)) return 0;
-        uint256 pct = reputationManager.calculateCollateralRequirement(agentAddr);
+        if (agentPools[agentId].agentAddress == address(0)) return 0;
+        uint256 pct = reputationManager.collateralRequirementOf(agentId);
         return _requiredSelfStake(outstandingPrincipal[agentId] + additionalAmount, pct);
     }
 
@@ -1226,10 +1307,48 @@ contract AgentLiquidityMarketplaceV62 is Ownable2Step, ReentrancyGuard, Pausable
     }
 
     /**
+     * @notice One page of the active-pool list: the agentIds with `isActive` set
+     *         among `agentPoolIds[start .. start+count)`.
+     * @dev [D8 fix 2026-09-22] The unbounded `getActiveAgents()` costs ~5,482 gas per
+     *      pool and passes a 30M `eth_call` cap at roughly 5,472 pools. It is a view,
+     *      so it cannot brick a transaction, but the dashboard and the hosted API
+     *      both depend on it and would simply start failing. Off-chain callers should
+     *      use THIS form and page with the returned cursor; the no-argument overload
+     *      is kept only for backward compatibility and should not be used at scale.
+     * @param start Index into `agentPoolIds` to scan from.
+     * @param count How many `agentPoolIds` entries to SCAN (not how many actives to
+     *        return — a page may return fewer than `count` if some pools are inactive).
+     * @return active    The active agentIds found in this window, in `agentPoolIds` order.
+     * @return nextStart Cursor for the next page; equals `totalPools()` when done.
+     */
+    function getActiveAgents(uint256 start, uint256 count)
+        external view returns (uint256[] memory active, uint256 nextStart)
+    {
+        uint256 total = agentPoolIds.length;
+        if (start >= total) return (new uint256[](0), total);
+        uint256 end = start + count;
+        if (end > total || end < start) end = total;
+
+        uint256 n = 0;
+        for (uint256 i = start; i < end; i++) {
+            if (agentPools[agentPoolIds[i]].isActive) n++;
+        }
+        active = new uint256[](n);
+        uint256 j = 0;
+        for (uint256 i = start; i < end; i++) {
+            uint256 aid = agentPoolIds[i];
+            if (agentPools[aid].isActive) active[j++] = aid;
+        }
+        nextStart = end;
+    }
+
+    /**
      * @notice Get the agentIds of all pools whose isActive flag is set.
      * @dev [audit 2026-08 D12] Implemented against the tracked `agentPoolIds`
-     *      instead of the old reverting stub. View-only; unbounded in principle
-     *      but only ever iterated off-chain, so gas is not a concern.
+     *      instead of the old reverting stub.
+     *      [D8 2026-09-22] UNBOUNDED — ~5,482 gas per pool, past a 30M `eth_call`
+     *      cap at ≈ 5,472 pools. Retained for backward compatibility only; new
+     *      callers must use `getActiveAgents(start, count)` above.
      */
     function getActiveAgents() external view returns (uint256[] memory) {
         uint256 total = agentPoolIds.length;
@@ -1394,11 +1513,10 @@ contract AgentLiquidityMarketplaceV62 is Ownable2Step, ReentrancyGuard, Pausable
         });
         delete pendingTranche[agentId][lender]; // [F-02] seeded positions are a single base tranche
 
-        if (!isInPoolLenders[agentId][lender]) {
-            require(poolLenders[agentId].length < MAX_LENDERS_PER_POOL, "Lender cap");
-            poolLenders[agentId].push(lender);
-            isInPoolLenders[agentId][lender] = true;
-        }
+        // [D2 fix] Same slot discipline as supplyLiquidity, including the creator
+        // reservation — operator error during migration must not be able to brick
+        // the agent's M2-c self-stake either.
+        _claimLenderSlot(agentId, lender);
 
         // CLAUDE_REVIEW Finding 2: enforce Σ positions ≤ pool.totalLiquidity.
         // Bounded by MAX_LENDERS_PER_POOL = 50 → ≤ 50 SLOAD ops per call. Acceptable.
@@ -1511,30 +1629,40 @@ contract AgentLiquidityMarketplaceV62 is Ownable2Step, ReentrancyGuard, Pausable
 
     /**
      * @notice Emergency function to recalculate and fix pool accounting
-     * @dev Recalculates totalLoaned by summing active loans for agent.
+     * @dev Recalculates totalLoaned by summing the agent's ACTIVE loans.
      *      Recalculates availableLiquidity from totalLiquidity + Σ unclaimed
      *      interest − totalLoaned. CLAUDE_AUDIT_DEEP fixes #1 + #2 applied.
+     *
+     *      [D7 fix 2026-09-22] `totalLoaned` is rebuilt from `activeLoanIds[agentId]`
+     *      (≤ MAX_ACTIVE_LOANS_PER_AGENT = 10 entries, maintained at disburse/close
+     *      and already the authority everywhere else) instead of walking the
+     *      append-only, never-pruned `agentLoans[pool.agentAddress]`. The old walk
+     *      cost ~4,625 gas per historical loan: it lost 3× block headroom at ≈ 2,140
+     *      lifetime loans and became UNCALLABLE at ≈ 6,473 — the §S5 failure shape
+     *      surviving inside the owner's emergency repair tool, on exactly the
+     *      high-activity agent most likely to need it. Now O(1) in loan history.
+     *
+     *      Two consequences of keying by agentId:
+     *        * the old "Agent transferred; resync via migration helpers" guard is
+     *          GONE. It existed only because `agentLoans` is ADDRESS-keyed, so a
+     *          transferred NFT split the history across two addresses and the walk
+     *          would undercount. `activeLoanIds` is agentId-keyed and follows the
+     *          agent, so the tool now works on a transferred agent too — which is
+     *          precisely when an operator is most likely to need it.
+     *        * the rebuilt figure counts exactly the loans the contract itself
+     *          treats as outstanding, so it can no longer disagree with
+     *          `activeLoanCount` / `outstandingPrincipal`.
      * @param agentId The agent ID whose pool to fix
      */
     function resetPoolAccounting(uint256 agentId) external onlyOwner {
         AgentPool storage pool = agentPools[agentId];
         require(pool.agentId == agentId, "Pool does not exist");
 
-        // CLAUDE_AUDIT_DEEP Finding 1: detect NFT transfer that would invalidate
-        // agentLoans[pool.agentAddress] lookup. After an agent NFT is transferred,
-        // new loans go to agentLoans[NEW_owner] but pool.agentAddress is still the
-        // OLD owner — walking only one would undercount totalLoaned. Force admin to
-        // use seedPool/seedPosition (migration helpers) for transferred agents.
-        require(
-            agentRegistry.ownerOf(agentId) == pool.agentAddress,
-            "Agent transferred; resync via migration helpers"
-        );
-
-        // Recalculate totalLoaned from active loans
+        // Recalculate totalLoaned from the bounded active set (≤ 10 entries).
         uint256 actualLoaned = 0;
-        uint256[] memory loanIds = agentLoans[pool.agentAddress];
-        for (uint256 i = 0; i < loanIds.length; i++) {
-            Loan storage loan = loans[loanIds[i]];
+        uint256[] storage activeIds = activeLoanIds[agentId];
+        for (uint256 i = 0; i < activeIds.length; i++) {
+            Loan storage loan = loans[activeIds[i]];
             if (loan.state == LoanState.ACTIVE) {
                 actualLoaned += loan.amount;
             }

@@ -157,7 +157,7 @@ describe('SDK V7 — end-to-end on the full V7 stack', function () {
         expect(approvals.includes(ethers.MaxUint256)).to.equal(false);
 
         // The loanId is plumbed through to ReputationManagerV4 (M2-d).
-        const open = await d.reputation.openLoans(loanId);
+        const open = await d.reputation.openLoans(d.v62.target, loanId);
         expect(open.amount).to.equal(BORROW);
         expect(open.agentId).to.equal(BigInt(agentId));
         expect(open.start).to.be.greaterThan(0n);
@@ -235,7 +235,7 @@ describe('SDK V7 — end-to-end on the full V7 stack', function () {
         expect(balBefore - (await d.usdc.balanceOf(d.agent.address))).to.equal(preview.total);
 
         // The V4 open-loan record is closed and the ladder advanced (M1/M2-d).
-        expect((await d.reputation.openLoans(loanId)).start).to.equal(0n);
+        expect((await d.reputation.openLoans(d.v62.target, loanId)).start).to.equal(0n);
         expect(await d.reputation.maxRepaidPrincipal(agentId)).to.equal(USDC(100)); // 80 < the pumped 100
     });
 

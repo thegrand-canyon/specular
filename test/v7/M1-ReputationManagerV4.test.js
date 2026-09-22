@@ -404,12 +404,12 @@ describe("V7 / M1 — ReputationManagerV4", function () {
     describe("M2-d — loanId-keyed open-loan registry", function () {
         it("records and clears the open loan", async function () {
             await rep.recordBorrow(agent.address, 7, USDC(250));
-            const ol = await rep.openLoans(7);
+            const ol = await rep.openLoans(owner.address, 7);
             expect(ol.amount).to.equal(USDC(250));
             expect(ol.agentId).to.equal(agentId);
             await time.increase(7 * DAY);
             await rep.recordLoanCompletion(agent.address, 7, USDC(250), true, 0);
-            expect((await rep.openLoans(7)).start).to.equal(0n);
+            expect((await rep.openLoans(owner.address, 7)).start).to.equal(0n);
         });
 
         it("refuses to record the same loanId twice", async function () {

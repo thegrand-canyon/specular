@@ -10,6 +10,15 @@ via_ir = true
 fuzz = { runs = 256 }
 invariant = { runs = 32, depth = 64, fail_on_revert = false, call_override = false }
 
+# The V7 soak and storage-growth tests drive tens of thousands of operations inside a
+# single test body and blow through forge's default per-test gas ceiling (~2^30),
+# failing with MemoryOOG/Revert that look like logic bugs but are not. They were
+# authored to be run with `--gas-limit 100000000000000`; setting it here means a plain
+# `forge test` is honest instead of red. This is the per-TEST budget, not the block gas
+# limit (`block_gas_limit`), so it does not weaken any block-limit headroom measurement —
+# those are metered with `vm.lastCallGas()` under `--isolate`.
+gas_limit = 100000000000000
+
 remappings = [
     "@openzeppelin/=node_modules/@openzeppelin/",
     "forge-std/=lib/forge-std/src/",
