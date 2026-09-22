@@ -3,8 +3,14 @@
 Moving Arc mainnet from **V6.1 + ReputationManagerV3** to **V6.2 + ReputationManagerV4**
 (the M1 ladder + M2 self-stake model), which is the fix for **F-04**.
 
-Status: **staging rehearsal in progress.** Do not run the mainnet steps until the
-rehearsal and the client migration both pass. This document is the plan, not a green light.
+Status: **staging rehearsal round 2 in progress.** Round 1 validated the design (230/230
+on-chain) but scale testing then found a BLOCKING DoS; that is fixed and staging has been
+redeployed. Do not run the mainnet steps until the re-run passes. This document is the
+plan, not a green light.
+
+Current staging stack (the scale-fixed build, deployed 2026-09-22):
+`ReputationManagerV4 0xD7906fDFBf69BA89a4c2FE148797e24f386fE3d2`,
+`MarketplaceV6.2 0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18`.
 
 ---
 
@@ -44,13 +50,26 @@ gets worse.**
 
 ## 3. Preconditions (ALL must hold)
 
-- [ ] Staging rehearsal green: `forensics/output/v7-model/V7_E2E_STAGING_REPORT.md` — in
-      particular the M2 self-stake lock and the M1 ladder behaving exactly as designed on-chain.
+- [ ] Staging rehearsal green ON THE SCALE-FIXED BUILD: `V7_E2E_STAGING_REPORT.md`. Round 1
+      passed 230/230 against the PRE-FIX contracts; that result does not carry over. In
+      particular re-confirm the M2 self-stake lock, the M1 ladder, and the new refusals
+      introduced by the squat fix.
+- [ ] Scale findings closed: `V7_SCALE_FIXES.md`. The blocking one was the lender-slot
+      squat — `minSupplyAmount` was enforced only when CLAIMING a slot, so a squatter
+      supplied the minimum, withdrew to dust and held the slot for ~nothing; 50 of those
+      bricked a pool permanently, and under V6.2 the agent's own self-stake needs one of
+      those slots, so a squatted pool could never support unsecured borrowing again.
 - [ ] Client migration complete and released: `V7_CLIENT_MIGRATION.md`. The interface is
       **breaking** — `recordBorrow/recordLoanCompletion/recordDefault` take `loanId`, new
       `requiredSelfStake`/`selfStake` views, new reverts, and **the tier table is now on-chain**,
       so every hardcoded 25k/50k assumption must read from the contract.
-- [ ] Hosted server redeployed with V6.2 support and three-way V6/V6.1/V6.2 capability detection.
+- [ ] Hosted server redeployed with V6.2 support and three-way V6/V6.1/V6.2 capability
+      detection. Note: capability flags do NOT imply individual methods — pagination
+      arrived in a later V6.2 revision than the first one deployed, and keying on the flag
+      broke every read on that deployment. Probe for methods.
+- [ ] Client-visible breaks from the squat fix are handled everywhere: `withdrawLiquidity`
+      can refuse a sub-minimum remainder, `supplyLiquidity` can refuse when the last slot is
+      reserved for the agent's stake, and the one-arg `openLoans(loanId)` getter is gone.
 - [ ] Root suite green; `forge test` green; slither 0 High on the new contracts.
 - [ ] Deployer funded (needs ≈ 0.2 USDC of gas; wallet currently holds ~164 USDC).
 - [ ] A decision recorded on the **single owner EOA** (§7) — this migration does not fix it.
@@ -71,8 +90,9 @@ The script deploys `ReputationManagerV4(registry)` then
 `AgentLiquidityMarketplaceV62(registry, V4, usdc)`, wires `authorizePool`, applies the
 launch levers (M-1 on, minHold 86400s, minSupply 10 USDC, fee 100 bps, rate limit 5/86400s),
 calls `setMigrationFinalized()` at deploy (closing F-08 immediately, not later), reads the
-tier table back from chain, and rewrites `src/config/arc-mainnet-addresses.json` — moving the
-superseded addresses to `*_legacy` keys and pointing the canonical keys at V7.
+tier table back from chain, and rewrites `src/config/arc-mainnet-addresses.json` — APPENDING the
+superseded stack to `supersededDeployments` (never overwriting an earlier one, see §5b) and
+pointing the canonical keys at V7.
 
 **The registry is reused, so agent NFTs and identities persist.** Only reputation resets.
 
@@ -92,7 +112,8 @@ retired separately, once it is drained — see §6.
 3. **Monitoring — two jobs, not one.** The canonical pointer now names V7, so the existing job
    follows V7 automatically. The superseded marketplace **stops being watched** unless you add:
    ```
-   V6_MONITOR_NETWORK=arc-mainnet V6_MONITOR_MARKETPLACE_KEY=agentLiquidityMarketplace_v61_legacy \
+   # address form, since superseded stacks no longer live under a fixed key:
+   V6_MONITOR_NETWORK=arc-mainnet V6_MONITOR_MARKETPLACE=<superseded marketplace address> \
      node forensics/monitor/v6-invariants.js
    ```
    Keep that second job until the legacy contract is drained and retired. Confirm the V7 job
@@ -100,6 +121,15 @@ retired separately, once it is drained — see §6.
    self-stake invariants are not actually running.
 4. **Update** `CLAUDE.md` (network table + risk posture), `src/config/chains.json`, and memory.
 5. **Faucet**: it points at the registry, not the marketplace, so it keeps working. Confirm.
+
+## 5b. Do not lose the address of the contract you just superseded
+
+`deploy-v7.js` once recorded superseded stacks under fixed `*_legacy` keys, so a SECOND
+redeploy overwrote the first's record. On staging that dropped the last reference to a
+marketplace still holding 482 USDC of lender funds. Superseded stacks now APPEND to
+`supersededDeployments` in the addresses file. After any redeploy, confirm that list grew
+and that every entry still has a monitor pointed at it. An address you cannot name is one
+you cannot monitor, drain or retire.
 
 ## 6. Retiring the legacy stack
 
