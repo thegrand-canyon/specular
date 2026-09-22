@@ -91,6 +91,36 @@ Honest framing from that analysis: an unsecured line to a pseudonymous agent can
 EV-negative by backing it with something the protocol can seize. Pick the parameters to
 **price** the residual risk; do not claim it is zero.
 
+### V7 credit model (the F-04 fix) — built, on STAGING, not on mainnet
+
+`contracts/core/ReputationManagerV4.sol` + `contracts/core/AgentLiquidityMarketplaceV62.sol`
+(`VERSION()=="V6.2"`). M1 = credit limit tracks demonstrated repaid volume
+(`min(tierLimit, max(bootstrap, k·maxRepaidPrincipal + growthStep))`, k=2, growthStep 100 USDC,
+setter reverts on 0 because k=1 provably deadlocks the ladder); M2 = the pool creator's own
+stake is **locked while borrowing and is the first-loss tranche**. Tier limits are now
+**on-chain and owner-settable** under an immutable `MAX_TIER_LIMIT` — read them from the
+contract, never hardcode 25k/50k.
+
+Measured vs V3: attacker capital as a share of the prize **0.8 % → 229.2 %**, steady-state
+extraction **2,500 → 13.9 USDC/day**, lender loss per incident **49,982 → 2,431**.
+**Residual attacker EV is still positive (~24 %/yr) — F-04 is PRICED, NOT CLOSED.** Honest
+agents are slightly *slower and dearer*, not faster (an earlier claim to the contrary compared
+two strategies rather than two models and was refuted on re-measurement).
+
+- **Arc staging (rehearsal, deployed 2026-09-22):** ReputationManagerV4 `0x66977dF45F38D8b0Dc463817C4B46a7E08ddbdFB`,
+  MarketplaceV6.2 `0xa736EE7BB1BFB21bD294B220Bd7027B6Fe266300`, both Sourcify `exact_match`.
+  Canonical config keys now point at V7; the superseded V6.1 stack is under `*_legacy` keys,
+  still live and still holding test lender funds.
+- **Deploy:** `scripts/deploy-v7.js --network <arc-staging|arc-mainnet>` (dry run by default).
+- **Migration plan:** `forensics/output/v7-model/V7_MAINNET_MIGRATION_RUNBOOK.md`.
+- **⚠️ Reputation does NOT migrate** — V4 ships no seed helper on purpose (that is the F-08
+  owner-drain shape). Every agent restarts at bootstrap. Mainnet holds 1 pool / 1 agent /
+  0 third-party lenders today, so the migration is ~0.2 USDC and one test score. It only gets
+  more expensive from here.
+- **⚠️ Monitoring:** repointing the canonical key makes the monitor follow V7 and **stop
+  watching the superseded marketplace**. Run a second job with
+  `V6_MONITOR_MARKETPLACE_KEY=agentLiquidityMarketplace_v61_legacy` until it is drained.
+
 ## Testing round 2026-09-20/21 (6 tracks) — `forensics/output/testing-2026-09-20/`
 
 | Track | Headline |
