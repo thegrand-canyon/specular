@@ -6,12 +6,18 @@
   "mockUSDC": "0x9F3C10985998D1354D1465c5135Aa924775bd11D",
   "usdc": "0x9F3C10985998D1354D1465c5135Aa924775bd11D",
   "agentRegistryV2": "0x4712A978A0EADe68f0b485b981112Ae66aA622d9",
-  "reputationManagerV3": "0x085D581FB56d4aD428d9852466557286099dD46c",
-  "agentLiquidityMarketplace_v6": "0xB2d88bbFF61EF2CcF4B4A2CFd75aeed0f11F6878",
+  "reputationManagerV3": "0x66977dF45F38D8b0Dc463817C4B46a7E08ddbdFB",
+  "agentLiquidityMarketplace_v6": "0xa736EE7BB1BFB21bD294B220Bd7027B6Fe266300",
   "agentCreditFaucet": "0x11D3e3A358D0Ef572260E33DAC66D0276EB97c57",
   "deployer": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
   "deployedAt": "2026-08-23T16:51:28.084Z",
   "agentLiquidityMarketplace_v6_0_legacy_still_live": "0xDbDf60AE5CB46D23aA44c062a4943655a6820f31",
-  "marketplaceVersion": "V6.1 (2026-09-19 audit fixes F-01/F-02/F-03/F-05/F-07; migration finalized at deploy)",
-  "marketplaceRedeployedAt": "2026-09-19T21:05:29.907Z"
+  "marketplaceVersion": "V6.2 + ReputationManagerV4 (V7 credit model: M1 ladder + M2 self-stake)",
+  "marketplaceRedeployedAt": "2026-09-19T21:05:29.907Z",
+  "reputationManagerV3_legacy": "0x085D581FB56d4aD428d9852466557286099dD46c",
+  "agentLiquidityMarketplace_v61_legacy": "0xB2d88bbFF61EF2CcF4B4A2CFd75aeed0f11F6878",
+  "reputationManagerV4": "0x66977dF45F38D8b0Dc463817C4B46a7E08ddbdFB",
+  "agentLiquidityMarketplace_v62": "0xa736EE7BB1BFB21bD294B220Bd7027B6Fe266300",
+  "v7DeployedAt": "2026-09-22T17:18:51.494Z",
+  "v7Note": "Reputation did NOT migrate from the V3 manager; agents restart at score 0. Legacy contracts remain live under *_legacy keys."
 }
