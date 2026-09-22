@@ -9,6 +9,7 @@ Run:  /usr/bin/python3 -m unittest discover -s python/tests -v
 """
 import os
 import sys
+import time
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -23,7 +24,26 @@ def bare_client():
     c.account = MagicMock()
     c.account.address = "0x" + "11" * 20
     c.marketplace_addr = "0x" + "22" * 20
+    # Capability detection now probes the DEPLOYED BYTECODE (robustness F-R1), so
+    # a bare client needs a w3 whose get_code answers. Default: a V6.1 deployment.
+    c.w3 = MagicMock()
+    c.w3.eth.get_code = MagicMock(return_value=_code_with(V61_SELECTORS))
+    # A plausible, fresh chain head — the staleness guard (robustness F-R5) reads it.
+    c.w3.eth.block_number = 1000
+    c.w3.eth.get_block = MagicMock(return_value={"timestamp": int(time.time())})
     return c
+
+
+V61_SELECTORS = ["VERSION()", "previewRepayment(uint256)", "canTopUp(uint256,address)",
+                 "getActiveLoanIds(uint256)"]
+
+
+def _code_with(signatures):
+    """Fake runtime bytecode containing the given function selectors."""
+    out = b"\x60\x80\x60\x40"
+    for sig in signatures:
+        out += SpecularClient._selector(sig)
+    return out + b"\x00"
 
 
 class TestUsdcUnits(unittest.TestCase):
@@ -88,10 +108,17 @@ class TestApproveExact(unittest.TestCase):
         c._send = MagicMock(return_value="0xhash")
         return c
 
-    def test_skips_when_covered(self):
-        c = self._client([10_000_000])
+    def test_skips_when_allowance_is_already_exact(self):
+        c = self._client([5_000_000])
         self.assertIsNone(c._approve_exact(5_000_000))
         c._send.assert_not_called()
+
+    def test_tightens_an_over_large_allowance(self):
+        # [robustness F-R15] EXACT in both directions: a leftover larger
+        # allowance is reduced, never carried forward.
+        c = self._client([10_000_000])
+        self.assertEqual(c._approve_exact(5_000_000), "0xhash")
+        c.usdc.functions.approve.assert_called_with(c.marketplace_addr, 5_000_000)
 
     def test_zero_amount_is_noop(self):
         c = self._client([])
@@ -149,6 +176,8 @@ class TestV61Repay(unittest.TestCase):
         c = bare_client()
         c.marketplace = MagicMock()
         if version is None:
+            # A genuine V6.0 deployment: the selectors are absent from the bytecode.
+            c.w3.eth.get_code = MagicMock(return_value=_code_with([]))
             c.marketplace.functions.VERSION.return_value.call.side_effect = Exception("execution reverted")
         else:
             c.marketplace.functions.VERSION.return_value.call.return_value = version
@@ -161,6 +190,7 @@ class TestV61Repay(unittest.TestCase):
         c._approve_exact = MagicMock(return_value=None)
         c._send = MagicMock(return_value="0xrepay")
         c.revoke_approval = MagicMock(return_value=None)
+        c._revoke_approval_inner = c.revoke_approval
         return c, nominal
 
     def test_v6_fallback_uses_nominal(self):

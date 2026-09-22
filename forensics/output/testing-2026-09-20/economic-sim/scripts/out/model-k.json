@@ -1,0 +1,38 @@
+{
+  "generatedAt": "2026-09-21T23:43:41.007Z",
+  "runs": [
+    {
+      "creditMultiple": 1,
+      "days": 500,
+      "score": 805,
+      "creditLimitUsdc": 100,
+      "maxRepaidUsdc": 100,
+      "peakCapitalUsdc": 212.16,
+      "feesUsdc": 0.177441,
+      "sybilLenderAddresses": 1,
+      "capitalPerUsdcOfCredit": 2.1216
+    },
+    {
+      "creditMultiple": 2,
+      "days": 131,
+      "score": 635,
+      "creditLimitUsdc": 25000,
+      "maxRepaidUsdc": 16650,
+      "peakCapitalUsdc": 9020.74,
+      "feesUsdc": 0.963787,
+      "sybilLenderAddresses": 24,
+      "capitalPerUsdcOfCredit": 0.3608
+    },
+    {
+      "creditMultiple": 4,
+      "days": 125,
+      "score": 635,
+      "creditLimitUsdc": 25000,
+      "maxRepaidUsdc": 11950,
+      "peakCapitalUsdc": 3518.28,
+      "feesUsdc": 0.489221,
+      "sybilLenderAddresses": 8,
+      "capitalPerUsdcOfCredit": 0.1407
+    }
+  ]
+}

@@ -1,0 +1,1598 @@
+{
+  "generatedAt": "2026-09-21T23:32:48.727Z",
+  "blendFactor": 433.3333333333333,
+  "results": [
+    {
+      "config": {
+        "maxGainPerDay": 20,
+        "minSupplyUsdc": 10,
+        "feeBps": 100,
+        "minHoldDays": 1,
+        "bonusRefUsdc": 100,
+        "penaltyLarge": 300
+      },
+      "pipelineDepth": 1,
+      "loansPerWindow": 2,
+      "perLoanUsdc": 100,
+      "saturatesRateLimit": true,
+      "measured": {
+        "pointsPerDay": 19.9991,
+        "attackerUsdcPerPoint": 0.0002876,
+        "honestUsdcPerPoint": 0.0287671,
+        "attackerCapitalLockedUsdc": 402.301368
+      },
+      "projected100to600": {
+        "days": 25,
+        "attackerUsdc": 0.124627,
+        "honestUsdc": 12.4657,
+        "attackerCapitalUsdc": 402.301368,
+        "attackerCostAsPctOfHonest": 1,
+        "attackerTotalOutlayUsdc": 0.1246,
+        "capitalToPrizeRatio": 0.01609,
+        "refarmDaysAfter25kDefault": 15,
+        "refarmUsdcAfter25kDefault": 0.05752
+      }
+    },
+    {
+      "config": {
+        "maxGain": 20,
+        "minSupply": 10,
+        "feeBps": 100,
+        "minHoldDays": 1,
+        "refUsdc": 1000
+      },
+      "error": "VM Exception while processing transaction: reverted with reason string 'Exceeds credit limit'",
+      "infeasibleReason": "BOOTSTRAP-INFEASIBLE: the principal needed to saturate the gain budget exceeds the 1,000 USDC bottom-tier credit limit, so NO agent (honest or attacker) can build reputation under this config"
+    },
+    {
+      "config": {
+        "maxGain": 20,
+        "minSupply": 10,
+        "feeBps": 100,
+        "minHoldDays": 1,
+        "refUsdc": 10000
+      },
+      "error": "VM Exception while processing transaction: reverted with reason string 'Exceeds credit limit'",
+      "infeasibleReason": "BOOTSTRAP-INFEASIBLE: the principal needed to saturate the gain budget exceeds the 1,000 USDC bottom-tier credit limit, so NO agent (honest or attacker) can build reputation under this config"
+    },
+    {
+      "config": {
+        "maxGainPerDay": 20,
+        "minSupplyUsdc": 10,
+        "feeBps": 100,
+        "minHoldDays": 7,
+        "bonusRefUsdc": 100,
+        "penaltyLarge": 300
+      },
+      "pipelineDepth": 7,
+      "loansPerWindow": 1,
+      "perLoanUsdc": 100,
+      "saturatesRateLimit": false,
+      "measured": {
+        "pointsPerDay": 9.9998,
+        "attackerUsdcPerPoint": 0.0003287,
+        "honestUsdcPerPoint": 0.032876699999999995,
+        "attackerCapitalLockedUsdc": 1401.315068
+      },
+      "projected100to600": {
+        "days": 50,
+        "attackerUsdc": 0.142437,
+        "honestUsdc": 14.2466,
+        "attackerCapitalUsdc": 1401.315068,
+        "attackerCostAsPctOfHonest": 1,
+        "attackerTotalOutlayUsdc": 0.1424,
+        "capitalToPrizeRatio": 0.05605,
+        "refarmDaysAfter25kDefault": 30,
+        "refarmUsdcAfter25kDefault": 0.06574
+      }
+    },
+    {
+      "config": {
+        "maxGain": 20,
+        "minSupply": 10,
+        "feeBps": 100,
+        "minHoldDays": 7,
+        "refUsdc": 1000
+      },
+      "error": "VM Exception while processing transaction: reverted with reason string 'Exceeds credit limit'",
+      "infeasibleReason": "BOOTSTRAP-INFEASIBLE: the principal needed to saturate the gain budget exceeds the 1,000 USDC bottom-tier credit limit, so NO agent (honest or attacker) can build reputation under this config"
+    },
+    {
+      "config": {
+        "maxGain": 20,
+        "minSupply": 10,
+        "feeBps": 100,
+        "minHoldDays": 7,
+        "refUsdc": 10000
+      },
+      "error": "VM Exception while processing transaction: reverted with reason string 'Exceeds credit limit'",
+      "infeasibleReason": "BOOTSTRAP-INFEASIBLE: the principal needed to saturate the gain budget exceeds the 1,000 USDC bottom-tier credit limit, so NO agent (honest or attacker) can build reputation under this config"
+    },
+    {
+      "config": {
+        "maxGainPerDay": 20,
+        "minSupplyUsdc": 10,
+        "feeBps": 500,
+        "minHoldDays": 1,
+        "bonusRefUsdc": 100,
+        "penaltyLarge": 300
+      },
+      "pipelineDepth": 1,
+      "loansPerWindow": 2,
+      "perLoanUsdc": 100,
+      "saturatesRateLimit": true,
+      "measured": {
+        "pointsPerDay": 19.9991,
+        "attackerUsdcPerPoint": 0.0014383,
+        "honestUsdcPerPoint": 0.0287671,
+        "attackerCapitalLockedUsdc": 402.301368
+      },
+      "projected100to600": {
+        "days": 25,
+        "attackerUsdc": 0.623263,
+        "honestUsdc": 12.4657,
+        "attackerCapitalUsdc": 402.301368,
+        "attackerCostAsPctOfHonest": 5,
+        "attackerTotalOutlayUsdc": 0.6233,
+        "capitalToPrizeRatio": 0.01609,
+        "refarmDaysAfter25kDefault": 15,
+        "refarmUsdcAfter25kDefault": 0.28766
+      }
+    },
+    {
+      "config": {
+        "maxGain": 20,
+        "minSupply": 10,
+        "feeBps": 500,
+        "minHoldDays": 1,
+        "refUsdc": 1000
+      },
+      "error": "VM Exception while processing transaction: reverted with reason string 'Exceeds credit limit'",
+      "infeasibleReason": "BOOTSTRAP-INFEASIBLE: the principal needed to saturate the gain budget exceeds the 1,000 USDC bottom-tier credit limit, so NO agent (honest or attacker) can build reputation under this config"
+    },
+    {
+      "config": {
+        "maxGain": 20,
+        "minSupply": 10,
+        "feeBps": 500,
+        "minHoldDays": 1,
+        "refUsdc": 10000
+      },
+      "error": "VM Exception while processing transaction: reverted with reason string 'Exceeds credit limit'",
+      "infeasibleReason": "BOOTSTRAP-INFEASIBLE: the principal needed to saturate the gain budget exceeds the 1,000 USDC bottom-tier credit limit, so NO agent (honest or attacker) can build reputation under this config"
+    },
+    {
+      "config": {
+        "maxGainPerDay": 20,
+        "minSupplyUsdc": 10,
+        "feeBps": 500,
+        "minHoldDays": 7,
+        "bonusRefUsdc": 100,
+        "penaltyLarge": 300
+      },
+      "pipelineDepth": 7,
+      "loansPerWindow": 1,
+      "perLoanUsdc": 100,
+      "saturatesRateLimit": false,
+      "measured": {
+        "pointsPerDay": 9.9998,
+        "attackerUsdcPerPoint": 0.0016438000000000002,
+        "honestUsdcPerPoint": 0.032876699999999995,
+        "attackerCapitalLockedUsdc": 1401.315068
+      },
+      "projected100to600": {
+        "days": 50,
+        "attackerUsdc": 0.712313,
+        "honestUsdc": 14.2466,
+        "attackerCapitalUsdc": 1401.315068,
+        "attackerCostAsPctOfHonest": 5,
+        "attackerTotalOutlayUsdc": 0.7123,
+        "capitalToPrizeRatio": 0.05605,
+        "refarmDaysAfter25kDefault": 30,
+        "refarmUsdcAfter25kDefault": 0.32876
+      }
+    },
+    {
+      "config": {
+        "maxGain": 20,
+        "minSupply": 10,
+        "feeBps": 500,
+        "minHoldDays": 7,
+        "refUsdc": 1000
+      },
+      "error": "VM Exception while processing transaction: reverted with reason string 'Exceeds credit limit'",
+      "infeasibleReason": "BOOTSTRAP-INFEASIBLE: the principal needed to saturate the gain budget exceeds the 1,000 USDC bottom-tier credit limit, so NO agent (honest or attacker) can build reputation under this config"
+    },
+    {
+      "config": {
+        "maxGain": 20,
+        "minSupply": 10,
+        "feeBps": 500,
+        "minHoldDays": 7,
+        "refUsdc": 10000
+      },
+      "error": "VM Exception while processing transaction: reverted with reason string 'Exceeds credit limit'",
+      "infeasibleReason": "BOOTSTRAP-INFEASIBLE: the principal needed to saturate the gain budget exceeds the 1,000 USDC bottom-tier credit limit, so NO agent (honest or attacker) can build reputation under this config"
+    },
+    {
+      "config": {
+        "maxGainPerDay": 20,
+        "minSupplyUsdc": 100,
+        "feeBps": 100,
+        "minHoldDays": 1,
+        "bonusRefUsdc": 100,
+        "penaltyLarge": 300
+      },
+      "pipelineDepth": 1,
+      "loansPerWindow": 2,
+      "perLoanUsdc": 100,
+      "saturatesRateLimit": true,
+      "measured": {
+        "pointsPerDay": 19.9991,
+        "attackerUsdcPerPoint": 0.0002876,
+        "honestUsdcPerPoint": 0.0287671,
+        "attackerCapitalLockedUsdc": 402.301368
+      },
+      "projected100to600": {
+        "days": 25,
+        "attackerUsdc": 0.124627,
+        "honestUsdc": 12.4657,
+        "attackerCapitalUsdc": 402.301368,
+        "attackerCostAsPctOfHonest": 1,
+        "attackerTotalOutlayUsdc": 0.1246,
+        "capitalToPrizeRatio": 0.01609,
+        "refarmDaysAfter25kDefault": 15,
+        "refarmUsdcAfter25kDefault": 0.05752
+      }
+    },
+    {
+      "config": {
+        "maxGain": 20,
+        "minSupply": 100,
+        "feeBps": 100,
+        "minHoldDays": 1,
+        "refUsdc": 1000
+      },
+      "error": "VM Exception while processing transaction: reverted with reason string 'Exceeds credit limit'",
+      "infeasibleReason": "BOOTSTRAP-INFEASIBLE: the principal needed to saturate the gain budget exceeds the 1,000 USDC bottom-tier credit limit, so NO agent (honest or attacker) can build reputation under this config"
+    },
+    {
+      "config": {
+        "maxGain": 20,
+        "minSupply": 100,
+        "feeBps": 100,
+        "minHoldDays": 1,
+        "refUsdc": 10000
+      },
+      "error": "VM Exception while processing transaction: reverted with reason string 'Exceeds credit limit'",
+      "infeasibleReason": "BOOTSTRAP-INFEASIBLE: the principal needed to saturate the gain budget exceeds the 1,000 USDC bottom-tier credit limit, so NO agent (honest or attacker) can build reputation under this config"
+    },
+    {
+      "config": {
+        "maxGainPerDay": 20,
+        "minSupplyUsdc": 100,
+        "feeBps": 100,
+        "minHoldDays": 7,
+        "bonusRefUsdc": 100,
+        "penaltyLarge": 300
+      },
+      "pipelineDepth": 7,
+      "loansPerWindow": 1,
+      "perLoanUsdc": 100,
+      "saturatesRateLimit": false,
+      "measured": {
+        "pointsPerDay": 9.9998,
+        "attackerUsdcPerPoint": 0.0003287,
+        "honestUsdcPerPoint": 0.032876699999999995,
+        "attackerCapitalLockedUsdc": 1401.315068
+      },
+      "projected100to600": {
+        "days": 50,
+        "attackerUsdc": 0.142437,
+        "honestUsdc": 14.2466,
+        "attackerCapitalUsdc": 1401.315068,
+        "attackerCostAsPctOfHonest": 1,
+        "attackerTotalOutlayUsdc": 0.1424,
+        "capitalToPrizeRatio": 0.05605,
+        "refarmDaysAfter25kDefault": 30,
+        "refarmUsdcAfter25kDefault": 0.06574
+      }
+    },
+    {
+      "config": {
+        "maxGain": 20,
+        "minSupply": 100,
+        "feeBps": 100,
+        "minHoldDays": 7,
+        "refUsdc": 1000
+      },
+      "error": "VM Exception while processing transaction: reverted with reason string 'Exceeds credit limit'",
+      "infeasibleReason": "BOOTSTRAP-INFEASIBLE: the principal needed to saturate the gain budget exceeds the 1,000 USDC bottom-tier credit limit, so NO agent (honest or attacker) can build reputation under this config"
+    },
+    {
+      "config": {
+        "maxGain": 20,
+        "minSupply": 100,
+        "feeBps": 100,
+        "minHoldDays": 7,
+        "refUsdc": 10000
+      },
+      "error": "VM Exception while processing transaction: reverted with reason string 'Exceeds credit limit'",
+      "infeasibleReason": "BOOTSTRAP-INFEASIBLE: the principal needed to saturate the gain budget exceeds the 1,000 USDC bottom-tier credit limit, so NO agent (honest or attacker) can build reputation under this config"
+    },
+    {
+      "config": {
+        "maxGainPerDay": 20,
+        "minSupplyUsdc": 100,
+        "feeBps": 500,
+        "minHoldDays": 1,
+        "bonusRefUsdc": 100,
+        "penaltyLarge": 300
+      },
+      "pipelineDepth": 1,
+      "loansPerWindow": 2,
+      "perLoanUsdc": 100,
+      "saturatesRateLimit": true,
+      "measured": {
+        "pointsPerDay": 19.9991,
+        "attackerUsdcPerPoint": 0.0014383,
+        "honestUsdcPerPoint": 0.0287671,
+        "attackerCapitalLockedUsdc": 402.301368
+      },
+      "projected100to600": {
+        "days": 25,
+        "attackerUsdc": 0.623263,
+        "honestUsdc": 12.4657,
+        "attackerCapitalUsdc": 402.301368,
+        "attackerCostAsPctOfHonest": 5,
+        "attackerTotalOutlayUsdc": 0.6233,
+        "capitalToPrizeRatio": 0.01609,
+        "refarmDaysAfter25kDefault": 15,
+        "refarmUsdcAfter25kDefault": 0.28766
+      }
+    },
+    {
+      "config": {
+        "maxGain": 20,
+        "minSupply": 100,
+        "feeBps": 500,
+        "minHoldDays": 1,
+        "refUsdc": 1000
+      },
+      "error": "VM Exception while processing transaction: reverted with reason string 'Exceeds credit limit'",
+      "infeasibleReason": "BOOTSTRAP-INFEASIBLE: the principal needed to saturate the gain budget exceeds the 1,000 USDC bottom-tier credit limit, so NO agent (honest or attacker) can build reputation under this config"
+    },
+    {
+      "config": {
+        "maxGain": 20,
+        "minSupply": 100,
+        "feeBps": 500,
+        "minHoldDays": 1,
+        "refUsdc": 10000
+      },
+      "error": "VM Exception while processing transaction: reverted with reason string 'Exceeds credit limit'",
+      "infeasibleReason": "BOOTSTRAP-INFEASIBLE: the principal needed to saturate the gain budget exceeds the 1,000 USDC bottom-tier credit limit, so NO agent (honest or attacker) can build reputation under this config"
+    },
+    {
+      "config": {
+        "maxGainPerDay": 20,
+        "minSupplyUsdc": 100,
+        "feeBps": 500,
+        "minHoldDays": 7,
+        "bonusRefUsdc": 100,
+        "penaltyLarge": 300
+      },
+      "pipelineDepth": 7,
+      "loansPerWindow": 1,
+      "perLoanUsdc": 100,
+      "saturatesRateLimit": false,
+      "measured": {
+        "pointsPerDay": 9.9998,
+        "attackerUsdcPerPoint": 0.0016438000000000002,
+        "honestUsdcPerPoint": 0.032876699999999995,
+        "attackerCapitalLockedUsdc": 1401.315068
+      },
+      "projected100to600": {
+        "days": 50,
+        "attackerUsdc": 0.712313,
+        "honestUsdc": 14.2466,
+        "attackerCapitalUsdc": 1401.315068,
+        "attackerCostAsPctOfHonest": 5,
+        "attackerTotalOutlayUsdc": 0.7123,
+        "capitalToPrizeRatio": 0.05605,
+        "refarmDaysAfter25kDefault": 30,
+        "refarmUsdcAfter25kDefault": 0.32876
+      }
+    },
+    {
+      "config": {
+        "maxGain": 20,
+        "minSupply": 100,
+        "feeBps": 500,
+        "minHoldDays": 7,
+        "refUsdc": 1000
+      },
+      "error": "VM Exception while processing transaction: reverted with reason string 'Exceeds credit limit'",
+      "infeasibleReason": "BOOTSTRAP-INFEASIBLE: the principal needed to saturate the gain budget exceeds the 1,000 USDC bottom-tier credit limit, so NO agent (honest or attacker) can build reputation under this config"
+    },
+    {
+      "config": {
+        "maxGain": 20,
+        "minSupply": 100,
+        "feeBps": 500,
+        "minHoldDays": 7,
+        "refUsdc": 10000
+      },
+      "error": "VM Exception while processing transaction: reverted with reason string 'Exceeds credit limit'",
+      "infeasibleReason": "BOOTSTRAP-INFEASIBLE: the principal needed to saturate the gain budget exceeds the 1,000 USDC bottom-tier credit limit, so NO agent (honest or attacker) can build reputation under this config"
+    },
+    {
+      "config": {
+        "maxGainPerDay": 5,
+        "minSupplyUsdc": 10,
+        "feeBps": 100,
+        "minHoldDays": 1,
+        "bonusRefUsdc": 100,
+        "penaltyLarge": 300
+      },
+      "pipelineDepth": 1,
+      "loansPerWindow": 1,
+      "perLoanUsdc": 50,
+      "saturatesRateLimit": true,
+      "measured": {
+        "pointsPerDay": 4.9999,
+        "attackerUsdcPerPoint": 0.0002876,
+        "honestUsdcPerPoint": 0.028766999999999997,
+        "attackerCapitalLockedUsdc": 100.57534
+      },
+      "projected100to600": {
+        "days": 100,
+        "attackerUsdc": 0.124627,
+        "honestUsdc": 12.4657,
+        "attackerCapitalUsdc": 100.57534,
+        "attackerCostAsPctOfHonest": 1,
+        "attackerTotalOutlayUsdc": 0.1246,
+        "capitalToPrizeRatio": 0.00402,
+        "refarmDaysAfter25kDefault": 60,
+        "refarmUsdcAfter25kDefault": 0.05752
+      }
+    },
+    {
+      "config": {
+        "maxGainPerDay": 5,
+        "minSupplyUsdc": 10,
+        "feeBps": 100,
+        "minHoldDays": 1,
+        "bonusRefUsdc": 1000,
+        "penaltyLarge": 300
+      },
+      "pipelineDepth": 1,
+      "loansPerWindow": 1,
+      "perLoanUsdc": 500,
+      "saturatesRateLimit": true,
+      "measured": {
+        "pointsPerDay": 4.9999,
+        "attackerUsdcPerPoint": 0.0028766,
+        "honestUsdcPerPoint": 0.2876712,
+        "attackerCapitalLockedUsdc": 1005.753424
+      },
+      "projected100to600": {
+        "days": 100,
+        "attackerUsdc": 1.246527,
+        "honestUsdc": 124.6575,
+        "attackerCapitalUsdc": 1005.753424,
+        "attackerCostAsPctOfHonest": 1,
+        "attackerTotalOutlayUsdc": 1.2465,
+        "capitalToPrizeRatio": 0.04023,
+        "refarmDaysAfter25kDefault": 60,
+        "refarmUsdcAfter25kDefault": 0.57532
+      }
+    },
+    {
+      "config": {
+        "maxGain": 5,
+        "minSupply": 10,
+        "feeBps": 100,
+        "minHoldDays": 1,
+        "refUsdc": 10000
+      },
+      "error": "VM Exception while processing transaction: reverted with reason string 'Exceeds credit limit'",
+      "infeasibleReason": "BOOTSTRAP-INFEASIBLE: the principal needed to saturate the gain budget exceeds the 1,000 USDC bottom-tier credit limit, so NO agent (honest or attacker) can build reputation under this config"
+    },
+    {
+      "config": {
+        "maxGainPerDay": 5,
+        "minSupplyUsdc": 10,
+        "feeBps": 100,
+        "minHoldDays": 7,
+        "bonusRefUsdc": 100,
+        "penaltyLarge": 300
+      },
+      "pipelineDepth": 7,
+      "loansPerWindow": 1,
+      "perLoanUsdc": 50,
+      "saturatesRateLimit": true,
+      "measured": {
+        "pointsPerDay": 4.9999,
+        "attackerUsdcPerPoint": 0.00032859999999999996,
+        "honestUsdcPerPoint": 0.0328766,
+        "attackerCapitalLockedUsdc": 700.657532
+      },
+      "projected100to600": {
+        "days": 100,
+        "attackerUsdc": 0.142393,
+        "honestUsdc": 14.2465,
+        "attackerCapitalUsdc": 700.657532,
+        "attackerCostAsPctOfHonest": 0.999,
+        "attackerTotalOutlayUsdc": 0.1424,
+        "capitalToPrizeRatio": 0.02803,
+        "refarmDaysAfter25kDefault": 60,
+        "refarmUsdcAfter25kDefault": 0.06572
+      }
+    },
+    {
+      "config": {
+        "maxGain": 5,
+        "minSupply": 10,
+        "feeBps": 100,
+        "minHoldDays": 7,
+        "refUsdc": 1000
+      },
+      "error": "VM Exception while processing transaction: reverted with reason string 'Exceeds credit limit'",
+      "infeasibleReason": "BOOTSTRAP-INFEASIBLE: the principal needed to saturate the gain budget exceeds the 1,000 USDC bottom-tier credit limit, so NO agent (honest or attacker) can build reputation under this config"
+    },
+    {
+      "config": {
+        "maxGain": 5,
+        "minSupply": 10,
+        "feeBps": 100,
+        "minHoldDays": 7,
+        "refUsdc": 10000
+      },
+      "error": "VM Exception while processing transaction: reverted with reason string 'Exceeds credit limit'",
+      "infeasibleReason": "BOOTSTRAP-INFEASIBLE: the principal needed to saturate the gain budget exceeds the 1,000 USDC bottom-tier credit limit, so NO agent (honest or attacker) can build reputation under this config"
+    },
+    {
+      "config": {
+        "maxGainPerDay": 5,
+        "minSupplyUsdc": 10,
+        "feeBps": 500,
+        "minHoldDays": 1,
+        "bonusRefUsdc": 100,
+        "penaltyLarge": 300
+      },
+      "pipelineDepth": 1,
+      "loansPerWindow": 1,
+      "perLoanUsdc": 50,
+      "saturatesRateLimit": true,
+      "measured": {
+        "pointsPerDay": 4.9999,
+        "attackerUsdcPerPoint": 0.0014382000000000002,
+        "honestUsdcPerPoint": 0.028766999999999997,
+        "attackerCapitalLockedUsdc": 100.57534
+      },
+      "projected100to600": {
+        "days": 100,
+        "attackerUsdc": 0.62322,
+        "honestUsdc": 12.4657,
+        "attackerCapitalUsdc": 100.57534,
+        "attackerCostAsPctOfHonest": 4.999,
+        "attackerTotalOutlayUsdc": 0.6232,
+        "capitalToPrizeRatio": 0.00402,
+        "refarmDaysAfter25kDefault": 60,
+        "refarmUsdcAfter25kDefault": 0.28764
+      }
+    },
+    {
+      "config": {
+        "maxGainPerDay": 5,
+        "minSupplyUsdc": 10,
+        "feeBps": 500,
+        "minHoldDays": 1,
+        "bonusRefUsdc": 1000,
+        "penaltyLarge": 300
+      },
+      "pipelineDepth": 1,
+      "loansPerWindow": 1,
+      "perLoanUsdc": 500,
+      "saturatesRateLimit": true,
+      "measured": {
+        "pointsPerDay": 4.9999,
+        "attackerUsdcPerPoint": 0.0143834,
+        "honestUsdcPerPoint": 0.2876712,
+        "attackerCapitalLockedUsdc": 1005.753424
+      },
+      "projected100to600": {
+        "days": 100,
+        "attackerUsdc": 6.232807,
+        "honestUsdc": 124.6575,
+        "attackerCapitalUsdc": 1005.753424,
+        "attackerCostAsPctOfHonest": 5,
+        "attackerTotalOutlayUsdc": 6.2328,
+        "capitalToPrizeRatio": 0.04023,
+        "refarmDaysAfter25kDefault": 60,
+        "refarmUsdcAfter25kDefault": 2.87668
+      }
+    },
+    {
+      "config": {
+        "maxGain": 5,
+        "minSupply": 10,
+        "feeBps": 500,
+        "minHoldDays": 1,
+        "refUsdc": 10000
+      },
+      "error": "VM Exception while processing transaction: reverted with reason string 'Exceeds credit limit'",
+      "infeasibleReason": "BOOTSTRAP-INFEASIBLE: the principal needed to saturate the gain budget exceeds the 1,000 USDC bottom-tier credit limit, so NO agent (honest or attacker) can build reputation under this config"
+    },
+    {
+      "config": {
+        "maxGainPerDay": 5,
+        "minSupplyUsdc": 10,
+        "feeBps": 500,
+        "minHoldDays": 7,
+        "bonusRefUsdc": 100,
+        "penaltyLarge": 300
+      },
+      "pipelineDepth": 7,
+      "loansPerWindow": 1,
+      "perLoanUsdc": 50,
+      "saturatesRateLimit": true,
+      "measured": {
+        "pointsPerDay": 4.9999,
+        "attackerUsdcPerPoint": 0.0016438000000000002,
+        "honestUsdcPerPoint": 0.0328766,
+        "attackerCapitalLockedUsdc": 700.657532
+      },
+      "projected100to600": {
+        "days": 100,
+        "attackerUsdc": 0.712313,
+        "honestUsdc": 14.2465,
+        "attackerCapitalUsdc": 700.657532,
+        "attackerCostAsPctOfHonest": 5,
+        "attackerTotalOutlayUsdc": 0.7123,
+        "capitalToPrizeRatio": 0.02803,
+        "refarmDaysAfter25kDefault": 60,
+        "refarmUsdcAfter25kDefault": 0.32876
+      }
+    },
+    {
+      "config": {
+        "maxGain": 5,
+        "minSupply": 10,
+        "feeBps": 500,
+        "minHoldDays": 7,
+        "refUsdc": 1000
+      },
+      "error": "VM Exception while processing transaction: reverted with reason string 'Exceeds credit limit'",
+      "infeasibleReason": "BOOTSTRAP-INFEASIBLE: the principal needed to saturate the gain budget exceeds the 1,000 USDC bottom-tier credit limit, so NO agent (honest or attacker) can build reputation under this config"
+    },
+    {
+      "config": {
+        "maxGain": 5,
+        "minSupply": 10,
+        "feeBps": 500,
+        "minHoldDays": 7,
+        "refUsdc": 10000
+      },
+      "error": "VM Exception while processing transaction: reverted with reason string 'Exceeds credit limit'",
+      "infeasibleReason": "BOOTSTRAP-INFEASIBLE: the principal needed to saturate the gain budget exceeds the 1,000 USDC bottom-tier credit limit, so NO agent (honest or attacker) can build reputation under this config"
+    },
+    {
+      "config": {
+        "maxGainPerDay": 5,
+        "minSupplyUsdc": 100,
+        "feeBps": 100,
+        "minHoldDays": 1,
+        "bonusRefUsdc": 100,
+        "penaltyLarge": 300
+      },
+      "pipelineDepth": 1,
+      "loansPerWindow": 1,
+      "perLoanUsdc": 50,
+      "saturatesRateLimit": true,
+      "measured": {
+        "pointsPerDay": 4.9999,
+        "attackerUsdcPerPoint": 0.0002876,
+        "honestUsdcPerPoint": 0.028766999999999997,
+        "attackerCapitalLockedUsdc": 100.57534
+      },
+      "projected100to600": {
+        "days": 100,
+        "attackerUsdc": 0.124627,
+        "honestUsdc": 12.4657,
+        "attackerCapitalUsdc": 100.57534,
+        "attackerCostAsPctOfHonest": 1,
+        "attackerTotalOutlayUsdc": 0.1246,
+        "capitalToPrizeRatio": 0.00402,
+        "refarmDaysAfter25kDefault": 60,
+        "refarmUsdcAfter25kDefault": 0.05752
+      }
+    },
+    {
+      "config": {
+        "maxGainPerDay": 5,
+        "minSupplyUsdc": 100,
+        "feeBps": 100,
+        "minHoldDays": 1,
+        "bonusRefUsdc": 1000,
+        "penaltyLarge": 300
+      },
+      "pipelineDepth": 1,
+      "loansPerWindow": 1,
+      "perLoanUsdc": 500,
+      "saturatesRateLimit": true,
+      "measured": {
+        "pointsPerDay": 4.9999,
+        "attackerUsdcPerPoint": 0.0028766,
+        "honestUsdcPerPoint": 0.2876712,
+        "attackerCapitalLockedUsdc": 1005.753424
+      },
+      "projected100to600": {
+        "days": 100,
+        "attackerUsdc": 1.246527,
+        "honestUsdc": 124.6575,
+        "attackerCapitalUsdc": 1005.753424,
+        "attackerCostAsPctOfHonest": 1,
+        "attackerTotalOutlayUsdc": 1.2465,
+        "capitalToPrizeRatio": 0.04023,
+        "refarmDaysAfter25kDefault": 60,
+        "refarmUsdcAfter25kDefault": 0.57532
+      }
+    },
+    {
+      "config": {
+        "maxGain": 5,
+        "minSupply": 100,
+        "feeBps": 100,
+        "minHoldDays": 1,
+        "refUsdc": 10000
+      },
+      "error": "VM Exception while processing transaction: reverted with reason string 'Exceeds credit limit'",
+      "infeasibleReason": "BOOTSTRAP-INFEASIBLE: the principal needed to saturate the gain budget exceeds the 1,000 USDC bottom-tier credit limit, so NO agent (honest or attacker) can build reputation under this config"
+    },
+    {
+      "config": {
+        "maxGainPerDay": 5,
+        "minSupplyUsdc": 100,
+        "feeBps": 100,
+        "minHoldDays": 7,
+        "bonusRefUsdc": 100,
+        "penaltyLarge": 300
+      },
+      "pipelineDepth": 7,
+      "loansPerWindow": 1,
+      "perLoanUsdc": 50,
+      "saturatesRateLimit": true,
+      "measured": {
+        "pointsPerDay": 4.9999,
+        "attackerUsdcPerPoint": 0.00032859999999999996,
+        "honestUsdcPerPoint": 0.0328766,
+        "attackerCapitalLockedUsdc": 700.657532
+      },
+      "projected100to600": {
+        "days": 100,
+        "attackerUsdc": 0.142393,
+        "honestUsdc": 14.2465,
+        "attackerCapitalUsdc": 700.657532,
+        "attackerCostAsPctOfHonest": 0.999,
+        "attackerTotalOutlayUsdc": 0.1424,
+        "capitalToPrizeRatio": 0.02803,
+        "refarmDaysAfter25kDefault": 60,
+        "refarmUsdcAfter25kDefault": 0.06572
+      }
+    },
+    {
+      "config": {
+        "maxGain": 5,
+        "minSupply": 100,
+        "feeBps": 100,
+        "minHoldDays": 7,
+        "refUsdc": 1000
+      },
+      "error": "VM Exception while processing transaction: reverted with reason string 'Exceeds credit limit'",
+      "infeasibleReason": "BOOTSTRAP-INFEASIBLE: the principal needed to saturate the gain budget exceeds the 1,000 USDC bottom-tier credit limit, so NO agent (honest or attacker) can build reputation under this config"
+    },
+    {
+      "config": {
+        "maxGain": 5,
+        "minSupply": 100,
+        "feeBps": 100,
+        "minHoldDays": 7,
+        "refUsdc": 10000
+      },
+      "error": "VM Exception while processing transaction: reverted with reason string 'Exceeds credit limit'",
+      "infeasibleReason": "BOOTSTRAP-INFEASIBLE: the principal needed to saturate the gain budget exceeds the 1,000 USDC bottom-tier credit limit, so NO agent (honest or attacker) can build reputation under this config"
+    },
+    {
+      "config": {
+        "maxGainPerDay": 5,
+        "minSupplyUsdc": 100,
+        "feeBps": 500,
+        "minHoldDays": 1,
+        "bonusRefUsdc": 100,
+        "penaltyLarge": 300
+      },
+      "pipelineDepth": 1,
+      "loansPerWindow": 1,
+      "perLoanUsdc": 50,
+      "saturatesRateLimit": true,
+      "measured": {
+        "pointsPerDay": 4.9999,
+        "attackerUsdcPerPoint": 0.0014382000000000002,
+        "honestUsdcPerPoint": 0.028766999999999997,
+        "attackerCapitalLockedUsdc": 100.57534
+      },
+      "projected100to600": {
+        "days": 100,
+        "attackerUsdc": 0.62322,
+        "honestUsdc": 12.4657,
+        "attackerCapitalUsdc": 100.57534,
+        "attackerCostAsPctOfHonest": 4.999,
+        "attackerTotalOutlayUsdc": 0.6232,
+        "capitalToPrizeRatio": 0.00402,
+        "refarmDaysAfter25kDefault": 60,
+        "refarmUsdcAfter25kDefault": 0.28764
+      }
+    },
+    {
+      "config": {
+        "maxGainPerDay": 5,
+        "minSupplyUsdc": 100,
+        "feeBps": 500,
+        "minHoldDays": 1,
+        "bonusRefUsdc": 1000,
+        "penaltyLarge": 300
+      },
+      "pipelineDepth": 1,
+      "loansPerWindow": 1,
+      "perLoanUsdc": 500,
+      "saturatesRateLimit": true,
+      "measured": {
+        "pointsPerDay": 4.9999,
+        "attackerUsdcPerPoint": 0.0143834,
+        "honestUsdcPerPoint": 0.2876712,
+        "attackerCapitalLockedUsdc": 1005.753424
+      },
+      "projected100to600": {
+        "days": 100,
+        "attackerUsdc": 6.232807,
+        "honestUsdc": 124.6575,
+        "attackerCapitalUsdc": 1005.753424,
+        "attackerCostAsPctOfHonest": 5,
+        "attackerTotalOutlayUsdc": 6.2328,
+        "capitalToPrizeRatio": 0.04023,
+        "refarmDaysAfter25kDefault": 60,
+        "refarmUsdcAfter25kDefault": 2.87668
+      }
+    },
+    {
+      "config": {
+        "maxGain": 5,
+        "minSupply": 100,
+        "feeBps": 500,
+        "minHoldDays": 1,
+        "refUsdc": 10000
+      },
+      "error": "VM Exception while processing transaction: reverted with reason string 'Exceeds credit limit'",
+      "infeasibleReason": "BOOTSTRAP-INFEASIBLE: the principal needed to saturate the gain budget exceeds the 1,000 USDC bottom-tier credit limit, so NO agent (honest or attacker) can build reputation under this config"
+    },
+    {
+      "config": {
+        "maxGainPerDay": 5,
+        "minSupplyUsdc": 100,
+        "feeBps": 500,
+        "minHoldDays": 7,
+        "bonusRefUsdc": 100,
+        "penaltyLarge": 300
+      },
+      "pipelineDepth": 7,
+      "loansPerWindow": 1,
+      "perLoanUsdc": 50,
+      "saturatesRateLimit": true,
+      "measured": {
+        "pointsPerDay": 4.9999,
+        "attackerUsdcPerPoint": 0.0016438000000000002,
+        "honestUsdcPerPoint": 0.0328766,
+        "attackerCapitalLockedUsdc": 700.657532
+      },
+      "projected100to600": {
+        "days": 100,
+        "attackerUsdc": 0.712313,
+        "honestUsdc": 14.2465,
+        "attackerCapitalUsdc": 700.657532,
+        "attackerCostAsPctOfHonest": 5,
+        "attackerTotalOutlayUsdc": 0.7123,
+        "capitalToPrizeRatio": 0.02803,
+        "refarmDaysAfter25kDefault": 60,
+        "refarmUsdcAfter25kDefault": 0.32876
+      }
+    },
+    {
+      "config": {
+        "maxGain": 5,
+        "minSupply": 100,
+        "feeBps": 500,
+        "minHoldDays": 7,
+        "refUsdc": 1000
+      },
+      "error": "VM Exception while processing transaction: reverted with reason string 'Exceeds credit limit'",
+      "infeasibleReason": "BOOTSTRAP-INFEASIBLE: the principal needed to saturate the gain budget exceeds the 1,000 USDC bottom-tier credit limit, so NO agent (honest or attacker) can build reputation under this config"
+    },
+    {
+      "config": {
+        "maxGain": 5,
+        "minSupply": 100,
+        "feeBps": 500,
+        "minHoldDays": 7,
+        "refUsdc": 10000
+      },
+      "error": "VM Exception while processing transaction: reverted with reason string 'Exceeds credit limit'",
+      "infeasibleReason": "BOOTSTRAP-INFEASIBLE: the principal needed to saturate the gain budget exceeds the 1,000 USDC bottom-tier credit limit, so NO agent (honest or attacker) can build reputation under this config"
+    },
+    {
+      "config": {
+        "maxGainPerDay": 1,
+        "minSupplyUsdc": 10,
+        "feeBps": 100,
+        "minHoldDays": 1,
+        "bonusRefUsdc": 100,
+        "penaltyLarge": 300
+      },
+      "pipelineDepth": 1,
+      "loansPerWindow": 1,
+      "perLoanUsdc": 10,
+      "saturatesRateLimit": true,
+      "measured": {
+        "pointsPerDay": 1,
+        "attackerUsdcPerPoint": 0.000287,
+        "honestUsdcPerPoint": 0.028767,
+        "attackerCapitalLockedUsdc": 20.115068
+      },
+      "projected100to600": {
+        "days": 500,
+        "attackerUsdc": 0.124367,
+        "honestUsdc": 12.4657,
+        "attackerCapitalUsdc": 20.115068,
+        "attackerCostAsPctOfHonest": 0.998,
+        "attackerTotalOutlayUsdc": 0.1244,
+        "capitalToPrizeRatio": 0.0008,
+        "refarmDaysAfter25kDefault": 300,
+        "refarmUsdcAfter25kDefault": 0.0574
+      }
+    },
+    {
+      "config": {
+        "maxGainPerDay": 1,
+        "minSupplyUsdc": 10,
+        "feeBps": 100,
+        "minHoldDays": 1,
+        "bonusRefUsdc": 1000,
+        "penaltyLarge": 300
+      },
+      "pipelineDepth": 1,
+      "loansPerWindow": 1,
+      "perLoanUsdc": 100,
+      "saturatesRateLimit": true,
+      "measured": {
+        "pointsPerDay": 1,
+        "attackerUsdcPerPoint": 0.002876,
+        "honestUsdcPerPoint": 0.287671,
+        "attackerCapitalLockedUsdc": 201.150684
+      },
+      "projected100to600": {
+        "days": 500,
+        "attackerUsdc": 1.246267,
+        "honestUsdc": 124.6574,
+        "attackerCapitalUsdc": 201.150684,
+        "attackerCostAsPctOfHonest": 1,
+        "attackerTotalOutlayUsdc": 1.2463,
+        "capitalToPrizeRatio": 0.00805,
+        "refarmDaysAfter25kDefault": 300,
+        "refarmUsdcAfter25kDefault": 0.5752
+      }
+    },
+    {
+      "config": {
+        "maxGainPerDay": 1,
+        "minSupplyUsdc": 10,
+        "feeBps": 100,
+        "minHoldDays": 1,
+        "bonusRefUsdc": 10000,
+        "penaltyLarge": 300
+      },
+      "pipelineDepth": 1,
+      "loansPerWindow": 1,
+      "perLoanUsdc": 1000,
+      "saturatesRateLimit": true,
+      "measured": {
+        "pointsPerDay": 1,
+        "attackerUsdcPerPoint": 0.028767,
+        "honestUsdcPerPoint": 2.876712,
+        "attackerCapitalLockedUsdc": 2011.506848
+      },
+      "projected100to600": {
+        "days": 500,
+        "attackerUsdc": 12.4657,
+        "honestUsdc": 1246.5752,
+        "attackerCapitalUsdc": 2011.506848,
+        "attackerCostAsPctOfHonest": 1,
+        "attackerTotalOutlayUsdc": 12.4657,
+        "capitalToPrizeRatio": 0.08046,
+        "refarmDaysAfter25kDefault": 300,
+        "refarmUsdcAfter25kDefault": 5.7534
+      }
+    },
+    {
+      "config": {
+        "maxGainPerDay": 1,
+        "minSupplyUsdc": 10,
+        "feeBps": 100,
+        "minHoldDays": 7,
+        "bonusRefUsdc": 100,
+        "penaltyLarge": 300
+      },
+      "pipelineDepth": 7,
+      "loansPerWindow": 1,
+      "perLoanUsdc": 10,
+      "saturatesRateLimit": true,
+      "measured": {
+        "pointsPerDay": 1,
+        "attackerUsdcPerPoint": 0.000328,
+        "honestUsdcPerPoint": 0.032876,
+        "attackerCapitalLockedUsdc": 140.131504
+      },
+      "projected100to600": {
+        "days": 500,
+        "attackerUsdc": 0.142133,
+        "honestUsdc": 14.2463,
+        "attackerCapitalUsdc": 140.131504,
+        "attackerCostAsPctOfHonest": 0.998,
+        "attackerTotalOutlayUsdc": 0.1421,
+        "capitalToPrizeRatio": 0.00561,
+        "refarmDaysAfter25kDefault": 300,
+        "refarmUsdcAfter25kDefault": 0.0656
+      }
+    },
+    {
+      "config": {
+        "maxGainPerDay": 1,
+        "minSupplyUsdc": 10,
+        "feeBps": 100,
+        "minHoldDays": 7,
+        "bonusRefUsdc": 1000,
+        "penaltyLarge": 300
+      },
+      "pipelineDepth": 7,
+      "loansPerWindow": 1,
+      "perLoanUsdc": 100,
+      "saturatesRateLimit": true,
+      "measured": {
+        "pointsPerDay": 1,
+        "attackerUsdcPerPoint": 0.003287,
+        "honestUsdcPerPoint": 0.328767,
+        "attackerCapitalLockedUsdc": 1401.315068
+      },
+      "projected100to600": {
+        "days": 500,
+        "attackerUsdc": 1.424367,
+        "honestUsdc": 142.4657,
+        "attackerCapitalUsdc": 1401.315068,
+        "attackerCostAsPctOfHonest": 1,
+        "attackerTotalOutlayUsdc": 1.4244,
+        "capitalToPrizeRatio": 0.05605,
+        "refarmDaysAfter25kDefault": 300,
+        "refarmUsdcAfter25kDefault": 0.6574
+      }
+    },
+    {
+      "config": {
+        "maxGain": 1,
+        "minSupply": 10,
+        "feeBps": 100,
+        "minHoldDays": 7,
+        "refUsdc": 10000
+      },
+      "error": "VM Exception while processing transaction: reverted with reason string 'Exceeds credit limit'",
+      "infeasibleReason": "BOOTSTRAP-INFEASIBLE: the principal needed to saturate the gain budget exceeds the 1,000 USDC bottom-tier credit limit, so NO agent (honest or attacker) can build reputation under this config"
+    },
+    {
+      "config": {
+        "maxGainPerDay": 1,
+        "minSupplyUsdc": 10,
+        "feeBps": 500,
+        "minHoldDays": 1,
+        "bonusRefUsdc": 100,
+        "penaltyLarge": 300
+      },
+      "pipelineDepth": 1,
+      "loansPerWindow": 1,
+      "perLoanUsdc": 10,
+      "saturatesRateLimit": true,
+      "measured": {
+        "pointsPerDay": 1,
+        "attackerUsdcPerPoint": 0.001438,
+        "honestUsdcPerPoint": 0.028767,
+        "attackerCapitalLockedUsdc": 20.115068
+      },
+      "projected100to600": {
+        "days": 500,
+        "attackerUsdc": 0.623133,
+        "honestUsdc": 12.4657,
+        "attackerCapitalUsdc": 20.115068,
+        "attackerCostAsPctOfHonest": 4.999,
+        "attackerTotalOutlayUsdc": 0.6231,
+        "capitalToPrizeRatio": 0.0008,
+        "refarmDaysAfter25kDefault": 300,
+        "refarmUsdcAfter25kDefault": 0.2876
+      }
+    },
+    {
+      "config": {
+        "maxGainPerDay": 1,
+        "minSupplyUsdc": 10,
+        "feeBps": 500,
+        "minHoldDays": 1,
+        "bonusRefUsdc": 1000,
+        "penaltyLarge": 300
+      },
+      "pipelineDepth": 1,
+      "loansPerWindow": 1,
+      "perLoanUsdc": 100,
+      "saturatesRateLimit": true,
+      "measured": {
+        "pointsPerDay": 1,
+        "attackerUsdcPerPoint": 0.014383,
+        "honestUsdcPerPoint": 0.287671,
+        "attackerCapitalLockedUsdc": 201.150684
+      },
+      "projected100to600": {
+        "days": 500,
+        "attackerUsdc": 6.232633,
+        "honestUsdc": 124.6574,
+        "attackerCapitalUsdc": 201.150684,
+        "attackerCostAsPctOfHonest": 5,
+        "attackerTotalOutlayUsdc": 6.2326,
+        "capitalToPrizeRatio": 0.00805,
+        "refarmDaysAfter25kDefault": 300,
+        "refarmUsdcAfter25kDefault": 2.8766
+      }
+    },
+    {
+      "config": {
+        "maxGainPerDay": 1,
+        "minSupplyUsdc": 10,
+        "feeBps": 500,
+        "minHoldDays": 1,
+        "bonusRefUsdc": 10000,
+        "penaltyLarge": 300
+      },
+      "pipelineDepth": 1,
+      "loansPerWindow": 1,
+      "perLoanUsdc": 1000,
+      "saturatesRateLimit": true,
+      "measured": {
+        "pointsPerDay": 1,
+        "attackerUsdcPerPoint": 0.143835,
+        "honestUsdcPerPoint": 2.876712,
+        "attackerCapitalLockedUsdc": 2011.506848
+      },
+      "projected100to600": {
+        "days": 500,
+        "attackerUsdc": 62.3285,
+        "honestUsdc": 1246.5752,
+        "attackerCapitalUsdc": 2011.506848,
+        "attackerCostAsPctOfHonest": 5,
+        "attackerTotalOutlayUsdc": 62.3285,
+        "capitalToPrizeRatio": 0.08046,
+        "refarmDaysAfter25kDefault": 300,
+        "refarmUsdcAfter25kDefault": 28.767
+      }
+    },
+    {
+      "config": {
+        "maxGainPerDay": 1,
+        "minSupplyUsdc": 10,
+        "feeBps": 500,
+        "minHoldDays": 7,
+        "bonusRefUsdc": 100,
+        "penaltyLarge": 300
+      },
+      "pipelineDepth": 7,
+      "loansPerWindow": 1,
+      "perLoanUsdc": 10,
+      "saturatesRateLimit": true,
+      "measured": {
+        "pointsPerDay": 1,
+        "attackerUsdcPerPoint": 0.001643,
+        "honestUsdcPerPoint": 0.032876,
+        "attackerCapitalLockedUsdc": 140.131504
+      },
+      "projected100to600": {
+        "days": 500,
+        "attackerUsdc": 0.711967,
+        "honestUsdc": 14.2463,
+        "attackerCapitalUsdc": 140.131504,
+        "attackerCostAsPctOfHonest": 4.998,
+        "attackerTotalOutlayUsdc": 0.712,
+        "capitalToPrizeRatio": 0.00561,
+        "refarmDaysAfter25kDefault": 300,
+        "refarmUsdcAfter25kDefault": 0.3286
+      }
+    },
+    {
+      "config": {
+        "maxGainPerDay": 1,
+        "minSupplyUsdc": 10,
+        "feeBps": 500,
+        "minHoldDays": 7,
+        "bonusRefUsdc": 1000,
+        "penaltyLarge": 300
+      },
+      "pipelineDepth": 7,
+      "loansPerWindow": 1,
+      "perLoanUsdc": 100,
+      "saturatesRateLimit": true,
+      "measured": {
+        "pointsPerDay": 1,
+        "attackerUsdcPerPoint": 0.016438,
+        "honestUsdcPerPoint": 0.328767,
+        "attackerCapitalLockedUsdc": 1401.315068
+      },
+      "projected100to600": {
+        "days": 500,
+        "attackerUsdc": 7.123133,
+        "honestUsdc": 142.4657,
+        "attackerCapitalUsdc": 1401.315068,
+        "attackerCostAsPctOfHonest": 5,
+        "attackerTotalOutlayUsdc": 7.1231,
+        "capitalToPrizeRatio": 0.05605,
+        "refarmDaysAfter25kDefault": 300,
+        "refarmUsdcAfter25kDefault": 3.2876
+      }
+    },
+    {
+      "config": {
+        "maxGain": 1,
+        "minSupply": 10,
+        "feeBps": 500,
+        "minHoldDays": 7,
+        "refUsdc": 10000
+      },
+      "error": "VM Exception while processing transaction: reverted with reason string 'Exceeds credit limit'",
+      "infeasibleReason": "BOOTSTRAP-INFEASIBLE: the principal needed to saturate the gain budget exceeds the 1,000 USDC bottom-tier credit limit, so NO agent (honest or attacker) can build reputation under this config"
+    },
+    {
+      "config": {
+        "maxGainPerDay": 1,
+        "minSupplyUsdc": 100,
+        "feeBps": 100,
+        "minHoldDays": 1,
+        "bonusRefUsdc": 100,
+        "penaltyLarge": 300
+      },
+      "pipelineDepth": 1,
+      "loansPerWindow": 1,
+      "perLoanUsdc": 10,
+      "saturatesRateLimit": true,
+      "measured": {
+        "pointsPerDay": 1,
+        "attackerUsdcPerPoint": 0.000287,
+        "honestUsdcPerPoint": 0.028767,
+        "attackerCapitalLockedUsdc": 100.115068
+      },
+      "projected100to600": {
+        "days": 500,
+        "attackerUsdc": 0.124367,
+        "honestUsdc": 12.4657,
+        "attackerCapitalUsdc": 100.115068,
+        "attackerCostAsPctOfHonest": 0.998,
+        "attackerTotalOutlayUsdc": 0.1244,
+        "capitalToPrizeRatio": 0.004,
+        "refarmDaysAfter25kDefault": 300,
+        "refarmUsdcAfter25kDefault": 0.0574
+      }
+    },
+    {
+      "config": {
+        "maxGainPerDay": 1,
+        "minSupplyUsdc": 100,
+        "feeBps": 100,
+        "minHoldDays": 1,
+        "bonusRefUsdc": 1000,
+        "penaltyLarge": 300
+      },
+      "pipelineDepth": 1,
+      "loansPerWindow": 1,
+      "perLoanUsdc": 100,
+      "saturatesRateLimit": true,
+      "measured": {
+        "pointsPerDay": 1,
+        "attackerUsdcPerPoint": 0.002876,
+        "honestUsdcPerPoint": 0.287671,
+        "attackerCapitalLockedUsdc": 201.150684
+      },
+      "projected100to600": {
+        "days": 500,
+        "attackerUsdc": 1.246267,
+        "honestUsdc": 124.6574,
+        "attackerCapitalUsdc": 201.150684,
+        "attackerCostAsPctOfHonest": 1,
+        "attackerTotalOutlayUsdc": 1.2463,
+        "capitalToPrizeRatio": 0.00805,
+        "refarmDaysAfter25kDefault": 300,
+        "refarmUsdcAfter25kDefault": 0.5752
+      }
+    },
+    {
+      "config": {
+        "maxGainPerDay": 1,
+        "minSupplyUsdc": 100,
+        "feeBps": 100,
+        "minHoldDays": 1,
+        "bonusRefUsdc": 10000,
+        "penaltyLarge": 300
+      },
+      "pipelineDepth": 1,
+      "loansPerWindow": 1,
+      "perLoanUsdc": 1000,
+      "saturatesRateLimit": true,
+      "measured": {
+        "pointsPerDay": 1,
+        "attackerUsdcPerPoint": 0.028767,
+        "honestUsdcPerPoint": 2.876712,
+        "attackerCapitalLockedUsdc": 2011.506848
+      },
+      "projected100to600": {
+        "days": 500,
+        "attackerUsdc": 12.4657,
+        "honestUsdc": 1246.5752,
+        "attackerCapitalUsdc": 2011.506848,
+        "attackerCostAsPctOfHonest": 1,
+        "attackerTotalOutlayUsdc": 12.4657,
+        "capitalToPrizeRatio": 0.08046,
+        "refarmDaysAfter25kDefault": 300,
+        "refarmUsdcAfter25kDefault": 5.7534
+      }
+    },
+    {
+      "config": {
+        "maxGainPerDay": 1,
+        "minSupplyUsdc": 100,
+        "feeBps": 100,
+        "minHoldDays": 7,
+        "bonusRefUsdc": 100,
+        "penaltyLarge": 300
+      },
+      "pipelineDepth": 7,
+      "loansPerWindow": 1,
+      "perLoanUsdc": 10,
+      "saturatesRateLimit": true,
+      "measured": {
+        "pointsPerDay": 1,
+        "attackerUsdcPerPoint": 0.000328,
+        "honestUsdcPerPoint": 0.032876,
+        "attackerCapitalLockedUsdc": 140.131504
+      },
+      "projected100to600": {
+        "days": 500,
+        "attackerUsdc": 0.142133,
+        "honestUsdc": 14.2463,
+        "attackerCapitalUsdc": 140.131504,
+        "attackerCostAsPctOfHonest": 0.998,
+        "attackerTotalOutlayUsdc": 0.1421,
+        "capitalToPrizeRatio": 0.00561,
+        "refarmDaysAfter25kDefault": 300,
+        "refarmUsdcAfter25kDefault": 0.0656
+      }
+    },
+    {
+      "config": {
+        "maxGainPerDay": 1,
+        "minSupplyUsdc": 100,
+        "feeBps": 100,
+        "minHoldDays": 7,
+        "bonusRefUsdc": 1000,
+        "penaltyLarge": 300
+      },
+      "pipelineDepth": 7,
+      "loansPerWindow": 1,
+      "perLoanUsdc": 100,
+      "saturatesRateLimit": true,
+      "measured": {
+        "pointsPerDay": 1,
+        "attackerUsdcPerPoint": 0.003287,
+        "honestUsdcPerPoint": 0.328767,
+        "attackerCapitalLockedUsdc": 1401.315068
+      },
+      "projected100to600": {
+        "days": 500,
+        "attackerUsdc": 1.424367,
+        "honestUsdc": 142.4657,
+        "attackerCapitalUsdc": 1401.315068,
+        "attackerCostAsPctOfHonest": 1,
+        "attackerTotalOutlayUsdc": 1.4244,
+        "capitalToPrizeRatio": 0.05605,
+        "refarmDaysAfter25kDefault": 300,
+        "refarmUsdcAfter25kDefault": 0.6574
+      }
+    },
+    {
+      "config": {
+        "maxGain": 1,
+        "minSupply": 100,
+        "feeBps": 100,
+        "minHoldDays": 7,
+        "refUsdc": 10000
+      },
+      "error": "VM Exception while processing transaction: reverted with reason string 'Exceeds credit limit'",
+      "infeasibleReason": "BOOTSTRAP-INFEASIBLE: the principal needed to saturate the gain budget exceeds the 1,000 USDC bottom-tier credit limit, so NO agent (honest or attacker) can build reputation under this config"
+    },
+    {
+      "config": {
+        "maxGainPerDay": 1,
+        "minSupplyUsdc": 100,
+        "feeBps": 500,
+        "minHoldDays": 1,
+        "bonusRefUsdc": 100,
+        "penaltyLarge": 300
+      },
+      "pipelineDepth": 1,
+      "loansPerWindow": 1,
+      "perLoanUsdc": 10,
+      "saturatesRateLimit": true,
+      "measured": {
+        "pointsPerDay": 1,
+        "attackerUsdcPerPoint": 0.001438,
+        "honestUsdcPerPoint": 0.028767,
+        "attackerCapitalLockedUsdc": 100.115068
+      },
+      "projected100to600": {
+        "days": 500,
+        "attackerUsdc": 0.623133,
+        "honestUsdc": 12.4657,
+        "attackerCapitalUsdc": 100.115068,
+        "attackerCostAsPctOfHonest": 4.999,
+        "attackerTotalOutlayUsdc": 0.6231,
+        "capitalToPrizeRatio": 0.004,
+        "refarmDaysAfter25kDefault": 300,
+        "refarmUsdcAfter25kDefault": 0.2876
+      }
+    },
+    {
+      "config": {
+        "maxGainPerDay": 1,
+        "minSupplyUsdc": 100,
+        "feeBps": 500,
+        "minHoldDays": 1,
+        "bonusRefUsdc": 1000,
+        "penaltyLarge": 300
+      },
+      "pipelineDepth": 1,
+      "loansPerWindow": 1,
+      "perLoanUsdc": 100,
+      "saturatesRateLimit": true,
+      "measured": {
+        "pointsPerDay": 1,
+        "attackerUsdcPerPoint": 0.014383,
+        "honestUsdcPerPoint": 0.287671,
+        "attackerCapitalLockedUsdc": 201.150684
+      },
+      "projected100to600": {
+        "days": 500,
+        "attackerUsdc": 6.232633,
+        "honestUsdc": 124.6574,
+        "attackerCapitalUsdc": 201.150684,
+        "attackerCostAsPctOfHonest": 5,
+        "attackerTotalOutlayUsdc": 6.2326,
+        "capitalToPrizeRatio": 0.00805,
+        "refarmDaysAfter25kDefault": 300,
+        "refarmUsdcAfter25kDefault": 2.8766
+      }
+    },
+    {
+      "config": {
+        "maxGainPerDay": 1,
+        "minSupplyUsdc": 100,
+        "feeBps": 500,
+        "minHoldDays": 1,
+        "bonusRefUsdc": 10000,
+        "penaltyLarge": 300
+      },
+      "pipelineDepth": 1,
+      "loansPerWindow": 1,
+      "perLoanUsdc": 1000,
+      "saturatesRateLimit": true,
+      "measured": {
+        "pointsPerDay": 1,
+        "attackerUsdcPerPoint": 0.143835,
+        "honestUsdcPerPoint": 2.876712,
+        "attackerCapitalLockedUsdc": 2011.506848
+      },
+      "projected100to600": {
+        "days": 500,
+        "attackerUsdc": 62.3285,
+        "honestUsdc": 1246.5752,
+        "attackerCapitalUsdc": 2011.506848,
+        "attackerCostAsPctOfHonest": 5,
+        "attackerTotalOutlayUsdc": 62.3285,
+        "capitalToPrizeRatio": 0.08046,
+        "refarmDaysAfter25kDefault": 300,
+        "refarmUsdcAfter25kDefault": 28.767
+      }
+    },
+    {
+      "config": {
+        "maxGainPerDay": 1,
+        "minSupplyUsdc": 100,
+        "feeBps": 500,
+        "minHoldDays": 7,
+        "bonusRefUsdc": 100,
+        "penaltyLarge": 300
+      },
+      "pipelineDepth": 7,
+      "loansPerWindow": 1,
+      "perLoanUsdc": 10,
+      "saturatesRateLimit": true,
+      "measured": {
+        "pointsPerDay": 1,
+        "attackerUsdcPerPoint": 0.001643,
+        "honestUsdcPerPoint": 0.032876,
+        "attackerCapitalLockedUsdc": 140.131504
+      },
+      "projected100to600": {
+        "days": 500,
+        "attackerUsdc": 0.711967,
+        "honestUsdc": 14.2463,
+        "attackerCapitalUsdc": 140.131504,
+        "attackerCostAsPctOfHonest": 4.998,
+        "attackerTotalOutlayUsdc": 0.712,
+        "capitalToPrizeRatio": 0.00561,
+        "refarmDaysAfter25kDefault": 300,
+        "refarmUsdcAfter25kDefault": 0.3286
+      }
+    },
+    {
+      "config": {
+        "maxGainPerDay": 1,
+        "minSupplyUsdc": 100,
+        "feeBps": 500,
+        "minHoldDays": 7,
+        "bonusRefUsdc": 1000,
+        "penaltyLarge": 300
+      },
+      "pipelineDepth": 7,
+      "loansPerWindow": 1,
+      "perLoanUsdc": 100,
+      "saturatesRateLimit": true,
+      "measured": {
+        "pointsPerDay": 1,
+        "attackerUsdcPerPoint": 0.016438,
+        "honestUsdcPerPoint": 0.328767,
+        "attackerCapitalLockedUsdc": 1401.315068
+      },
+      "projected100to600": {
+        "days": 500,
+        "attackerUsdc": 7.123133,
+        "honestUsdc": 142.4657,
+        "attackerCapitalUsdc": 1401.315068,
+        "attackerCostAsPctOfHonest": 5,
+        "attackerTotalOutlayUsdc": 7.1231,
+        "capitalToPrizeRatio": 0.05605,
+        "refarmDaysAfter25kDefault": 300,
+        "refarmUsdcAfter25kDefault": 3.2876
+      }
+    },
+    {
+      "config": {
+        "maxGain": 1,
+        "minSupply": 100,
+        "feeBps": 500,
+        "minHoldDays": 7,
+        "refUsdc": 10000
+      },
+      "error": "VM Exception while processing transaction: reverted with reason string 'Exceeds credit limit'",
+      "infeasibleReason": "BOOTSTRAP-INFEASIBLE: the principal needed to saturate the gain budget exceeds the 1,000 USDC bottom-tier credit limit, so NO agent (honest or attacker) can build reputation under this config"
+    }
+  ]
+}

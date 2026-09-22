@@ -1,0 +1,448 @@
+{
+  "scenario": "S7",
+  "startedAt": "2026-09-20T22:21:15.704Z",
+  "finishedAt": "2026-09-20T22:23:07.953Z",
+  "passed": 34,
+  "failed": 1,
+  "blocked": 0,
+  "checks": [
+    {
+      "label": "server healthy, arc-staging enabled",
+      "ok": true,
+      "detail": "{\"status\":\"ok\",\"version\":\"2.1.0\",\"networks\":[{\"network\":\"arc-mainnet\",\"ok\":true,\"blockNumber\":21908850,\"blockTimestamp\":1789942884,\"ageSeconds\":1,\"stale\":false}"
+    },
+    {
+      "label": "server pins the V6.1 staging marketplace address",
+      "ok": true,
+      "detail": "{\"network\":\"arc-staging\",\"label\":\"Arc Testnet V6-staging (test USDC, no real value)\",\"chainId\":5042002,\"realMoney\":false,\"rpcUrl\":\"https://arc-testnet.drpc.org\",\"explorerTx\":\"https://testnet.arcscan.a"
+    },
+    {
+      "label": "check_credit_score: not registered yet",
+      "ok": true,
+      "detail": "{\"network\":\"arc-staging\",\"address\":\"0x53E491ffbCbAd31e1eA51A40A59C8Be6a7fE0E61\",\"registered\":false,\"wallet\":{\"usdcBalance\":\"100.0\",\"usdcAllowanceToMarketplace\":"
+    },
+    {
+      "label": "prepare_register_agent: unsigned tx to registry, simulation ok",
+      "ok": true,
+      "detail": "{\"network\":\"arc-staging\",\"chainId\":5042002,\"realMoney\":false,\"action\":\"register_agent\",\"from\":\"0x53E491ffbCbAd31e1eA51A40A59C8Be6a7fE0E61\",\"to\":\"0x4712A978A0EADe68f0b485b981112Ae66aA622d9\",\"data\":\"0x8"
+    },
+    {
+      "label": "on-chain: C registered",
+      "ok": true,
+      "detail": "agentId 49"
+    },
+    {
+      "label": "prepare_create_pool ok",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "on-chain: pool active, agentAddress == C",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "prepare_approve_usdc: exact 20 USDC to marketplace",
+      "ok": true,
+      "detail": "{\"contract\":\"usdc\",\"contractAddress\":\"0x9F3C10985998D1354D1465c5135Aa924775bd11D\",\"function\":\"approve\",\"args\":{\"spender\":\"0xB2d88bbFF61EF2CcF4B4A2CFd75aeed0f11F"
+    },
+    {
+      "label": "on-chain: allowance == 20",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "prepare_supply_liquidity ok, no prerequisite (allowance already exact)",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "label": "on-chain: position 20, availableLiquidity 20, allowance 0",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "prepare_request_loan: returns approve prerequisite for 10 USDC collateral (score 0 → 100%)",
+      "ok": true,
+      "detail": "{\"sim\":{\"ok\":false,\"gasEstimate\":null,\"revertReason\":\"ERC20InsufficientAllowance(0xB2d88bbFF61EF2CcF4B4A2CFd75aeed0f11F6878, 0, 10000000)\",\"plainLanguage\":\"The marketplace is not approved to pull enough USDC from your wallet. Send the exact-amount approve_usdc transaction (see `prerequisite`) first."
+    },
+    {
+      "label": "prepare_request_loan simulation (before prerequisite)",
+      "ok": null,
+      "detail": "{\"ok\":false,\"gasEstimate\":null,\"revertReason\":\"ERC20InsufficientAllowance(0xB2d88bbFF61EF2CcF4B4A2CFd75aeed0f11F6878, 0, 10000000)\",\"plainLanguage\":\"The marketplace is not approved to pull enough USDC from your wallet. Send the exact-amount approve_usdc transaction (see `prerequisite`) first. (A prerequisite approve is included in this response; simulate again after it is mined.)\",\"from\":\"0x53E491ffbCbAd31e1eA51A40A59C8Be6a7fE0E61\"}"
+    },
+    {
+      "label": "on-chain: collateral allowance == 10",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "prepare_request_loan: simulation ok, no prerequisite",
+      "ok": true,
+      "detail": "{\"ok\":true,\"gasEstimate\":\"538204\",\"revertReason\":null,\"plainLanguage\":null,\"from\":\"0x53E491ffbCbAd31e1eA51A40A59C8Be6a7fE0E61\"}"
+    },
+    {
+      "label": "get_transaction: confirmed + LoanRequested event carries loanId",
+      "ok": true,
+      "detail": "loanId 13"
+    },
+    {
+      "label": "on-chain: loan ACTIVE, borrower C, 10 USDC, collateral 10",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "on-chain: C balance unchanged (collateral out, principal in)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "get_loan_status: ACTIVE",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "preview_repayment matches contract previewRepayment",
+      "ok": true,
+      "detail": "server {\"network\":\"arc-staging\",\"marketplaceVersion\":\"V6.1\",\"loanId\":13,\"borrower\":\"0x53E491ffbCbAd31e1eA51A40A59C8Be6a7fE0E61\",\"agentId\":49,\"endTime\":1790547730,\"dueDate\":\"2026-09-27T22:22:10.000Z\",\"lateInt chain total 10.028767"
+    },
+    {
+      "label": "prepare_repay_loan: prerequisite approve for exactly previewRepayment.total",
+      "ok": true,
+      "detail": "\"Allow the Specular marketplace (0xB2d88bbFF61EF2CcF4B4A2CFd75aeed0f11F6878) to spend exactly 10.028767 USDC from 0x53E491ffbCbAd31e1eA51A40A59C8Be6a7fE0E61 on arc-staging.\""
+    },
+    {
+      "label": "on-chain: allowance == previewRepayment.total",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "prepare_repay_loan: simulation ok, no prerequisite",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "on-chain: loan REPAID, C paid exactly interest",
+      "ok": true,
+      "detail": "interest 0.028767"
+    },
+    {
+      "label": "get_loan_status: REPAID",
+      "ok": true,
+      "detail": "{\"network\":\"arc-staging\",\"loanId\":13,\"borrower\":\"0x53E491ffbCbAd31e1eA51A40A59C8Be6a7fE0E61\",\"agentId\":49,\"principalUsdc\":\"10.0\",\"collateralUsdc\":\"10.0\",\"interestRateBps\":1500,\"interestRateAprPercent\""
+    },
+    {
+      "label": "get_loan_status.repayment for a REPAID loan",
+      "ok": null,
+      "detail": "null"
+    },
+    {
+      "label": "check_credit_score after: registered, score 0 (minHold not met)",
+      "ok": false,
+      "detail": "{\"network\":\"arc-staging\",\"address\":\"0x53E491ffbCbAd31e1eA51A40A59C8Be6a7fE0E61\",\"registered\":true,\"agentId\":49,\"owner\":\"0x53E491ffbCbAd31e1eA51A40A59C8Be6a7fE0E61\",\"agentWallet\":\"0x53E491ffbCbAd31e1eA"
+    },
+    {
+      "label": "MCP get_protocol_status ok",
+      "ok": true,
+      "detail": "{\"network\":\"arc-staging\",\"label\":\"Arc Testnet V6-staging (test USDC, no real value)\",\"realMoney\":false,\"chainId\":5042002,\"marketplace\":\"0xB2d88bbFF61EF2CcF4B4A2"
+    },
+    {
+      "label": "MCP prepare_request_loan returns prerequisite approve (5 USDC collateral)",
+      "ok": true,
+      "detail": "{\"ok\":false,\"gasEstimate\":null,\"revertReason\":\"ERC20InsufficientAllowance(0xB2d88bbFF61EF2CcF4B4A2CFd75aeed0f11F6878, 0, 5000000)\",\"plainLanguage\":\"The marketplace is not approved to pull enough USDC from your wallet. Send the exact-amount approve_usdc transaction (see `prerequisite`) first. (A prerequisite approve is included in this response; simulate again after it is mined.)\",\"from\":\"0x53E491ffbCbAd31e1eA51A40A59C8Be6a7fE0E61\"}"
+    },
+    {
+      "label": "MCP prepare_request_loan simulation ok",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "MCP get_transaction → loanId",
+      "ok": true,
+      "detail": "loanId 14"
+    },
+    {
+      "label": "MCP preview_repayment matches contract",
+      "ok": true,
+      "detail": "{\"network\":\"arc-staging\",\"marketplaceVersion\":\"V6.1\",\"loanId\":14,\"borrower\":\"0x53E491ffbCbAd31e1eA51A40A59C8Be6a7fE0E61\",\"agentId\":49,\"endTime\":1790547757,\"dueDate\":\"2026-09-27T22:22:37.000Z\",\"lateInt"
+    },
+    {
+      "label": "MCP prepare_repay_loan returns exact approve prerequisite",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "MCP get_loan_status: REPAID; on-chain state 2",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "C allowance 0 at the end (all approvals exact)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "relay refuses a signed tx to a non-Specular target",
+      "ok": true,
+      "detail": "{\"error\":\"Specular transactions must carry value 0; refusing to relay a native-token transfer\",\"field\":\"signedTransaction\"}"
+    },
+    {
+      "label": "GLOBAL solvency exact",
+      "ok": true,
+      "detail": "surplus 0"
+    }
+  ],
+  "spent": {
+    "nativeFromDeployer": "1.0",
+    "usdcMinted": "100.0"
+  },
+  "agentC": "0x53E491ffbCbAd31e1eA51A40A59C8Be6a7fE0E61",
+  "agentId": 49,
+  "loans": [
+    13,
+    14
+  ],
+  "latencies": [
+    {
+      "route": "REST",
+      "label": "GET /health",
+      "ms": 351,
+      "status": 200
+    },
+    {
+      "route": "REST",
+      "label": "GET network",
+      "ms": 253,
+      "status": 200
+    },
+    {
+      "route": "REST",
+      "label": "check_credit_score (before)",
+      "ms": 140,
+      "status": 200
+    },
+    {
+      "route": "REST",
+      "label": "prepare_register_agent",
+      "ms": 193,
+      "status": 200
+    },
+    {
+      "route": "REST",
+      "label": "broadcast register_agent",
+      "ms": 192,
+      "status": 200
+    },
+    {
+      "route": "REST",
+      "label": "prepare_create_pool",
+      "ms": 500,
+      "status": 200
+    },
+    {
+      "route": "REST",
+      "label": "broadcast create_pool",
+      "ms": 181,
+      "status": 200
+    },
+    {
+      "route": "REST",
+      "label": "prepare_approve_usdc 20",
+      "ms": 364,
+      "status": 200
+    },
+    {
+      "route": "REST",
+      "label": "broadcast approve_usdc 20",
+      "ms": 179,
+      "status": 200
+    },
+    {
+      "route": "REST",
+      "label": "prepare_supply_liquidity 20",
+      "ms": 503,
+      "status": 200
+    },
+    {
+      "route": "REST",
+      "label": "broadcast supply_liquidity 20",
+      "ms": 124,
+      "status": 200
+    },
+    {
+      "route": "REST",
+      "label": "prepare_request_loan (simulate, no allowance)",
+      "ms": 378,
+      "status": 200
+    },
+    {
+      "route": "REST",
+      "label": "broadcast request_loan prerequisite approve",
+      "ms": 108,
+      "status": 200
+    },
+    {
+      "route": "REST",
+      "label": "prepare_request_loan (simulate, after approve)",
+      "ms": 536,
+      "status": 200
+    },
+    {
+      "route": "REST",
+      "label": "broadcast request_loan 10",
+      "ms": 124,
+      "status": 200
+    },
+    {
+      "route": "REST",
+      "label": "get_transaction (loan)",
+      "ms": 224,
+      "status": 200
+    },
+    {
+      "route": "REST",
+      "label": "get_loan_status (active)",
+      "ms": 464,
+      "status": 200
+    },
+    {
+      "route": "REST",
+      "label": "preview_repayment",
+      "ms": 414,
+      "status": 200
+    },
+    {
+      "route": "REST",
+      "label": "prepare_repay_loan (simulate)",
+      "ms": 559,
+      "status": 200
+    },
+    {
+      "route": "REST",
+      "label": "broadcast repay prerequisite approve",
+      "ms": 118,
+      "status": 200
+    },
+    {
+      "route": "REST",
+      "label": "prepare_repay_loan (after approve)",
+      "ms": 493,
+      "status": 200
+    },
+    {
+      "route": "REST",
+      "label": "broadcast repay_loan 13",
+      "ms": 118,
+      "status": 200
+    },
+    {
+      "route": "REST",
+      "label": "get_loan_status (repaid)",
+      "ms": 249,
+      "status": 200
+    },
+    {
+      "route": "REST",
+      "label": "check_credit_score (after)",
+      "ms": 294,
+      "status": 200
+    },
+    {
+      "route": "MCP",
+      "label": "get_protocol_status",
+      "ms": 215,
+      "status": 200
+    },
+    {
+      "route": "MCP",
+      "label": "prepare_request_loan",
+      "ms": 404,
+      "status": 200
+    },
+    {
+      "route": "MCP",
+      "label": "broadcast mcp request_loan prerequisite",
+      "ms": 120,
+      "status": 200
+    },
+    {
+      "route": "MCP",
+      "label": "prepare_request_loan (after approve)",
+      "ms": 461,
+      "status": 200
+    },
+    {
+      "route": "MCP",
+      "label": "broadcast mcp request_loan 5",
+      "ms": 121,
+      "status": 200
+    },
+    {
+      "route": "MCP",
+      "label": "get_transaction",
+      "ms": 254,
+      "status": 200
+    },
+    {
+      "route": "MCP",
+      "label": "preview_repayment",
+      "ms": 158,
+      "status": 200
+    },
+    {
+      "route": "MCP",
+      "label": "prepare_repay_loan",
+      "ms": 232,
+      "status": 200
+    },
+    {
+      "route": "MCP",
+      "label": "broadcast mcp repay prerequisite",
+      "ms": 106,
+      "status": 200
+    },
+    {
+      "route": "MCP",
+      "label": "prepare_repay_loan (after approve)",
+      "ms": 612,
+      "status": 200
+    },
+    {
+      "route": "MCP",
+      "label": "broadcast mcp repay_loan 14",
+      "ms": 120,
+      "status": 200
+    },
+    {
+      "route": "MCP",
+      "label": "get_loan_status",
+      "ms": 216,
+      "status": 200
+    },
+    {
+      "route": "REST",
+      "label": "broadcast (non-Specular target, must be refused)",
+      "ms": 65,
+      "status": 400
+    }
+  ],
+  "latencyStats": {
+    "REST": {
+      "n": 25,
+      "min": 65,
+      "median": 249,
+      "p90": 503,
+      "max": 559,
+      "mean": 285
+    },
+    "MCP": {
+      "n": 12,
+      "min": 106,
+      "median": 216,
+      "p90": 461,
+      "max": 612,
+      "mean": 252
+    }
+  },
+  "server": "https://specular-agent-api-production.up.railway.app"
+}

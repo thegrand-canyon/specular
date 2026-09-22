@@ -15,7 +15,7 @@ Source: [`mcp-server/`](../../mcp-server/) in this repo. Platform-specific notes
 | Transport | MCP **Streamable HTTP**, stateless (no session id needed; `GET /mcp` returns 405) |
 | Protocol version | negotiated by the SDK (`2025-06-18` and earlier) |
 | Auth | Optional `Authorization: Bearer <SPECULAR_MCP_TOKEN>`; if the operator did not set a token the endpoint is open and rate-limited per IP |
-| Headers | `Content-Type: application/json`, `Accept: application/json, text/event-stream` |
+| Headers | `Content-Type: application/json`, `Accept: application/json, text/event-stream` (the spec requires both; this server also serves clients that send only `application/json`, `*/*` or no `Accept`) |
 | Same tools as REST | `https://<your-deployment>/openapi.json` |
 
 Each `POST /mcp` carries one JSON-RPC request (`initialize`, `tools/list`, `tools/call`). Responses are plain JSON
@@ -123,7 +123,11 @@ print(r.json()['result']['structuredContent'])
 - **Body limit**: 256 KB. **CORS**: configurable allow-list.
 - **Staleness**: every read includes `rpc.ageSeconds`/`rpc.stale` (latest block older than 5 minutes -> `stale: true` and a warning).
 - **Amount caps**: 100,000 USDC per prepared/relayed call (operator-configurable), loans capped at 50,000 USDC.
-- **Errors**: tool errors come back as `isError: true` with `{error, field?}`; REST as HTTP 400/401/429/502 with `{error}`.
+- **Errors**: tool errors (bad address, unknown loan, ...) come back as `isError: true` with `{error, field?}`; protocol errors (unknown tool, malformed `tools/call` params) are JSON-RPC `-32602`, unknown methods `-32601`. REST answers HTTP 400/401/429/502 with `{error}`, and 503 + `Retry-After` when the server is at its concurrency cap.
+- **Batches**: a JSON-RPC batch is answered with an array (even when only one member produces a response); an empty batch is `-32600`.
+- **Simulation**: `simulation.ok: false` always means the EVM reverted. An upstream RPC failure is an HTTP 502 / tool error, never a fabricated `revertReason`.
+- **`can_top_up` is advisory**: the deployed marketplace's `canTopUp()` view is off by one block, so the server also evaluates the corrected predicate and returns the conservative answer with `onChainView`, `correctedPredicate`, `viewDisagrees` and `warnings[]`. A loan can also start between your check and your transaction. Simulate `supply_liquidity` immediately before signing.
+- **Session**: stateless; no `Mcp-Session-Id` is issued and any sent is ignored. `Mcp-Protocol-Version` is honoured (`2024-11-05` … `2025-11-25`; other values get 400).
 - **Health**: `GET /health` (per-network RPC status). **Discovery**: `GET /` and `GET /openapi.json`.
 
 ## Self-hosting

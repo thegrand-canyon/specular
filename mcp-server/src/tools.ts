@@ -22,7 +22,7 @@ import {
   readRepaymentPreview,
   readTransaction,
 } from './reads.js';
-import { optionalNumber, requireObject, validateAddress, validateHexData, validateId, validateTxHash, ValidationError } from './validate.js';
+import { optionalInteger, optionalUsdc, requireObject, validateAddress, validateHexData, validateId, validateTxHash, ValidationError } from './validate.js';
 
 export type ToolKind = 'read' | 'prepare' | 'simulate' | 'broadcast';
 
@@ -136,11 +136,13 @@ export const TOOLS: ToolDef[] = [
       ['network'],
     ),
     rest: { method: 'GET', path: '/v1/{network}/pools', pathParams: ['network'] },
-    handler: async (args) =>
-      readPools(net(args), {
-        minAvailableUsdc: optionalNumber(args.minAvailableUsdc, 'minAvailableUsdc'),
-        limit: optionalNumber(args.limit, 'limit', { min: 1, max: 200 }),
-      }),
+    handler: async (args) => {
+      const cfg = net(args);
+      // validate before any RPC (H-4: 7-decimal / exponent values used to reach ethers.parseUnits and surface as 502)
+      const minAvailableUsdc = optionalUsdc(args.minAvailableUsdc, 'minAvailableUsdc');
+      const limit = optionalInteger(args.limit, 'limit', { min: 1, max: 200 });
+      return readPools(cfg, { minAvailableUsdc, limit });
+    },
   },
   {
     name: 'get_pool_details',
@@ -164,7 +166,12 @@ export const TOOLS: ToolDef[] = [
     description: 'Loans taken by a wallet (most recent first).',
     inputSchema: schema({ network: NETWORK_PROP, address: ADDRESS_PROP('Borrower wallet address'), limit: { type: 'integer', minimum: 1, maximum: 200, default: 50 } }, ['network', 'address']),
     rest: { method: 'GET', path: '/v1/{network}/agents/{address}/loans', pathParams: ['network', 'address'] },
-    handler: async (args) => readAgentLoans(net(args), validateAddress(args.address), { limit: optionalNumber(args.limit, 'limit', { min: 1, max: 200 }) }),
+    handler: async (args) => {
+      const cfg = net(args);
+      const address = validateAddress(args.address);
+      const limit = optionalInteger(args.limit, 'limit', { min: 1, max: 200 });
+      return readAgentLoans(cfg, address, { limit });
+    },
   },
   {
     name: 'get_lending_positions',
@@ -187,7 +194,7 @@ export const TOOLS: ToolDef[] = [
     name: 'can_top_up',
     kind: 'read',
     description:
-      'V6.1 only: whether `lender` can add to an EXISTING position in agent pool `agentId` right now without supplyLiquidity reverting "Top-up would forfeit in-flight interest". Call before prepare_supply_liquidity when you already have a position; a first supply is never refused. Returns a "not supported" error on V6 deployments (which never refuse top-ups).',
+      'V6.1 only: whether `lender` can add to an EXISTING position in agent pool `agentId` right now without supplyLiquidity reverting "Top-up would forfeit in-flight interest". ADVISORY, not a guarantee: the deployed canTopUp() view is off by one block, so this server also computes the corrected predicate server-side and returns the conservative answer (`onChainView` and `correctedPredicate` show both, `viewDisagrees` flags a mismatch); a loan can also start between this check and your transaction. Always read `warnings` and simulate immediately before signing. A first supply is never refused. Returns a "not supported" error on V6 deployments (which never refuse top-ups).',
     inputSchema: schema({ network: NETWORK_PROP, agentId: ID_PROP('Agent ID of the pool'), lender: ADDRESS_PROP('Lender wallet address (the one that would send supplyLiquidity)') }, ['network', 'agentId', 'lender']),
     rest: { method: 'GET', path: '/v1/{network}/pools/{agentId}/can-top-up/{lender}', pathParams: ['network', 'agentId', 'lender'] },
     handler: async (args) => readCanTopUp(net(args), validateId(args.agentId, 'agentId'), validateAddress(args.lender, 'lender')),

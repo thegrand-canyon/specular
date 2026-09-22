@@ -11,8 +11,9 @@
 import { ethers } from 'ethers';
 import { getContracts, marketplaceCapabilities } from './chain.js';
 import { IFACE, NetworkConfig } from './networks.js';
-import { formatQuote, interestForSeconds, LOAN_STATES, repaymentQuote } from './reads.js';
+import { activeLoanStartTimes, correctedCanTopUp, formatQuote, interestForSeconds, LOAN_STATES, repaymentQuote, TOP_UP_RACE_WARNING, TOP_UP_VIEW_BUG_WARNING } from './reads.js';
 import {
+  cleanErrorText,
   formatUsdc,
   MAX_LOAN_USDC,
   requireObject,
@@ -280,6 +281,12 @@ export function decodeCalldata(target: TargetContract, data: string): { name: st
   return { name: parsed.name, args: [...parsed.args] };
 }
 
+/** Canonical ABI encoding of (function, args) for a target contract; used to reject non-canonical calldata in the relay. */
+export function encodeCalldata(target: TargetContract, name: string, args: unknown[]): string {
+  const iface = target === 'usdc' ? IFACE.usdc : target === 'registry' ? IFACE.registry : IFACE.marketplace;
+  return iface.encodeFunctionData(name, args);
+}
+
 // ---------------------------------------------------------------------------
 // Revert-reason translation
 // ---------------------------------------------------------------------------
@@ -300,7 +307,7 @@ const REASON_MAP: Array<[RegExp, string]> = [
   [/Insufficient balance/i, 'You are withdrawing more than you supplied to this pool.'],
   [/Not the borrower/i, 'Only the wallet that borrowed this loan (or, on V6.1, the current holder of the agent NFT) can repay it.'],
   [/Agent deactivated/i, 'This agent has been deactivated in the registry, so it cannot borrow or create a pool. Existing loans can still be repaid and lenders can still withdraw/claim. Contact the protocol owner to reactivate the agent.'],
-  [/Top-up would forfeit in-flight interest/i, 'Adding to your existing position in this pool right now would forfeit interest already accruing on it, so the contract refuses the top-up. Check can_top_up(agentId, lender) first; wait until the pool\'s older active loans close and try again, or open a fresh position from another address (a first supply is never refused).'],
+  [/Top-up would forfeit in-flight interest/i, 'Adding to your existing position in this pool right now would forfeit interest already accruing on it, so the contract refuses the top-up. can_top_up(agentId, lender) is advisory (the deployed view is off by one block and can say yes to a top-up the tx then refuses); wait until the pool\'s older active loans close and try again, or open a fresh position from another address (a first supply is never refused).'],
   [/Loan not active/i, 'This loan is not ACTIVE (already repaid or defaulted).'],
   [/No interest to claim/i, 'There is no claimable interest for this wallet in this pool.'],
   [/Drain underflow/i, 'Pool accounting cannot cover this claim right now; contact the protocol owner.'],
@@ -343,7 +350,8 @@ export function explainRevert(e: unknown): { reason: string; plain: string } {
       }
     }
   }
-  if (!reason) reason = err?.shortMessage || err?.info?.error?.message || err?.message || 'execution reverted';
+  // H-11: the fallback text comes straight from ethers/the RPC; strip library internals and any upstream URL.
+  if (!reason) reason = cleanErrorText(err?.shortMessage || err?.info?.error?.message || err?.message || 'execution reverted', 200) || 'execution reverted';
   reason = reason.replace(/^execution reverted:?\s*/i, '').trim() || 'execution reverted (no reason given)';
   const plain = REASON_MAP.find(([re]) => re.test(reason))?.[1] ?? `The transaction would revert: ${reason}`;
   return { reason: reason.length > 200 ? reason.slice(0, 200) + '…' : reason, plain };
@@ -352,6 +360,24 @@ export function explainRevert(e: unknown): { reason: string; plain: string } {
 // ---------------------------------------------------------------------------
 // Full prepare (encode + pre-checks + prerequisite approve + simulate)
 // ---------------------------------------------------------------------------
+
+/**
+ * True only for an error the EVM produced (a revert), as opposed to an upstream
+ * transport/RPC failure. H-12 (2026-09-21 review): simulateCall used to funnel
+ * EVERY error through explainRevert, so a dead or throttling RPC came back as
+ * `{ok:false, revertReason:"connect ECONNREFUSED <host:port>"}` — it leaked the
+ * operator's RPC endpoint AND told the agent its transaction would revert when
+ * the chain had never been consulted.
+ */
+function isExecutionRevert(e: unknown): boolean {
+  const err = e as { code?: string; reason?: string; data?: string; info?: { error?: { data?: string; message?: string } } };
+  if (err?.code === 'CALL_EXCEPTION') return true;
+  if (typeof err?.reason === 'string' && err.reason) return true;
+  const data = typeof err?.data === 'string' ? err.data : err?.info?.error?.data;
+  if (typeof data === 'string' && /^0x[0-9a-fA-F]*$/.test(data) && data.length >= 10) return true;
+  const msg = `${err?.info?.error?.message || ''} ${(e as Error)?.message || ''}`.toLowerCase();
+  return /execution reverted|revert|invalid opcode|out of gas/.test(msg);
+}
 
 export async function simulateCall(cfg: NetworkConfig, from: string, to: string, data: string): Promise<Simulation> {
   const { provider } = getContracts(cfg);
@@ -365,6 +391,9 @@ export async function simulateCall(cfg: NetworkConfig, from: string, to: string,
     }
     return { ok: true, gasEstimate: gas === null ? null : gas.toString(), revertReason: null, plainLanguage: null, from };
   } catch (e) {
+    // Transport failures are not simulation results: rethrow so the caller maps them
+    // to a 502 with describeRpcError() instead of a fabricated "would revert".
+    if (!isExecutionRevert(e)) throw e;
     const { reason, plain } = explainRevert(e);
     return { ok: false, gasEstimate: null, revertReason: reason, plainLanguage: plain, from };
   }
@@ -447,6 +476,47 @@ export async function prepareTx(cfg: NetworkConfig, action: WriteAction, rawArgs
       if (!pool.isActive) warnings.push(`Agent #${agentId} has no active pool; the transaction will revert.`);
       if (amt < minSupply) warnings.push(`Amount is below the minimum supply of ${formatUsdc(minSupply)} USDC.`);
       if (amt > bal) warnings.push(`Wallet holds ${formatUsdc(bal)} USDC, less than the ${formatUsdc(amt)} USDC being supplied.`);
+      // Top-up (an existing position) can be refused by the contract. The DEPLOYED canTopUp()
+      // view is off by one block and can say "yes" to a top-up the tx then rejects, so mirror the
+      // corrected predicate here and always warn about the check-vs-send race. V6.1 only: the
+      // pre-V6.1 deployments have neither canTopUp() nor getActiveLoanIds().
+      if (pool.isActive) {
+        try {
+          const caps = await marketplaceCapabilities(cfg);
+          if (caps.v61) {
+            const [pos, pending] = await Promise.all([
+              c.marketplace.getLenderPosition(agentId, from),
+              c.marketplace.pendingTranche(agentId, from),
+            ]);
+            if ((pos.amount as bigint) > 0n) {
+              // Only a position WITH a pending tranche can be refused, so skip the per-loan
+              // reads (and the RPC budget they cost) in every other case.
+              const needsCheck = (pending.amount as bigint) > 0n;
+              const [activeStarts, onChain] = needsCheck
+                ? await Promise.all([activeLoanStartTimes(cfg, agentId), c.marketplace.canTopUp(agentId, from) as Promise<boolean>])
+                : [[] as bigint[], true];
+              const corrected = correctedCanTopUp({
+                positionAmount: pos.amount as bigint,
+                depositTimestamp: pos.depositTimestamp as bigint,
+                pendingAmount: pending.amount as bigint,
+                pendingTimestamp: pending.timestamp as bigint,
+                activeLoanStartTimes: activeStarts,
+              });
+              if (!corrected) {
+                warnings.push(
+                  onChain
+                    ? `TOP-UP WILL REVERT: ${TOP_UP_VIEW_BUG_WARNING}`
+                    : 'This is a top-up of an existing position and the contract will refuse it ("Top-up would forfeit in-flight interest"). Wait for the pool\'s older active loans to close, or supply from another address.',
+                );
+              }
+              warnings.push(TOP_UP_RACE_WARNING);
+            }
+          }
+        } catch {
+          // Capability probe or top-up reads failed: never block a prepare on an advisory check.
+          warnings.push('Could not verify whether this supply is a refusable top-up; simulate before sending.');
+        }
+      }
       const pre = approvePrerequisite(cfg, from, amt, allowance, `supplyLiquidity(${agentId}, ${formatUsdc(amt)})`);
       prerequisite = pre.tx;
       if (pre.warning) warnings.push(pre.warning);

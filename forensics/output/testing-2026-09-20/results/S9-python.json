@@ -1,0 +1,79 @@
+{
+  "source": "python",
+  "rpc": "https://rpc.testnet.arc.network",
+  "address": "0x09B7973F33A7466ccAe8B160da21255424BC4458",
+  "agentId": 47,
+  "marketplaceVersion": "V6.1",
+  "creditInfo": {
+    "score": 0,
+    "creditLimitUsdc": 1000.0,
+    "collateralPct": 100,
+    "interestRateApr": 15.0
+  },
+  "pool": {
+    "agentId": 47,
+    "agentAddress": "0x09B7973F33A7466ccAe8B160da21255424BC4458",
+    "totalLiquidity": 30000000,
+    "availableLiquidity": 25014240,
+    "totalLoaned": 5000000,
+    "totalEarned": 71200,
+    "isActive": true
+  },
+  "activeLoanIds": [
+    18
+  ],
+  "loanCount": 4,
+  "loans": [
+    {
+      "loanId": 9,
+      "amountUsdc": 10.0,
+      "interestRateBps": 1500,
+      "state": "REPAID",
+      "endTime": 1790530831
+    },
+    {
+      "loanId": 10,
+      "amountUsdc": 10.0,
+      "interestRateBps": 1500,
+      "state": "REPAID",
+      "endTime": 1790531532
+    },
+    {
+      "loanId": 11,
+      "amountUsdc": 5.0,
+      "interestRateBps": 1500,
+      "state": "REPAID",
+      "endTime": 1790531576
+    },
+    {
+      "loanId": 18,
+      "amountUsdc": 5.0,
+      "interestRateBps": 1500,
+      "state": "ACTIVE",
+      "endTime": 1790547879
+    }
+  ],
+  "lenderPositionL1": {
+    "amount": 0,
+    "earnedInterest": 0,
+    "depositTimestamp": 0
+  },
+  "canTopUpL1": true,
+  "previewRepayment": {
+    "loanId": 18,
+    "principal": 5000000,
+    "interest": 14383,
+    "total": 5014383,
+    "chargeable_seconds": 604800,
+    "late_seconds": 0,
+    "duration_seconds": 604800,
+    "interest_rate_bps": 1500,
+    "source": "previewRepayment"
+  },
+  "previewRepaymentInactiveError": "('execution reverted: Loan not active', '0x08c379a0000000000000000000000000000000000000000000000000000000000000002000000",
+  "nominalInterestRepaidLoan": {
+    "loanId": 11,
+    "interest": 14383,
+    "mirror": 14383
+  }
+}

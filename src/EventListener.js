@@ -198,8 +198,21 @@ class EventListener {
                 if (this.provider && typeof this.provider.getBlockNumber === 'function') {
                     try { head = Number(await this.provider.getBlockNumber()); } catch (_) { head = null; }
                 }
-                await this._backfill(from + 1, head == null ? 'latest' : head);
-                if (head != null) this._lastSeenBlock = head;
+                // [ROBUSTNESS F-R14] Only advance the backfill marker if the
+                // backfill actually SUCCEEDED for every contract. Previously a
+                // queryFilter that threw (public-RPC 429/500 — the same outage
+                // that caused the reconnect) was swallowed per contract and the
+                // marker advanced to head anyway, so the missed window was lost
+                // permanently and silently: a lender bot would never see the
+                // LoanDefaulted it disconnected through.
+                const complete = await this._backfill(from + 1, head == null ? 'latest' : head);
+                if (head != null && complete) this._lastSeenBlock = head;
+                else if (!complete) {
+                    this.lastBackfillIncomplete = true;
+                    console.warn(
+                        `Event listener: backfill of blocks ${from + 1}..${head == null ? 'latest' : head} was ` +
+                        'incomplete (RPC errors); keeping the marker so the next reconnect retries the window.');
+                }
             }
             console.warn('Event listener reconnected');
         } catch (e) {
@@ -210,19 +223,25 @@ class EventListener {
         }
     }
 
-    /** Re-emit (deduped) events between `fromBlock` and `toBlock` we may have missed. */
+    /**
+     * Re-emit (deduped) events between `fromBlock` and `toBlock` we may have missed.
+     * @returns {Promise<boolean>} true only if every configured query succeeded.
+     */
     async _backfill(fromBlock, toBlock = 'latest') {
+        let complete = true;
         for (const spec of EVENT_SPECS) {
             const contract = this.contracts && this.contracts[spec.contract];
             if (!contract || typeof contract.queryFilter !== 'function') continue;
             let filter;
-            try { filter = contract.filters[spec.event](); } catch (_) { continue; }
+            try { filter = contract.filters[spec.event](); } catch (_) { complete = false; continue; }
             let events;
-            try { events = await contract.queryFilter(filter, fromBlock, toBlock); } catch (_) { continue; }
+            try { events = await contract.queryFilter(filter, fromBlock, toBlock); }
+            catch (_) { complete = false; continue; }
             for (const ev of events) {
                 try { this._emitDedup(spec.event, spec.map(...ev.args), ev); } catch (_) { /* ignore one bad event */ }
             }
         }
+        return complete;
     }
 
     /** Stop listening for events */

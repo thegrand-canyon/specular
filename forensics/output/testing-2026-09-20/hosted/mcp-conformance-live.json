@@ -1,0 +1,368 @@
+{
+ "base": "https://specular-agent-api-production.up.railway.app",
+ "at": "2026-09-21T23:37:33.090Z",
+ "pass": 40,
+ "fail": 16,
+ "tools": [
+  "list_networks",
+  "get_network_info",
+  "get_protocol_status",
+  "check_credit_score",
+  "get_available_liquidity",
+  "get_pool_details",
+  "get_loan_status",
+  "get_agent_loans",
+  "get_lending_positions",
+  "preview_repayment",
+  "can_top_up",
+  "get_active_loan_ids",
+  "get_transaction",
+  "prepare_register_agent",
+  "prepare_create_pool",
+  "prepare_approve_usdc",
+  "prepare_supply_liquidity",
+  "prepare_withdraw_liquidity",
+  "prepare_request_loan",
+  "prepare_repay_loan",
+  "prepare_claim_interest",
+  "simulate_transaction",
+  "broadcast_signed_transaction"
+ ],
+ "rows": [
+  {
+   "area": "lifecycle",
+   "requirement": "SDK Client.connect() completes initialize handshake",
+   "ok": true,
+   "observed": "{\"name\":\"specular\",\"version\":\"2.1.0\"}"
+  },
+  {
+   "area": "lifecycle",
+   "requirement": "server advertises tools capability",
+   "ok": true,
+   "observed": "{\"tools\":{}}"
+  },
+  {
+   "area": "tools/list",
+   "requirement": "returns a non-empty tool list with name+inputSchema",
+   "ok": true,
+   "observed": "23 tools"
+  },
+  {
+   "area": "tools/list",
+   "requirement": "every tool declares a description",
+   "ok": true,
+   "observed": "0 missing"
+  },
+  {
+   "area": "tools/list",
+   "requirement": "read/prepare/simulate tools carry readOnlyHint, broadcast does not",
+   "ok": true,
+   "observed": "22/23 readOnlyHint"
+  },
+  {
+   "area": "tools/list",
+   "requirement": "no cursor/pagination surprises (single page)",
+   "ok": true,
+   "observed": "nextCursor=undefined"
+  },
+  {
+   "area": "tools/call",
+   "requirement": "returns content[] and structuredContent",
+   "ok": true,
+   "observed": "{\"network\":\"arc-staging\",\"label\":\"Arc Testnet V6-staging (test USDC, no real value)\",\"realMoney\":false,\"chainId\":5042002,\"marketplace\":\"0xB2d88bbFF61EF2CcF4B4A2"
+  },
+  {
+   "area": "tools/call",
+   "requirement": "structuredContent parses as the same JSON as content[0].text",
+   "ok": true,
+   "observed": "match"
+  },
+  {
+   "area": "tools/call",
+   "requirement": "tool-level validation failure is isError:true (not a protocol error)",
+   "ok": true,
+   "observed": "{\n  \"error\": \"address must be a 0x-prefixed 20-byte hex address\",\n  \"field\": \"address\"\n}"
+  },
+  {
+   "area": "tools/call",
+   "requirement": "unknown tool raises a protocol error the SDK surfaces as McpError -32602",
+   "ok": false,
+   "observed": "undefined undefined"
+  },
+  {
+   "area": "lifecycle",
+   "requirement": "ping round-trips",
+   "ok": true,
+   "observed": "ok"
+  },
+  {
+   "area": "version",
+   "requirement": "initialize with protocolVersion 2024-11-05 negotiates a version",
+   "ok": true,
+   "observed": "-> 2024-11-05"
+  },
+  {
+   "area": "version",
+   "requirement": "initialize with protocolVersion 2025-03-26 negotiates a version",
+   "ok": true,
+   "observed": "-> 2025-03-26"
+  },
+  {
+   "area": "version",
+   "requirement": "initialize with protocolVersion 2025-06-18 negotiates a version",
+   "ok": true,
+   "observed": "-> 2025-06-18"
+  },
+  {
+   "area": "version",
+   "requirement": "unsupported protocolVersion still negotiates down to a supported one (no hard failure)",
+   "ok": true,
+   "observed": "HTTP 200 -> 2025-11-25"
+  },
+  {
+   "area": "version",
+   "requirement": "non-string protocolVersion -> -32602 Invalid params",
+   "ok": false,
+   "observed": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32603,\"message\":\"[\\n  {\\n    \\\"expected\\\": \\\"string\\\",\\n    \\\"code\\\": \\\"invalid_type\\\",\\n    \\\"path\\\": [\\n      \\\"param"
+  },
+  {
+   "area": "version",
+   "requirement": "Mcp-Protocol-Version request header is honoured",
+   "ok": true,
+   "observed": "HTTP 200"
+  },
+  {
+   "area": "version",
+   "requirement": "garbage Mcp-Protocol-Version header -> 400, no crash",
+   "ok": true,
+   "observed": "HTTP 400 {\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32000,\"message\":\"Bad Request: Unsupported protocol version: not-a-version (supported v"
+  },
+  {
+   "area": "accept",
+   "requirement": "Accept: both types (spec-conformant) -> 200 JSON",
+   "ok": true,
+   "observed": "HTTP 200 ct=application/json"
+  },
+  {
+   "area": "accept",
+   "requirement": "Accept: application/json only -> 200 JSON",
+   "ok": false,
+   "observed": "HTTP 406 ct=application/json"
+  },
+  {
+   "area": "accept",
+   "requirement": "Accept: */* -> 200 JSON",
+   "ok": false,
+   "observed": "HTTP 406 ct=application/json"
+  },
+  {
+   "area": "accept",
+   "requirement": "Accept: absent -> 200 JSON",
+   "ok": false,
+   "observed": "HTTP 406 ct=application/json"
+  },
+  {
+   "area": "accept",
+   "requirement": "Accept: text/event-stream only -> 200 JSON",
+   "ok": false,
+   "observed": "HTTP 406 ct=application/json"
+  },
+  {
+   "area": "accept",
+   "requirement": "Accept: text/html (hostile) -> 200 JSON",
+   "ok": false,
+   "observed": "HTTP 406 ct=application/json"
+  },
+  {
+   "area": "session",
+   "requirement": "initialize issues NO Mcp-Session-Id (stateless)",
+   "ok": true,
+   "observed": "header=null"
+  },
+  {
+   "area": "session",
+   "requirement": "a bogus Mcp-Session-Id is ignored, not 404",
+   "ok": true,
+   "observed": "HTTP 200"
+  },
+  {
+   "area": "session",
+   "requirement": "tools/list works without a prior initialize (stateless)",
+   "ok": true,
+   "observed": "HTTP 200"
+  },
+  {
+   "area": "session",
+   "requirement": "GET /mcp (SSE listening stream) -> 405 Method Not Allowed",
+   "ok": true,
+   "observed": "HTTP 405 {\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32000,\"message\":\"Stateless server: use POST /mcp\"},\"id\":null}"
+  },
+  {
+   "area": "session",
+   "requirement": "DELETE /mcp (session teardown) -> 405",
+   "ok": true,
+   "observed": "HTTP 405"
+  },
+  {
+   "area": "jsonrpc",
+   "requirement": "notification (no id) -> 202 Accepted, empty body",
+   "ok": true,
+   "observed": "HTTP 202 body=\"\""
+  },
+  {
+   "area": "batch",
+   "requirement": "JSON-RPC batch of 3 returns 3 correlated responses",
+   "ok": true,
+   "observed": "HTTP 200 ids=1,2,3"
+  },
+  {
+   "area": "batch",
+   "requirement": "mixed batch (request + notification) answers only the request",
+   "ok": false,
+   "observed": "HTTP 200 {\"result\":{},\"jsonrpc\":\"2.0\",\"id\":1}"
+  },
+  {
+   "area": "batch",
+   "requirement": "empty batch is rejected, not 500",
+   "observed": "HTTP 202 "
+  },
+  {
+   "area": "batch",
+   "requirement": "batch of 30 pings answered in full",
+   "ok": true,
+   "observed": "HTTP 200 n=30"
+  },
+  {
+   "area": "errors",
+   "requirement": "unknown method -> -32601",
+   "ok": true,
+   "observed": "code=-32601 msg=Method not found"
+  },
+  {
+   "area": "errors",
+   "requirement": "unknown method: error message carries no zod dump",
+   "ok": true,
+   "observed": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32601,\"message\":\"Method not found\"}}"
+  },
+  {
+   "area": "errors",
+   "requirement": "unknown tool -> -32602",
+   "ok": false,
+   "observed": "code=undefined msg=undefined"
+  },
+  {
+   "area": "errors",
+   "requirement": "unknown tool: error message carries no zod dump",
+   "ok": true,
+   "observed": "{\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"{\\n  \\\"error\\\": \\\"Unknown tool: nope\\\"\\n}\"}],\"isError\":true},\"jsonrpc\":\"2.0"
+  },
+  {
+   "area": "errors",
+   "requirement": "tools/call without params -> -32602",
+   "ok": false,
+   "observed": "code=-32603 msg=[\n  {\n    \"expected\": \"object\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"params\"\n "
+  },
+  {
+   "area": "errors",
+   "requirement": "tools/call without params: error message carries no zod dump",
+   "ok": false,
+   "observed": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32603,\"message\":\"[\\n  {\\n    \\\"expected\\\": \\\"object\\\",\\n    \\\"code\\\": \\\"invalid"
+  },
+  {
+   "area": "errors",
+   "requirement": "tools/call name not a string -> -32602",
+   "ok": false,
+   "observed": "code=-32603 msg=[\n  {\n    \"expected\": \"string\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"params\",\n"
+  },
+  {
+   "area": "errors",
+   "requirement": "tools/call name not a string: error message carries no zod dump",
+   "ok": false,
+   "observed": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32603,\"message\":\"[\\n  {\\n    \\\"expected\\\": \\\"string\\\",\\n    \\\"code\\\": \\\"invalid"
+  },
+  {
+   "area": "errors",
+   "requirement": "tools/call arguments as array -> -32602",
+   "ok": false,
+   "observed": "code=-32603 msg=[\n  {\n    \"expected\": \"record\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"params\",\n"
+  },
+  {
+   "area": "errors",
+   "requirement": "tools/call arguments as array: error message carries no zod dump",
+   "ok": false,
+   "observed": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32603,\"message\":\"[\\n  {\\n    \\\"expected\\\": \\\"record\\\",\\n    \\\"code\\\": \\\"invalid"
+  },
+  {
+   "area": "errors",
+   "requirement": "malformed JSON -> 400 with a JSON body, no stack",
+   "ok": true,
+   "observed": "HTTP 400 {\"error\":\"malformed JSON body\"}"
+  },
+  {
+   "area": "errors",
+   "requirement": "missing \"jsonrpc\" member is rejected",
+   "ok": true,
+   "observed": "HTTP 400 {\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32700,\"message\":\"Parse error: Invalid JSON-RPC message\"},\"id\":null}"
+  },
+  {
+   "area": "errors",
+   "requirement": "wrong jsonrpc version is rejected",
+   "ok": true,
+   "observed": "HTTP 400 {\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32700,\"message\":\"Parse error: Invalid JSON-RPC message\"},\"id\":null}"
+  },
+  {
+   "area": "errors",
+   "requirement": "tools/call with omitted arguments is accepted (defaults to {})",
+   "ok": true,
+   "observed": "HTTP 200 {\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"{\\n  \\\"error\\\": \\\"\\\\\\\"network\\\\\\\" is required (one of: base, arc-staging, arc-mainnet). There i"
+  },
+  {
+   "area": "jsonrpc",
+   "requirement": "string id is echoed back unchanged",
+   "ok": true,
+   "observed": "sent \"abc-123\" got \"abc-123\""
+  },
+  {
+   "area": "jsonrpc",
+   "requirement": "zero id is echoed back unchanged",
+   "ok": true,
+   "observed": "sent 0 got 0"
+  },
+  {
+   "area": "jsonrpc",
+   "requirement": "negative id is echoed back unchanged",
+   "ok": true,
+   "observed": "sent -5 got -5"
+  },
+  {
+   "area": "jsonrpc",
+   "requirement": "large id is echoed back unchanged",
+   "ok": true,
+   "observed": "sent 2147483648 got 2147483648"
+  },
+  {
+   "area": "cors",
+   "requirement": "preflight OPTIONS answered with allow-origin",
+   "ok": true,
+   "observed": "HTTP 204 allow-origin=https://example.test"
+  },
+  {
+   "area": "cors",
+   "requirement": "Mcp-Session-Id / rate-limit headers are exposed to browsers",
+   "ok": true,
+   "observed": "Mcp-Session-Id,X-RateLimit-Remaining,Retry-After"
+  },
+  {
+   "area": "tools/call",
+   "requirement": "read tool over raw JSON-RPC returns structuredContent",
+   "ok": true,
+   "observed": "{\"network\":\"arc-staging\",\"address\":\"0x800e305A0caDdE6289dFDFEDF38218f45C06F72C\",\"registered\":true,\"agentId\":1,\"owner\":\"0x800e305A0caDdE6289d"
+  },
+  {
+   "area": "tools/call",
+   "requirement": "prepare_* returns an unsigned tx (value 0, no signature field)",
+   "ok": true,
+   "observed": "to=0xB2d88bbFF61EF2CcF4B4A2CFd75aeed0f11F6878 value=0"
+  }
+ ]
+}

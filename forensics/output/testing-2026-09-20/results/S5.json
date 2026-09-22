@@ -1,0 +1,49 @@
+{
+  "scenario": "S5",
+  "startedAt": "2026-09-20T17:55:29.362Z",
+  "finishedAt": "2026-09-20T17:55:30.214Z",
+  "passed": 6,
+  "failed": 0,
+  "blocked": 0,
+  "checks": [
+    {
+      "label": "owner == deployer (we are calling as the real owner)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "migrationFinalized() == true",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "owner seedPool reverts \"Migration finalized\"",
+      "ok": true,
+      "detail": "Error | Migration finalized | execution reverted: \"Migration finalized\" | execut"
+    },
+    {
+      "label": "owner seedPosition reverts \"Migration finalized\"",
+      "ok": true,
+      "detail": "Error | Migration finalized | execution reverted: \"Migration finalized\" | execut"
+    },
+    {
+      "label": "owner setMigrationFinalized reverts \"Migration finalized\" (idempotent, irreversible)",
+      "ok": true,
+      "detail": "Error | Migration finalized | execution reverted: \"Migration finalized\" | execut"
+    },
+    {
+      "label": "non-owner seedPool reverts OwnableUnauthorizedAccount",
+      "ok": true,
+      "detail": "OwnableUnauthorizedAccount | execution reverted (unknown custom error) | executi"
+    },
+    {
+      "label": "legacy V6.0 staging marketplace migrationFinalized (read-only)",
+      "ok": null,
+      "detail": "false"
+    }
+  ],
+  "spent": {
+    "nativeFromDeployer": "0.0",
+    "usdcMinted": "0.0"
+  }
+}

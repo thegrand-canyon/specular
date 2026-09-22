@@ -7,8 +7,8 @@
 import { ethers } from 'ethers';
 import { getContracts } from './chain.js';
 import { NetworkConfig } from './networks.js';
-import { ALLOWED_FUNCTIONS, decodeCalldata, explainRevert, TargetContract } from './prepare.js';
-import { formatUsdc, maxAmountUsdc, ValidationError } from './validate.js';
+import { ALLOWED_FUNCTIONS, decodeCalldata, encodeCalldata, explainRevert, TargetContract } from './prepare.js';
+import { cleanErrorText, formatUsdc, maxAmountUsdc, ValidationError } from './validate.js';
 
 const MAX_RAW_BYTES = 16 * 1024;
 
@@ -35,7 +35,8 @@ export function validateSignedTx(cfg: NetworkConfig, raw: unknown): ValidatedSig
   try {
     tx = ethers.Transaction.from(raw);
   } catch (e) {
-    throw new ValidationError(`signedTransaction could not be decoded: ${(e as Error).message.slice(0, 120)}`, 'signedTransaction');
+    // H-11: never echo ethers' parenthetical detail block (code=/version=/buffer=) back to the caller.
+    throw new ValidationError(`signedTransaction could not be decoded: ${cleanErrorText(e, 120) || 'not a valid RLP-encoded transaction'}`, 'signedTransaction');
   }
   if (!tx.isSigned() || !tx.from) throw new ValidationError('transaction is not signed; sign it with your own wallet first', 'signedTransaction');
   if (Number(tx.chainId) !== cfg.chainId) {
@@ -61,6 +62,13 @@ export function validateSignedTx(cfg: NetworkConfig, raw: unknown): ValidatedSig
   }
   if (!ALLOWED_FUNCTIONS[target].includes(decoded.name)) {
     throw new ValidationError(`${target}.${decoded.name} is not relayable (allowed: ${ALLOWED_FUNCTIONS[target].join(', ')})`, 'signedTransaction');
+  }
+  // H-1 (2026-09-20): the ABI decoder tolerates trailing bytes, so a tx whose
+  // calldata is "allow-listed call + junk" decoded fine and was relayed. Only
+  // the exact canonical encoding of the decoded call is relayable.
+  const canonical = encodeCalldata(target, decoded.name, decoded.args);
+  if (canonical.toLowerCase() !== tx.data.toLowerCase()) {
+    throw new ValidationError(`calldata is not the canonical ABI encoding of ${target}.${decoded.name} (${(tx.data.length - canonical.length) / 2} unexpected byte(s)); re-encode the call exactly as prepare_* returns it`, 'signedTransaction');
   }
 
   const args: Record<string, string> = {};

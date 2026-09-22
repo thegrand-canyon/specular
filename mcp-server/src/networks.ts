@@ -129,6 +129,29 @@ export class NetworkError extends Error {
   readonly status = 400;
 }
 
+/** Stringify hostile input for an error message without ever throwing (objects with a non-callable toString, symbols, ...). */
+function describeValue(x: unknown): string {
+  if (typeof x === 'string') return x.slice(0, 80);
+  if (typeof x === 'symbol') return x.toString();
+  try {
+    const s = JSON.stringify(x);
+    return (s ?? typeof x).slice(0, 80);
+  } catch {
+    return typeof x;
+  }
+}
+
+/** Public form of an RPC URL: the well-known default verbatim, anything operator-configured reduced to origin (no userinfo, path keys or query). */
+function publicRpcUrl(cfg: NetworkConfig): string {
+  if (cfg.rpcUrl === SPECS[cfg.name].defaultRpc) return cfg.rpcUrl;
+  try {
+    const u = new URL(cfg.rpcUrl);
+    return `${u.protocol}//${u.host}/`;
+  } catch {
+    return '[configured]';
+  }
+}
+
 /**
  * Resolve a network by name. Throws a NetworkError with an actionable message
  * when the name is missing, unknown, or disabled on this deployment.
@@ -140,7 +163,7 @@ export function getNetwork(name: unknown): NetworkConfig {
     );
   }
   if (!isNetworkName(name)) {
-    throw new NetworkError(`Unknown network "${String(name)}". Valid: ${ALL_NETWORKS.join(', ')}.`);
+    throw new NetworkError(`Unknown network "${describeValue(name)}". Valid: ${ALL_NETWORKS.join(', ')}.`);
   }
   if (!enabledNetworks().includes(name)) {
     throw new NetworkError(`Network "${name}" is not enabled on this server (enabled: ${enabledNetworks().join(', ')}).`);
@@ -203,7 +226,7 @@ export function publicNetworkInfo(cfg: NetworkConfig) {
     label: cfg.label,
     chainId: cfg.chainId,
     realMoney: cfg.realMoney,
-    rpcUrl: cfg.rpcUrl,
+    rpcUrl: publicRpcUrl(cfg),
     explorerTx: cfg.explorerTx,
     contracts: { ...cfg.addresses },
     usdcDecimals: cfg.usdcDecimals,

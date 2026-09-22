@@ -1,0 +1,178 @@
+{
+  "scenario": "S9",
+  "startedAt": "2026-09-21T23:10:10.666Z",
+  "finishedAt": "2026-09-21T23:10:19.743Z",
+  "passed": 17,
+  "failed": 0,
+  "blocked": 0,
+  "checks": [
+    {
+      "label": "agentId",
+      "ok": true,
+      "detail": "47 vs 47"
+    },
+    {
+      "label": "marketplaceVersion",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "creditInfo.score",
+      "ok": true,
+      "detail": "0 vs 0"
+    },
+    {
+      "label": "creditInfo.creditLimit",
+      "ok": true,
+      "detail": "1000 vs 1000.0"
+    },
+    {
+      "label": "creditInfo.collateralPct",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "creditInfo.interestRateApr",
+      "ok": true,
+      "detail": "15 vs 15"
+    },
+    {
+      "label": "pool.availableLiquidity (base units)",
+      "ok": true,
+      "detail": "25014240 vs 25014240"
+    },
+    {
+      "label": "pool.totalLiquidity/totalLoaned/totalEarned",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "pool.agentAddress/isActive",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "activeLoanIds",
+      "ok": true,
+      "detail": "[18] vs [18]"
+    },
+    {
+      "label": "loans(): count",
+      "ok": true,
+      "detail": "4 vs 4"
+    },
+    {
+      "label": "loans(): every entry equal (id, amount, rate, state, endTime)",
+      "ok": true,
+      "detail": "4 loans"
+    },
+    {
+      "label": "lenderPosition(L1) amount/earned/depositTimestamp",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "canTopUp(L1)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "previewRepayment on active loan: principal/interest/total/chargeable/late/source",
+      "ok": true,
+      "detail": "{\"loanId\":18,\"principal\":5000000,\"interest\":14383,\"total\":5014383,\"chargeable_seconds\":604800,\"late_seconds\":0,\"duration_seconds\":604800,\"interest_rate_bps\":1500,\"source\":\"previewRepayment\"}"
+    },
+    {
+      "label": "nominal interest for repaid loan 11: python == contract == JS mirror",
+      "ok": true,
+      "detail": "14383 / 14383 / 14383"
+    },
+    {
+      "label": "previewRepayment on REPAID loan surfaces \"Loan not active\" in BOTH clients",
+      "ok": true,
+      "detail": "py: ('execution reverted: Loan not active', '0x08c379a0000000000000000000000000000000000000000000000000000000000000002000000 | js: execution reverted: \"Loan not active\" (action=\"call\", data=\""
+    }
+  ],
+  "spent": {
+    "nativeFromDeployer": "0.0",
+    "usdcMinted": "0.0"
+  },
+  "python": {
+    "source": "python",
+    "rpc": "https://rpc.testnet.arc.network",
+    "address": "0x09B7973F33A7466ccAe8B160da21255424BC4458",
+    "agentId": 47,
+    "marketplaceVersion": "V6.1",
+    "creditInfo": {
+      "score": 0,
+      "creditLimitUsdc": 1000,
+      "collateralPct": 100,
+      "interestRateApr": 15
+    },
+    "pool": {
+      "agentId": 47,
+      "agentAddress": "0x09B7973F33A7466ccAe8B160da21255424BC4458",
+      "totalLiquidity": 30000000,
+      "availableLiquidity": 25014240,
+      "totalLoaned": 5000000,
+      "totalEarned": 71200,
+      "isActive": true
+    },
+    "activeLoanIds": [
+      18
+    ],
+    "loanCount": 4,
+    "loans": [
+      {
+        "loanId": 9,
+        "amountUsdc": 10,
+        "interestRateBps": 1500,
+        "state": "REPAID",
+        "endTime": 1790530831
+      },
+      {
+        "loanId": 10,
+        "amountUsdc": 10,
+        "interestRateBps": 1500,
+        "state": "REPAID",
+        "endTime": 1790531532
+      },
+      {
+        "loanId": 11,
+        "amountUsdc": 5,
+        "interestRateBps": 1500,
+        "state": "REPAID",
+        "endTime": 1790531576
+      },
+      {
+        "loanId": 18,
+        "amountUsdc": 5,
+        "interestRateBps": 1500,
+        "state": "ACTIVE",
+        "endTime": 1790547879
+      }
+    ],
+    "lenderPositionL1": {
+      "amount": 0,
+      "earnedInterest": 0,
+      "depositTimestamp": 0
+    },
+    "canTopUpL1": true,
+    "previewRepayment": {
+      "loanId": 18,
+      "principal": 5000000,
+      "interest": 14383,
+      "total": 5014383,
+      "chargeable_seconds": 604800,
+      "late_seconds": 0,
+      "duration_seconds": 604800,
+      "interest_rate_bps": 1500,
+      "source": "previewRepayment"
+    },
+    "previewRepaymentInactiveError": "('execution reverted: Loan not active', '0x08c379a0000000000000000000000000000000000000000000000000000000000000002000000",
+    "nominalInterestRepaidLoan": {
+      "loanId": 11,
+      "interest": 14383,
+      "mirror": 14383
+    }
+  }
+}

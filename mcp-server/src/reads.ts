@@ -392,35 +392,104 @@ export async function readRepaymentPreview(cfg: NetworkConfig, loanId: number) {
   };
 }
 
+/**
+ * Off-chain replication of the CORRECTED `canTopUp` predicate.
+ *
+ * The bytecode deployed on Arc mainnet (0x358c5E69…) and Arc staging (0xB2d88bbF…)
+ * evaluates the second window as the HALF-OPEN `[pending.timestamp, block.timestamp)`,
+ * so an ACTIVE loan that started in the very block the view is read against falls
+ * outside it and the view answers `true`. The `supplyLiquidity` tx lands in a LATER
+ * block, where that same loan IS inside `[pending.timestamp, tx.timestamp)`, and the
+ * tx reverts "Top-up would forfeit in-flight interest". The repo source fixes this with
+ * an inclusive upper bound (`block.timestamp + 1`) but that fix is NOT deployed, and we
+ * are deliberately not redeploying the marketplace for it alone. So the server must
+ * never present the on-chain view as authoritative.
+ *
+ * Here the upper bound is effectively open-ended: every currently ACTIVE loan started at
+ * or before "now", and the supply tx is mined strictly after "now", so any active loan
+ * with `startTime >= pending.timestamp` will be inside the tx's window.
+ *
+ * No funds are at risk either way — the failure mode is a reverted tx and wasted gas.
+ */
+export function correctedCanTopUp(input: {
+  positionAmount: bigint;
+  depositTimestamp: bigint;
+  pendingAmount: bigint;
+  pendingTimestamp: bigint;
+  activeLoanStartTimes: bigint[];
+}): boolean {
+  const { positionAmount, depositTimestamp, pendingAmount, pendingTimestamp, activeLoanStartTimes } = input;
+  if (positionAmount === 0n || activeLoanStartTimes.length === 0 || pendingAmount === 0n) return true;
+  // (c) fold is still available while no active loan started inside [deposit, pending) — unchanged by the bug.
+  if (!activeLoanStartTimes.some((s) => s >= depositTimestamp && s < pendingTimestamp)) return true;
+  // (d) merge: the deployed view uses `< block.timestamp`; the tx will use `< tx.timestamp`, which is later.
+  return !activeLoanStartTimes.some((s) => s >= pendingTimestamp);
+}
+
+/** Warning every top-up carries: the check and the tx are in different blocks. */
+export const TOP_UP_RACE_WARNING =
+  'can_top_up is a point-in-time check: a new loan can start in the pool between this read and your supply transaction, which would make the top-up revert "Top-up would forfeit in-flight interest". Treat a true answer as "likely to succeed", not a guarantee, and simulate immediately before sending.';
+
+/** Warning when the deployed view and the corrected predicate disagree. */
+export const TOP_UP_VIEW_BUG_WARNING =
+  'The deployed marketplace bytecode answers canTopUp() with a half-open upper bound and says this top-up is allowed, but the corrected predicate (the one the supplyLiquidity transaction actually applies, evaluated a block later) says it would revert "Top-up would forfeit in-flight interest". This server returns the conservative answer. Wait until the pool\'s older active loans close, or open a fresh position from another address (a first supply is never refused).';
+
 /** canTopUp(agentId, lender): whether supplyLiquidity by an existing lender would be refused right now. */
 export async function readCanTopUp(cfg: NetworkConfig, agentId: number, lender: string) {
   const c = getContracts(cfg);
   const caps = await requireV61(cfg, 'can_top_up');
-  const [rpc, pool, ok, pos, pending] = await Promise.all([
+  const [rpc, pool, ok, pos, pending, activeStarts] = await Promise.all([
     rpcStatus(cfg),
     c.marketplace.agentPools(agentId),
     c.marketplace.canTopUp(agentId, lender) as Promise<boolean>,
     c.marketplace.getLenderPosition(agentId, lender),
     c.marketplace.pendingTranche(agentId, lender),
+    activeLoanStartTimes(cfg, agentId),
   ]);
   if (!pool.isActive) throw new ValidationError(`No active pool for agentId ${agentId} on ${cfg.name}`, 'agentId');
   const hasPosition = (pos.amount as bigint) > 0n;
+  const corrected = correctedCanTopUp({
+    positionAmount: pos.amount as bigint,
+    depositTimestamp: pos.depositTimestamp as bigint,
+    pendingAmount: pending.amount as bigint,
+    pendingTimestamp: pending.timestamp as bigint,
+    activeLoanStartTimes: activeStarts,
+  });
+  // Conservative: only report a top-up as possible when BOTH agree.
+  const answer = ok && corrected;
+  const warnings = [TOP_UP_RACE_WARNING];
+  if (ok !== corrected) warnings.unshift(TOP_UP_VIEW_BUG_WARNING);
   return {
     network: cfg.name,
     marketplaceVersion: caps.version,
     agentId,
     lender,
-    canTopUp: ok,
+    canTopUp: answer,
+    /** Raw answer of the deployed `canTopUp()` view — NOT authoritative (see warnings). */
+    onChainView: ok,
+    /** The predicate `supplyLiquidity` will actually apply, computed server-side from the active loans. */
+    correctedPredicate: corrected,
+    viewDisagrees: ok !== corrected,
     hasPosition,
     suppliedUsdc: formatUsdc(pos.amount),
     pendingTrancheUsdc: formatUsdc(pending.amount),
-    note: ok
+    activeLoansInPool: activeStarts.length,
+    warnings,
+    note: answer
       ? hasPosition
-        ? 'A top-up now keeps all existing principal qualified for the interest of loans already in flight (nothing is forfeited).'
+        ? 'A top-up now keeps all existing principal qualified for the interest of loans already in flight (nothing is forfeited). Not a guarantee: see warnings.'
         : 'No existing position: a first supply is never refused.'
       : 'supplyLiquidity would revert "Top-up would forfeit in-flight interest". Wait for the pool\'s older active loans to close and check again, or open a fresh position from another address.',
     rpc,
   };
+}
+
+/** Start timestamps of every ACTIVE loan in an agent's pool (<= MAX_ACTIVE_LOANS_PER_AGENT entries). */
+export async function activeLoanStartTimes(cfg: NetworkConfig, agentId: number): Promise<bigint[]> {
+  const c = getContracts(cfg);
+  const ids = (await c.marketplace.getActiveLoanIds(agentId)) as bigint[];
+  const loans = await Promise.all(ids.map((id) => c.marketplace.loans(id)));
+  return loans.map((l) => l.startTime as bigint);
 }
 
 /** getActiveLoanIds(agentId): the agent's ACTIVE loans (<= MAX_ACTIVE_LOANS_PER_AGENT). */

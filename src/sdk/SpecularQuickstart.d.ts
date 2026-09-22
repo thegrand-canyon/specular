@@ -32,8 +32,17 @@ export interface OnboardResult {
 export interface BorrowResult {
     /** Numeric loan ID emitted by the LoanRequested event */
     loanId: number;
-    /** Tx hash of the requestLoan call */
-    tx: string;
+    /**
+     * Tx hash of the requestLoan call, or `null` when the loan was recovered by
+     * reconciliation after a lost send response (see `reconciled`).
+     */
+    tx: string | null;
+    /**
+     * Present and true when the send response was lost but the loan was found
+     * on chain and adopted, instead of a retry opening a SECOND loan
+     * (robustness F-R6).
+     */
+    reconciled?: boolean;
 }
 
 export interface CreditInfo {
@@ -109,8 +118,12 @@ export class SpecularQuickstart {
      * pull: `previewRepayment(loanId).total` on V6.1 (late loans pay for
      * elapsed time, capped at duration + 30 days), the nominal fixed-term
      * figure on V6. Never an unlimited approval.
+     *
+     * Resolves to `null` in one case only: the repay was CONFIRMED settled on
+     * chain but its send response was lost, so the hash was never learned.
+     * Treat `null` as success (robustness F-R6).
      */
-    repay(loanId: number): Promise<string>;
+    repay(loanId: number): Promise<string | null>;
 
     /** Marketplace `VERSION()`; 'V6' for deployments that predate the V6.1 (2026-09) fixes. */
     marketplaceVersion(): Promise<string>;

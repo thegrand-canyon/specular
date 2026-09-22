@@ -1,0 +1,48 @@
+{
+  "readAt": "2026-09-22T00:01:13.438Z",
+  "block": 22089267,
+  "marketplace": {
+    "address": "0x358c5E69f712A4b3558333090a45A054bAeEb282",
+    "version": "V6.1",
+    "owner": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+    "pendingOwner": "0x0000000000000000000000000000000000000000",
+    "paused": false,
+    "migrationFinalized": true,
+    "platformFeeRateBps": 100,
+    "minSupplyAmount": "10.0",
+    "minHoldForReputationReward": 86400,
+    "bindBorrowToPoolCreator": true,
+    "accumulatedFees": "0.000014",
+    "usdcBalance": "0.000014",
+    "totalPools": 1,
+    "nextLoanId": 2,
+    "MAX_ACTIVE_LOANS_PER_AGENT": 10,
+    "MAX_LENDERS_PER_POOL": 50,
+    "LATE_INTEREST_CAP_days": 30
+  },
+  "reputation": {
+    "address": "0x1577Eb9985CcA859F25ED2EDaeD16A464ADFaE5e",
+    "owner": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+    "marketplaceAuthorized": true,
+    "onTimeRepaymentBonus": 10,
+    "defaultPenaltyBase": 50,
+    "defaultPenaltyLarge": 100,
+    "largeLoanThreshold": "10000.0",
+    "bonusReferenceAmount": "100.0",
+    "maxReputationGainPerWindow": 5,
+    "reputationGainWindow": 86400
+  },
+  "registry": {
+    "address": "0x6F1EbF50290f6D4A9947E9EB77f98a683684fBF5",
+    "owner": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+    "paused": false,
+    "totalAgents": 1
+  },
+  "faucet": {
+    "address": "0xD854F80031A8d0CB166587AafA0969Da8C3757bF",
+    "owner": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+    "balance": "19.0",
+    "claimAmount": "1.0",
+    "maxEligibleAgentId": 100
+  }
+}

@@ -10,11 +10,29 @@ const providers = new Map<string, ethers.JsonRpcProvider>();
 
 export const STALE_AFTER_SECONDS = 5 * 60;
 
+/**
+ * Upstream RPC bounds (2026-09-20 review, H-5): without these a hung RPC held
+ * requests open indefinitely and a throttling RPC (429) made ethers retry up to
+ * 12 times with exponential stalls, so single reads took minutes and piled up
+ * in memory. Per-attempt timeout + few attempts => fast 502 instead.
+ */
+export function rpcTimeoutMs(): number {
+  const n = Number(process.env.SPECULAR_RPC_TIMEOUT_MS || 15_000);
+  return Number.isFinite(n) && n > 0 ? n : 15_000;
+}
+export function rpcMaxAttempts(): number {
+  const n = Number(process.env.SPECULAR_RPC_MAX_ATTEMPTS || 3);
+  return Number.isInteger(n) && n > 0 ? n : 3;
+}
+
 export function getProvider(cfg: NetworkConfig): ethers.JsonRpcProvider {
   const key = `${cfg.name}|${cfg.rpcUrl}`;
   let p = providers.get(key);
   if (!p) {
-    p = new ethers.JsonRpcProvider(cfg.rpcUrl, { chainId: cfg.chainId, name: cfg.name }, {
+    const req = new ethers.FetchRequest(cfg.rpcUrl);
+    req.timeout = rpcTimeoutMs();
+    req.setThrottleParams({ maxAttempts: rpcMaxAttempts(), slotInterval: 250 });
+    p = new ethers.JsonRpcProvider(req, { chainId: cfg.chainId, name: cfg.name }, {
       staticNetwork: true,
       batchMaxCount: 1,
     });
@@ -133,9 +151,11 @@ export async function rpcStatus(cfg: NetworkConfig): Promise<RpcStatus> {
 /** Wraps an RPC error into a plain-language message without leaking internals. */
 export function describeRpcError(e: unknown): string {
   const msg = e instanceof Error ? e.message : String(e);
-  if (/ECONNREFUSED|ENOTFOUND|ETIMEDOUT|fetch failed|network error|timeout/i.test(msg)) {
+  if (/ECONNREFUSED|ENOTFOUND|ECONNRESET|ETIMEDOUT|fetch failed|network error|timeout|timed out|socket hang up/i.test(msg)) {
     return 'RPC endpoint unreachable or timed out; try again shortly.';
   }
-  if (/rate limit|429|too many requests/i.test(msg)) return 'RPC endpoint rate-limited this server; try again shortly.';
-  return msg.length > 300 ? msg.slice(0, 300) + '…' : msg;
+  if (/rate limit|429|too many requests|throttl/i.test(msg)) return 'RPC endpoint rate-limited this server; try again shortly.';
+  // Never echo upstream details (URLs, library versions) to clients.
+  const cleaned = msg.replace(/\(.*?version=6\.[\d.]+\)/g, '').replace(/https?:\/\/\S+/g, '[rpc]').trim();
+  return cleaned.length > 300 ? cleaned.slice(0, 300) + '…' : cleaned || 'upstream RPC error';
 }

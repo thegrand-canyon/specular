@@ -126,9 +126,12 @@ curl -s -X POST localhost:3400/mcp -H 'content-type: application/json' -H 'accep
 See [`.env.example`](.env.example). Highlights: `PORT`, `SPECULAR_ENABLED_NETWORKS`, `SPECULAR_MCP_TOKEN`
 (optional bearer; when unset, everything is open and rate-limited per IP), `SPECULAR_RATE_LIMIT_PER_MIN` (120),
 `SPECULAR_BROADCAST_LIMIT_PER_MIN` (20), `SPECULAR_ALLOWED_ORIGINS`, `SPECULAR_BODY_LIMIT` (256kb),
-`SPECULAR_MAX_AMOUNT_USDC` (100,000 per call; loans capped at 50,000), `LOG_LEVEL`.
+`SPECULAR_MAX_AMOUNT_USDC` (100,000 per call; loans capped at 50,000), `SPECULAR_TRUST_PROXY` (Railway: 2; verify
+the access log's `ip` is the real client), `SPECULAR_MAX_INFLIGHT` (64; excess requests get 503 + `Retry-After`),
+`SPECULAR_HEALTH_CACHE_MS` (10s), `SPECULAR_RPC_TIMEOUT_MS` / `SPECULAR_RPC_MAX_ATTEMPTS` (15s / 3), `LOG_LEVEL`.
 
-Logs are JSON lines on stdout: method, path, status, latency, IP, MCP method/tool name. No headers, bodies, keys or tokens.
+Logs are JSON lines on stdout: method, path, status, latency, resolved client IP plus the raw `X-Forwarded-For` chain,
+MCP method/tool name. No other headers, no bodies, keys or tokens.
 
 ### Docker / Railway
 
@@ -164,7 +167,7 @@ dedicated agent wallet and test on `arc-staging` first.
 ## Tests
 
 ```bash
-npm test               # build + unit + integration (37 tests)
+npm test               # build + unit + integration (incl. test/*.hardening.* from the 2026-09-20 review)
 npm run test:unit      # offline: encode/decode round-trips, broadcast validator, validation
 npm run test:integration   # boots the HTTP server against Arc testnet V6-staging; reads + prepare/simulate only, never broadcasts
 ```
@@ -192,6 +195,19 @@ test/             node:test suites
 - Inherits the 2026-07 SDK audit posture: exact approvals, no `eval`, `ethers.getAddress` on every address, numeric
   clamping, bounded strings, no secrets in logs, RPC staleness warnings.
 - `arc-mainnet` and `base` responses carry a `realMoney: true` flag and a warning string on every prepared tx.
+- Relay accepts only the **canonical** ABI encoding of an allow-listed call (calldata with trailing bytes is rejected).
+- Upstream RPC calls are bounded (timeout + attempts); excess concurrency is shed with 503; `/health` is cached.
+- Operator RPC URLs are never echoed with credentials (`rpcUrl` shows the origin only when overridden).
+- Client-facing errors carry no library internals: ethers' `(code=…, version=…, buffer=…)` detail blocks,
+  URLs and host:port are stripped on both the REST and the MCP error channels.
+- `simulate_transaction` reports a revert only when the EVM produced one; an upstream RPC failure is a
+  502, never a fabricated `revertReason`.
+- JSON-RPC: batch replies are always arrays, an empty batch is `-32600`, and a malformed `tools/call`
+  is `-32602` — inside a batch as well as on its own; no zod issue lists reach clients.
+- `can_top_up` is **advisory**: the deployed marketplace's `canTopUp()` view is off by one block, so the
+  server also evaluates the corrected predicate and returns the conservative answer plus `warnings`
+  (`onChainView`, `correctedPredicate`, `viewDisagrees`). `prepare_supply_liquidity` carries the same
+  warnings. Simulate immediately before signing.
 - Admin functions (`pause`, `withdrawFees`, `seedPool`, NFT transfers, ...) are never prepared or relayed.
 
 License: MIT

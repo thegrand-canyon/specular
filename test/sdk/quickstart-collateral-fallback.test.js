@@ -64,7 +64,7 @@ function makeSdk() {
 describe("SpecularQuickstart collateral-approval fallback", function () {
     it("retries with a bounded buffer when the contract pulls more than exact, then revokes leftover", async () => {
         const { sdk, state } = makeSdk();
-        sdk.onboard = async () => {}; // skip onboarding
+        sdk._onboardInner = async () => {}; // skip onboarding
 
         const res = await sdk.borrow(0.5, 7);
         expect(res.loanId).to.equal(7);
@@ -82,7 +82,7 @@ describe("SpecularQuickstart collateral-approval fallback", function () {
 
     it("common path stays EXACT: one approval, one attempt, no buffer/revoke when the contract pulls exactly", async () => {
         const { sdk, state } = makeSdk();
-        sdk.onboard = async () => {};
+        sdk._onboardInner = async () => {};
         // Override marketplace to pull EXACTLY the formula amount.
         sdk.marketplace.requestLoan = async (amt) => {
             state.requestAttempts.push(state.allowance);

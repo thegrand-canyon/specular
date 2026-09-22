@@ -1,0 +1,1235 @@
+[
+  {
+    "scenario": "S1",
+    "label": "fund 0x60728577335D040B8900D14436ED56285996865b +1.0 native",
+    "hash": "0x3f42d2fb4625a399a443ef3d53e86e998e1365a096f2b1c0a02b52f426519019",
+    "block": 63122915,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-20T17:30:46.317Z"
+  },
+  {
+    "scenario": "S1",
+    "label": "fund 0x09B7973F33A7466ccAe8B160da21255424BC4458 +1.0 native",
+    "hash": "0x2eeaab9acf16abff9b2547af1a5737403d33fb99c49a095d82f2fb85258e92c9",
+    "block": 63122918,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-20T17:30:47.716Z"
+  },
+  {
+    "scenario": "S1",
+    "label": "fund 0x72E015693Af147231957895F36Ef5893c8b583d8 +1.0 native",
+    "hash": "0x18ea773633b42f6c77f6f0a6f3687dcc6d25fe23a62ef378cfd13b30a73a3ad5",
+    "block": 63122920,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-20T17:30:53.071Z"
+  },
+  {
+    "scenario": "S1",
+    "label": "fund 0xdc65A85e0d04Ae24691D25ac3F67113bCF48bAdd +1.0 native",
+    "hash": "0xd9133eeb3f7c73e8808eeddc24c4c5d77820fc8511585fe6dfcd2d5aa752dbeb",
+    "block": 63122931,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-20T17:30:54.502Z"
+  },
+  {
+    "scenario": "S1",
+    "label": "fund 0xD4604eFd25992fcdea944aA6a72a2A2847a1CE0F +1.0 native",
+    "hash": "0x6cc7bbc7507925ee10bc78d231d6a18619aee4ec2b9447f841f6ad2facc19bbe",
+    "block": 63122934,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-20T17:30:56.041Z"
+  },
+  {
+    "scenario": "S1",
+    "label": "fund 0x50b8eB0876Bf6952DA0d4eCC17bB55d1a56eeC30 +1.0 native",
+    "hash": "0xfe462f3669bd3b7f0705432002f996df6050dc4321644059c5b8946227471e36",
+    "block": 63122937,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-20T17:30:57.651Z"
+  },
+  {
+    "scenario": "S1",
+    "label": "mint 300 MockUSDC -> 0x60728577335D040B8900D14436ED56285996865b",
+    "hash": "0xdeedd220ce976981249c5f52f2f5285df169971acfc4e60f217a30259a79db52",
+    "block": 63122940,
+    "gasUsed": "53145",
+    "status": 1,
+    "at": "2026-09-20T17:31:02.785Z"
+  },
+  {
+    "scenario": "S1",
+    "label": "mint 200 MockUSDC -> 0x72E015693Af147231957895F36Ef5893c8b583d8",
+    "hash": "0x23fb8d3b972f10c9068efb2caa4195cb5d6e0bfc3abfb4c4845dc9a327e5dd04",
+    "block": 63122949,
+    "gasUsed": "53157",
+    "status": 1,
+    "at": "2026-09-20T17:31:07.802Z"
+  },
+  {
+    "scenario": "S1",
+    "label": "mint 100 MockUSDC -> 0xdc65A85e0d04Ae24691D25ac3F67113bCF48bAdd",
+    "hash": "0xe19453ffd23618fd762c6cca1c842636599ab53c99257e69db1aeb9e863508e8",
+    "block": 63122959,
+    "gasUsed": "53157",
+    "status": 1,
+    "at": "2026-09-20T17:31:12.725Z"
+  },
+  {
+    "scenario": "S1",
+    "label": "mint 100 MockUSDC -> 0xD4604eFd25992fcdea944aA6a72a2A2847a1CE0F",
+    "hash": "0x440138906fb17dec487e7b855c716a7b7aeceb35aa776784f7809b5771964db3",
+    "block": 63122969,
+    "gasUsed": "53157",
+    "status": 1,
+    "at": "2026-09-20T17:31:13.598Z"
+  },
+  {
+    "scenario": "S1",
+    "label": "mint 10 MockUSDC -> 0x50b8eB0876Bf6952DA0d4eCC17bB55d1a56eeC30",
+    "hash": "0x83df305f2f8b4e3591e56d6e1d7ecb262fa9ac944804468ac6c58b843e077279",
+    "block": 63122971,
+    "gasUsed": "53157",
+    "status": 1,
+    "at": "2026-09-20T17:31:18.559Z"
+  },
+  {
+    "scenario": "S1",
+    "label": "Lsmall approve 5.0 USDC",
+    "hash": "0x5b87182b2454f69d9f5c9ffcaf269017f8c1a1e9e29535e6ed49167393ef611c",
+    "block": 63123017,
+    "gasUsed": "45939",
+    "status": 1,
+    "at": "2026-09-20T17:31:41.307Z"
+  },
+  {
+    "scenario": "S1",
+    "label": "Lsmall revoke approval",
+    "hash": "0x7c3d15fe149cf3e765946c78d5ee6e9e3512074ae6510da2127003922d023494",
+    "block": 63123028,
+    "gasUsed": "24003",
+    "status": 1,
+    "at": "2026-09-20T17:31:46.914Z"
+  },
+  {
+    "scenario": "S1",
+    "label": "SDK supply 100 by 0x72E015693Af147231957895F36Ef5893c8b583d8",
+    "hash": "0xe4dc5f42dedae27b9cadf106a330c395f8becea7d2d7eef5406c63af9aac5cc3",
+    "block": 63123044,
+    "gasUsed": "208573",
+    "status": 1,
+    "at": "2026-09-20T17:31:51.464Z"
+  },
+  {
+    "scenario": "S1",
+    "label": "SDK supply 50 by 0xdc65A85e0d04Ae24691D25ac3F67113bCF48bAdd",
+    "hash": "0x9b03afbced959f83495860bc052963d4f67964111dd11c88c79ddca831a24c26",
+    "block": 63123058,
+    "gasUsed": "157285",
+    "status": 1,
+    "at": "2026-09-20T17:32:01.851Z"
+  },
+  {
+    "scenario": "S1",
+    "label": "SDK supply 30 by 0xD4604eFd25992fcdea944aA6a72a2A2847a1CE0F",
+    "hash": "0xc260435ab535a4d245d3d3a9bf1eab00c4f4c8659fffa04f2a33fd3fc022efa6",
+    "block": 63123070,
+    "gasUsed": "157285",
+    "status": 1,
+    "at": "2026-09-20T17:32:04.097Z"
+  },
+  {
+    "scenario": "S1",
+    "label": "SDK borrow 100 USDC 7d by A (loan 3)",
+    "hash": "0xd83d123e41c9f95a03b2fd80de74b6108773ed556a69e38c6851954665cf4e01",
+    "block": 63123089,
+    "gasUsed": "520202",
+    "status": 1,
+    "at": "2026-09-20T17:32:13.742Z"
+  },
+  {
+    "scenario": "S1",
+    "label": "SDK repay loan 3 by A",
+    "hash": "0xd71c8de25ca6f2750db29027385b78cfcd2037756b1dff4eb3a6f32ad2971c5b",
+    "block": 63123106,
+    "gasUsed": "303657",
+    "status": 1,
+    "at": "2026-09-20T17:32:26.090Z"
+  },
+  {
+    "scenario": "S1",
+    "label": "SDK claim by L2",
+    "hash": "0x1ef9c425c2501ac0b609996428234a93b5935585b405a88d041d451591811096",
+    "block": 63123120,
+    "gasUsed": "51221",
+    "status": 1,
+    "at": "2026-09-20T17:32:33.063Z"
+  },
+  {
+    "scenario": "S1",
+    "label": "SDK withdraw 30 by L3",
+    "hash": "0x19994214f53c276a51f596bfa77f25525b6a317aa81086e1be6da5c4ca01a250",
+    "block": 63123133,
+    "gasUsed": "59690",
+    "status": 1,
+    "at": "2026-09-20T17:32:39.490Z"
+  },
+  {
+    "scenario": "S2",
+    "label": "fund 0x60728577335D040B8900D14436ED56285996865b +0.04272866 native",
+    "hash": "0xef6f96eb070cc7c21bf881f8df234f64cb9bf7ba4f3019bbb949e574822f19f9",
+    "block": 63123323,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-20T17:34:10.706Z"
+  },
+  {
+    "scenario": "S2",
+    "label": "fund 0x72E015693Af147231957895F36Ef5893c8b583d8 +0.00827164 native",
+    "hash": "0x5b2ead25287c343ff3fe1e4dda6a857373b181bb73b5df1fa96b6c72aa2b5750",
+    "block": 63123325,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-20T17:34:11.872Z"
+  },
+  {
+    "scenario": "S2",
+    "label": "A borrow 50 (loan 4)",
+    "hash": "0x1ec92ae828456cef0f325bc8f7e0c2833c7c49fdbccad32995bdb6bb179c0f46",
+    "block": 63123341,
+    "gasUsed": "468914",
+    "status": 1,
+    "at": "2026-09-20T17:34:23.931Z"
+  },
+  {
+    "scenario": "S2",
+    "label": "L1 top-up 20 during loan #1 (case b)",
+    "hash": "0x41a913d29212e3e47931cb3e0816a4e5b2e020678443f62eddb842a0339b4a71",
+    "block": 63123364,
+    "gasUsed": "94506",
+    "status": 1,
+    "at": "2026-09-20T17:34:35.101Z"
+  },
+  {
+    "scenario": "S2",
+    "label": "L1 top-up 10 during loan #1 (case d)",
+    "hash": "0x23bfffc80f6a47a68b429b16101040ca36d6f3295fa1837deb0a16db99182a63",
+    "block": 63123388,
+    "gasUsed": "87429",
+    "status": 1,
+    "at": "2026-09-20T17:34:46.739Z"
+  },
+  {
+    "scenario": "S2",
+    "label": "A borrow 30 (loan 5)",
+    "hash": "0x924a24ebe29faa97a98281f9d9bb0d672390cdb00c2ca06ca3d94880f41b8fe3",
+    "block": 63123411,
+    "gasUsed": "400514",
+    "status": 1,
+    "at": "2026-09-20T17:34:58.766Z"
+  },
+  {
+    "scenario": "S2",
+    "label": "L1 approve (for direct revert probe) 5.0 USDC",
+    "hash": "0xd55e62579511c569d6151ebd511bdaa3b3f28265f8c3efd10a85fa42e0027b2a",
+    "block": 63123423,
+    "gasUsed": "45939",
+    "status": 1,
+    "at": "2026-09-20T17:35:04.449Z"
+  },
+  {
+    "scenario": "S2",
+    "label": "L1 revoke approval",
+    "hash": "0x58eee89c2b90d69ee2a701fadba6185df7f4d2e8b0a68cf13a64a1dd618db7ab",
+    "block": 63123435,
+    "gasUsed": "24003",
+    "status": 1,
+    "at": "2026-09-20T17:35:06.776Z"
+  },
+  {
+    "scenario": "S2",
+    "label": "A repay loan 4",
+    "hash": "0xb770ab97c85f297ea1f5f7112f1172584528f65709620db1342840f369432e5f",
+    "block": 63123453,
+    "gasUsed": "248951",
+    "status": 1,
+    "at": "2026-09-20T17:35:19.390Z"
+  },
+  {
+    "scenario": "S2",
+    "label": "L1 top-up 10 with only loan #2 open (case c fold)",
+    "hash": "0x38ea9c568053e8ffa29db8f0f3db63dbad50de69ac260734706e7ce20d5ad63f",
+    "block": 63123476,
+    "gasUsed": "86484",
+    "status": 1,
+    "at": "2026-09-20T17:35:31.213Z"
+  },
+  {
+    "scenario": "S2",
+    "label": "A repay loan 5",
+    "hash": "0xb592d3f0a4dc4f987ab4e7cd8409b6bbcd87c7ea9806efcbd451e81f157b6c18",
+    "block": 63123492,
+    "gasUsed": "207851",
+    "status": 1,
+    "at": "2026-09-20T17:35:35.264Z"
+  },
+  {
+    "scenario": "S2",
+    "label": "L1 top-up 5 with no loans open (case a)",
+    "hash": "0xf1d27a4d65f8c6ed12b35e56b0a0158e4bc0d86449fda52483b8d1cef40512bb",
+    "block": 63123508,
+    "gasUsed": "77566",
+    "status": 1,
+    "at": "2026-09-20T17:35:43.146Z"
+  },
+  {
+    "scenario": "S3",
+    "label": "fund 0x60728577335D040B8900D14436ED56285996865b +0.049076105 native",
+    "hash": "0x20ff2000690827ec65f28003633ae9bf02a4c3bdc53dda2f6be4c45b3b0d769a",
+    "block": 63123798,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-20T17:38:08.444Z"
+  },
+  {
+    "scenario": "S3",
+    "label": "fund 0xb8DC8De7698446501982Fc3DF86f3D4E1EAF6613 +1.0 native",
+    "hash": "0x13b25e5e757e3f04958801e146d3b428042e74e2f26905cff4b524f0478bdd31",
+    "block": 63123801,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-20T17:38:13.745Z"
+  },
+  {
+    "scenario": "S3",
+    "label": "mint 100 MockUSDC -> 0xb8DC8De7698446501982Fc3DF86f3D4E1EAF6613",
+    "hash": "0xf84969a6b63c889a4060dd91a5f70c0bf20e972004366aa8bb5d9ff1d22a4ec6",
+    "block": 63123812,
+    "gasUsed": "53157",
+    "status": 1,
+    "at": "2026-09-20T17:38:18.973Z"
+  },
+  {
+    "scenario": "S3",
+    "label": "(i) A borrow 20 (loan 6)",
+    "hash": "0xd01b6b33b9676c4e4286ad8939aa407db88074182e92293a8f7a7799b34ebbb6",
+    "block": 63123834,
+    "gasUsed": "468902",
+    "status": 1,
+    "at": "2026-09-20T17:38:30.541Z"
+  },
+  {
+    "scenario": "S3",
+    "label": "(i) transferFrom A -> A2",
+    "hash": "0x66bff79cdf8fce58fe6952ab009a51afda62e26ce11ae4497136208df36e0a9c",
+    "block": 63123845,
+    "gasUsed": "82409",
+    "status": 1,
+    "at": "2026-09-20T17:38:35.438Z"
+  },
+  {
+    "scenario": "S3",
+    "label": "(i) repayLoan by A (borrower, unregistered) approve 20.057534 USDC",
+    "hash": "0x982b2f3d2593debcbe335db1a30dfaf9d5d4e76f13770ce05cc98fa3880db4ea",
+    "block": 63123857,
+    "gasUsed": "45951",
+    "status": 1,
+    "at": "2026-09-20T17:38:41.406Z"
+  },
+  {
+    "scenario": "S3",
+    "label": "(i) repayLoan by A (borrower, unregistered)",
+    "hash": "0x3c132a57126f9ea65744af1e1647fd98b5ee19e63702081c818073dd9c89c092",
+    "block": 63123867,
+    "gasUsed": "207817",
+    "status": 1,
+    "at": "2026-09-20T17:38:46.305Z"
+  },
+  {
+    "scenario": "S3",
+    "label": "(ii) A2 approve collateral 10.0 USDC",
+    "hash": "0x59a1c834f0e4748a2dcb0404578b8c73228bebe2b36a90a898e93d804c3e6d4d",
+    "block": 63123878,
+    "gasUsed": "45939",
+    "status": 1,
+    "at": "2026-09-20T17:38:52.275Z"
+  },
+  {
+    "scenario": "S3",
+    "label": "(ii) owner setBindBorrowToPoolCreator(false) [temporary]",
+    "hash": "0xb04cd8343436ec6a98ea9e84288f039ad76130f51fa895a6ee73ea4fe2ee873b",
+    "block": 63123889,
+    "gasUsed": "25787",
+    "status": 1,
+    "at": "2026-09-20T17:38:57.286Z"
+  },
+  {
+    "scenario": "S3",
+    "label": "(ii) A2 requestLoan 10 (M-1 off)",
+    "hash": "0x413a31765b2619042f3e70466cae7f2690b55889cc26e31480a6ec5c911f5dd2",
+    "block": 63123898,
+    "gasUsed": "483840",
+    "status": 1,
+    "at": "2026-09-20T17:39:02.114Z"
+  },
+  {
+    "scenario": "S3",
+    "label": "(ii) transferFrom A2 -> A (back)",
+    "hash": "0xb79558c26599cd8b50338e9188c6990c0e306bae952b0e133225b955a55cd565",
+    "block": 63123909,
+    "gasUsed": "82409",
+    "status": 1,
+    "at": "2026-09-20T17:39:07.470Z"
+  },
+  {
+    "scenario": "S3",
+    "label": "fund 0x09B7973F33A7466ccAe8B160da21255424BC4458 +0.0129668175 native",
+    "hash": "0xcdb6bd5f25d41caf50fb1b95a0ab2f27cae08db6a2817102cb158d90a3fd3f13",
+    "block": 63123920,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-20T17:39:13.332Z"
+  },
+  {
+    "scenario": "S3",
+    "label": "(ii) repayLoan by A (HOLDER, not borrower) approve 10.028767 USDC",
+    "hash": "0x9981269436122d0da9eeb6315225c948206edd9fcd2eac661d1aa31dd956f84d",
+    "block": 63123932,
+    "gasUsed": "45939",
+    "status": 1,
+    "at": "2026-09-20T17:39:18.986Z"
+  },
+  {
+    "scenario": "S3",
+    "label": "(ii) repayLoan by A (HOLDER, not borrower)",
+    "hash": "0x49baf3d4a8b08a57f18430d146c1ffde19bab2c99ed7901854e929d58c1f896b",
+    "block": 63123941,
+    "gasUsed": "212657",
+    "status": 1,
+    "at": "2026-09-20T17:39:23.809Z"
+  },
+  {
+    "scenario": "S3",
+    "label": "(ii) owner setBindBorrowToPoolCreator(true) [restore]",
+    "hash": "0x2ea85b9c95b626cc485b244572ad060c5d7227c5c770faa1e8226befec715781",
+    "block": 63123952,
+    "gasUsed": "47699",
+    "status": 1,
+    "at": "2026-09-20T17:39:25.129Z"
+  },
+  {
+    "scenario": "S3",
+    "label": "(ii) A2 revoke leftover approval",
+    "hash": "0xc4e4d0a08bc87f2721be84a77f5d1dfbc572dc83ca0c6a11a73e14c5b71e1da0",
+    "block": 63123954,
+    "gasUsed": "26003",
+    "status": 1,
+    "at": "2026-09-20T17:39:30.133Z"
+  },
+  {
+    "scenario": "S3",
+    "label": "(iii) A borrow 15 (loan 8)",
+    "hash": "0xead5dd91ccf18f9b3e957c59432d5ce95f43069b2a40fb155bf27e9acfc92f41",
+    "block": 63123975,
+    "gasUsed": "468902",
+    "status": 1,
+    "at": "2026-09-20T17:39:40.558Z"
+  },
+  {
+    "scenario": "S3",
+    "label": "(iii) transferFrom A -> A2",
+    "hash": "0x6ad5e2874238c71db6e9726ed53cf2f218a52f0e1d210d5b9e43f88a916edb65",
+    "block": 63123985,
+    "gasUsed": "82409",
+    "status": 1,
+    "at": "2026-09-20T17:39:45.417Z"
+  },
+  {
+    "scenario": "S3",
+    "label": "(iii) transferFrom A2 -> A (back)",
+    "hash": "0xb88ad0c7c88a4a333d54d6af898ce686b11dc8180ad5db5cab4274226bb8b14c",
+    "block": 63123996,
+    "gasUsed": "82409",
+    "status": 1,
+    "at": "2026-09-20T17:39:51.051Z"
+  },
+  {
+    "scenario": "S3",
+    "label": "(iii) A repay loan approve 15.04315 USDC",
+    "hash": "0x8e8f2535ee0ed4e92a83c5733e4d1832ce3be9cc7999cd79a10039644f1ea680",
+    "block": 63124006,
+    "gasUsed": "45939",
+    "status": 1,
+    "at": "2026-09-20T17:39:52.076Z"
+  },
+  {
+    "scenario": "S3",
+    "label": "(iii) A repay loan",
+    "hash": "0x350b83b3f3747f01b1cead70b29975bab685456e93cc64c84ebede513e80ccf6",
+    "block": 63124008,
+    "gasUsed": "207817",
+    "status": 1,
+    "at": "2026-09-20T17:39:56.959Z"
+  },
+  {
+    "scenario": "S4",
+    "label": "fund 0xdc65A85e0d04Ae24691D25ac3F67113bCF48bAdd +0.0082698525 native",
+    "hash": "0x963b74bd74974f0366d3f9d84202b8a8580bb1a3bd4c51327e7d8f972ce8f318",
+    "block": 63124045,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-20T17:40:11.887Z"
+  },
+  {
+    "scenario": "S4",
+    "label": "fund 0x0222dF97FeDcD2B025E279e802E9363c0EBc6f03 +1.0 native",
+    "hash": "0x150f24507dd7bc1e56223472c97f3a9657e5690180e5914acb70e62b286f14da",
+    "block": 63124048,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-20T17:40:13.271Z"
+  },
+  {
+    "scenario": "S4",
+    "label": "mint 50 MockUSDC -> 0x09B7973F33A7466ccAe8B160da21255424BC4458",
+    "hash": "0xe30a4d82434c7e5195b69cf64c499c084fc72e0da07ad46b00e3d0085d6ed8d9",
+    "block": 63124050,
+    "gasUsed": "53169",
+    "status": 1,
+    "at": "2026-09-20T17:40:18.268Z"
+  },
+  {
+    "scenario": "S4",
+    "label": "L2 supply 20 to B pool",
+    "hash": "0xd804bb0b55bbc23fa47159b5258dc98a29f67d49ecba2579aeff20a68f6ebcba",
+    "block": 63124065,
+    "gasUsed": "208573",
+    "status": 1,
+    "at": "2026-09-20T17:40:25.317Z"
+  },
+  {
+    "scenario": "S4",
+    "label": "B borrow 10 (loan 9)",
+    "hash": "0x54b015b6a1c7de5e6d4810800979b42cb3bef611505b102f74de979560004ab3",
+    "block": 63124086,
+    "gasUsed": "520202",
+    "status": 1,
+    "at": "2026-09-20T17:40:36.002Z"
+  },
+  {
+    "scenario": "S4",
+    "label": "owner deactivateAgent(B)",
+    "hash": "0x0a8fd70dda28f2519d6b1c06bd4e6404c9aa595e2aafd160c5d3da436df1cdd7",
+    "block": 63124096,
+    "gasUsed": "27465",
+    "status": 1,
+    "at": "2026-09-20T17:40:41.191Z"
+  },
+  {
+    "scenario": "S4",
+    "label": "B approve collateral (probe) 5.0 USDC",
+    "hash": "0x6de65cbab83010f2dc953c162e0b835bfd091b6b2ad90647573abbb18ea83491",
+    "block": 63124107,
+    "gasUsed": "45939",
+    "status": 1,
+    "at": "2026-09-20T17:40:46.301Z"
+  },
+  {
+    "scenario": "S4",
+    "label": "B repay loan 9 while deactivated",
+    "hash": "0x991c7cf7b56e103219e61496cc4fa18d5be307ebdc13ae9a53d7d0d0cf294a7c",
+    "block": 63124129,
+    "gasUsed": "237616",
+    "status": 1,
+    "at": "2026-09-20T17:40:57.631Z"
+  },
+  {
+    "scenario": "S4",
+    "label": "L2 withdraw 5 from B pool while deactivated",
+    "hash": "0x5093a58155076021298991eca1e160e95251335f7492cb8fb7c031d0266c80e1",
+    "block": 63124140,
+    "gasUsed": "62350",
+    "status": 1,
+    "at": "2026-09-20T17:41:02.988Z"
+  },
+  {
+    "scenario": "S4",
+    "label": "L2 claim from B pool while deactivated",
+    "hash": "0x33b7f90a304b4b6981aac16bfb5ae572e464c57ebb3c266f8c578553138d38bb",
+    "block": 63124150,
+    "gasUsed": "51221",
+    "status": 1,
+    "at": "2026-09-20T17:41:08.163Z"
+  },
+  {
+    "scenario": "S4",
+    "label": "owner reactivateAgent(B)",
+    "hash": "0x54694ea4d1da6fd8412cc193b994b9741781570c6720e88ae2e4d718d6f981d3",
+    "block": 63124161,
+    "gasUsed": "50003",
+    "status": 1,
+    "at": "2026-09-20T17:41:13.436Z"
+  },
+  {
+    "scenario": "S4",
+    "label": "fund 0x09B7973F33A7466ccAe8B160da21255424BC4458 +0.02866886612 native",
+    "hash": "0x7ddcc8fda488df2e0e419f1c3be923c8b50113d403d40b079096e269ce062fb6",
+    "block": 63125433,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-20T17:51:51.515Z"
+  },
+  {
+    "scenario": "S4",
+    "label": "fund 0xdc65A85e0d04Ae24691D25ac3F67113bCF48bAdd +0.01089428697848976 native",
+    "hash": "0x96cc2b1fd53e28ed656541643e1055b385e96c9d8fbb3608675fb977b663e774",
+    "block": 63125443,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-20T17:51:56.510Z"
+  },
+  {
+    "scenario": "S4",
+    "label": "L2 supply 20 to B pool",
+    "hash": "0xb0e69c2dfb16ece652766a7e3ec0c4411240157323b0c2869e42da118aae569f",
+    "block": 63125464,
+    "gasUsed": "77231",
+    "status": 1,
+    "at": "2026-09-20T17:52:06.822Z"
+  },
+  {
+    "scenario": "S4",
+    "label": "B borrow 10 (loan 10)",
+    "hash": "0x9c3983efb96b28cb89641ba4df36307c0b0acc6abf55faa60503a42b9347c761",
+    "block": 63125484,
+    "gasUsed": "468902",
+    "status": 1,
+    "at": "2026-09-20T17:52:16.543Z"
+  },
+  {
+    "scenario": "S4",
+    "label": "owner deactivateAgent(B)",
+    "hash": "0x636dfa0bca03dc77852f550c7e9f0dcb24bc1e0ec4751fa98a015b3f459ff4c1",
+    "block": 63125493,
+    "gasUsed": "27465",
+    "status": 1,
+    "at": "2026-09-20T17:52:21.212Z"
+  },
+  {
+    "scenario": "S4",
+    "label": "B approve collateral (probe) 5.0 USDC",
+    "hash": "0x7479e534558a8662afe9bed8a6adfb95696272274d652a5dbc7e8d4115dc790e",
+    "block": 63125502,
+    "gasUsed": "45939",
+    "status": 1,
+    "at": "2026-09-20T17:52:26.014Z"
+  },
+  {
+    "scenario": "S4",
+    "label": "B repay loan 10 while deactivated",
+    "hash": "0x6abe6c3cdb2cdfb7aa7e890c691b17c53d8e368e5811c5b1f4d791b020bcaa58",
+    "block": 63125523,
+    "gasUsed": "203416",
+    "status": 1,
+    "at": "2026-09-20T17:52:36.216Z"
+  },
+  {
+    "scenario": "S4",
+    "label": "L2 withdraw 5 from B pool while deactivated",
+    "hash": "0xfd2fe006c18d6902f9023458634ef2987cb408cbfc4deaafb70bd39c40c11768",
+    "block": 63125532,
+    "gasUsed": "62350",
+    "status": 1,
+    "at": "2026-09-20T17:52:40.984Z"
+  },
+  {
+    "scenario": "S4",
+    "label": "L2 claim from B pool while deactivated",
+    "hash": "0xcef5f79d0d891d076c3c8a53bae95dc9b330ff2cd28c6a8166e7db4d8fd653b5",
+    "block": 63125541,
+    "gasUsed": "51221",
+    "status": 1,
+    "at": "2026-09-20T17:52:45.664Z"
+  },
+  {
+    "scenario": "S4",
+    "label": "owner reactivateAgent(B)",
+    "hash": "0x8d6a76ea6623d8da0db6e2daa21a5e964b4e8d2d7bdb903c075097a8188c112a",
+    "block": 63125551,
+    "gasUsed": "50003",
+    "status": 1,
+    "at": "2026-09-20T17:52:50.336Z"
+  },
+  {
+    "scenario": "S4",
+    "label": "B borrow 5 after reactivation (loan 11)",
+    "hash": "0xc6540653d3a3d401a2a4e5d80d60ebee8efc5fbd774ea5de374dab9fde10576d",
+    "block": 63125571,
+    "gasUsed": "468902",
+    "status": 1,
+    "at": "2026-09-20T17:53:00.136Z"
+  },
+  {
+    "scenario": "S4",
+    "label": "B repay loan 11",
+    "hash": "0xc600dff437dcf57fc04153ab8274f07267dee3be34d3cfad5d3fbb71190864a2",
+    "block": 63125590,
+    "gasUsed": "203416",
+    "status": 1,
+    "at": "2026-09-20T17:53:09.839Z"
+  },
+  {
+    "scenario": "S4",
+    "label": "B revoke leftover approval",
+    "hash": "0xb91c883aa9f525a1eb51545ecd2903537ea8e3344aa9e3aab2b880c558a32af2",
+    "block": 63125600,
+    "gasUsed": "26003",
+    "status": 1,
+    "at": "2026-09-20T17:53:14.558Z"
+  },
+  {
+    "scenario": "S4",
+    "label": "D register",
+    "hash": "0xb8f664004b5943ab4048a12f8ffcfc84c063d63e45d974a6af1a8741b2ba0505",
+    "block": 63125609,
+    "gasUsed": "260303",
+    "status": 1,
+    "at": "2026-09-20T17:53:19.246Z"
+  },
+  {
+    "scenario": "S4",
+    "label": "owner deactivateAgent(D)",
+    "hash": "0xc3772728b9646123303fa29d163f8f471ba458e073d37249e05c377bfa0dc810",
+    "block": 63125618,
+    "gasUsed": "27465",
+    "status": 1,
+    "at": "2026-09-20T17:53:23.996Z"
+  },
+  {
+    "scenario": "S4",
+    "label": "owner reactivateAgent(D)",
+    "hash": "0xcce08a501d613f8120070478f2d80f3bae0990932b376b8f54d376bc40b782a0",
+    "block": 63125628,
+    "gasUsed": "50003",
+    "status": 1,
+    "at": "2026-09-20T17:53:28.675Z"
+  },
+  {
+    "scenario": "S4",
+    "label": "D createAgentPool",
+    "hash": "0x681de2a5283703e693d25469b4fc9f24bab6f57671b065af9f69966920885645",
+    "block": 63125637,
+    "gasUsed": "138676",
+    "status": 1,
+    "at": "2026-09-20T17:53:33.264Z"
+  },
+  {
+    "scenario": "S6",
+    "label": "fund 0x60728577335D040B8900D14436ED56285996865b +0.056057652998610159 native",
+    "hash": "0x622d0ab5599fec2a0e56369286ca7905cb4a44d66a98c5a5c9b70cee1955e7c6",
+    "block": 63125690,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-20T17:53:59.713Z"
+  },
+  {
+    "scenario": "S6",
+    "label": "fund 0xb8DC8De7698446501982Fc3DF86f3D4E1EAF6613 +0.022796653829447994 native",
+    "hash": "0x502477dbe887ec4dac3382acfce6754c70c64a74d69cb27c8f4241266099442c",
+    "block": 63125699,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-20T17:54:04.558Z"
+  },
+  {
+    "scenario": "S6",
+    "label": "fund 0xe57F0dFA1E1006bBFd6832633f49ac9FdFFb57cC +1.0 native",
+    "hash": "0x7bb7fe42aad0d94bf188dd5a681489daac68bf82b4b73bac482468b9e9f1e729",
+    "block": 63125709,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-20T17:54:09.374Z"
+  },
+  {
+    "scenario": "S6",
+    "label": "transferFrom A -> A2",
+    "hash": "0x1e80d88db573a4d0f41c019123d58d7fa790d50ad6b8333b72679cbbbe31b26f",
+    "block": 63125720,
+    "gasUsed": "82409",
+    "status": 1,
+    "at": "2026-09-20T17:54:14.797Z"
+  },
+  {
+    "scenario": "S6",
+    "label": "A2 approve collateral 5.0 USDC",
+    "hash": "0x192c899bbc244419eac49adf45da2cedeac093c74ec0ccc03d4f840281bf66ce",
+    "block": 63125729,
+    "gasUsed": "45939",
+    "status": 1,
+    "at": "2026-09-20T17:54:19.442Z"
+  },
+  {
+    "scenario": "S6",
+    "label": "A2 revoke approval",
+    "hash": "0x6627f236acc811a38a82ee3e7eefa04122d66db3f6ad16a9e193eb11f1b43713",
+    "block": 63125739,
+    "gasUsed": "24003",
+    "status": 1,
+    "at": "2026-09-20T17:54:24.059Z"
+  },
+  {
+    "scenario": "S6",
+    "label": "transferFrom A2 -> A (back)",
+    "hash": "0x078724722c13a98836ca877a184cd3af20864bb8b2516086bdd29d8b71dd3895",
+    "block": 63125748,
+    "gasUsed": "82409",
+    "status": 1,
+    "at": "2026-09-20T17:54:28.588Z"
+  },
+  {
+    "scenario": "S6",
+    "label": "A borrow 100 (loan 12)",
+    "hash": "0x7406a0d3fcdb822267edd97125d3138621f85c7702fe11f1b332f3302f9979a0",
+    "block": 63125767,
+    "gasUsed": "468902",
+    "status": 1,
+    "at": "2026-09-20T17:54:38.303Z"
+  },
+  {
+    "scenario": "S6",
+    "label": "A repay loan 12 immediately",
+    "hash": "0x313398f5ddc9329bc51e38fd69aca20072b53bb5e28187edb23fa28545c10e07",
+    "block": 63125786,
+    "gasUsed": "207817",
+    "status": 1,
+    "at": "2026-09-20T17:54:47.713Z"
+  },
+  {
+    "scenario": "S7",
+    "label": "fund 0x53E491ffbCbAd31e1eA51A40A59C8Be6a7fE0E61 +1.0 native",
+    "hash": "0x4d520bc9bb0dd6eaabdc4831c692a78262ce85bd2bdc96d675712651d394a2e8",
+    "block": 63157709,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-20T22:21:20.658Z"
+  },
+  {
+    "scenario": "S7",
+    "label": "mint 100 MockUSDC -> 0x53E491ffbCbAd31e1eA51A40A59C8Be6a7fE0E61",
+    "hash": "0xeaeab3530ae308a92809bedf572ec7ce4847adfae220d836ebd39595b38d1780",
+    "block": 63157719,
+    "gasUsed": "53157",
+    "status": 1,
+    "at": "2026-09-20T22:21:25.188Z"
+  },
+  {
+    "scenario": "S7",
+    "label": "[REST] register_agent",
+    "hash": "0x9ddda050e0d2b10576d5e8d6a8dc7c3ac7805a02e04fedf5c5cb6b93de99c4ac",
+    "block": 63157730,
+    "gasUsed": "260303",
+    "status": 1,
+    "at": "2026-09-20T22:21:30.932Z"
+  },
+  {
+    "scenario": "S7",
+    "label": "[REST] create_pool",
+    "hash": "0x584b40badbebb2252cf31780c0f5584d706c26a94a4e9ff16f572a4e6537358b",
+    "block": 63157741,
+    "gasUsed": "138676",
+    "status": 1,
+    "at": "2026-09-20T22:21:40.466Z"
+  },
+  {
+    "scenario": "S7",
+    "label": "[REST] approve_usdc 20",
+    "hash": "0x0f34ca80d507cf0fa526cfb0c9748a15ca7956e29eccd26244fc0a37ea4c2fce",
+    "block": 63157760,
+    "gasUsed": "45939",
+    "status": 1,
+    "at": "2026-09-20T22:21:49.880Z"
+  },
+  {
+    "scenario": "S7",
+    "label": "[REST] supply_liquidity 20",
+    "hash": "0x60f03e07dbf7c26d165534897057b704e94cac04327f8dbd34e4026c76f04f41",
+    "block": 63157779,
+    "gasUsed": "208573",
+    "status": 1,
+    "at": "2026-09-20T22:21:59.392Z"
+  },
+  {
+    "scenario": "S7",
+    "label": "[REST] request_loan prerequisite approve",
+    "hash": "0xf42414b08aa9a093d2ca0aacd01ac284fce72e9292c0da30534a0fbdd6bf4b4e",
+    "block": 63157797,
+    "gasUsed": "45939",
+    "status": 1,
+    "at": "2026-09-20T22:22:08.763Z"
+  },
+  {
+    "scenario": "S7",
+    "label": "[REST] request_loan 10",
+    "hash": "0xb1b5be458ab3bdf11a11a7a65d007599a8f69459e1445abb2121e42275a33a95",
+    "block": 63157815,
+    "gasUsed": "520202",
+    "status": 1,
+    "at": "2026-09-20T22:22:18.285Z"
+  },
+  {
+    "scenario": "S7",
+    "label": "[REST] repay prerequisite approve",
+    "hash": "0x4cfcef088c9e5a85e402d10a3db154528166aa23f20ff1993ea94044ade969ee",
+    "block": 63157836,
+    "gasUsed": "45939",
+    "status": 1,
+    "at": "2026-09-20T22:22:24.889Z"
+  },
+  {
+    "scenario": "S7",
+    "label": "[REST] repay_loan 13",
+    "hash": "0xe466b876d35f58715c0741eab6d6cab0dc007443912e1bf5635d92efc70ce4f7",
+    "block": 63157846,
+    "gasUsed": "237616",
+    "status": 1,
+    "at": "2026-09-20T22:22:30.159Z"
+  },
+  {
+    "scenario": "S7",
+    "label": "[MCP] mcp request_loan prerequisite",
+    "hash": "0x33264d1b26f07cc1fffcef0d6ead95418b87f3abec3cab111eab1a3f47bc63a2",
+    "block": 63157858,
+    "gasUsed": "45939",
+    "status": 1,
+    "at": "2026-09-20T22:22:36.198Z"
+  },
+  {
+    "scenario": "S7",
+    "label": "[MCP] mcp request_loan 5",
+    "hash": "0x25b9e1780c8a05fa0fd26c026a889055d91f29e037c65c33bfe00d78f771ad30",
+    "block": 63157869,
+    "gasUsed": "468902",
+    "status": 1,
+    "at": "2026-09-20T22:22:41.368Z"
+  },
+  {
+    "scenario": "S7",
+    "label": "[MCP] mcp repay prerequisite",
+    "hash": "0xb11aaff227c0a1e1322c91a635617bb2b4504ba069424485d43afff5f9968430",
+    "block": 63157880,
+    "gasUsed": "45939",
+    "status": 1,
+    "at": "2026-09-20T22:22:51.067Z"
+  },
+  {
+    "scenario": "S7",
+    "label": "[MCP] mcp repay_loan 14",
+    "hash": "0x16325a69e33d8e005d61e5621b4b8dca80f291e440e664323e0b293a8274a6de",
+    "block": 63157899,
+    "gasUsed": "186316",
+    "status": 1,
+    "at": "2026-09-20T22:23:00.540Z"
+  },
+  {
+    "scenario": "S8",
+    "label": "fund 0x60728577335D040B8900D14436ED56285996865b +4.02127545 native",
+    "hash": "0xc543c5eb8d57fc98d2eefa9f0be7c7d22aa9f70dddc2fa2f901322a5cc617adb",
+    "block": 63157977,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-20T22:23:35.655Z"
+  },
+  {
+    "scenario": "S8",
+    "label": "owner setMinHoldForReputationReward(0) [temporary]",
+    "hash": "0xc60b1cc617017dca15389e6e3a11a2bb61e7d28df2a0b116d3562988d312a483",
+    "block": 63157989,
+    "gasUsed": "25484",
+    "status": 1,
+    "at": "2026-09-20T22:23:41.244Z"
+  },
+  {
+    "scenario": "S8",
+    "label": "A borrow 100 (loan 15) cycle 1/3",
+    "hash": "0x818da71e9b3179ccb8963c91802bfbb11fe283f6d106746308e3b9ecd5cf4b9f",
+    "block": 63158009,
+    "gasUsed": "468902",
+    "status": 1,
+    "at": "2026-09-20T22:23:51.216Z"
+  },
+  {
+    "scenario": "S8",
+    "label": "A repay loan 15",
+    "hash": "0xba7fa4d6fef53987136476e98c6f9904054b13661e92c9b2baa2329b881d7b35",
+    "block": 63158028,
+    "gasUsed": "286458",
+    "status": 1,
+    "at": "2026-09-20T22:24:00.856Z"
+  },
+  {
+    "scenario": "S8",
+    "label": "A borrow 100 (loan 16) cycle 2/3",
+    "hash": "0xbdea3bb037e2ad0f4c407bb210a1c946cfa9a670d0cb3dfe2424d273634eef3f",
+    "block": 63158047,
+    "gasUsed": "468902",
+    "status": 1,
+    "at": "2026-09-20T22:24:10.888Z"
+  },
+  {
+    "scenario": "S8",
+    "label": "A repay loan 16",
+    "hash": "0x5bcae5f040ba031aeb7b88c88c2e8d916d962ecfcd582e9295e86457d50f9c33",
+    "block": 63158066,
+    "gasUsed": "231918",
+    "status": 1,
+    "at": "2026-09-20T22:24:20.355Z"
+  },
+  {
+    "scenario": "S8",
+    "label": "A borrow 100 (loan 17) cycle 3/3",
+    "hash": "0xf295a61e01e0742eba145c88208746a542cd4a71c05a2bb4255c1d337cb08205",
+    "block": 63158085,
+    "gasUsed": "468902",
+    "status": 1,
+    "at": "2026-09-20T22:24:30.256Z"
+  },
+  {
+    "scenario": "S9",
+    "label": "fund 0x09B7973F33A7466ccAe8B160da21255424BC4458 +0.03915335 native",
+    "hash": "0x4a755c599ecb52dec7c7ce0a98fde446cef13c0a4ddbf376b5a0a5827e73b739",
+    "block": 63158092,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-20T22:24:33.947Z"
+  },
+  {
+    "scenario": "S8",
+    "label": "A repay loan 17",
+    "hash": "0x55c8fa7690ffb1d601e138b15e2a554c50a96f11c2bd8ca18144bc100d9946e8",
+    "block": 63158104,
+    "gasUsed": "220883",
+    "status": 1,
+    "at": "2026-09-20T22:24:39.614Z"
+  },
+  {
+    "scenario": "S9",
+    "label": "B borrow 5 (loan 18) for parity read",
+    "hash": "0x197ffb6a22fe419f95bd56af6fa8ca9e9154b5bf8b249e356d6d0e171a3f878f",
+    "block": 63158112,
+    "gasUsed": "468902",
+    "status": 1,
+    "at": "2026-09-20T22:24:43.634Z"
+  },
+  {
+    "scenario": "S8",
+    "label": "owner setReputationRateLimit(0, window) [temporary: unlimited]",
+    "hash": "0x23a53dcac90edb1bc137656c2775a73ffce34df635b91013599abb3f220b63da",
+    "block": 63158114,
+    "gasUsed": "27875",
+    "status": 1,
+    "at": "2026-09-20T22:24:44.613Z"
+  },
+  {
+    "scenario": "S8",
+    "label": "owner setReputationRateLimit(20, 86400) [restore]",
+    "hash": "0x1892125a182583b0010ecc0bc5bbb81cd87714fcf70e401d83c00e6b0fc460ab",
+    "block": 63160413,
+    "gasUsed": "49787",
+    "status": 1,
+    "at": "2026-09-20T22:43:54.531Z"
+  },
+  {
+    "scenario": "S8",
+    "label": "owner setMinHoldForReputationReward(86400) [restore]",
+    "hash": "0xb6501a712a1841af9fca24d4ba012a4581f678563981145bac7e8d70b77b1433",
+    "block": 63160423,
+    "gasUsed": "47420",
+    "status": 1,
+    "at": "2026-09-20T22:43:59.302Z"
+  },
+  {
+    "scenario": "S9",
+    "label": "cleanup approve 5.014383 USDC",
+    "hash": "0xeacb51675de2ab18822f1c3bcbce6e691e1dba48980475d9567d392f42ef9b5c",
+    "block": 63325215,
+    "gasUsed": "45939",
+    "status": 1,
+    "at": "2026-09-21T23:10:40.347Z"
+  },
+  {
+    "scenario": "S9",
+    "label": "cleanup repay loan 18 (left ACTIVE by the aborted S9 run)",
+    "hash": "0xbfd644d4d500bba140c328dce24fbdc8edea6240b2ab49c4003c05fe237393d8",
+    "block": 63325224,
+    "gasUsed": "219928",
+    "status": 1,
+    "at": "2026-09-21T23:10:44.866Z"
+  },
+  {
+    "scenario": "S7",
+    "label": "fund 0xCcD5485Eb930b8496170b6ec555e44fdd0B7ef56 +1.0 native",
+    "hash": "0xef41c96d825997d4416112f93ae9485b83c40d00120ab8f722a79c7f24b3f54d",
+    "block": 63325293,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-21T23:11:19.593Z"
+  },
+  {
+    "scenario": "S7",
+    "label": "mint 100 MockUSDC -> 0xCcD5485Eb930b8496170b6ec555e44fdd0B7ef56",
+    "hash": "0x058b7b79d5d8b703dbc29e44a96dd2f48dab344f973c0960c445a993df393e3a",
+    "block": 63325303,
+    "gasUsed": "53157",
+    "status": 1,
+    "at": "2026-09-21T23:11:24.177Z"
+  },
+  {
+    "scenario": "S7",
+    "label": "[REST] register_agent",
+    "hash": "0x4c28c99714c0fd85869d00a8300183aa42f61d76d7c5bb3c1c269112937889bd",
+    "block": 63325314,
+    "gasUsed": "260303",
+    "status": 1,
+    "at": "2026-09-21T23:11:34.050Z"
+  },
+  {
+    "scenario": "S7",
+    "label": "[REST] create_pool",
+    "hash": "0xb70c741c9f8ade7a365ce2d2ddb2c2dd68a3308493a97674a57de01bace6f28a",
+    "block": 63325333,
+    "gasUsed": "138676",
+    "status": 1,
+    "at": "2026-09-21T23:11:43.602Z"
+  },
+  {
+    "scenario": "S7",
+    "label": "[REST] approve_usdc 20",
+    "hash": "0x0a521135d1c982e0a08d6f3960b6dee3e0217c1adf7163890afe85c47a043ff7",
+    "block": 63325352,
+    "gasUsed": "45939",
+    "status": 1,
+    "at": "2026-09-21T23:11:48.834Z"
+  },
+  {
+    "scenario": "S7",
+    "label": "[REST] supply_liquidity 20",
+    "hash": "0xcd7d0ecd3901bd517cf31062562ee8d774901f2014d44e74daaa7c50bcca5737",
+    "block": 63325363,
+    "gasUsed": "208573",
+    "status": 1,
+    "at": "2026-09-21T23:11:58.328Z"
+  },
+  {
+    "scenario": "S7",
+    "label": "[REST] request_loan prerequisite approve",
+    "hash": "0xa9ba47fdff7d3da561791708656361ce4e0930e1ea6cd49f525fe4eaf6c898fd",
+    "block": 63325381,
+    "gasUsed": "45939",
+    "status": 1,
+    "at": "2026-09-21T23:12:07.997Z"
+  },
+  {
+    "scenario": "S7",
+    "label": "[REST] request_loan 10",
+    "hash": "0x91358ea2bd07be92e5972d4c9717a6f7dd95518a0ffd2f4215f2973a714bed50",
+    "block": 63325401,
+    "gasUsed": "520202",
+    "status": 1,
+    "at": "2026-09-21T23:12:17.586Z"
+  },
+  {
+    "scenario": "S7",
+    "label": "[REST] repay prerequisite approve",
+    "hash": "0xd08167d383a7614a567d0c08beb926504686a2a34c730c20c2e33d9caafae311",
+    "block": 63325421,
+    "gasUsed": "45939",
+    "status": 1,
+    "at": "2026-09-21T23:12:27.776Z"
+  },
+  {
+    "scenario": "S7",
+    "label": "[REST] repay_loan 78",
+    "hash": "0xd6b27f841f901fd1f744a2d7b5397470a2487f8e285857611032903a9e0e2cad",
+    "block": 63325440,
+    "gasUsed": "237616",
+    "status": 1,
+    "at": "2026-09-21T23:12:37.361Z"
+  },
+  {
+    "scenario": "S7",
+    "label": "[MCP] mcp request_loan prerequisite",
+    "hash": "0xab3a5a99753cc26bb5138b615e62c90711df12a2acad2d4b56f1362d46c9b6ac",
+    "block": 63325461,
+    "gasUsed": "45939",
+    "status": 1,
+    "at": "2026-09-21T23:12:47.998Z"
+  },
+  {
+    "scenario": "S7",
+    "label": "[MCP] mcp request_loan 5",
+    "hash": "0xf25b80f924a431e66e13162b81390fbdb6161c044cf67b72c86bf54bb7fae260",
+    "block": 63325480,
+    "gasUsed": "468902",
+    "status": 1,
+    "at": "2026-09-21T23:12:53.290Z"
+  },
+  {
+    "scenario": "S7",
+    "label": "[MCP] mcp repay prerequisite",
+    "hash": "0x8de077fb94dcb6b8a0e69c4583eaea41bfe7e93df4780286a6c1f3ac377b34d6",
+    "block": 63325492,
+    "gasUsed": "45939",
+    "status": 1,
+    "at": "2026-09-21T23:13:03.167Z"
+  },
+  {
+    "scenario": "S7",
+    "label": "[MCP] mcp repay_loan 79",
+    "hash": "0x3c9bb3b715d0e50967c39558f7689d25a5e58cac581235eaeb2fadc1141ae5be",
+    "block": 63325510,
+    "gasUsed": "186316",
+    "status": 1,
+    "at": "2026-09-21T23:13:12.653Z"
+  },
+  {
+    "scenario": "S4",
+    "label": "recheck: deployer approve 1 USDC (probe)",
+    "hash": "0xb4c8055e72dbf8bd0e73c4016edebd11a5aeaa6c1b7e0356be7705e97262e14c",
+    "block": 63325820,
+    "gasUsed": "28839",
+    "status": 1,
+    "at": "2026-09-21T23:15:43.565Z"
+  },
+  {
+    "scenario": "S4",
+    "label": "recheck: owner deactivateAgent(D/48)",
+    "hash": "0xa6792da7a687fba744466297a7b99cf1c6c46b3df3112f54fbe01cbdaa4cb406",
+    "block": 63325829,
+    "gasUsed": "27465",
+    "status": 1,
+    "at": "2026-09-21T23:15:48.081Z"
+  },
+  {
+    "scenario": "S4",
+    "label": "recheck: owner reactivateAgent(D/48)",
+    "hash": "0xb5689fe29a08fcd1f9e0998653319e54f4f6728380fec91a29c7b1f9d7476ca5",
+    "block": 63325838,
+    "gasUsed": "50003",
+    "status": 1,
+    "at": "2026-09-21T23:15:53.002Z"
+  },
+  {
+    "scenario": "S4",
+    "label": "recheck: deployer revoke approval",
+    "hash": "0x278d55b8278318030d4ec79f3ece1b3aaff761f8ce0027fe82d6ea1ce325c111",
+    "block": 63325848,
+    "gasUsed": "24003",
+    "status": 1,
+    "at": "2026-09-21T23:15:57.587Z"
+  }
+]

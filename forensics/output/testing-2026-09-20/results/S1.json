@@ -1,0 +1,225 @@
+{
+  "scenario": "S1",
+  "startedAt": "2026-09-20T17:30:44.660Z",
+  "finishedAt": "2026-09-20T17:32:48.439Z",
+  "passed": 37,
+  "failed": 0,
+  "blocked": 0,
+  "checks": [
+    {
+      "label": "minSupplyAmount (staging lever)",
+      "ok": null,
+      "detail": "1.0 USDC"
+    },
+    {
+      "label": "SDK detects V6.1",
+      "ok": true,
+      "detail": "V6.1"
+    },
+    {
+      "label": "A registered + pool active",
+      "ok": true,
+      "detail": "agentId 46 registerTx=0x583c7512a243dbeba17ca9ec15feb55d74395034e38f075262e0bfe78855683d poolTx=0x8d2994c6ad249bb77b7c3b0dfbe404780ebf8cf2f7d5a4285589d6c4ba1a42ff"
+    },
+    {
+      "label": "B registered + pool active",
+      "ok": true,
+      "detail": "agentId 47 registerTx=0x5b6e80cf43d87ab40afdf1b793276145714b780eaa9c4f7411060fce1b6727db poolTx=0x6afbfe73d001dec0cc9f12a3242c15cd5db0d0ad1d3b9353a6cb4394941a0a79"
+    },
+    {
+      "label": "A and B have distinct pools owned by themselves",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "supply 0.999999 USDC (< minSupply) into NEW slot reverts \"Below minimum supply\"",
+      "ok": true,
+      "detail": "Below minimum supply | execution reverted: \"Below minimum supply\" | execution reverted: \"Below minimum supply\" (action=\"estimateGas\", data=\"0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001442656c6f77206d696e696d756d20737570706c79000000000000000000000000\", reason=\"Below minimum supply\", transaction={ \"data\": \"0"
+    },
+    {
+      "label": "supply 5 USDC into a NEW slot",
+      "ok": null,
+      "detail": "would SUCCEED on staging because minSupplyAmount=1.0 USDC ≤ 5 (not sent; staticCall only)"
+    },
+    {
+      "label": "positions L1/L2/L3 = 100/50/30 (delta)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "pool availableLiquidity += 180",
+      "ok": true,
+      "detail": "180.0"
+    },
+    {
+      "label": "lender allowances back to 0 after exact-approve supply",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "poolLenders(A) has exactly 3 entries",
+      "ok": true,
+      "detail": "3"
+    },
+    {
+      "label": "A credit: score 0, 100% collateral, 15% APR, 1000 limit",
+      "ok": true,
+      "detail": "{\"score\":0,\"creditLimit\":\"1000.0\",\"collateralPct\":100,\"interestRateBps\":1500,\"interestRateAPR\":15}"
+    },
+    {
+      "label": "loan ACTIVE, amount 100, collateral 100 (100%), rate 1500, duration 7d",
+      "ok": true,
+      "detail": "loanId 3"
+    },
+    {
+      "label": "A balance unchanged after borrow (collateral 100 out, principal 100 in)",
+      "ok": true,
+      "detail": "300.0 -> 300.0"
+    },
+    {
+      "label": "pool availableLiquidity 80 / totalLoaned 100 / activeLoanCount 1",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "marketplace balance grew by exactly collateral (100) net of principal out",
+      "ok": true,
+      "detail": "380.500574 -> 380.500574"
+    },
+    {
+      "label": "getActiveLoanIds(A) == [loanId]",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "SDK previewRepayment.interest == calculateInterest(100, 1500, 7d)",
+      "ok": true,
+      "detail": "287671 (0.287671 USDC), lateSeconds 0"
+    },
+    {
+      "label": "interest mirror (JS interestFor) matches contract",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "loan REPAID",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "A paid exactly principal + interest and got collateral back",
+      "ok": true,
+      "detail": "A delta 0.287671 == interest 0.287671"
+    },
+    {
+      "label": "A allowance 0 after repay (exact approval consumed)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "repayments[loanId]: interestPaid == interest, lateSeconds 0",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "L1 earnedInterest exact: 158219 base units",
+      "ok": true,
+      "detail": "on-chain 158219"
+    },
+    {
+      "label": "L2 earnedInterest exact: 79109 base units",
+      "ok": true,
+      "detail": "on-chain 79109"
+    },
+    {
+      "label": "L3 earnedInterest exact: 47465 base units",
+      "ok": true,
+      "detail": "on-chain 47465"
+    },
+    {
+      "label": "accumulatedFees += 1% fee + rounding dust",
+      "ok": true,
+      "detail": "fee 2876 dust 2"
+    },
+    {
+      "label": "pool.totalEarned += lenderInterest",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "pool.availableLiquidity == 180 + Σshares (principal back + distributed interest)",
+      "ok": true,
+      "detail": "180284793"
+    },
+    {
+      "label": "per-pool conservation: avail + loaned == Σamount + Σearned",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "L2 received exactly its share",
+      "ok": true,
+      "detail": "79109"
+    },
+    {
+      "label": "L2 earnedInterest -> 0; availableLiquidity decremented by claim (§S1)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "L3 principal back (30), position.amount 0, earnedInterest retained",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "L3 still in poolLenders (unclaimed interest) — slot not leaked/dropped",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "pool availableLiquidity after withdraw",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "pool: availableLiquidity == Σpositions + Σearned (no active loans)",
+      "ok": true,
+      "detail": "150205684 == 150000000 + 205684"
+    },
+    {
+      "label": "marketplace balance delta == Σpositions + Σearned(unclaimed) + fees delta",
+      "ok": true,
+      "detail": "150208562 == 150000000 + 205684 + 2878"
+    },
+    {
+      "label": "GLOBAL: marketplace balance == Σ_pools available + Σ active collateral + fees",
+      "ok": true,
+      "detail": "balance 350709136 expected 350709136 surplus 0 pools 3"
+    },
+    {
+      "label": "GLOBAL: every pool conserves avail+loaned == Σamount+Σearned",
+      "ok": true,
+      "detail": "{}"
+    }
+  ],
+  "spent": {
+    "nativeFromDeployer": "6.0",
+    "usdcMinted": "710.0"
+  },
+  "agentIds": {
+    "A": 46,
+    "B": 47
+  },
+  "loanId": 3,
+  "expected": {
+    "interest": "287671",
+    "fee": "2876",
+    "lenderInterest": "284795",
+    "shares": {
+      "L1": "158219",
+      "L2": "79109",
+      "L3": "47465"
+    },
+    "dust": "2"
+  }
+}

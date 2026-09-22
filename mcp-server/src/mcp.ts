@@ -10,10 +10,10 @@
  * relay before being sent.
  */
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import { CallToolRequestSchema, ErrorCode, ListToolsRequestSchema, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { ethers } from 'ethers';
 import { broadcastSignedTx, validateSignedTx } from './broadcast.js';
-import { getProvider } from './chain.js';
+import { describeRpcError, getProvider } from './chain.js';
 import { errorFields, logger } from './logger.js';
 import { ALL_NETWORKS, getNetwork, NetworkError } from './networks.js';
 import { callTool, ToolDef, toolAnnotations, TOOLS } from './tools.js';
@@ -26,7 +26,7 @@ export type Mode = 'local' | 'remote';
 const INSTRUCTIONS = `Specular Protocol: on-chain credit for AI agents (borrow USDC against reputation, or lend into agent pools).
 This server is NON-CUSTODIAL. Read tools query the chain. "prepare_*" tools return UNSIGNED transactions that you sign with your own wallet; "broadcast_signed_transaction" relays bytes you signed. Every tool needs an explicit "network": use "arc-staging" (testnet) to experiment; "base" and "arc-mainnet" move real USDC.
 Typical borrower flow: check_credit_score -> (prepare_register_agent, prepare_create_pool once) -> prepare_request_loan (simulate:true) -> sign+send prerequisite approve if present -> sign+send loan tx -> get_transaction -> prepare_repay_loan before the due date.
-V6.1 deployments charge a LATE loan interest for the elapsed time (capped at duration + 30 days): size the repay approval from preview_repayment / prepare_repay_loan's prerequisite, never from principal + nominal interest. Lenders with an existing position: call can_top_up before prepare_supply_liquidity. preview_repayment, can_top_up and get_active_loan_ids return a "not supported" error on pre-V6.1 deployments.`;
+V6.1 deployments charge a LATE loan interest for the elapsed time (capped at duration + 30 days): size the repay approval from preview_repayment / prepare_repay_loan's prerequisite, never from principal + nominal interest. Lenders with an existing position: call can_top_up before prepare_supply_liquidity, but treat it as ADVISORY - the deployed canTopUp() view is off by one block, so the server returns the conservative answer plus warnings, and a loan can start between the check and your tx; simulate the supply immediately before signing. preview_repayment, can_top_up and get_active_loan_ids return a "not supported" error on pre-V6.1 deployments.`;
 
 export interface McpFactoryOptions {
   mode: Mode;
@@ -99,9 +99,13 @@ export function createMcpServer(opts: McpFactoryOptions): Server {
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const name = request.params.name;
     const started = Date.now();
+    const tool = byName.get(name);
+    if (!tool) {
+      // MCP spec: an unknown tool is a protocol error (-32602), not a tool result.
+      logger.info('tool', { transport: opts.mode, tool: name, ok: false, ms: 0, error: 'unknown tool' });
+      throw new McpError(ErrorCode.InvalidParams, `Unknown tool: ${String(name).slice(0, 80)}`);
+    }
     try {
-      const tool = byName.get(name);
-      if (!tool) throw new ValidationError(`Unknown tool: ${name}`);
       const args = request.params.arguments === undefined ? {} : requireObject(request.params.arguments);
       const result = tool === byName.get('local_sign_and_broadcast') ? await tool.handler(args) : await callTool(name, args);
       logger.info('tool', { transport: opts.mode, tool: name, network: args.network, ok: true, ms: Date.now() - started });
@@ -112,7 +116,11 @@ export function createMcpServer(opts: McpFactoryOptions): Server {
     } catch (e) {
       const expected = e instanceof ValidationError || e instanceof NetworkError;
       logger[expected ? 'info' : 'warn']('tool', { transport: opts.mode, tool: name, ok: false, ms: Date.now() - started, ...errorFields(e) });
-      const message = e instanceof Error ? e.message : String(e);
+      // H-13 (2026-09-21 review): only OUR OWN validation messages are safe to echo.
+      // Anything else (an ethers/RPC failure) went back verbatim over MCP, leaking the
+      // upstream endpoint ("connect ECONNREFUSED <host:port>") and library internals —
+      // the REST path already sanitised this via describeRpcError().
+      const message = expected ? (e as Error).message : describeRpcError(e);
       return {
         isError: true,
         content: [{ type: 'text', text: toJson({ error: message, ...(expected && (e as ValidationError).field ? { field: (e as ValidationError).field } : {}) }) }],

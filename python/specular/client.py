@@ -9,8 +9,11 @@ from __future__ import annotations
 
 import json
 import os
+import re
+import threading
+import time
 from dataclasses import dataclass
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
 
@@ -25,6 +28,7 @@ def _usdc_units(amount: float | str | int) -> int:
 from web3 import Web3
 from web3.contract.contract import Contract
 from eth_account.account import LocalAccount
+from eth_utils import keccak
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -69,7 +73,182 @@ class SpecularClient:
             "explorer_tx": "https://testnet.arcscan.app/tx/",
             "default_rpc": "https://arc-testnet.drpc.org",
         },
+        # [ROBUSTNESS F-R19] Arc MAINNET (chainId 5042) — the network the protocol
+        # actually launched on. The JS SDK has shipped this since 2026-09-19; its
+        # absence here meant a Python agent simply could not reach the live
+        # deployment (and, worse, would fall back to 'base' by default).
+        "arc-mainnet": {
+            "addresses_path": REPO_ROOT / "src" / "config" / "arc-mainnet-addresses.json",
+            "explorer_tx": "https://explorer.arc.io/tx/",
+            "default_rpc": "https://rpc.mainnet.arc.io",
+        },
     }
+
+    # ------------------------------------------------------------ robustness
+    # Mirrors the JS SpecularQuickstart hardening (2026-09 robustness pass) so a
+    # Python agent gets the same guarantees as a JS one.
+
+    #: Wall-clock lag (seconds) beyond which the RPC head is considered stale.
+    MAX_BLOCK_LAG_SECONDS = 600
+    #: Largest metadata URI written to the registry.
+    MAX_METADATA_URI_BYTES = 2048
+    #: OpenZeppelin v5 `ERC20InsufficientAllowance(address,uint256,uint256)`.
+    ERC20_INSUFFICIENT_ALLOWANCE = "fb8f41b2"
+
+    @staticmethod
+    def _selector(signature: str) -> bytes:
+        return keccak(text=signature)[:4]
+
+    @staticmethod
+    def _to_base_units(amount: Any, ctx: str) -> int:
+        """[F-R9 parity] Authoritative amount parsing. Rejects bools, NaN/inf,
+        non-positive values and anything Decimal cannot represent, instead of
+        letting a negative or NaN reach ABI encoding with an opaque error."""
+        if isinstance(amount, bool) or amount is None or isinstance(amount, (dict, list, tuple)):
+            raise ValueError(f"{ctx}: amount must be a positive number, got {amount!r}")
+        try:
+            units = _usdc_units(amount)
+        except (InvalidOperation, ValueError, ArithmeticError, TypeError) as e:
+            raise ValueError(f"{ctx}: amount {amount!r} is not a representable USDC value ({e})") from e
+        if units <= 0:
+            raise ValueError(f"{ctx}: amount must be a positive number, got {amount!r}")
+        return units
+
+    @staticmethod
+    def _to_agent_id(agent_id: Any, ctx: str) -> int:
+        """[F-R16 parity] agentId must be a non-negative integer."""
+        if isinstance(agent_id, bool) or not isinstance(agent_id, int):
+            raise ValueError(f"{ctx}: agentId must be a non-negative integer, got {agent_id!r}")
+        if agent_id < 0:
+            raise ValueError(f"{ctx}: agentId must be a non-negative integer, got {agent_id!r}")
+        return int(agent_id)
+
+    @staticmethod
+    def _assert_duration_days(days: Any, ctx: str) -> int:
+        """[F-R18] `days < 7 or days > 365` lets float('nan') through — BOTH
+        comparisons are False for NaN — and accepts bools and floats."""
+        if isinstance(days, bool) or not isinstance(days, int):
+            raise ValueError(f"{ctx}: durationDays must be an integer, got {days!r}")
+        if days > 365:
+            hint = (f" (looks like {days // 86400} days expressed in seconds — pass days instead)"
+                    if days % 86400 == 0 else "")
+            raise ValueError(f"{ctx}: durationDays={days} exceeds max 365{hint}")
+        if days < 7:
+            raise ValueError(f"{ctx}: durationDays={days} is below min 7")
+        return days
+
+    @staticmethod
+    def _assert_metadata_uri(uri: Any, ctx: str = "SpecularClient.onboard") -> str:
+        """[F-R17 parity] Bound the metadata URI written to the registry."""
+        if not isinstance(uri, str):
+            raise ValueError(f"{ctx}: metadata URI must be a string, got {type(uri).__name__}")
+        if not uri:
+            raise ValueError(f"{ctx}: metadata URI must not be empty")
+        n = len(uri.encode("utf-8"))
+        if n > SpecularClient.MAX_METADATA_URI_BYTES:
+            raise ValueError(
+                f"{ctx}: metadata URI is {n} bytes, over the {SpecularClient.MAX_METADATA_URI_BYTES}-byte limit "
+                "— store the document off chain and register its URI instead.")
+        if re.search(r"[\x00-\x1f]|\s", uri):
+            raise ValueError(f"{ctx}: metadata URI must not contain whitespace or control characters")
+        return uri
+
+    @staticmethod
+    def _is_allowance_shortfall(e: BaseException) -> bool:
+        """[F-R3 parity] "the marketplace tried to pull more than I approved".
+
+        The string test alone only matches legacy reverts like Base USDC's
+        "ERC20: transfer amount exceeds allowance"; OpenZeppelin v5 tokens raise
+        the custom error `ERC20InsufficientAllowance` (selector 0xfb8f41b2),
+        whose message carries no words at all."""
+        msg = str(e)
+        if re.search(r"(?i)allowance|exceeds|transfer amount", msg):
+            return True
+        return SpecularClient.ERC20_INSUFFICIENT_ALLOWANCE in msg.lower()
+
+    @property
+    def _write_lock(self) -> threading.RLock:
+        """[F-R10 parity] Serialize this key's writes. Every op is multi-tx
+        (approve -> act -> revoke) and the nonce is read at send time, so two
+        concurrent ops hand the same nonce to two transactions."""
+        lock = getattr(self, "_write_lock_obj", None)
+        if lock is None:
+            lock = threading.RLock()
+            self._write_lock_obj = lock
+        return lock
+
+    def _note_block(self, n: Any) -> None:
+        try:
+            b = int(n)
+        except (TypeError, ValueError):
+            return
+        cur = getattr(self, "_max_seen_block", None)
+        if cur is None or b > cur:
+            self._max_seen_block = b
+
+    def _assert_chain_not_behind(self, ctx: str = "SpecularClient") -> int | None:
+        """[F-R5 parity] Refuse to size money from a lagging replica or across a
+        reorg: the head must never be below one we already observed, and (on a
+        real chain) must not trail wall clock by more than MAX_BLOCK_LAG_SECONDS."""
+        if getattr(self, "staleness_check", True) is False:
+            return None
+        try:
+            head = int(self.w3.eth.block_number)
+        except Exception:
+            return None
+        seen = getattr(self, "_max_seen_block", None)
+        if seen is not None and head < seen:
+            self._max_seen_block = head
+            raise RuntimeError(
+                f"{ctx}: the RPC is serving state BEHIND what this session already observed "
+                f"(head {head} < block {seen} seen earlier). Either it load-balanced onto a lagging replica "
+                "or the chain reorged. Refusing to act on stale state — retry, or set "
+                "`client.staleness_check = False` to override.")
+        self._note_block(head)
+        max_lag = getattr(self, "max_block_lag_seconds", SpecularClient.MAX_BLOCK_LAG_SECONDS)
+        if max_lag:
+            try:
+                blk = self.w3.eth.get_block(head)
+                lag = int(time.time()) - int(blk["timestamp"])
+            except Exception:
+                return head
+            if lag > max_lag:
+                raise RuntimeError(
+                    f"{ctx}: RPC head block {head} is {lag}s behind wall clock (max {max_lag}s) — this endpoint "
+                    "is serving stale state. Refusing to size an approval or a loan from it.")
+        return head
+
+    def _with_approval_cleanup(self, fn):
+        """[F-R4 parity] A failure between approve and the pull must not leave a
+        standing allowance; the exact-approval resting state is zero."""
+        self._approved_this_op = False
+        try:
+            return fn()
+        except BaseException:
+            if getattr(self, "_approved_this_op", False):
+                try:
+                    self._revoke_approval_inner()
+                except Exception:
+                    pass
+            raise
+        finally:
+            self._approved_this_op = False
+
+    def _code_has_selector(self, signature: str) -> bool:
+        """[F-R1 parity] Capability detection from DEPLOYED BYTECODE, not from
+        whether an `eth_call` happened to fail. A 429/500/timeout during a call
+        is indistinguishable from a missing selector at the client layer, so the
+        old `try: VERSION() except: 'V6'` read one RPC hiccup as "old
+        deployment" — and then under-approved every late repayment."""
+        code = getattr(self, "_mp_code", None)
+        if code is None:
+            code = bytes(self.w3.eth.get_code(Web3.to_checksum_address(self.marketplace_addr)))
+            if not code:
+                raise RuntimeError(
+                    f"SpecularClient: no contract code at marketplace {self.marketplace_addr} "
+                    "(wrong address, wrong network, or an RPC serving an empty view).")
+            self._mp_code = code
+        return SpecularClient._selector(signature) in code
 
     _LOAN_STATES = ["REQUESTED", "ACTIVE", "REPAID", "DEFAULTED"]
 
@@ -154,17 +333,42 @@ class SpecularClient:
 
     def onboard(self, ipfs_hash: str = "ipfs://agent") -> dict[str, Any]:
         """One-call onboarding. Idempotent. Returns dict with agentId + tx hashes."""
+        self._assert_metadata_uri(ipfs_hash)
+        with self._write_lock:
+            return self._onboard_inner(ipfs_hash)
+
+    def _onboard_inner(self, ipfs_hash: str = "ipfs://agent") -> dict[str, Any]:
         out: dict[str, Any] = {"agentId": None, "registerTx": None, "poolTx": None, "approveTx": None}
         agent_id = self.registry.functions.addressToAgentId(self.account.address).call()
         if agent_id == 0:
             out["registerTx"] = self._send(self.registry.functions.register(ipfs_hash, []))
-            agent_id = self.registry.functions.addressToAgentId(self.account.address).call()
+            # [parity with JS] Public-RPC propagation: the registry write may not
+            # be visible from every node yet. Poll until it is, so createAgentPool
+            # doesn't revert "Not a registered agent" — and so we never proceed
+            # with agentId 0, which the old code silently did.
+            for _ in range(20):
+                agent_id = self.registry.functions.addressToAgentId(self.account.address).call()
+                if agent_id != 0:
+                    break
+                time.sleep(1)
+            if agent_id == 0:
+                raise RuntimeError("register() confirmed but addressToAgentId still 0 after 20s")
         out["agentId"] = agent_id
 
         pool = self.marketplace.functions.agentPools(agent_id).call()
         # pool[6] is isActive
         if not pool[6]:
-            out["poolTx"] = self._send(self.marketplace.functions.createAgentPool())
+            # [parity with JS] Retry on load-balanced replica staleness: some
+            # public RPCs return inconsistent views for a few seconds after a
+            # registry write.
+            for attempt in range(5):
+                try:
+                    out["poolTx"] = self._send(self.marketplace.functions.createAgentPool())
+                    break
+                except Exception as e:
+                    if attempt == 4 or "Not a registered agent" not in str(e):
+                        raise
+                    time.sleep(2)
 
         # No blanket approval: each USDC-pulling op (borrow collateral, repay,
         # supply) approves EXACTLY what it needs just-in-time. approveTx stays in
@@ -178,8 +382,15 @@ class SpecularClient:
         if amount <= 0:
             return None
         current = self.usdc.functions.allowance(self.account.address, self.marketplace_addr).call()
-        if current >= amount:
+        # [F-R15 parity] EXACT in both directions: a larger pre-existing allowance
+        # (a crashed session, or an older SDK's MaxUint256) must be tightened down,
+        # not accepted as "already covered" and carried forward forever.
+        if current == amount:
             return None
+        if current > amount:
+            self._approved_this_op = True
+            return self._send(self.usdc.functions.approve(self.marketplace_addr, amount))
+        self._approved_this_op = True
         tx = self._send(self.usdc.functions.approve(self.marketplace_addr, amount))
         # [RPC-staleness fix] Public RPCs load-balance across nodes; the just-mined
         # approve may not be visible from the replica the next call hits, which
@@ -193,6 +404,11 @@ class SpecularClient:
 
     def revoke_approval(self) -> str | None:
         """Set the marketplace USDC allowance to 0. Returns tx hash or None."""
+        with self._write_lock:
+            return self._revoke_approval_inner()
+
+    def _revoke_approval_inner(self) -> str | None:
+        """Unlocked revoke — used from inside an op that already holds the lock."""
         current = self.usdc.functions.allowance(self.account.address, self.marketplace_addr).call()
         if current == 0:
             return None
@@ -212,15 +428,33 @@ class SpecularClient:
 
     def borrow(self, amount: float, duration_days: int) -> dict[str, Any]:
         """Borrow USDC. Returns dict with loanId, tx hash, explorer URL."""
-        if duration_days < 7 or duration_days > 365:
-            raise ValueError("duration_days must be 7-365")
-        self.onboard()  # idempotent
-        amt_units = _usdc_units(amount)
+        # [F-R18] `duration_days < 7 or duration_days > 365` is False for NaN in
+        # BOTH directions, so the old check passed NaN straight to the chain.
+        self._assert_duration_days(duration_days, "SpecularClient.borrow")
+        amt_units = self._to_base_units(amount, "SpecularClient.borrow")
+        with self._write_lock:
+            self._onboard_inner()  # idempotent
+            return self._with_approval_cleanup(lambda: self._borrow_inner(amt_units, duration_days))
+
+    def _borrow_inner(self, amt_units: int, duration_days: int) -> dict[str, Any]:
+        # [F-R5 parity] Never size collateral (or pick a tier) from a lagging replica.
+        self._assert_chain_not_behind("SpecularClient.borrow")
         # Low-reputation agents must post collateral, pulled by requestLoan.
         # required = amount * collateralPercent / 100 (matches the contract).
         coll_pct = self.reputation.functions.calculateCollateralRequirement(self.account.address).call()
         self._approve_exact(amt_units * coll_pct // 100)
-        tx_hash = self._send(self.marketplace.functions.requestLoan(amt_units, duration_days))
+        try:
+            tx_hash = self._send(self.marketplace.functions.requestLoan(amt_units, duration_days))
+        except Exception as e:
+            # [F-R3 parity] The contract may pull marginally more collateral than
+            # amount*pct/100. Approve a BOUNDED buffer once (collateral +
+            # principal, to the trusted marketplace) and retry; the cleanup
+            # revokes whatever is left.
+            if not self._is_allowance_shortfall(e):
+                raise
+            self._approve_exact(amt_units * coll_pct // 100 + amt_units)
+            tx_hash = self._send(self.marketplace.functions.requestLoan(amt_units, duration_days))
+            self._approved_this_op = True
         receipt = self.w3.eth.get_transaction_receipt(tx_hash)
         loan_id = None
         for log in receipt["logs"]:
@@ -245,15 +479,26 @@ class SpecularClient:
     LATE_REPAY_HEADROOM_SECONDS = 600
 
     def marketplace_version(self) -> str:
-        """Marketplace VERSION(); 'V6' when the deployment predates VERSION()."""
+        """Marketplace VERSION(); 'V6' when the deployment predates VERSION().
+
+        [F-R1 parity] Decided by deployed bytecode. A transient RPC failure is
+        SURFACED, never silently cached as 'V6' — guessing 'V6' on a V6.1 chain
+        under-approves a late repayment and the repay reverts."""
         cached = getattr(self, "_mp_version", None)
-        if cached is None:
-            try:
-                cached = str(self.marketplace.functions.VERSION().call())
-            except Exception:
-                cached = "V6"
-            self._mp_version = cached
-        return cached
+        if cached is not None:
+            return cached
+        try:
+            present = self._code_has_selector("VERSION()")
+        except Exception as e:
+            raise RuntimeError(
+                f"SpecularClient: could not determine the marketplace version at {self.marketplace_addr} ({e}). "
+                "Refusing to guess — guessing 'V6' would under-approve a late repayment on a V6.1 deployment. "
+                "Retry against a healthy RPC.") from e
+        if not present:
+            self._mp_version = "V6"
+            return self._mp_version
+        self._mp_version = str(self.marketplace.functions.VERSION().call())
+        return self._mp_version
 
     def _has_v61_views(self) -> bool:
         return self.marketplace_version() != "V6"
@@ -284,9 +529,18 @@ class SpecularClient:
                     "duration_seconds": duration, "interest_rate_bps": rate_bps,
                     "source": "previewRepayment",
                 }
-            except Exception as e:  # a real revert must surface; a missing selector falls back
-                if "Loan not active" in str(e):
-                    raise
+            except Exception as e:
+                # [F-R2 parity] Fall back to the nominal figure ONLY when the
+                # selector is genuinely absent from the deployed bytecode. A real
+                # revert and any transient RPC failure must surface: silently
+                # returning the V6 nominal amount for a LATE V6.1 loan
+                # under-approves the repay, which then reverts.
+                try:
+                    deployed = self._code_has_selector("previewRepayment(uint256)")
+                except Exception:
+                    deployed = True
+                if deployed:
+                    raise e
         interest = self.marketplace.functions.calculateInterest(principal, rate_bps, duration).call()
         return {
             "principal": principal, "interest": interest, "total": principal + interest,
@@ -300,6 +554,9 @@ class SpecularClient:
         for a loan that is late AND under the interest cap, where the interest
         that can accrue during LATE_REPAY_HEADROOM_SECONDS is added (clamped at
         duration + LATE_INTEREST_CAP, so never more than the contract could pull)."""
+        # [F-R5 parity] A stale replica makes a LATE loan read as on-time and
+        # cheap, so the approval would be sized below what the chain will pull.
+        self._assert_chain_not_behind("SpecularClient.repay")
         pv = self.preview_repayment(loan_id)
         headroom = 0
         if pv["source"] == "previewRepayment" and pv["late_seconds"] > 0:
@@ -313,16 +570,36 @@ class SpecularClient:
         return pv["total"] + headroom, pv, headroom
 
     def repay(self, loan_id: int) -> str:
+        with self._write_lock:
+            return self._with_approval_cleanup(lambda: self._repay_inner(loan_id))
+
+    def _repay_inner(self, loan_id: int) -> str:
         # Approve exactly what the contract will pull: previewRepayment().total on
         # V6.1 (late loans pay for elapsed time, capped at duration + 30 days),
         # principal + nominal interest on V6. Never an unlimited approval.
-        approve, _pv, headroom = self._repay_approval(loan_id)
+        approve, pv, headroom = self._repay_approval(loan_id)
         self._approve_exact(approve)
-        tx = self._send(self.marketplace.functions.repayLoan(loan_id))
-        if headroom > 0:
+        bumped = False
+        try:
+            tx = self._send(self.marketplace.functions.repayLoan(loan_id))
+        except Exception as e:
+            # [F-R3 parity] The contract may pull more than previewed (a repay
+            # delayed past the late headroom). Re-price from the chain — still
+            # clamped by the contract's own cap inside _repay_approval — and retry.
+            if not self._is_allowance_shortfall(e):
+                raise
+            bumped = True
+            try:
+                fresh, _pv2, _h2 = self._repay_approval(loan_id)
+                bump_to = max(fresh, approve + max(pv["interest"], 1))
+            except Exception:
+                bump_to = approve + max(pv["interest"], 1)
+            self._approve_exact(bump_to)
+            tx = self._send(self.marketplace.functions.repayLoan(loan_id))
+        if headroom > 0 or bumped:
             # Late-loan headroom may leave a few base units of allowance; clear it.
             try:
-                self.revoke_approval()
+                self._revoke_approval_inner()
             except Exception:
                 pass
         return tx
@@ -362,7 +639,12 @@ class SpecularClient:
         return out
 
     def supply(self, agent_id: int, amount: float) -> str:
-        amt = _usdc_units(amount)
+        agent_id = self._to_agent_id(agent_id, "SpecularClient.supply")
+        amt = self._to_base_units(amount, "SpecularClient.supply")
+        with self._write_lock:
+            return self._with_approval_cleanup(lambda: self._supply_inner(agent_id, amt))
+
+    def _supply_inner(self, agent_id: int, amt: int) -> str:
         if self._has_v61_views():
             pos = self.marketplace.functions.getLenderPosition(agent_id, self.account.address).call()
             if pos[0] > 0 and not self.can_top_up(agent_id):
@@ -376,11 +658,15 @@ class SpecularClient:
         return self._send(self.marketplace.functions.supplyLiquidity(agent_id, amt))
 
     def withdraw(self, agent_id: int, amount: float) -> str:
-        amt = _usdc_units(amount)
-        return self._send(self.marketplace.functions.withdrawLiquidity(agent_id, amt))
+        agent_id = self._to_agent_id(agent_id, "SpecularClient.withdraw")
+        amt = self._to_base_units(amount, "SpecularClient.withdraw")
+        with self._write_lock:
+            return self._send(self.marketplace.functions.withdrawLiquidity(agent_id, amt))
 
     def claim_interest(self, agent_id: int) -> str:
-        return self._send(self.marketplace.functions.claimInterest(agent_id))
+        agent_id = self._to_agent_id(agent_id, "SpecularClient.claim_interest")
+        with self._write_lock:
+            return self._send(self.marketplace.functions.claimInterest(agent_id))
 
     def loans(self) -> list[LoanInfo]:
         """Return all of this agent's loans (active + historical)."""

@@ -15,7 +15,7 @@ function baseSdk() {
     sdk.network = "arc-staging";
     sdk.wallet = { address: "0x" + "11".repeat(20) };
     sdk.addresses = { marketplace: "0x" + "22".repeat(20) };
-    sdk.onboard = async () => {};
+    sdk._onboardInner = async () => {};
     return sdk;
 }
 
@@ -42,16 +42,28 @@ describe("SpecularQuickstart RPC-staleness hardening", function () {
         expect(readCount).to.be.greaterThan(3); // kept reading past the stale window
     });
 
-    it("_approveExact skips (no tx) when allowance already covers", async () => {
+    it("_approveExact skips (no tx) when the allowance is already EXACT", async () => {
         const sdk = baseSdk();
         let approved = false;
         sdk.usdc = {
-            allowance: async () => ethers.parseUnits("100", 6),
+            allowance: async () => ethers.parseUnits("5", 6),
             approve: async () => { approved = true; return { wait: async () => ({}) }; },
         };
         const res = await sdk._approveExact(ethers.parseUnits("5", 6));
         expect(res).to.equal(null);
         expect(approved).to.equal(false);
+    });
+
+    it("[robustness F-R15] _approveExact TIGHTENS an over-large leftover allowance instead of carrying it forward", async () => {
+        const sdk = baseSdk();
+        const seen = [];
+        sdk.usdc = {
+            allowance: async () => ethers.parseUnits("100", 6),
+            approve: async (_s, amount) => { seen.push(amount); return { hash: "0xt", wait: async () => ({ blockNumber: 1 }) }; },
+        };
+        const res = await sdk._approveExact(ethers.parseUnits("5", 6));
+        expect(res).to.equal("0xt");
+        expect(seen).to.deep.equal([ethers.parseUnits("5", 6)]);
     });
 
     it("borrow() retries requestLoan when the supplied liquidity hasn't propagated yet", async () => {

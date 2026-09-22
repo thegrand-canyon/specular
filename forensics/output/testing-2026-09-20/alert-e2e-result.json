@@ -1,0 +1,109 @@
+{
+  "wrapperExitCode": 1,
+  "latchExists": true,
+  "latch": {
+    "firstSeen": "2026-09-21T23:57:25.306Z",
+    "count": 1,
+    "first": {
+      "ts": "2026-09-21T23:57:25.306Z",
+      "severity": "CRITICAL",
+      "title": "1 critical / 1 warning invariant finding(s) on local",
+      "network": "local",
+      "host": "Peters-MacBook-Air.local",
+      "details": {
+        "network": "local",
+        "marketplace": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+        "block": 60,
+        "findings": [
+          {
+            "severity": "WARN",
+            "code": "FRESH-STUCK",
+            "msg": "Chain head unchanged since the previous run (frozen/pinned RPC, or a genuinely idle chain)",
+            "data": {
+              "blockNumber": 60,
+              "blockTimestamp": 1790726317,
+              "ageSec": -691272,
+              "previousBlock": 60,
+              "previousRun": "2026-09-21T23:56:37.000Z"
+            }
+          },
+          {
+            "severity": "CRITICAL",
+            "code": "PAUS",
+            "msg": "Contract is PAUSED and was not expected to be",
+            "data": {
+              "owner": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+              "expectedOwner": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+              "pendingOwner": "0x0000000000000000000000000000000000000000",
+              "paused": true,
+              "expectPaused": false
+            }
+          }
+        ]
+      }
+    },
+    "lastSeen": "2026-09-21T23:57:25.306Z",
+    "latest": {
+      "ts": "2026-09-21T23:57:25.306Z",
+      "severity": "CRITICAL",
+      "title": "1 critical / 1 warning invariant finding(s) on local",
+      "network": "local",
+      "host": "Peters-MacBook-Air.local",
+      "details": {
+        "network": "local",
+        "marketplace": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+        "block": 60,
+        "findings": [
+          {
+            "severity": "WARN",
+            "code": "FRESH-STUCK",
+            "msg": "Chain head unchanged since the previous run (frozen/pinned RPC, or a genuinely idle chain)",
+            "data": {
+              "blockNumber": 60,
+              "blockTimestamp": 1790726317,
+              "ageSec": -691272,
+              "previousBlock": 60,
+              "previousRun": "2026-09-21T23:56:37.000Z"
+            }
+          },
+          {
+            "severity": "CRITICAL",
+            "code": "PAUS",
+            "msg": "Contract is PAUSED and was not expected to be",
+            "data": {
+              "owner": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+              "expectedOwner": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+              "pendingOwner": "0x0000000000000000000000000000000000000000",
+              "paused": true,
+              "expectPaused": false
+            }
+          }
+        ]
+      }
+    },
+    "acknowledged": false
+  },
+  "historyLines": 1,
+  "homeFlagExists": true,
+  "homeFlagTail": "      }\n    }\n  ]\n}\n-> runbook: forensics/monitor/INCIDENT_RUNBOOK.md\n-> clear with: node forensics/monitor/alert.js --ack",
+  "webhookDeliveries": 1,
+  "webhookBodySample": "Specular CRITICAL: 1 critical / 1 warning invariant finding(s) on local",
+  "heartbeatExists": true,
+  "heartbeat": {
+    "network": "local",
+    "ts": "2026-09-21T23:57:33.312Z",
+    "epoch": 1790035053312,
+    "lastExitCode": 1,
+    "block": 60,
+    "findings": 2,
+    "alerted": true
+  },
+  "findingCodes": [
+    "FRESH-STUCK",
+    "PAUS"
+  ],
+  "alertsRaised": 1,
+  "latchClearedAfterAck": true,
+  "homeFlagClearedAfterAck": true,
+  "VERDICT": "ALERT PATH VERIFIED END-TO-END"
+}

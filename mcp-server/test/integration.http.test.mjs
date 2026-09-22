@@ -4,6 +4,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ethers } from 'ethers';
@@ -13,6 +14,12 @@ const ENTRY = path.join(here, '..', 'dist', 'http.js');
 const NET = 'arc-staging';
 const AGENT = '0x800e305A0caDdE6289dFDFEDF38218f45C06F72C'; // staging deployer / agent #1 (public address only)
 const TOKEN = 'test-token-' + Math.random().toString(36).slice(2);
+// arc-staging is redeployed from time to time (V6 -> V6.1 on 2026-09-19); resolve the expected
+// marketplace from the same repo JSON the server reads instead of pinning a constant.
+const STAGING_MARKETPLACE = ethers.getAddress(
+  JSON.parse(fs.readFileSync(path.resolve(here, '..', '..', 'src', 'config', 'arc-testnet-v6-addresses.json'), 'utf8'))
+    .agentLiquidityMarketplace_v6,
+);
 
 const servers = [];
 
@@ -152,7 +159,7 @@ test('PREPARE + SIMULATE: request_loan (no broadcast)', async () => {
   assert.equal(r.status, 200, JSON.stringify(r.body));
   const tx = r.body;
   assert.equal(tx.chainId, 5042002);
-  assert.equal(tx.to, '0xDbDf60AE5CB46D23aA44c062a4943655a6820f31');
+  assert.equal(tx.to, STAGING_MARKETPLACE);
   assert.equal(tx.value, '0');
   assert.equal(tx.from, AGENT);
   assert.match(tx.gasEstimate, /^\d+$/);

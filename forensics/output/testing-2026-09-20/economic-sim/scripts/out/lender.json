@@ -1,0 +1,116 @@
+{
+  "generatedAt": "2026-09-21T23:44:53.539Z",
+  "L1_L3": {
+    "farmCycles": 100,
+    "farmFeeCostUsdc": 0.1246,
+    "honestSuppliedUsdc": 40000,
+    "creditLimitUsdc": 25000,
+    "drawnUsdc": 25000,
+    "attackerGainUsdc": 25000,
+    "freeLiquidityAfterDrawUsdc": 15000,
+    "lendersEscapedUsdc": 15000,
+    "perLender": [
+      {
+        "lender": "L0",
+        "suppliedUsdc": 10000,
+        "withdrawnBeforeLiquidationUsdc": 10000,
+        "leftUsdc": 0,
+        "lossUsdc": 0
+      },
+      {
+        "lender": "L1",
+        "suppliedUsdc": 10000,
+        "withdrawnBeforeLiquidationUsdc": 5000,
+        "leftUsdc": 0,
+        "lossUsdc": 5000
+      },
+      {
+        "lender": "L2",
+        "suppliedUsdc": 10000,
+        "withdrawnBeforeLiquidationUsdc": 0,
+        "leftUsdc": 0,
+        "lossUsdc": 10000
+      },
+      {
+        "lender": "L3",
+        "suppliedUsdc": 10000,
+        "withdrawnBeforeLiquidationUsdc": 0,
+        "leftUsdc": 0,
+        "lossUsdc": 10000
+      }
+    ],
+    "totalLenderLossUsdc": 25000,
+    "lossPerUnitAttackerCost": 200642,
+    "note": "FIFO race: whoever withdraws first takes the un-drawn remainder; the rest is socialised"
+  },
+  "L4": {
+    "unclaimedInterestBeforeUsdc": 56.958904,
+    "availableLiquidityUsdc": 56.958904,
+    "principalInPoolUsdc": 0,
+    "unclaimedInterestAfterUsdc": 0,
+    "interestSocialisedUsdc": 56.958904,
+    "claimStillSolvent": "VM Exception while processing transaction: reverted with rea"
+  },
+  "L5": {
+    "interestPaidUsdc": 57.534246,
+    "honestLenderQualifiedPrincipalUsdc": 10000,
+    "honestLenderEarnedUsdc": 56.902001,
+    "selfLenderEarnedUsdc": 0.056902,
+    "selfLenderRecaptureFraction": 0.000999,
+    "canTopUpFlag": true,
+    "verdict": "F-02 FIXED: mid-loan top-up did NOT forfeit the base tranche's in-flight interest"
+  },
+  "L6": {
+    "on-time": {
+      "lateDays": 0,
+      "interestChargedUsdc": 13.424657,
+      "chargeableDays": 7,
+      "lateDaysRecorded": 0,
+      "scoreBefore": 600,
+      "scoreAfter": 605,
+      "reputationBonus": 5
+    },
+    "late-10d": {
+      "lateDays": 10,
+      "interestChargedUsdc": 32.602739,
+      "chargeableDays": 17,
+      "lateDaysRecorded": 10,
+      "scoreBefore": 600,
+      "scoreAfter": 600,
+      "reputationBonus": 0
+    },
+    "late-30d": {
+      "lateDays": 30,
+      "interestChargedUsdc": 70.958904,
+      "chargeableDays": 37,
+      "lateDaysRecorded": 30,
+      "scoreBefore": 600,
+      "scoreAfter": 600,
+      "reputationBonus": 0
+    },
+    "late-90d(cap)": {
+      "lateDays": 90,
+      "interestChargedUsdc": 70.958904,
+      "chargeableDays": 37,
+      "lateDaysRecorded": 90,
+      "scoreBefore": 600,
+      "scoreAfter": 600,
+      "reputationBonus": 0
+    },
+    "summary": {
+      "nominal7dInterestUsdc": 13.424657,
+      "extraCostOf30dLateUsdc": 57.534247,
+      "cappedAtUsdc": 70.958904,
+      "verdict": "F-03 FIXED: overdue credit is charged for the time used (capped at duration + 30d)",
+      "residual": "interest stops accruing after duration+30d; beyond that overdue credit is free again, and lateness carries NO reputation penalty (ReputationManagerV3 has no hook) — only loss of the bonus"
+    }
+  },
+  "L7": {
+    "earlyLenderSuppliedUsdc": 10000,
+    "lateJoinerSuppliedUsdc": 10000,
+    "lateJoinerQualifiedForLoanUsdc": 0,
+    "earlyLenderLeftUsdc": 5000,
+    "lateJoinerLeftUsdc": 5000,
+    "finding": "the late joiner could earn NOTHING from the in-flight loan (W1 qualification) but D4 socialises that loan's default loss across ALL current lenders pro-rata"
+  }
+}

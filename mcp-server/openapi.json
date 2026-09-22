@@ -1049,7 +1049,7 @@
       "get": {
         "operationId": "can_top_up",
         "summary": "can_top_up",
-        "description": "V6.1 only: whether `lender` can add to an EXISTING position in agent pool `agentId` right now without supplyLiquidity reverting \"Top-up would forfeit in-flight interest\". Call before prepare_supply_liquidity when you already have a position; a first supply is never refused. Returns a \"not supported\" error on V6 deployments (which never refuse top-ups).",
+        "description": "V6.1 only: whether `lender` can add to an EXISTING position in agent pool `agentId` right now without supplyLiquidity reverting \"Top-up would forfeit in-flight interest\". ADVISORY, not a guarantee: the deployed canTopUp() view is off by one block, so this server also computes the corrected predicate server-side and returns the conservative answer (`onChainView` and `correctedPredicate` show both, `viewDisagrees` flags a mismatch); a loan can also start between this check and your transaction. Always read `warnings` and simulate immediately before signing. A first supply is never refused. Returns a \"not supported\" error on V6 deployments (which never refuse top-ups).",
         "tags": [
           "read"
         ],

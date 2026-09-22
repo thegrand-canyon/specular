@@ -1,6 +1,9 @@
 // Unit tests: address / amount / duration / network validation. No RPC.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { ethers } from 'ethers';
 import {
   validateAddress,
@@ -16,6 +19,15 @@ import { getNetwork, enabledNetworks, NetworkError } from '../dist/networks.js';
 import { redact } from '../dist/logger.js';
 
 const GOOD = '0x800e305A0caDdE6289dFDFEDF38218f45C06F72C';
+
+// The arc-staging marketplace is redeployed from time to time (V6 -> V6.1 on 2026-09-19).
+// Read the expected address from the same repo JSON the server resolves, so the test checks
+// the resolution path rather than a constant that goes stale on every staging redeploy.
+const here = path.dirname(fileURLToPath(import.meta.url));
+const STAGING_CFG = JSON.parse(
+  fs.readFileSync(path.resolve(here, '..', '..', 'src', 'config', 'arc-testnet-v6-addresses.json'), 'utf8'),
+);
+const STAGING_MARKETPLACE = STAGING_CFG.agentLiquidityMarketplace_v6;
 
 test('addresses: checksum enforced, lowercase accepted, junk rejected', () => {
   assert.equal(validateAddress(GOOD), GOOD);
@@ -83,7 +95,7 @@ test('network selection: explicit required, aliases rejected, config resolved fr
   assert.throws(() => getNetwork('mainnet'), /Unknown network/);
   const s = getNetwork('arc-staging');
   assert.equal(s.chainId, 5042002);
-  assert.equal(s.addresses.marketplace, '0xDbDf60AE5CB46D23aA44c062a4943655a6820f31');
+  assert.equal(s.addresses.marketplace, ethers.getAddress(STAGING_MARKETPLACE));
   assert.equal(s.realMoney, false);
   assert.equal(getNetwork('base').realMoney, true);
   assert.equal(getNetwork('arc-mainnet').realMoney, true);

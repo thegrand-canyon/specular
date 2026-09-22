@@ -22,6 +22,25 @@ export class UnsupportedOnDeploymentError extends ValidationError {
 
 export const USDC_DECIMALS = 6;
 
+/**
+ * Strip library internals out of an error message before it reaches a client
+ * (2026-09-21 review, H-11). ethers appends a parenthetical detail block —
+ * `(buffer=0x…, code=BUFFER_OVERRUN, version=6.16.0)` — that fingerprints the
+ * exact library build and echoes raw input; transport errors additionally
+ * carry the upstream RPC URL/host. Keep the human sentence only.
+ */
+export function cleanErrorText(e: unknown, max = 160): string {
+  const raw = e instanceof Error ? e.message : String(e ?? '');
+  const cleaned = raw
+    .replace(/\s*\((?:[^()]|\([^()]*\))*(?:code=|version=|operation=|buffer=|payload=|request=|argument=)(?:[^()]|\([^()]*\))*\)/g, '')
+    .replace(/https?:\/\/\S+/g, '[rpc]')
+    .replace(/\b(?:\d{1,3}\.){3}\d{1,3}(?::\d+)?\b/g, '[rpc]')
+    .replace(/\b(?:[a-z0-9-]+\.)+[a-z]{2,}(?::\d+)?\b/gi, '[rpc]')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return cleaned.length > max ? cleaned.slice(0, max) + '…' : cleaned;
+}
+
 /** Per-call amount sanity caps, in USDC display units. Override with SPECULAR_MAX_AMOUNT_USDC. */
 export function maxAmountUsdc(): number {
   const raw = process.env.SPECULAR_MAX_AMOUNT_USDC;
@@ -143,6 +162,22 @@ export function validateHexData(value: unknown, field = 'data', maxBytes = 8192)
   }
   if ((value.length - 2) / 2 > maxBytes) throw new ValidationError(`${field} exceeds ${maxBytes} bytes`, field);
   return value.toLowerCase();
+}
+
+/** Optional integer (list limits): digits-only strings or integer numbers, bounded. */
+export function optionalInteger(value: unknown, field: string, { min = 1, max = 200 }: { min?: number; max?: number } = {}): number | undefined {
+  if (value === undefined || value === null || value === '') return undefined;
+  const n = typeof value === 'string' && /^\d+$/.test(value) ? Number(value) : value;
+  if (typeof n !== 'number' || !Number.isInteger(n) || n < min || n > max) {
+    throw new ValidationError(`${field} must be an integer between ${min} and ${max}`, field);
+  }
+  return n;
+}
+
+/** Optional USDC amount filter in display units (<= 6 decimals, no exponent, non-negative). */
+export function optionalUsdc(value: unknown, field: string): number | undefined {
+  if (value === undefined || value === null || value === '') return undefined;
+  return Number(formatUsdc(validateAmountUsdc(value, field, { allowZero: true, max: 1e12 })));
 }
 
 export function optionalNumber(value: unknown, field: string, { min = 0, max = 1e12 }: { min?: number; max?: number } = {}): number | undefined {

@@ -1,0 +1,189 @@
+{
+ "base": "https://specular-agent-api-production.up.railway.app",
+ "profile": "live",
+ "network": "arc-mainnet",
+ "at": "2026-09-22T00:06:23.541Z",
+ "rows": [
+  {
+   "scenario": "health",
+   "concurrency": 1,
+   "requests": 25,
+   "wallMs": 2609,
+   "rps": 9.6,
+   "p50": 71,
+   "p95": 270,
+   "p99": 354,
+   "max": 354,
+   "errorRate": 0,
+   "statuses": {
+    "200": 25
+   }
+  },
+  {
+   "scenario": "health",
+   "concurrency": 5,
+   "requests": 25,
+   "wallMs": 817,
+   "rps": 30.6,
+   "p50": 91,
+   "p95": 333,
+   "p99": 335,
+   "max": 335,
+   "errorRate": 0,
+   "statuses": {
+    "200": 25
+   }
+  },
+  {
+   "scenario": "health",
+   "concurrency": 20,
+   "requests": 25,
+   "wallMs": 590,
+   "rps": 42.4,
+   "p50": 313,
+   "p95": 429,
+   "p99": 438,
+   "max": 438,
+   "errorRate": 0,
+   "statuses": {
+    "200": 25
+   }
+  },
+  {
+   "scenario": "status",
+   "concurrency": 1,
+   "requests": 25,
+   "wallMs": 21840,
+   "rps": 1.1,
+   "p50": 277,
+   "p95": 2414,
+   "p99": 3646,
+   "max": 3646,
+   "errorRate": 0,
+   "statuses": {
+    "200": 25
+   }
+  },
+  {
+   "scenario": "status",
+   "concurrency": 5,
+   "requests": 25,
+   "wallMs": 166322,
+   "rps": 0.2,
+   "p50": 1068,
+   "p95": 164301,
+   "p99": 166321,
+   "max": 166321,
+   "errorRate": 0,
+   "statuses": {
+    "200": 25
+   }
+  },
+  {
+   "scenario": "status",
+   "concurrency": 20,
+   "requests": 25,
+   "wallMs": 300221,
+   "rps": 0.1,
+   "p50": 139388,
+   "p95": 286781,
+   "p99": 300217,
+   "max": 300217,
+   "errorRate": 8,
+   "statuses": {
+    "200": 23,
+    "502": 2
+   }
+  },
+  {
+   "scenario": "mcp_read",
+   "concurrency": 1,
+   "requests": 25,
+   "wallMs": 20611,
+   "rps": 1.2,
+   "p50": 316,
+   "p95": 2378,
+   "p99": 2406,
+   "max": 2406,
+   "errorRate": 0,
+   "statuses": {
+    "200": 25
+   }
+  },
+  {
+   "scenario": "mcp_read",
+   "concurrency": 5,
+   "requests": 25,
+   "wallMs": 102645,
+   "rps": 0.2,
+   "p50": 1650,
+   "p95": 96321,
+   "p99": 97081,
+   "max": 97081,
+   "errorRate": 0,
+   "statuses": {
+    "200": 25
+   }
+  },
+  {
+   "scenario": "mcp_read",
+   "concurrency": 20,
+   "requests": 25,
+   "wallMs": 241760,
+   "rps": 0.1,
+   "p50": 119759,
+   "p95": 222859,
+   "p99": 241760,
+   "max": 241760,
+   "errorRate": 0,
+   "statuses": {
+    "200": 25
+   }
+  },
+  {
+   "scenario": "prepare_simulate",
+   "concurrency": 1,
+   "requests": 25,
+   "wallMs": 58550,
+   "rps": 0.4,
+   "p50": 521,
+   "p95": 4258,
+   "p99": 32686,
+   "max": 32686,
+   "errorRate": 0,
+   "statuses": {
+    "200": 25
+   }
+  },
+  {
+   "scenario": "prepare_simulate",
+   "concurrency": 5,
+   "requests": 25,
+   "wallMs": 191859,
+   "rps": 0.1,
+   "p50": 1191,
+   "p95": 158029,
+   "p99": 158234,
+   "max": 158234,
+   "errorRate": 0,
+   "statuses": {
+    "200": 25
+   }
+  },
+  {
+   "scenario": "prepare_simulate",
+   "concurrency": 20,
+   "requests": 25,
+   "wallMs": 287003,
+   "rps": 0.1,
+   "p50": 76868,
+   "p95": 170054,
+   "p99": 287003,
+   "max": 287003,
+   "errorRate": 0,
+   "statuses": {
+    "200": 25
+   }
+  }
+ ]
+}

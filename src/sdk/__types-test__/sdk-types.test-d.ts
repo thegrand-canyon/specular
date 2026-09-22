@@ -26,7 +26,9 @@ async function quickstartDemo(): Promise<void> {
 
     const loan = await sdk.borrow(100, 30);
     const _loanId: number = loan.loanId;
-    const _tx: string = loan.tx;
+    // null only when the loan was reconciled after a lost send response (F-R6)
+    const _tx: string | null = loan.tx;
+    const _reconciled: boolean | undefined = loan.reconciled;
 
     const info: CreditInfo = await sdk.creditInfo();
     const _score: number = info.score;

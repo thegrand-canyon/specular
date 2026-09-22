@@ -84,10 +84,269 @@ class SpecularQuickstart {
             'function allowance(address,address) view returns (uint256)'
         ];
 
+        // [ROBUSTNESS F-R8] Bound every receipt wait. ethers' `tx.wait()` with no
+        // timeout blocks FOREVER when the RPC stops returning receipts — an
+        // unattended agent simply stops. Set to 0 to restore unbounded waiting.
+        this.receiptTimeoutMs = 180000;
+        // [ROBUSTNESS F-R5] Highest block this instance has observed. Used to
+        // detect an RPC that load-balanced onto a lagging replica (or a reorg).
+        this._maxSeenBlock = undefined;
+
         this.marketplace = new ethers.Contract(this.addresses.marketplace, mpAbi, wallet);
         this.registry = new ethers.Contract(this.addresses.registry, regAbi, wallet);
         this.reputation = new ethers.Contract(this.addresses.reputation, repAbi, wallet);
         this.usdc = new ethers.Contract(this.addresses.usdc, usdcAbi, wallet);
+    }
+
+    // ------------------------------------------------------------------
+    // Robustness primitives (2026-09 SDK robustness pass)
+    // ------------------------------------------------------------------
+
+    /** Wall-clock lag (seconds) beyond which the RPC head is considered stale. */
+    static get MAX_BLOCK_LAG_SECONDS() { return 600; }
+
+    /**
+     * [ROBUSTNESS F-R9] Authoritative amount parsing for every USDC-denominated
+     * argument. `supply`/`withdraw` previously fed agent-supplied values straight
+     * into `ethers.parseUnits(String(amount))`, so a negative amount, a NaN, an
+     * object, or a value in exponential notation (`1e-7`, `1e21` — what
+     * `String()` produces for small/large numbers) died with an opaque ethers
+     * error, or in the negative case only failed later at ABI encoding.
+     *
+     * number|string are DISPLAY units (100 = 100 USDC); bigint is base units.
+     */
+    static _toBaseUnits(amount, decimals, ctx) {
+        if (typeof amount === 'bigint') {
+            if (amount <= 0n) throw new Error(`${ctx}: amount must be a positive number, got ${amount}`);
+            return amount;
+        }
+        if (typeof amount !== 'number' && typeof amount !== 'string') {
+            throw new Error(`${ctx}: amount must be a number, numeric string or bigint, got ${typeof amount}`);
+        }
+        const n = Number(amount);
+        if (!Number.isFinite(n) || n <= 0) {
+            throw new Error(`${ctx}: amount must be a positive number, got ${amount}`);
+        }
+        let out;
+        try {
+            out = ethers.parseUnits(String(amount), decimals);
+        } catch (e) {
+            throw new Error(
+                `${ctx}: amount ${amount} is not representable as a ${decimals}-decimal USDC value ` +
+                `(${e.shortMessage || e.message}). Pass a plain decimal string, or bigint base units.`);
+        }
+        if (out <= 0n) throw new Error(`${ctx}: amount ${amount} rounds to 0 base units`);
+        return out;
+    }
+
+    /**
+     * [ROBUSTNESS F-R10] Serialize this wallet's write operations.
+     *
+     * Every SDK op is multi-transaction (approve → act → revoke). ethers resolves
+     * each nonce at send time from `pending`, so two SDK calls in flight on the
+     * same wallet hand the same nonce to two different transactions: one lands,
+     * the other dies "nonce has already been used" — and to an unattended agent
+     * that looks like a random failure of whichever op lost the race. An agent
+     * firing `supply`/`borrow`/`repay` together (a perfectly reasonable thing to
+     * do) hit this every time.
+     *
+     * Public mutating methods queue behind each other; internal helpers call the
+     * `*Inner` variants so a nested call can never deadlock on the same queue.
+     * For deliberate parallel bursts from one key, use `NonceCounter`
+     * (`src/sdk/nonce.js`) and drive the contracts directly.
+     */
+    async _serialize(fn) {
+        const prev = this._txQueue || Promise.resolve();
+        let release;
+        this._txQueue = new Promise((r) => { release = r; });
+        try { await prev; } catch (_) { /* a predecessor's failure must not block us */ }
+        try { return await fn(); } finally { release(); }
+    }
+
+    /**
+     * [ROBUSTNESS F-R16] Validate an agent id. `supply`/`withdraw`/`claim` took
+     * whatever the caller (often an LLM tool call) passed and handed it to
+     * ethers, where a NaN/float/string died with an opaque ABI-encoding error
+     * after the SDK had already spent RPC calls — and, for `supply`, after it
+     * had already sent an approve.
+     */
+    static _toAgentId(agentId, ctx) {
+        const n = typeof agentId === 'bigint' ? Number(agentId) : Number(agentId);
+        if (agentId === null || agentId === undefined || typeof agentId === 'object' ||
+            typeof agentId === 'boolean' || !Number.isInteger(n) || n < 0) {
+            throw new Error(`${ctx}: agentId must be a non-negative integer, got ${String(agentId)}`);
+        }
+        return n;
+    }
+
+    /**
+     * [ROBUSTNESS F-R17] Validate an agent metadata URI before it is written to
+     * the registry. An agent-supplied value went straight on chain: a megabyte
+     * string burns unbounded gas (and can exceed the block limit, so onboarding
+     * fails in a way no retry fixes), and control characters produce metadata
+     * no consumer can parse.
+     */
+    static get MAX_METADATA_URI_BYTES() { return 2048; }
+    static _assertMetadataUri(uri, ctx = 'SpecularQuickstart.onboard') {
+        if (typeof uri !== 'string') {
+            throw new Error(`${ctx}: metadata URI must be a string, got ${typeof uri}`);
+        }
+        if (uri.length === 0) throw new Error(`${ctx}: metadata URI must not be empty`);
+        const bytes = Buffer.byteLength(uri, 'utf8');
+        if (bytes > SpecularQuickstart.MAX_METADATA_URI_BYTES) {
+            throw new Error(
+                `${ctx}: metadata URI is ${bytes} bytes, over the ${SpecularQuickstart.MAX_METADATA_URI_BYTES}-byte ` +
+                'limit — store the document off chain and register its URI instead.');
+        }
+        // eslint-disable-next-line no-control-regex
+        if (/[ -]/.test(uri) || /\s/.test(uri)) {
+            throw new Error(`${ctx}: metadata URI must not contain whitespace or control characters`);
+        }
+        return uri;
+    }
+
+    /** Record the highest block height this instance has seen. */
+    _noteBlock(n) {
+        const b = Number(n);
+        if (!Number.isFinite(b)) return;
+        if (this._maxSeenBlock === undefined || b > this._maxSeenBlock) this._maxSeenBlock = b;
+    }
+
+    /**
+     * [ROBUSTNESS F-R8] Bounded receipt wait. Also feeds the staleness detector.
+     */
+    async _wait(tx) {
+        const ms = this.receiptTimeoutMs;
+        const receipt = ms ? await tx.wait(1, ms) : await tx.wait();
+        if (receipt) this._noteBlock(receipt.blockNumber);
+        return receipt;
+    }
+
+    /**
+     * [ROBUSTNESS F-R5] Refuse to size money from stale state.
+     *
+     * Public RPC endpoints load-balance across replicas at different heights. A
+     * read served from a replica minutes behind head makes a LATE loan look
+     * on-time, so `previewRepayment` returns a smaller figure than the chain
+     * will actually pull — the SDK then approves too little and the repay
+     * reverts. Nothing in the SDK used to notice.
+     *
+     * Two checks, both cheap:
+     *  (a) monotonic — the head must never be below a block we already observed
+     *      (catches a mid-flow replica rollback AND a chain reorg);
+     *  (b) wall clock — the head block must not be more than
+     *      `maxBlockLagSeconds` behind real time (catches an endpoint that is
+     *      globally lagging, where we have no earlier observation to compare).
+     *      A head that is AHEAD of wall clock is never flagged (test chains,
+     *      clock skew).
+     *
+     * Set `sdk.stalenessCheck = false` (or `maxBlockLagSeconds = 0` for (b)
+     * alone) to opt out.
+     */
+    async _assertChainNotBehind(ctx = 'SpecularQuickstart') {
+        if (this.stalenessCheck === false) return null;
+        const p = this.wallet && this.wallet.provider;
+        if (!p || typeof p.getBlockNumber !== 'function') return null; // nothing to compare against
+        const head = Number(await SpecularQuickstart._retryTransient(
+            () => this.wallet.provider.getBlockNumber()));
+        if (this._maxSeenBlock !== undefined && head < this._maxSeenBlock) {
+            throw new Error(
+                `${ctx}: the RPC is serving state BEHIND what this session already observed ` +
+                `(head ${head} < block ${this._maxSeenBlock} seen earlier). Either it load-balanced onto a lagging ` +
+                'replica or the chain reorged. Refusing to act on stale state — retry, or set ' +
+                '`sdk.stalenessCheck = false` to override.');
+        }
+        this._noteBlock(head);
+        const maxLag = this.maxBlockLagSeconds === undefined
+            ? SpecularQuickstart.MAX_BLOCK_LAG_SECONDS
+            : this.maxBlockLagSeconds;
+        if (maxLag) {
+            const blk = await SpecularQuickstart._retryTransient(
+                () => this.wallet.provider.getBlock(head)).catch(() => null);
+            if (blk && blk.timestamp) {
+                const lag = Math.floor(Date.now() / 1000) - Number(blk.timestamp);
+                if (lag > maxLag) {
+                    throw new Error(
+                        `${ctx}: RPC head block ${head} is ${lag}s behind wall clock (max ${maxLag}s) — this endpoint ` +
+                        'is serving stale state. Refusing to size an approval or a loan from it; retry against a ' +
+                        'healthy RPC, or set `sdk.maxBlockLagSeconds = 0` to override.');
+                }
+            }
+        }
+        return head;
+    }
+
+    /**
+     * [ROBUSTNESS F-R4] Run a USDC-pulling operation and guarantee that a
+     * FAILURE never leaves the marketplace holding an allowance.
+     *
+     * The exact-approval model's resting state is zero. Before this, any error
+     * between `_approveExact(...)` and the pull — a 503 on estimateGas, a
+     * dropped socket in `wait()`, the process being killed — left a standing
+     * allowance the marketplace could draw later.
+     */
+    async _withApprovalCleanup(fn) {
+        this._approvedThisOp = false;
+        try {
+            return await fn();
+        } catch (e) {
+            if (this._approvedThisOp) {
+                try { await this._revokeApprovalInner(); } catch (_) { /* best effort; residual stays bounded */ }
+            }
+            throw e;
+        } finally {
+            this._approvedThisOp = false;
+        }
+    }
+
+    /** Number of loan ids recorded for this wallet (the `agentLoans[]` array length). */
+    async _loanCount() {
+        let i = 0;
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+            try { await this.marketplace.agentLoans(this.wallet.address, i); } catch (_) { return i; }
+            i++;
+            if (i > 10000) return i;
+        }
+    }
+
+    /**
+     * [ROBUSTNESS F-R6] A borrow whose send response was lost may still have
+     * mined. Poll for a new loan belonging to this wallet and adopt it rather
+     * than letting the caller retry — a naive retry opens a SECOND loan.
+     */
+    async _reconcileNewLoan(countBefore, attempts = 10, delayMs = 1000) {
+        for (let i = 0; i < attempts; i++) {
+            let n;
+            try { n = await this._loanCount(); } catch (_) { n = null; }
+            if (n !== null && n > countBefore) {
+                try { return Number(await this.marketplace.agentLoans(this.wallet.address, n - 1)); } catch (_) { /* retry */ }
+            }
+            await new Promise(r => setTimeout(r, delayMs));
+        }
+        return null;
+    }
+
+    /** [F-R6] Poll until `loanId` leaves ACTIVE (1) — i.e. a lost repay actually settled. */
+    async _loanSettled(loanId, attempts = 10, delayMs = 1000) {
+        for (let i = 0; i < attempts; i++) {
+            try {
+                const st = Number((await this.marketplace.loans(loanId)).state);
+                if (st === 2 || st === 3) return st;
+            } catch (_) { /* transient */ }
+            await new Promise(r => setTimeout(r, delayMs));
+        }
+        return null;
+    }
+
+    /** A failure that might still have landed on chain (network/timeout), vs a definite revert. */
+    static _isInconclusive(e) {
+        if (!e) return false;
+        if (SpecularQuickstart._isRealRevert(e)) return false;
+        const code = e.code;
+        return code === 'TIMEOUT' || code === 'NETWORK_ERROR' || code === 'SERVER_ERROR' ||
+               code === 'UNKNOWN_ERROR' || code === 'CALL_EXCEPTION' || code === 'REPLACEMENT_UNDERPRICED' ||
+               /timeout|socket|ECONN|coalesce|network/i.test(`${e.message || ''} ${e.shortMessage || ''}`);
     }
 
     /**
@@ -97,6 +356,11 @@ class SpecularQuickstart {
      * @param {string} ipfsHash - metadata URI (default 'ipfs://agent')
      */
     async onboard(ipfsHash = 'ipfs://agent') {
+        SpecularQuickstart._assertMetadataUri(ipfsHash);
+        return this._serialize(() => this._onboardInner(ipfsHash));
+    }
+
+    async _onboardInner(ipfsHash = 'ipfs://agent') {
         // approveTx is retained in the return shape for backward compat but is
         // always null now: we no longer grant a blanket allowance up front.
         // Each USDC-pulling op (borrow collateral, repay, supply) approves the
@@ -111,7 +375,7 @@ class SpecularQuickstart {
         let agentId = await this.registry.addressToAgentId(addr);
         if (agentId === 0n) {
             const tx = await this.registry.register(ipfsHash, []);
-            await tx.wait();
+            await this._wait(tx);
             out.registerTx = tx.hash;
             // Public-RPC propagation: the registry write may not be visible
             // from every node yet. Poll until the marketplace's view of the
@@ -141,7 +405,7 @@ class SpecularQuickstart {
                     await new Promise(r => setTimeout(r, 2000));
                 }
             }
-            await tx.wait();
+            await this._wait(tx);
             out.poolTx = tx.hash;
         }
 
@@ -162,9 +426,25 @@ class SpecularQuickstart {
     async _approveExact(amount) {
         if (amount <= 0n) return null;
         const current = await this.usdc.allowance(this.wallet.address, this.addresses.marketplace);
-        if (current >= amount) return null;
+        // [ROBUSTNESS F-R15] EXACT means exact in both directions. A larger
+        // pre-existing allowance (left by a crashed session, or by an older SDK
+        // that granted MaxUint256) used to be accepted as "already covered" and
+        // silently carried forward, so a wallet could keep an unbounded approval
+        // standing forever while every SDK call reported exact behaviour. Tighten
+        // it down to what this operation actually needs — one extra approve, and
+        // only in the anomalous case.
+        if (current === amount) return null;
+        if (current > amount) {
+            const tx0 = await this.usdc.approve(this.addresses.marketplace, amount);
+            this._approvedThisOp = true;
+            await this._wait(tx0);
+            return tx0.hash;
+        }
         const tx = await this.usdc.approve(this.addresses.marketplace, amount);
-        await tx.wait();
+        // Mark BEFORE waiting: if wait() dies on a dropped socket the approval may
+        // still have mined, so the cleanup path must run. (F-R4)
+        this._approvedThisOp = true;
+        await this._wait(tx);
         // [RPC-staleness fix] Public RPCs load-balance across nodes (Base's
         // mainnet.base.org especially); the just-mined approve may not be visible
         // from the replica the NEXT call's estimateGas hits, which then reverts
@@ -185,10 +465,15 @@ class SpecularQuickstart {
      * already zero.
      */
     async revokeApproval() {
+        return this._serialize(() => this._revokeApprovalInner());
+    }
+
+    /** Unlocked revoke — used from inside an op that already holds the write queue. */
+    async _revokeApprovalInner() {
         const current = await this.usdc.allowance(this.wallet.address, this.addresses.marketplace);
         if (current === 0n) return null;
         const tx = await this.usdc.approve(this.addresses.marketplace, 0n);
-        await tx.wait();
+        await this._wait(tx);
         return tx.hash;
     }
 
@@ -214,8 +499,20 @@ class SpecularQuickstart {
             throw new Error('SpecularQuickstart.borrow: amount must be > 0');
         }
 
-        await this.onboard();
-        const amt = typeof amount === 'bigint' ? amount : ethers.parseUnits(String(amount), this.cfg.decimals);
+        const amt = SpecularQuickstart._toBaseUnits(amount, this.cfg.decimals, 'SpecularQuickstart.borrow');
+        return this._serialize(async () => {
+            await this._onboardInner();
+            return this._withApprovalCleanup(() => this._borrowInner(amt, durationDays));
+        });
+    }
+
+    async _borrowInner(amt, durationDays) {
+        // [F-R5] Never size collateral (or decide a tier) from a lagging replica.
+        await this._assertChainNotBehind('SpecularQuickstart.borrow');
+
+        // How many loans this borrower already has — used to reconcile a borrow
+        // whose send response was lost but which actually mined (F-R6).
+        const loansBefore = await this._loanCount().catch(() => null);
 
         // Low-reputation agents must post collateral, which requestLoan pulls
         // via safeTransferFrom. Approve exactly that (0 for 0%-collateral tiers).
@@ -240,7 +537,7 @@ class SpecularQuickstart {
                 break;
             } catch (e) {
                 const msg = e.message || '';
-                if (!buffered && /allowance|exceeds|transfer amount/i.test(msg)) {
+                if (!buffered && SpecularQuickstart.isAllowanceShortfall(e)) {
                     buffered = true;
                     await this._approveExact(requiredCollateral + amt);
                     continue;
@@ -249,11 +546,27 @@ class SpecularQuickstart {
                     await new Promise(r => setTimeout(r, 2000));
                     continue;
                 }
+                // [F-R6] The send may have landed even though the response didn't
+                // come back. NEVER blindly resend (that double-borrows); instead
+                // reconcile against the chain and adopt the loan if one appeared.
+                if (SpecularQuickstart._isInconclusive(e) && loansBefore !== null) {
+                    const adopted = await this._reconcileNewLoan(loansBefore);
+                    if (adopted !== null) return { loanId: adopted, tx: null, reconciled: true };
+                }
                 throw e;
             }
         }
         if (!tx) throw new Error('requestLoan failed after retries');
-        const r = await tx.wait();
+        let r;
+        try {
+            r = await this._wait(tx);
+        } catch (e) {
+            if (SpecularQuickstart._isInconclusive(e) && loansBefore !== null) {
+                const adopted = await this._reconcileNewLoan(loansBefore);
+                if (adopted !== null) return { loanId: adopted, tx: tx.hash, reconciled: true };
+            }
+            throw e;
+        }
         let loanId = null;
         for (const log of r.logs) {
             try {
@@ -264,7 +577,7 @@ class SpecularQuickstart {
         if (loanId === null) throw new Error('LoanRequested event not found in receipt');
         // Restore exact-approval: clear any leftover collateral allowance — only
         // on the buffer path (the common exact path leaves 0, no read/tx needed).
-        if (buffered) await this.revokeApproval().catch(() => {});
+        if (buffered) await this._revokeApprovalInner().catch(() => {});
         // Public-RPC propagation: poll until the loan is readable from the
         // marketplace's view so the next call (e.g. repay) doesn't hit a
         // stale node that returns loan.borrower=0x0 → "Not the borrower"
@@ -287,24 +600,133 @@ class SpecularQuickstart {
     // ------------------------------------------------------------------
 
     /**
+     * [ROBUSTNESS F-R1] Distinguish "this deployment does not have that
+     * function" from "the RPC failed while I asked".
+     *
+     * Only the former may downgrade capability detection. A 429/500/timeout/
+     * socket reset mistaken for a missing selector silently switches the SDK to
+     * V6 repayment math on a V6.1 chain, which UNDER-APPROVES a late repayment
+     * — the repay then reverts and the agent cannot close its loan at all.
+     *
+     * Missing selector looks like: not in the ABI (TypeError), empty return
+     * data (BAD_DATA), or a revert carrying no data/reason (CALL_EXCEPTION with
+     * data '0x'). Everything else — notably any transport-level error — is
+     * transient and must NOT be treated as a capability answer.
+     */
+    /**
+     * A genuine contract revert carrying a payload (reason string or custom
+     * error data). Anything else — a transport failure during `eth_call`
+     * included — is indistinguishable from an empty revert at the ethers layer,
+     * which is exactly why capability detection must NOT rely on error shapes.
+     */
+    static _isRealRevert(e) {
+        return !!(e && e.code === 'CALL_EXCEPTION' && ((e.data && e.data !== '0x') || e.reason));
+    }
+
+    /** Retry `fn` while the failure could be transient; surface real reverts / ABI errors at once. */
+    static async _retryTransient(fn, { attempts = 3, delayMs = 400 } = {}) {
+        let last;
+        for (let i = 0; i < attempts; i++) {
+            try {
+                return await fn();
+            } catch (e) {
+                last = e;
+                if (SpecularQuickstart._isRealRevert(e) || e instanceof TypeError || e.code === 'BAD_DATA') throw e;
+                if (i < attempts - 1) await new Promise(r => setTimeout(r, delayMs));
+            }
+        }
+        throw last;
+    }
+
+    /**
+     * [ROBUSTNESS F-R1] Is `name` actually deployed at the marketplace?
+     *
+     * Answered from the DEPLOYED BYTECODE (`eth_getCode`, cached), not from
+     * whether an `eth_call` happened to fail. ethers collapses a 429/500/socket
+     * reset during `eth_call` into the same `CALL_EXCEPTION (no data)` it
+     * produces for a selector the contract does not implement, so the previous
+     * `try { VERSION() } catch { 'V6' }` treated one transient RPC hiccup as
+     * "this is an old deployment" — and then under-approved every late
+     * repayment on a V6.1 chain.
+     */
+    async _codeHasSelector(name) {
+        let frag;
+        try { frag = this.marketplace.interface.getFunction(name); } catch (_) { return false; }
+        if (!frag) return false;
+        if (this._mpCode === undefined) {
+            const code = await SpecularQuickstart._retryTransient(
+                () => this.wallet.provider.getCode(this.addresses.marketplace));
+            if (!code || code === '0x') {
+                throw new Error(
+                    `SpecularQuickstart: no contract code at marketplace ${this.addresses.marketplace} ` +
+                    '(wrong address, wrong network, or an RPC serving an empty view).');
+            }
+            this._mpCode = code.toLowerCase();
+        }
+        return this._mpCode.includes(frag.selector.slice(2).toLowerCase());
+    }
+
+    /**
      * Marketplace contract version string. 'V6' for deployments that predate
      * `VERSION()` (pre-2026-09 code), otherwise whatever the contract reports
      * (e.g. 'V6.1'). Cached per instance (the contract is not proxied).
+     *
+     * [ROBUSTNESS F-R1] Capability is decided by deployed bytecode; a transient
+     * RPC failure is retried and then SURFACED, never silently cached as 'V6'.
      */
     async marketplaceVersion() {
-        if (this._mpVersion === undefined) {
-            try {
-                this._mpVersion = String(await this.marketplace.VERSION());
-            } catch (e) {
-                this._mpVersion = 'V6';
-            }
+        if (this._mpVersion !== undefined) return this._mpVersion;
+        let present;
+        try {
+            present = await this._codeHasSelector('VERSION');
+        } catch (e) {
+            const err = new Error(
+                `SpecularQuickstart: could not determine the marketplace version at ${this.addresses.marketplace} ` +
+                `(${e.shortMessage || e.message}). Refusing to guess — guessing "V6" would under-approve a late ` +
+                'repayment on a V6.1 deployment and the repay would revert. Retry against a healthy RPC.');
+            err.code = 'SPECULAR_VERSION_UNKNOWN';
+            err.cause = e;
+            throw err;
         }
+        if (!present) { this._mpVersion = 'V6'; return this._mpVersion; }
+        const v = await SpecularQuickstart._retryTransient(() => this.marketplace.VERSION());
+        this._mpVersion = String(v);
         return this._mpVersion;
     }
 
     /** True when the deployment exposes the V6.1 views (previewRepayment, canTopUp, getActiveLoanIds). */
     async _hasV61Views() {
         return (await this.marketplaceVersion()) !== 'V6';
+    }
+
+    /**
+     * [ROBUSTNESS F-R3] Did this failure mean "the marketplace tried to pull
+     * more USDC than I approved"?
+     *
+     * The original string test (`/allowance|exceeds|transfer amount/i` over
+     * `e.message`) only matches legacy string reverts like Base USDC's
+     * "ERC20: transfer amount exceeds allowance". OpenZeppelin v5 tokens — and
+     * anything else using custom errors — revert with
+     * `ERC20InsufficientAllowance(address,uint256,uint256)` (selector
+     * 0xfb8f41b2), whose ethers message is the useless "execution reverted
+     * (unknown custom error)". That made the SDK's bounded-buffer safety net
+     * silently dead on those tokens: the repay/borrow just failed.
+     */
+    static ERC20_INSUFFICIENT_ALLOWANCE = '0xfb8f41b2';
+    static isAllowanceShortfall(e) {
+        if (!e) return false;
+        const msg = `${e.message || ''} ${e.shortMessage || ''} ${e.reason || ''}`;
+        if (/allowance|exceeds|transfer amount/i.test(msg)) return true;
+        const candidates = [
+            e.data,
+            e.info && e.info.error && e.info.error.data,
+            e.error && e.error.data,
+            e.revert && e.revert.data
+        ];
+        for (const d of candidates) {
+            if (typeof d === 'string' && d.toLowerCase().startsWith(SpecularQuickstart.ERC20_INSUFFICIENT_ALLOWANCE)) return true;
+        }
+        return false;
     }
 
     /** Mirrors calculateInterest() exactly (divide-before-multiply), in seconds. */
@@ -327,7 +749,7 @@ class SpecularQuickstart {
         const loan = await this.marketplace.loans(loanId);
         if (await this._hasV61Views()) {
             try {
-                const pv = await this.marketplace.previewRepayment(loanId);
+                const pv = await SpecularQuickstart._retryTransient(() => this.marketplace.previewRepayment(loanId));
                 return {
                     principal: loan.amount,
                     interest: pv.interest,
@@ -339,9 +761,15 @@ class SpecularQuickstart {
                     source: 'previewRepayment'
                 };
             } catch (e) {
-                // A real contract revert (e.g. "Loan not active") must surface;
-                // only a missing selector (VERSION() present but no view) falls back.
-                if (/Loan not active/i.test(e.message || '') || (e.reason && /Loan not active/i.test(e.reason))) throw e;
+                // [ROBUSTNESS F-R2] Fall back to the nominal figure ONLY when the
+                // selector is genuinely absent from the deployed bytecode. A real
+                // revert ("Loan not active") and any transient RPC failure must
+                // surface: silently returning the V6 nominal amount for a LATE V6.1
+                // loan under-approves the repay, which then reverts and the agent
+                // cannot close the loan at all.
+                let deployed = true;
+                try { deployed = await this._codeHasSelector('previewRepayment'); } catch (_) { deployed = true; }
+                if (deployed) throw e;
             }
         }
         const interest = await this.marketplace.calculateInterest(loan.amount, loan.interestRate, loan.duration);
@@ -374,6 +802,9 @@ class SpecularQuickstart {
      * @returns {Promise<{approve:bigint, preview:object, headroom:bigint}>}
      */
     async _repayApproval(loanId) {
+        // [F-R5] A stale replica makes a LATE loan read as on-time and cheap, so
+        // the approval would be sized below what the chain will actually pull.
+        await this._assertChainNotBehind('SpecularQuickstart.repay');
         const preview = await this.previewRepayment(loanId);
         let headroom = 0n;
         if (preview.source === 'previewRepayment' && preview.lateSeconds > 0n) {
@@ -399,6 +830,10 @@ class SpecularQuickstart {
      * `_repayApproval` for the bounded headroom applied to in-window late loans.
      */
     async repay(loanId) {
+        return this._serialize(() => this._withApprovalCleanup(() => this._repayInner(loanId)));
+    }
+
+    async _repayInner(loanId) {
         const { approve, preview, headroom } = await this._repayApproval(loanId);
         await this._approveExact(approve);
 
@@ -413,18 +848,49 @@ class SpecularQuickstart {
                 // more than previewed (rounding / a repay delayed past the late
                 // headroom), bump the approval by one more interest-worth
                 // (bounded) and retry.
-                if (!bumped && /allowance|exceeds|transfer amount/i.test(msg)) {
+                if (!bumped && SpecularQuickstart.isAllowanceShortfall(e)) {
                     bumped = true;
-                    await this._approveExact(approve + (preview.interest > 0n ? preview.interest : 1n));
+                    // Re-price from the chain rather than guessing: the loan may have
+                    // accrued past the headroom while we were approving. Clamped by
+                    // the contract's own cap inside _repayApproval, so still bounded.
+                    let bumpTo;
+                    try {
+                        const fresh = await this._repayApproval(loanId);
+                        bumpTo = fresh.approve > approve ? fresh.approve : approve + (preview.interest > 0n ? preview.interest : 1n);
+                    } catch (_) {
+                        bumpTo = approve + (preview.interest > 0n ? preview.interest : 1n);
+                    }
+                    await this._approveExact(bumpTo);
                     continue;
+                }
+                // [F-R6] The send may have landed even though the response was
+                // lost. Resending is not an option here either (it would revert
+                // "Loan not active" at best) — reconcile against the chain.
+                if (SpecularQuickstart._isInconclusive(e) && !SpecularQuickstart._isRealRevert(e)) {
+                    const settled = await this._loanSettled(loanId, 5, 500);
+                    if (settled === 2) {
+                        if (bumped || headroom > 0n) await this._revokeApprovalInner().catch(() => {});
+                        return null; // repaid, but we never learned the hash
+                    }
                 }
                 if (i === 4 || !/Not the borrower/.test(msg)) throw e;
                 await new Promise(r => setTimeout(r, 2000));
             }
         }
-        await tx.wait();
+        try {
+            await this._wait(tx);
+        } catch (e) {
+            if (SpecularQuickstart._isInconclusive(e)) {
+                const settled = await this._loanSettled(loanId, 5, 500);
+                if (settled === 2) {
+                    if (bumped || headroom > 0n) await this._revokeApprovalInner().catch(() => {});
+                    return tx.hash;
+                }
+            }
+            throw e;
+        }
         // Restore exact-approval if the buffer/headroom path was taken (no-op otherwise).
-        if (bumped || headroom > 0n) await this.revokeApproval().catch(() => {});
+        if (bumped || headroom > 0n) await this._revokeApprovalInner().catch(() => {});
         return tx.hash;
     }
 
@@ -473,7 +939,12 @@ class SpecularQuickstart {
      * the caller gets an actionable error instead of an on-chain revert.
      */
     async supply(agentId, amount) {
-        const amt = typeof amount === 'bigint' ? amount : ethers.parseUnits(String(amount), this.cfg.decimals);
+        const id = SpecularQuickstart._toAgentId(agentId, 'SpecularQuickstart.supply');
+        const amt = SpecularQuickstart._toBaseUnits(amount, this.cfg.decimals, 'SpecularQuickstart.supply');
+        return this._serialize(() => this._withApprovalCleanup(() => this._supplyInner(id, amt)));
+    }
+
+    async _supplyInner(agentId, amt) {
         if (await this._hasV61Views()) {
             const pos = await this.marketplace.getLenderPosition(agentId, this.wallet.address);
             if (pos.amount > 0n && !(await this.canTopUp(agentId, this.wallet.address))) {
@@ -486,7 +957,7 @@ class SpecularQuickstart {
         }
         await this._approveExact(amt);
         const tx = await this.marketplace.supplyLiquidity(agentId, amt);
-        await tx.wait();
+        await this._wait(tx);
         return tx.hash;
     }
 
@@ -494,19 +965,25 @@ class SpecularQuickstart {
      * Withdraw lender position.
      */
     async withdraw(agentId, amount) {
-        const amt = typeof amount === 'bigint' ? amount : ethers.parseUnits(String(amount), this.cfg.decimals);
-        const tx = await this.marketplace.withdrawLiquidity(agentId, amt);
-        await tx.wait();
-        return tx.hash;
+        const id = SpecularQuickstart._toAgentId(agentId, 'SpecularQuickstart.withdraw');
+        const amt = SpecularQuickstart._toBaseUnits(amount, this.cfg.decimals, 'SpecularQuickstart.withdraw');
+        return this._serialize(async () => {
+            const tx = await this.marketplace.withdrawLiquidity(id, amt);
+            await this._wait(tx);
+            return tx.hash;
+        });
     }
 
     /**
      * Claim accrued interest from a pool.
      */
     async claim(agentId) {
-        const tx = await this.marketplace.claimInterest(agentId);
-        await tx.wait();
-        return tx.hash;
+        const id = SpecularQuickstart._toAgentId(agentId, 'SpecularQuickstart.claim');
+        return this._serialize(async () => {
+            const tx = await this.marketplace.claimInterest(id);
+            await this._wait(tx);
+            return tx.hash;
+        });
     }
 
     /**
