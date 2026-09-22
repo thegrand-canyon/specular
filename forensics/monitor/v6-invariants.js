@@ -69,8 +69,8 @@ const ROOT = path.resolve(__dirname, '..', '..');
 // Network selector. Each maps to an addresses file + default RPC + its own log
 // file so histories don't mix.
 const NETWORKS = {
-    'arc-testnet': { addresses: 'src/config/arc-testnet-addresses.json',    rpcEnv: 'ARC_TESTNET_RPC_URL', rpc: 'https://arc-testnet.drpc.org',   log: 'v6-invariants.log' },
-    'arc-staging': { addresses: 'src/config/arc-testnet-v6-addresses.json', rpcEnv: 'ARC_TESTNET_RPC_URL', rpc: 'https://arc-testnet.drpc.org',   log: 'v6-invariants-arc-staging.log' },
+    'arc-testnet': { addresses: 'src/config/arc-testnet-addresses.json',    rpcEnv: 'ARC_TESTNET_RPC_URL', rpc: 'https://rpc.testnet.arc.io',   log: 'v6-invariants.log' },
+    'arc-staging': { addresses: 'src/config/arc-testnet-v6-addresses.json', rpcEnv: 'ARC_TESTNET_RPC_URL', rpc: 'https://rpc.testnet.arc.io',   log: 'v6-invariants-arc-staging.log' },
     'arc-mainnet': { addresses: 'src/config/arc-mainnet-addresses.json',    rpcEnv: 'ARC_MAINNET_RPC_URL', rpc: 'https://rpc.mainnet.arc.io',     log: 'v6-invariants-arc-mainnet.log' },
     // [2026-09-20] Local hardhat target — lets the monitor be exercised against
     // engineered violation states before it is trusted on mainnet. Same code path.
