@@ -16,7 +16,69 @@
 
 import type { Wallet, Contract } from 'ethers';
 
-export type SpecularNetwork = 'base' | 'arc';
+export type SpecularNetwork = 'base' | 'arc' | 'arc-staging' | 'arc-mainnet';
+
+/**
+ * Three-way marketplace/reputation capability matrix.
+ *
+ * | generation | `version` | `v61` | `v62` | adds                                        |
+ * |------------|-----------|-------|-------|---------------------------------------------|
+ * | V6         | `'V6'`    | false | false | baseline                                     |
+ * | V6.1       | `'V6.1'`  | true  | false | previewRepayment / canTopUp / getActiveLoanIds |
+ * | V6.2 (V7)  | `'V6.2'`  | true  | true  | requiredSelfStake / selfStake, first-loss lock |
+ *
+ * Base mainnet and the current Arc deployments are NOT V6.2.
+ */
+export interface SpecularCapabilities {
+    /** Marketplace `VERSION()`; `'V6'` when the selector is absent. */
+    version: string;
+    /** Numeric ordering of `version` (6, 6.1, 6.2) for `>=` gates. */
+    ordinal: number;
+    v61: boolean;
+    v62: boolean;
+    /** Reputation manager `VERSION()`; `'V3'` when the selector is absent. */
+    reputationVersion: string;
+    /** True on ReputationManagerV4 (on-chain, owner-settable tier table + credit ladder). */
+    reputationV4: boolean;
+}
+
+/** [V6.2] The pool creator's own first-loss position. All amounts are base units. */
+export interface SelfStakeInfo {
+    amount: bigint;
+    amountUsdc: string;
+    /** True while the agent carries outstanding principal: the position cannot be withdrawn. */
+    locked: boolean;
+    /** `requiredSelfStake(agentId, 0)` — the stake the CURRENT exposure demands. */
+    required: bigint;
+    requiredUsdc: string;
+    /** `max(0, required - amount)`. */
+    shortfall: bigint;
+    shortfallUsdc: string;
+}
+
+/** One row of the credit tier table. */
+export interface CreditTier {
+    index: number;
+    minScore: number;
+    limit: bigint;
+    limitUsdc: string;
+    collateralPct: number;
+    interestRateBps: number;
+    /** `limit * (100 - collateralPct) / 100` — the figure `MAX_TIER_LIMIT` bounds. */
+    unsecuredExposure: bigint | null;
+}
+
+/**
+ * The credit tier table. On ReputationManagerV4 it is READ FROM THE CHAIN
+ * (`source: 'chain'`) because it is mutable owner-settable state; on V3 it is
+ * the historical compiled-in constant set (`source: 'v3-constant'`).
+ */
+export interface CreditTierTable {
+    source: 'chain' | 'v3-constant';
+    /** Immutable ceiling every tier limit is bounded by; null on V3 (no such bound). */
+    maxTierLimit: bigint | null;
+    tiers: CreditTier[];
+}
 
 export interface OnboardResult {
     /** Numeric agent ID from AgentRegistryV2 */
@@ -48,7 +110,12 @@ export interface BorrowResult {
 export interface CreditInfo {
     /** Reputation score, 0-1000 (higher = better terms) */
     score: number;
-    /** Maximum borrowable amount as a decimal string (e.g. "10000") */
+    /**
+     * Maximum borrowable amount as a decimal string, read from
+     * `calculateCreditLimit` — never from a client-side tier table. On the V7
+     * model this is `min(tier limit, ladder limit)`, and 0 during a post-default
+     * lockout (see `limitExplanation`).
+     */
     creditLimit: string;
     /** Required collateral as a percent (0-100) */
     collateralPct: number;
@@ -56,6 +123,35 @@ export interface CreditInfo {
     interestRateBps: number;
     /** Interest rate as APR percentage (e.g. 5.0) */
     interestRateAPR: number;
+
+    // --- present once the capability probe succeeds -------------------------
+    /** Marketplace `VERSION()` ('V6' | 'V6.1' | 'V6.2'). */
+    marketplaceVersion?: string;
+    /** Reputation manager `VERSION()` ('V3' | 'V4'). */
+    reputationVersion?: string;
+
+    // --- V4 reputation only (absent on V3, never faked) ---------------------
+    agentId?: number;
+    /** Tier index 0-5 for the current score. */
+    tier?: number;
+    /** `tierLimit(score)` in display units. */
+    tierLimit?: string;
+    /** `creditMultiple * maxRepaidPrincipal + growthStep`, floored at `bootstrapLimit`. */
+    ladderLimit?: string;
+    /** Largest single on-time-repaid principal — what the ladder is built on. */
+    maxRepaidPrincipal?: string;
+    /** `MAX_TIER_LIMIT()`, the immutable ceiling on any tier limit. */
+    maxTierLimit?: string;
+    /** True while frozen after a default (`creditLimit` is then "0.0"). */
+    lockedOut?: boolean;
+    /** Unix seconds the lockout ends (0 when never locked out). */
+    lockedUntil?: number;
+    /** Plain-language reason the limit is what it is. */
+    limitExplanation?: string;
+
+    // --- V6.2 marketplace only ---------------------------------------------
+    /** The agent's own first-loss position in its own pool. */
+    selfStake?: SelfStakeInfo;
 }
 
 export type LoanState = 'REQUESTED' | 'ACTIVE' | 'REPAID' | 'DEFAULTED';
@@ -110,7 +206,14 @@ export class SpecularQuickstart {
     /** One-call onboarding: register agent + create pool + approve USDC. Idempotent. */
     onboard(ipfsHash?: string): Promise<OnboardResult>;
 
-    /** Request a loan. Auto-onboards if needed. */
+    /**
+     * Request a loan. Auto-onboards if needed.
+     *
+     * On a V6.2 deployment the first-loss self-stake gate is checked BEFORE any
+     * transaction is sent: an under-staked borrow rejects locally with
+     * `code === 'SPECULAR_INSUFFICIENT_SELF_STAKE'` (carrying `required`,
+     * `current` and `shortfall` in base units) instead of reverting on chain.
+     */
     borrow(amount: number | string | bigint, durationDays: number): Promise<BorrowResult>;
 
     /**
@@ -128,6 +231,35 @@ export class SpecularQuickstart {
     /** Marketplace `VERSION()`; 'V6' for deployments that predate the V6.1 (2026-09) fixes. */
     marketplaceVersion(): Promise<string>;
 
+    /** Reputation manager `VERSION()`; 'V3' for deployments that predate the V7 model. */
+    reputationVersion(): Promise<string>;
+
+    /** Three-way capability matrix (V6 / V6.1 / V6.2) plus the reputation generation. Cached per instance. */
+    capabilities(): Promise<SpecularCapabilities>;
+
+    /**
+     * [V6.2] First-loss self-stake the agent must hold in its OWN pool before it
+     * could borrow `additionalAmount` more. Returns base units.
+     * @throws `code === 'SPECULAR_UNSUPPORTED_ON_DEPLOYMENT'` on V6 / V6.1.
+     */
+    requiredSelfStake(agentId: number, additionalAmount?: number | string | bigint): Promise<bigint>;
+
+    /**
+     * [V6.2] The agent's own first-loss position and whether it is locked.
+     * @throws `code === 'SPECULAR_UNSUPPORTED_ON_DEPLOYMENT'` on V6 / V6.1.
+     */
+    selfStake(agentId: number): Promise<SelfStakeInfo>;
+
+    /**
+     * The credit tier table. Read from the contract on ReputationManagerV4,
+     * where it is owner-settable state; the compiled-in V3 constants otherwise.
+     * No client may carry a hardcoded copy.
+     */
+    tierTable(): Promise<CreditTierTable>;
+
+    /** Numeric ordering for a VERSION string ('V6' -> 6, 'V6.1' -> 6.1, 'V6.2' -> 6.2). */
+    static versionOrdinal(v: string): number;
+
     /** Exact amount `repayLoan(loanId)` would pull now (V6.1 view, nominal fallback on V6). */
     previewRepayment(loanId: number): Promise<RepaymentPreview>;
 
@@ -140,7 +272,14 @@ export class SpecularQuickstart {
     /** Supply USDC liquidity to an agent's pool. Auto-approves if needed; on V6.1 a top-up is pre-checked with canTopUp. */
     supply(agentId: number, amount: number | string | bigint): Promise<string>;
 
-    /** Withdraw lender position. */
+    /**
+     * Withdraw lender position.
+     *
+     * On a V6.2 deployment a POOL CREATOR withdrawing its own first-loss stake
+     * while the agent carries outstanding principal rejects locally with
+     * `code === 'SPECULAR_SELF_STAKE_LOCKED'` instead of reverting "Self-stake
+     * locked while borrowing". Ordinary lenders are never locked.
+     */
     withdraw(agentId: number, amount: number | string | bigint): Promise<string>;
 
     /** Claim accrued interest from a pool. */

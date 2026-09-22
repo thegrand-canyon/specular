@@ -275,12 +275,24 @@ Examples:
         }, null, 2);
     }
 
+    /**
+     * Human-readable tier NAME for a score.
+     *
+     * [V7] The collateral percentage, credit limit and APR are deliberately NOT
+     * in this label any more. On ReputationManagerV4 the tier table is on-chain,
+     * owner-settable state (bounded by an immutable MAX_TIER_LIMIT), so a
+     * hardcoded "(25% collateral)" was already wrong for V3's 500-tier and is
+     * wrong for every V7 deployment. Read the real values from the contract:
+     * `calculateCollateralRequirement(address)` / `calculateCreditLimit(address)`
+     * — which is what `getCreditProfile` already reports.
+     */
     _getTier(score) {
-        if (score >= 800) return 'Elite (0% collateral)';
-        if (score >= 600) return 'Premium (0% collateral)';
-        if (score >= 400) return 'Standard (25% collateral)';
-        if (score >= 200) return 'Basic (50% collateral)';
-        return 'Starter (100% collateral)';
+        if (score >= 800) return 'Elite';
+        if (score >= 600) return 'Premium';
+        if (score >= 500) return 'Standard';
+        if (score >= 400) return 'Building';
+        if (score >= 200) return 'Basic';
+        return 'Starter';
     }
 }
 

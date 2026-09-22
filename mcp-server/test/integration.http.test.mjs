@@ -108,9 +108,19 @@ test('READ: status, credit, pools, pool details, loans, positions, tx', async ()
   const st = await json(`${S.base}/v1/${NET}/status`);
   assert.equal(st.status, 200);
   assert.equal(st.body.paused, false);
-  assert.ok(st.body.totalPools > 0);
+  // arc-staging is periodically redeployed from scratch (V6 -> V6.1 -> V6.2/V7 on
+  // 2026-09-22), and a fresh marketplace legitimately holds zero pools. Assert the
+  // shape and the invariant, not a population that a rehearsal deploy resets.
+  assert.equal(typeof st.body.totalPools, 'number');
+  assert.ok(st.body.totalPools >= 0);
+  assert.ok(st.body.activePools <= st.body.totalPools);
   assert.equal(st.body.rpc.stale, false);
   assert.equal(st.body.parameters.loanDurationDays.min, 7);
+  // Capability matrix + the on-chain tier table are always reported.
+  assert.ok(['V6', 'V6.1', 'V6.2'].includes(st.body.capabilities.marketplaceVersion));
+  assert.equal(st.body.capabilities.v62, st.body.capabilities.marketplaceVersion === 'V6.2');
+  assert.equal(st.body.creditTiers.tiers.length, 6);
+  assert.equal(st.body.creditTiers.source, st.body.capabilities.reputationV4 ? 'chain' : 'v3-constant');
 
   const cr = await json(`${S.base}/v1/${NET}/agents/${AGENT}/credit`);
   assert.equal(cr.status, 200);
@@ -124,24 +134,29 @@ test('READ: status, credit, pools, pool details, loans, positions, tx', async ()
   assert.equal(unreg.body.registered, false);
   assert.equal((await json(`${S.base}/v1/${NET}/agents/0x1234/credit`)).status, 400);
 
+  // Pool/loan population is reset by every staging rehearsal deploy, so the
+  // per-row assertions run only when the chain actually holds a row. The route
+  // contract itself (status code, shape, 400 on a bad id) is asserted always.
   const pools = await json(`${S.base}/v1/${NET}/pools?limit=3&minAvailableUsdc=1`);
   assert.equal(pools.status, 200);
-  assert.ok(pools.body.pools.length >= 1 && pools.body.pools.length <= 3);
-  const p0 = pools.body.pools[0];
-  const pd = await json(`${S.base}/v1/${NET}/pools/${p0.agentId}`);
-  assert.equal(pd.status, 200);
-  assert.equal(pd.body.agentAddress, p0.agentAddress);
-  assert.equal(typeof pd.body.borrower.reputationScore, 'number');
+  assert.ok(Array.isArray(pools.body.pools) && pools.body.pools.length <= 3);
+  if (pools.body.pools.length > 0) {
+    const p0 = pools.body.pools[0];
+    const pd = await json(`${S.base}/v1/${NET}/pools/${p0.agentId}`);
+    assert.equal(pd.status, 200);
+    assert.equal(pd.body.agentAddress, p0.agentAddress);
+    assert.equal(typeof pd.body.borrower.reputationScore, 'number');
+  }
   assert.equal((await json(`${S.base}/v1/${NET}/pools/999999`)).status, 400);
 
   const loan = await json(`${S.base}/v1/${NET}/loans/1`);
-  assert.equal(loan.status, 200);
-  assert.ok(['REQUESTED', 'ACTIVE', 'REPAID', 'DEFAULTED'].includes(loan.body.state));
+  assert.ok(loan.status === 200 || loan.status === 400, `loans/1 -> ${loan.status}`);
+  if (loan.status === 200) assert.ok(['REQUESTED', 'ACTIVE', 'REPAID', 'DEFAULTED'].includes(loan.body.state));
   assert.equal((await json(`${S.base}/v1/${NET}/loans/99999999`)).status, 400);
 
   const al = await json(`${S.base}/v1/${NET}/agents/${AGENT}/loans?limit=2`);
   assert.equal(al.status, 200);
-  assert.ok(al.body.totalLoans >= 1);
+  assert.ok(al.body.totalLoans >= 0);
   assert.ok(al.body.loans.length <= 2);
 
   const pos = await json(`${S.base}/v1/${NET}/agents/${AGENT}/positions`);

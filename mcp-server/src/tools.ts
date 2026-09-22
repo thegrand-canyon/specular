@@ -20,9 +20,11 @@ import {
   readPositions,
   readProtocolStatus,
   readRepaymentPreview,
+  readRequiredSelfStake,
+  readSelfStake,
   readTransaction,
 } from './reads.js';
-import { optionalInteger, optionalUsdc, requireObject, validateAddress, validateHexData, validateId, validateTxHash, ValidationError } from './validate.js';
+import { optionalInteger, optionalUsdc, requireObject, validateAddress, validateAmountUsdc, validateHexData, validateId, validateTxHash, ValidationError } from './validate.js';
 import { CacheStats, registerCache, stableKey, TtlCache } from './cache.js';
 import { STALE_AFTER_SECONDS } from './chain.js';
 
@@ -111,7 +113,8 @@ const BASE_TOOLS: ToolDef[] = [
   {
     name: 'get_protocol_status',
     kind: 'read',
-    description: 'Protocol-wide statistics for a network: paused flag, pools, loans, TVL, available liquidity, and live parameters (min supply, fee, loan limits).',
+    description:
+      'Protocol-wide statistics for a network: paused flag, pools, loans, TVL, available liquidity, live parameters (min supply, fee, loan limits), the deployment capability matrix (marketplace V6 / V6.1 / V6.2 and reputation V3 / V4), and creditTiers — the CREDIT TIER TABLE read live from the contract. On ReputationManagerV4 that table is owner-settable on-chain state bounded by an immutable MAX_TIER_LIMIT, so read it from here rather than hardcoding limits.',
     inputSchema: schema({ network: NETWORK_PROP }, ['network']),
     rest: { method: 'GET', path: '/v1/{network}/status', pathParams: ['network'] },
     handler: async (args) => readProtocolStatus(net(args)),
@@ -120,7 +123,7 @@ const BASE_TOOLS: ToolDef[] = [
     name: 'check_credit_score',
     kind: 'read',
     description:
-      'Credit profile of an agent wallet: registration, reputation score (0-1000) and tier, credit limit, remaining credit, collateral %, APR, active loans, plus USDC balance and current marketplace allowance.',
+      'Credit profile of an agent wallet: registration, reputation score (0-1000) and tier, credit limit, remaining credit, collateral %, APR, active loans, plus USDC balance and current marketplace allowance. On a V7 deployment it also returns credit.model (why the limit is what it is: tier limit vs credit ladder, and whether the agent is LOCKED OUT after a default, which makes the limit exactly 0) and selfStake (the agent\'s own locked first-loss capital). Never assume a tier table client-side: every limit here is read from the chain.',
     inputSchema: schema({ network: NETWORK_PROP, address: ADDRESS_PROP('Agent wallet address') }, ['network', 'address']),
     rest: { method: 'GET', path: '/v1/{network}/agents/{address}/credit', pathParams: ['network', 'address'] },
     handler: async (args) => readCredit(net(args), validateAddress(args.address)),
@@ -210,6 +213,39 @@ const BASE_TOOLS: ToolDef[] = [
     handler: async (args) => readActiveLoanIds(net(args), validateId(args.agentId, 'agentId')),
   },
   {
+    name: 'required_self_stake',
+    kind: 'read',
+    description:
+      'V6.2 (V7 credit model) only: how much of its OWN first-loss capital an agent must already hold in its OWN pool before it could borrow `additionalAmount` more. Any exposure the collateral percentage does not cover must be backed at creditMultiple leverage, or requestLoan reverts "Insufficient self-stake". Returns the requirement, what the agent currently holds and the exact shortfall to supply. Pass additionalAmount 0 to price the exposure already outstanding. Returns a "not supported" error on V6 / V6.1 deployments, which have no such requirement (Base mainnet and the current Arc deployments are in that group).',
+    inputSchema: schema(
+      {
+        network: NETWORK_PROP,
+        agentId: ID_PROP('Agent ID whose pool holds the self-stake'),
+        additionalAmount: { ...AMOUNT_PROP('Additional principal the agent wants to borrow'), default: 0 },
+      },
+      ['network', 'agentId'],
+    ),
+    rest: { method: 'GET', path: '/v1/{network}/agents/{agentId}/required-self-stake', pathParams: ['network', 'agentId'] },
+    handler: async (args) => {
+      const cfg = net(args);
+      const agentId = validateId(args.agentId, 'agentId');
+      const additional =
+        args.additionalAmount === undefined || args.additionalAmount === null || args.additionalAmount === ''
+          ? 0n
+          : validateAmountUsdc(args.additionalAmount, 'additionalAmount', { allowZero: true });
+      return readRequiredSelfStake(cfg, agentId, additional);
+    },
+  },
+  {
+    name: 'get_self_stake',
+    kind: 'read',
+    description:
+      'V6.2 (V7 credit model) only: the pool creator\'s own position in its own pool — the agent\'s first-loss capital — and whether it is currently LOCKED. It is locked for as long as the agent carries outstanding principal (withdrawLiquidity then reverts "Self-stake locked while borrowing") and on a default it absorbs the loss BEFORE any third-party lender. Use this before prepare_withdraw_liquidity, and to render an agent\'s own position as subordinated capital rather than ordinary liquidity. Returns a "not supported" error on V6 / V6.1 deployments.',
+    inputSchema: schema({ network: NETWORK_PROP, agentId: ID_PROP('Agent ID of the pool') }, ['network', 'agentId']),
+    rest: { method: 'GET', path: '/v1/{network}/agents/{agentId}/self-stake', pathParams: ['network', 'agentId'] },
+    handler: async (args) => readSelfStake(net(args), validateId(args.agentId, 'agentId')),
+  },
+  {
     name: 'get_transaction',
     kind: 'read',
     description: 'Look up a transaction hash: pending/confirmed/reverted plus decoded Specular events (e.g. LoanRequested with the new loanId).',
@@ -245,21 +281,21 @@ const BASE_TOOLS: ToolDef[] = [
   prepareTool(
     'supply_liquidity',
     'prepare_supply_liquidity',
-    'Prepare supplying USDC into an agent pool as a lender.',
+    'Prepare supplying USDC into an agent pool as a lender. Also the way an agent posts its OWN first-loss self-stake on a V6.2 deployment (supply into your own pool) — the pool creator is exempt from the minimum supply there, and that position is then locked while the agent borrows.',
     { agentId: ID_PROP('Agent ID of the pool to supply'), amount: AMOUNT_PROP('Amount to supply') },
     ['agentId', 'amount'],
   ),
   prepareTool(
     'withdraw_liquidity',
     'prepare_withdraw_liquidity',
-    'Prepare withdrawal of supplied principal from an agent pool.',
+    'Prepare withdrawal of supplied principal from an agent pool. On a V6.2 deployment a POOL CREATOR\'s own position is first-loss capital and is LOCKED while the agent carries outstanding principal: the response warns and the transaction would revert "Self-stake locked while borrowing". Ordinary lenders are never locked.',
     { agentId: ID_PROP('Agent ID of the pool'), amount: AMOUNT_PROP('Amount to withdraw') },
     ['agentId', 'amount'],
   ),
   prepareTool(
     'request_loan',
     'prepare_request_loan',
-    'Prepare a loan request against `from`\'s reputation. Includes projected interest, collateral and (if needed) the exact collateral approve.',
+    'Prepare a loan request against `from`\'s reputation. Includes projected interest, collateral and (if needed) the exact collateral approve. On a V6.2 deployment it also checks the first-loss SELF-STAKE gate and returns requiredSelfStakeUsdc / currentSelfStakeUsdc / selfStakeShortfallUsdc, warning before the "Insufficient self-stake" revert; on V7 it also flags a post-default LOCKOUT, which makes the credit limit exactly 0.',
     { amount: AMOUNT_PROP('Loan principal'), durationDays: { type: 'integer', minimum: 7, maximum: 365, description: 'Loan term in DAYS (7-365)' } },
     ['amount', 'durationDays'],
   ),

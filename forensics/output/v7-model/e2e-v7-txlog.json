@@ -1,0 +1,947 @@
+[
+  {
+    "scenario": "00-setup",
+    "label": "fund 0xBe2829e1e345959174a150f700E46875A95E40C8 +1.6 native",
+    "hash": "0xb5a6e912c5a843a1b26b2c799ef9859ebf400e3c9175b1be747f5fd5d431dab4",
+    "block": 63457298,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-22T17:40:27.874Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "fund 0xCe8FF5d2150331dFfFdf15AD727747B16794a0A6 +2.0 native",
+    "hash": "0x9ace10ad978d517c8b7dcfc0597e970b487f85ac44636f3f58d7d0548c7b711b",
+    "block": 63457308,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-22T17:40:32.827Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "fund 0x537BF3cE399a92739006Fd7c56D82473034E7Da9 +0.5 native",
+    "hash": "0x2b15d6b23293546300d9c1567252039811102a54adba1ec3e31cf7034a421343",
+    "block": 63457317,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-22T17:40:33.537Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "fund 0xb61F9728c16fEa7647817e03b75f1D939c0a5A3F +0.5 native",
+    "hash": "0x364c1cef0fc9b562a335210620343ce8715d4d0b647dd9dab2bd68f8acab22b6",
+    "block": 63457319,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-22T17:40:38.327Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "fund 0x2c4ae434f93586C8774271b04A4FED9a006f1CAa +0.5 native",
+    "hash": "0x9619f6a06f2ee50ec0c290d80b2425257f20a00385689b2613e112556e5be131",
+    "block": 63457329,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-22T17:40:43.322Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "fund 0x60C4274B7A793a075780Aef0059d8e487d12c769 +0.5 native",
+    "hash": "0x146141789bcbf2e5532a395a0b832547aaee737ebb51cb7c81a975c0a7787c3d",
+    "block": 63457338,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-22T17:40:48.213Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "fund 0x6b5122E84e31c57541d32942A4523f8dDf3eD5D6 +0.5 native",
+    "hash": "0xaab64e4098dd2c4ea945af1ab5160af14f7b6ac0a2cb098fbff073b1f123da6d",
+    "block": 63457348,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-22T17:40:53.024Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "fund 0xbbA70F6A1FcaA22FF4d8dc5d2A202511207052a0 +0.8 native",
+    "hash": "0xedcf2d1d0264c3f2f6484e700220ab085f0bf7862391c6f8483b67f0c89cc12f",
+    "block": 63457358,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-22T17:40:57.872Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "fund 0xAE3F4ba36039E4E9599aa24a87A6bdA644A38762 +0.5 native",
+    "hash": "0xa0c088cf5c57563414beb3487cd40cd00e814b50180599ad75e769c673dc8dd9",
+    "block": 63457367,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-22T17:41:02.763Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "fund 0xb48827C51d70B3454e79350B48E08288692c5C76 +0.8 native",
+    "hash": "0x8fb235b3ccc51ffa890d1032922f845fa41738099d3ecf38bad150648e540d91",
+    "block": 63457377,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-22T17:41:07.594Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "fund 0x6585A543a585DB5D1ae6D4AB4b7Dc796756d5cCD +0.5 native",
+    "hash": "0x91c19e93408ef057a81ba0737ca33d8bfb4bf293af429eaa51ebcd1e3c40d23d",
+    "block": 63457387,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-22T17:41:12.517Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "fund 0x1C4Ea831aC2C879AbA6182038bDb25E702Ea358f +0.5 native",
+    "hash": "0xa32cccc13d1a2a343426bf186d491b52fe766125a2544cc3374aaafe9d278491",
+    "block": 63457397,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-22T17:41:17.434Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "setScoringParameters(onTimeBonus=50)",
+    "hash": "0xea3b43cb12a2928629be4e6d43f92794d2dcd02757ce4bf12ea3e3f853654ca4",
+    "block": 63457409,
+    "gasUsed": "38237",
+    "status": 1,
+    "at": "2026-09-22T17:41:23.482Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "setBonusReferenceAmount(1.0)",
+    "hash": "0xe748d9aaa1f99a423abb1a4d7b2c51ae2024e55cb5f9b41367f8d7bb68b4356d",
+    "block": 63457418,
+    "gasUsed": "29631",
+    "status": 1,
+    "at": "2026-09-22T17:41:28.124Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "setLadderParameters(k=2, step=100, boot=100, refDuration=1)",
+    "hash": "0xc698738ea8cf38d69c2ce30dae1ab7bc4de0c2ce09bce94762de6e5ee0a850fe",
+    "block": 63457427,
+    "gasUsed": "38056",
+    "status": 1,
+    "at": "2026-09-22T17:41:32.776Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "setReputationRateLimit(0, 86400)",
+    "hash": "0x93e89d639d331333cfeea1d3cdb51f3fe51aec5a28fee449102a508ab0a38cd3",
+    "block": 63457436,
+    "gasUsed": "28314",
+    "status": 1,
+    "at": "2026-09-22T17:41:37.341Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "setMinHoldForReputationReward(0)",
+    "hash": "0xf123881dadda653faf45804794621b010b8edcd911aeb1992c716d86c7c4c491",
+    "block": 63457445,
+    "gasUsed": "25484",
+    "status": 1,
+    "at": "2026-09-22T17:41:41.954Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "register agent A-ladder (0xBe2829e1e345959174a150f700E46875A95E40C8)",
+    "hash": "0xb91ac79fb74c9578d38fd77f25815dfad77f87ad62ffbe11a82dbed8fadd1788",
+    "block": 63457456,
+    "gasUsed": "260423",
+    "status": 1,
+    "at": "2026-09-22T17:41:47.955Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "initializeReputation agent 51",
+    "hash": "0xe757316bf8db183daf34f6f1e92c3295ef8e5d19a77fa507c3c75c28ad85802a",
+    "block": 63457466,
+    "gasUsed": "74347",
+    "status": 1,
+    "at": "2026-09-22T17:41:52.697Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "createAgentPool agent 51",
+    "hash": "0x54c2eb772c62b3986ffbef9eab0dbcdc8fb530054b00a93b4ca012f7cafcc3c1",
+    "block": 63457475,
+    "gasUsed": "155798",
+    "status": 1,
+    "at": "2026-09-22T17:41:57.318Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "register agent B-tier (0xCe8FF5d2150331dFfFdf15AD727747B16794a0A6)",
+    "hash": "0xadce2be4a8e809c3bc1b5f60d46d22581d1682c9b1d83ca373457b0b3387104e",
+    "block": 63457484,
+    "gasUsed": "260399",
+    "status": 1,
+    "at": "2026-09-22T17:42:02.050Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "initializeReputation agent 52",
+    "hash": "0x1c072b320ab928a7899b77c2e73722a71bf943d1214614071b8b85f282720a5c",
+    "block": 63457494,
+    "gasUsed": "74347",
+    "status": 1,
+    "at": "2026-09-22T17:42:07.081Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "createAgentPool agent 52",
+    "hash": "0xa6be213394b0fa9bed099a45758ef248c6fcd9aade4a6087b7265fa3014972de",
+    "block": 63457504,
+    "gasUsed": "138698",
+    "status": 1,
+    "at": "2026-09-22T17:42:11.731Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "mint 2500 MockUSDC -> 0xBe2829e1e345959174a150f700E46875A95E40C8",
+    "hash": "0x2ba1c7820dd4890889c6edbc8db3f7bad0020f74058a0cc7280772ff5ff0ef01",
+    "block": 63457513,
+    "gasUsed": "53145",
+    "status": 1,
+    "at": "2026-09-22T17:42:16.418Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "mint 2500 MockUSDC -> 0xCe8FF5d2150331dFfFdf15AD727747B16794a0A6",
+    "hash": "0x490b8fcba41bb059b5a54533afe8af1b5a7bde2c4d0f04514983d121ffc8ff15",
+    "block": 63457522,
+    "gasUsed": "53157",
+    "status": 1,
+    "at": "2026-09-22T17:42:21.137Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "mint 1500 MockUSDC -> 0x537BF3cE399a92739006Fd7c56D82473034E7Da9",
+    "hash": "0x62ea924865d2b159b430848baa264411542efc19faf3b196bd4ea88a545fb5e6",
+    "block": 63457531,
+    "gasUsed": "53157",
+    "status": 1,
+    "at": "2026-09-22T17:42:25.833Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "mint 1500 MockUSDC -> 0xb61F9728c16fEa7647817e03b75f1D939c0a5A3F",
+    "hash": "0xc71ebadb4e6f6c7402bd686d7d2c2ccc79282414b82eb914d861eff25fa38506",
+    "block": 63457541,
+    "gasUsed": "53157",
+    "status": 1,
+    "at": "2026-09-22T17:42:30.599Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "mint 800 MockUSDC -> 0x2c4ae434f93586C8774271b04A4FED9a006f1CAa",
+    "hash": "0x4e83895b097b6abd755aecff18da9901e8cdebfd56a63542576177df7959a3e5",
+    "block": 63457551,
+    "gasUsed": "53145",
+    "status": 1,
+    "at": "2026-09-22T17:42:36.134Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "mint 200 MockUSDC -> 0x60C4274B7A793a075780Aef0059d8e487d12c769",
+    "hash": "0xbce6ffad651d1d6b42d5556e18ce48ffc8aa87dd2fd92c71f4dc39bc35b85a77",
+    "block": 63457561,
+    "gasUsed": "53157",
+    "status": 1,
+    "at": "2026-09-22T17:42:40.940Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "mint 200 MockUSDC -> 0x6b5122E84e31c57541d32942A4523f8dDf3eD5D6",
+    "hash": "0xfeeedf93889bbb41a28631eea409aea0017426ce82530a4f6be1905b502e14ca",
+    "block": 63457570,
+    "gasUsed": "53157",
+    "status": 1,
+    "at": "2026-09-22T17:42:45.658Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "mint 900 MockUSDC -> 0xbbA70F6A1FcaA22FF4d8dc5d2A202511207052a0",
+    "hash": "0xf84a86355cfaafa0d8a80012c0110abd971eff2aa54dd39e730ccb5dc9fd06bd",
+    "block": 63457579,
+    "gasUsed": "53157",
+    "status": 1,
+    "at": "2026-09-22T17:42:50.400Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "mint 900 MockUSDC -> 0xAE3F4ba36039E4E9599aa24a87A6bdA644A38762",
+    "hash": "0x7fd67a9e4cbab97d0dd6d4310bacb96e734b63d3082f9316c01ac785adc3cca6",
+    "block": 63457589,
+    "gasUsed": "53157",
+    "status": 1,
+    "at": "2026-09-22T17:42:55.189Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "mint 600 MockUSDC -> 0xb48827C51d70B3454e79350B48E08288692c5C76",
+    "hash": "0xe286a2b1338bc6e55fe6702a057089b1e1dcfc7c53bc2b185ab5c1615d19a539",
+    "block": 63457598,
+    "gasUsed": "53157",
+    "status": 1,
+    "at": "2026-09-22T17:43:00.027Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "mint 600 MockUSDC -> 0x6585A543a585DB5D1ae6D4AB4b7Dc796756d5cCD",
+    "hash": "0x2c62b43f66a9cd81ceac370efcd13a09e9b213e7375a223a131a21a81e4ed466",
+    "block": 63457607,
+    "gasUsed": "53157",
+    "status": 1,
+    "at": "2026-09-22T17:43:04.796Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "A approve 100000 USDC -> marketplace",
+    "hash": "0xef82996431538e0d5507915e2f9031826caad38c89e662a3c594079abfa2d8d2",
+    "block": 63457617,
+    "gasUsed": "45939",
+    "status": 1,
+    "at": "2026-09-22T17:43:09.512Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "B approve 100000 USDC -> marketplace",
+    "hash": "0xc6bc462850931a4567e7b833454f573e4400c910099738ca4dbd11b42c070573",
+    "block": 63457625,
+    "gasUsed": "45939",
+    "status": 1,
+    "at": "2026-09-22T17:43:14.179Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "LA approve 100000 USDC -> marketplace",
+    "hash": "0xd67cd36b1fadffffadf9ea1d7bdff8faf1c9e1943864b432fe58935fb9a91c85",
+    "block": 63457635,
+    "gasUsed": "45939",
+    "status": 1,
+    "at": "2026-09-22T17:43:18.774Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "LB approve 100000 USDC -> marketplace",
+    "hash": "0xa1d023dd8def2bc63fe4e1c02b3e74a58ef4185f592068d505e19994759c149f",
+    "block": 63457643,
+    "gasUsed": "45939",
+    "status": 1,
+    "at": "2026-09-22T17:43:23.452Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "T approve 100000 USDC -> marketplace",
+    "hash": "0x4c6d45f574963b05dad37d86a2d2760b8c5f67065fd3b11786cef2a2bfe2fb00",
+    "block": 63457653,
+    "gasUsed": "45939",
+    "status": 1,
+    "at": "2026-09-22T17:43:28.116Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "C approve 100000 USDC -> marketplace",
+    "hash": "0x547961b86a7904010f1cd87d8399d011bd309010c308393c23e89c7840436a31",
+    "block": 63457662,
+    "gasUsed": "45939",
+    "status": 1,
+    "at": "2026-09-22T17:43:32.814Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "T2 approve 100000 USDC -> marketplace",
+    "hash": "0x7fc6807e32bc401b502f94e7532a9be2ee2d8eb15c7a0d367b8f505084d53d47",
+    "block": 63457672,
+    "gasUsed": "45939",
+    "status": 1,
+    "at": "2026-09-22T17:43:37.544Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "D approve 100000 USDC -> marketplace",
+    "hash": "0x67554eb613fea806cdc89cc888460dbd10423272ca7bbfdaed4fb437b37741ec",
+    "block": 63457681,
+    "gasUsed": "45939",
+    "status": 1,
+    "at": "2026-09-22T17:43:42.179Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "E approve 100000 USDC -> marketplace",
+    "hash": "0x370002c2c183f68943fa59faffbd70db4c8835a0cd0018432d27b43eb483904c",
+    "block": 63457690,
+    "gasUsed": "45939",
+    "status": 1,
+    "at": "2026-09-22T17:43:46.984Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "F approve 100000 USDC -> marketplace",
+    "hash": "0xe14c0cce688009ae3286ba9eecca35c233c235e380b1c3905a21477da9cb996f",
+    "block": 63457700,
+    "gasUsed": "45939",
+    "status": 1,
+    "at": "2026-09-22T17:43:51.648Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "LF approve 100000 USDC -> marketplace",
+    "hash": "0x85b4a6ef4620efccae2888b810dccb8cf6693c5e62f50988d3efb3708bebc50d",
+    "block": 63457709,
+    "gasUsed": "45939",
+    "status": 1,
+    "at": "2026-09-22T17:43:56.382Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "LB supply 1100 USDC to pool #52",
+    "hash": "0xd4bd9160047afe225f06d997886c6e3bef3253edd2676393fc4cc54319bfc8b3",
+    "block": 63457719,
+    "gasUsed": "232724",
+    "status": 1,
+    "at": "2026-09-22T17:44:01.374Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "B self-stake 200 USDC into own pool #52",
+    "hash": "0x1880c724cfe7315d3d380ac2ab5e14c0c7939f0438d24ff5cd1727972665c6af",
+    "block": 63457728,
+    "gasUsed": "164291",
+    "status": 1,
+    "at": "2026-09-22T17:44:06.037Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "fund 0xBe2829e1e345959174a150f700E46875A95E40C8 +0.013412675 native",
+    "hash": "0x3460bfd3e43f106fa1f9be594abd57cb53489b8c1df1022386092574f17570bf",
+    "block": 63457757,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-22T17:44:21.095Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "fund 0xCe8FF5d2150331dFfFdf15AD727747B16794a0A6 +0.01709185 native",
+    "hash": "0x1f7a13a68c9c9787566b419e99e1468226e876a9db59df0b12f9c987d54b55dc",
+    "block": 63457767,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-22T17:44:26.234Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "fund 0x537BF3cE399a92739006Fd7c56D82473034E7Da9 +0.001148475 native",
+    "hash": "0x2e22b5adb14a81b89061f5f2df573933eb7d8e36d834409ea495826d4006cab7",
+    "block": 63457777,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-22T17:44:31.145Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "fund 0xb61F9728c16fEa7647817e03b75f1D939c0a5A3F +0.006966575 native",
+    "hash": "0x80031e6984dc90b48bbc517c4fb2bea2c3c93691b3fc49c0e46df03084a146a9",
+    "block": 63457786,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-22T17:44:35.963Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "fund 0x2c4ae434f93586C8774271b04A4FED9a006f1CAa +0.001148475 native",
+    "hash": "0xd544af2a04fee5cfd6ae73897e0511e8882f1a8a16a6416de810ad96813dde28",
+    "block": 63457796,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-22T17:44:40.828Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "fund 0x60C4274B7A793a075780Aef0059d8e487d12c769 +0.001148475 native",
+    "hash": "0x888de09505a3e8ca6b1341c43f0ca3eb4725869823b7f6abf37d2cd98a81f97f",
+    "block": 63457805,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-22T17:44:45.659Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "fund 0x6b5122E84e31c57541d32942A4523f8dDf3eD5D6 +0.001148475 native",
+    "hash": "0x8875962771c6ff67a5c4ca1920dba322de22fef0975e37ac9989b9f85276f7a5",
+    "block": 63457815,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-22T17:44:50.469Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "fund 0xbbA70F6A1FcaA22FF4d8dc5d2A202511207052a0 +0.001148475 native",
+    "hash": "0x5d3e59b2466dea5047556d53ea9bb4e1d8552339cd172c27c12689e14dcf3d4c",
+    "block": 63457825,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-22T17:44:55.364Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "fund 0xAE3F4ba36039E4E9599aa24a87A6bdA644A38762 +0.001148475 native",
+    "hash": "0x5ec47124080845a506229dfc4fd888c2fedb7f831742802fa3819f3bf8481b87",
+    "block": 63457834,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-22T17:45:00.344Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "fund 0xb48827C51d70B3454e79350B48E08288692c5C76 +0.001148475 native",
+    "hash": "0x9248e5428f1b523ed2bf8f31a5612172a2a8b6598b527baee6f9a3c410b7295a",
+    "block": 63457844,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-22T17:45:05.379Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "fund 0x6585A543a585DB5D1ae6D4AB4b7Dc796756d5cCD +0.001148475 native",
+    "hash": "0x12ccf0d6525d0eaaefc04093ee780b0238a86a9e59d634d337c8afc9f2baf030",
+    "block": 63457854,
+    "gasUsed": "21000",
+    "status": 1,
+    "at": "2026-09-22T17:45:10.201Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "mint 1500 MockUSDC -> 0xb61F9728c16fEa7647817e03b75f1D939c0a5A3F",
+    "hash": "0x54b56c71634af6b5b3cfbb28c2343ae7531d2b6e814bb8c546f13a40a6d7a1c3",
+    "block": 63457870,
+    "gasUsed": "36057",
+    "status": 1,
+    "at": "2026-09-22T17:45:18.632Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "B approve 100000 USDC -> marketplace",
+    "hash": "0x66a48a01459bbe2b2c51fa3df777d154b38eebc322fffaa5b3e6d851a7820957",
+    "block": 63457881,
+    "gasUsed": "28839",
+    "status": 1,
+    "at": "2026-09-22T17:45:24.142Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "LB approve 100000 USDC -> marketplace",
+    "hash": "0xebbc64d39d5e0bceb3ae1b7f104292846d68db07fad7f6e964180cee0a27e4c1",
+    "block": 63457890,
+    "gasUsed": "28839",
+    "status": 1,
+    "at": "2026-09-22T17:45:28.998Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "pump#1 B requestLoan 100.0 (score 100, coll 100%)",
+    "hash": "0xb9871e0b7725541c89831fc799ff97f143ebfaaf2500e6f1c3d9991ca9e2d90f",
+    "block": 63457902,
+    "gasUsed": "580748",
+    "status": 1,
+    "at": "2026-09-22T17:45:34.903Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "pump#1 B repayLoan 1",
+    "hash": "0x0ddedcd9ee44ec1971a49614194bac0e3ddaf89b87863cee524cc4f3d93e6abe",
+    "block": 63457917,
+    "gasUsed": "334677",
+    "status": 1,
+    "at": "2026-09-22T17:45:42.590Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "pump#2 B requestLoan 300.0 (score 150, coll 100%)",
+    "hash": "0x52b42cfb5e2d77d14833d001e5ae2ad6513db9d35c86f624e880e58f165d4111",
+    "block": 63457928,
+    "gasUsed": "529448",
+    "status": 1,
+    "at": "2026-09-22T17:45:47.632Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "pump#2 B repayLoan 2",
+    "hash": "0x2df0df3a32c96e7825a55060e1926ac3465ff2669c951f1a2f235ba7e0316ac8",
+    "block": 63457943,
+    "gasUsed": "232077",
+    "status": 1,
+    "at": "2026-09-22T17:45:55.326Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "pump#3 B requestLoan 700.0 (score 200, coll 100%)",
+    "hash": "0x05a594e3fa6dad6f9f9fad38ff2a4497770e37e90ec1a04fb656e8ff97bbf3b2",
+    "block": 63457953,
+    "gasUsed": "526701",
+    "status": 1,
+    "at": "2026-09-22T17:46:00.370Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "pump#3 B repayLoan 3",
+    "hash": "0x170250de2d8752e6e2897a21f3b6d1d3461bdac21a8a0488ab977d6a201738ba",
+    "block": 63457968,
+    "gasUsed": "232077",
+    "status": 1,
+    "at": "2026-09-22T17:46:08.082Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "pump#4 B requestLoan 1000.0 (score 250, coll 100%)",
+    "hash": "0x1a6d0a6a35e8a9027678e92de34f44910b7ac0427e841118a254dcf234b94ecb",
+    "block": 63457978,
+    "gasUsed": "526701",
+    "status": 1,
+    "at": "2026-09-22T17:46:13.080Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "pump#4 B repayLoan 4",
+    "hash": "0x0481ed4de74aee14913609da9d70ca7d99c7d46a1c1d995a6d7c49ba800e917c",
+    "block": 63457994,
+    "gasUsed": "232077",
+    "status": 1,
+    "at": "2026-09-22T17:46:21.331Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "pump#5 B requestLoan 1000.0 (score 300, coll 100%)",
+    "hash": "0x086ac6fc5e4c3173a94b5c08ab53b8664b06690a21313bd30b28a20e52f250ec",
+    "block": 63458003,
+    "gasUsed": "526701",
+    "status": 1,
+    "at": "2026-09-22T17:46:26.304Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "pump#5 B repayLoan 5",
+    "hash": "0x8e3e5162d26186c299958dabcf31dcbd9e3a06bac98e5ef5a666254ae364527d",
+    "block": 63458018,
+    "gasUsed": "227700",
+    "status": 1,
+    "at": "2026-09-22T17:46:33.998Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "pump#6 B requestLoan 1000.0 (score 350, coll 100%)",
+    "hash": "0x8ce7d9ac3528ba663db9b8e5979a0b72ed1c3dff98112639d7aee2b206d35e49",
+    "block": 63458030,
+    "gasUsed": "526701",
+    "status": 1,
+    "at": "2026-09-22T17:46:39.975Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "pump#6 B repayLoan 6",
+    "hash": "0xb2bb89405463f39f43092a7c96734e32763fc1a6248d3788a02daf98f95e7287",
+    "block": 63458046,
+    "gasUsed": "227700",
+    "status": 1,
+    "at": "2026-09-22T17:46:47.679Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "pump#7 B requestLoan 1000.0 (score 400, coll 100%)",
+    "hash": "0x97cf48f88e76a82d5d79a26c6d89cc1e2b823079d51a5d9e2604235cade1fc1e",
+    "block": 63458056,
+    "gasUsed": "523954",
+    "status": 1,
+    "at": "2026-09-22T17:46:53.005Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "pump#7 B repayLoan 7",
+    "hash": "0xe6829f58c599f70a8413509896062a93057ad1083b550da1b631ec10cf05a4e3",
+    "block": 63458072,
+    "gasUsed": "227700",
+    "status": 1,
+    "at": "2026-09-22T17:47:00.840Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "pump#8 B requestLoan 1000.0 (score 450, coll 100%)",
+    "hash": "0x779cbc418f82e349bf21929270b04ae4eccb110baf863ab5e5ab7a2d201ad6be",
+    "block": 63458082,
+    "gasUsed": "523954",
+    "status": 1,
+    "at": "2026-09-22T17:47:06.097Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "pump#8 B repayLoan 8",
+    "hash": "0xd4bda1f9588158a2a239cce64fa09d6d9d8a2b59caa87155b940301dda177eee",
+    "block": 63458097,
+    "gasUsed": "227700",
+    "status": 1,
+    "at": "2026-09-22T17:47:13.817Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "pump#9 B requestLoan 1000.0 (score 500, coll 75%)",
+    "hash": "0xfbf661cdbd8e8e47eb2b0bbccc66767d9200bbc6a5397b6a1bab0757941e4b4d",
+    "block": 63458107,
+    "gasUsed": "531175",
+    "status": 1,
+    "at": "2026-09-22T17:47:18.833Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "pump#9 B repayLoan 9",
+    "hash": "0x85341a54b40cd7e7ea9917736216da2e1dc3ca6923c3628f8de747abc22ac143",
+    "block": 63458122,
+    "gasUsed": "227700",
+    "status": 1,
+    "at": "2026-09-22T17:47:26.732Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "pump#10 B requestLoan 1000.0 (score 550, coll 75%)",
+    "hash": "0x508d86c59924867640f7bb6c7d960f856b4333d3187eadb006f2986185312469",
+    "block": 63458132,
+    "gasUsed": "531175",
+    "status": 1,
+    "at": "2026-09-22T17:47:31.721Z"
+  },
+  {
+    "scenario": "00-setup",
+    "label": "pump#10 B repayLoan 10",
+    "hash": "0x0a30bfe626330ba03c959d4bc887d1e0436bb2a0d05aba3e037b049a3af1daea",
+    "block": 63458148,
+    "gasUsed": "227700",
+    "status": 1,
+    "at": "2026-09-22T17:47:39.794Z"
+  },
+  {
+    "scenario": "v1-self-stake-lock",
+    "label": "B top up self-stake to 250.0",
+    "hash": "0xcc60727e063b9d2358dd0cfd51227b5a3907deb10a84d7ae3b03c7d708fbc53b",
+    "block": 63458255,
+    "gasUsed": "82082",
+    "status": 1,
+    "at": "2026-09-22T17:48:34.458Z"
+  },
+  {
+    "scenario": "v1-self-stake-lock",
+    "label": "T (third party) supply 400 USDC to pool #52",
+    "hash": "0xeff1683a9c44fca7715a7d867e9f7eb5ddc9695bfc5e146fabf37962ee3b001e",
+    "block": 63458265,
+    "gasUsed": "164324",
+    "status": 1,
+    "at": "2026-09-22T17:48:39.081Z"
+  },
+  {
+    "scenario": "v1-self-stake-lock",
+    "label": "B requestLoan 500 USDC (0 % collateral tier)",
+    "hash": "0xea4d220806ccb2636d4db450fbc5c06592ae83bf117bd40b4e1c8b7bdd40a52f",
+    "block": 63458274,
+    "gasUsed": "499732",
+    "status": 1,
+    "at": "2026-09-22T17:48:43.711Z"
+  },
+  {
+    "scenario": "v1-self-stake-lock",
+    "label": "T withdraw 100 USDC from the SAME pool while the loan is open",
+    "hash": "0xa9a53a49869b8a10416ad177b7af39c7724a36ca76119cb66f54ee139b08179a",
+    "block": 63458284,
+    "gasUsed": "64473",
+    "status": 1,
+    "at": "2026-09-22T17:48:48.953Z"
+  },
+  {
+    "scenario": "v1-self-stake-lock",
+    "label": "B repayLoan 11",
+    "hash": "0xf060b44603b885ccb2924f949261edc62b8d22d36e50b50b13778f3fda5cecc1",
+    "block": 63458294,
+    "gasUsed": "256821",
+    "status": 1,
+    "at": "2026-09-22T17:48:53.778Z"
+  },
+  {
+    "scenario": "v1-self-stake-lock",
+    "label": "B withdraw its whole 250.0 USDC self-stake",
+    "hash": "0xfad74ad639d2a49c11a776f29006322971c1a051cf44f54e813a815cef5a6bf3",
+    "block": 63458303,
+    "gasUsed": "63996",
+    "status": 1,
+    "at": "2026-09-22T17:48:58.607Z"
+  },
+  {
+    "scenario": "v2-self-stake-gate",
+    "label": "B supply 199.999999 (creator, below minSupply is allowed)",
+    "hash": "0x40689905ac3bccc817256307565f9520f74ee0813daefe55d5f99e0c60272c5e",
+    "block": 63458396,
+    "gasUsed": "96999",
+    "status": 1,
+    "at": "2026-09-22T17:49:46.033Z"
+  },
+  {
+    "scenario": "v2-self-stake-gate",
+    "label": "B supply the final 1 base unit (0.000001 USDC)",
+    "hash": "0x676655c22101f9e7efde3d28851c3f8bdf0ef24e0dc63bf0b3f6698731bc1b89",
+    "block": 63458407,
+    "gasUsed": "82046",
+    "status": 1,
+    "at": "2026-09-22T17:49:51.317Z"
+  },
+  {
+    "scenario": "v2-self-stake-gate",
+    "label": "B requestLoan 400 at exactly the required stake",
+    "hash": "0xb5bd3ccd63b93576304a1ce56fcf433f6a144fb0aa5df281c61360249aff4d60",
+    "block": 63458417,
+    "gasUsed": "499732",
+    "status": 1,
+    "at": "2026-09-22T17:49:56.117Z"
+  },
+  {
+    "scenario": "v2-self-stake-gate",
+    "label": "B supply 50.0 to meet the aggregate requirement",
+    "hash": "0x48446b76daefde616f8e8102f3c66c3c07d5ed9883a7641a115f25fce03beda8",
+    "block": 63458427,
+    "gasUsed": "99357",
+    "status": 1,
+    "at": "2026-09-22T17:50:01.467Z"
+  },
+  {
+    "scenario": "v2-self-stake-gate",
+    "label": "B requestLoan 100 (aggregate requirement met)",
+    "hash": "0x5905d5bc0f35dc621d609eac39c22ef6b22d5f8835cc58bb08247fa30c102dc6",
+    "block": 63458436,
+    "gasUsed": "431332",
+    "status": 1,
+    "at": "2026-09-22T17:50:06.096Z"
+  },
+  {
+    "scenario": "v2-self-stake-gate",
+    "label": "B repayLoan 12",
+    "hash": "0xba44c741fc7827dbf6b4818c6b51c1d2b63e3c6dfe6408657b543e7653d13495",
+    "block": 63458445,
+    "gasUsed": "263755",
+    "status": 1,
+    "at": "2026-09-22T17:50:10.726Z"
+  },
+  {
+    "scenario": "v2-self-stake-gate",
+    "label": "B repayLoan 13",
+    "hash": "0x9da9944f4a6ecfd56311407d223116cf6bccd91416aaf4d79824dcb73519c6c7",
+    "block": 63458454,
+    "gasUsed": "239821",
+    "status": 1,
+    "at": "2026-09-22T17:50:15.511Z"
+  },
+  {
+    "scenario": "v3-credit-ladder",
+    "label": "setScoringParameters(onTimeBonus = 0) — freeze the score for this measurement",
+    "hash": "0xf52ac04d401dc5e792e571f54e177b3065273ebdec0721a1d48dbfdd7145884d",
+    "block": 63458559,
+    "gasUsed": "33425",
+    "status": 1,
+    "at": "2026-09-22T17:51:08.612Z"
+  },
+  {
+    "scenario": "v3-credit-ladder",
+    "label": "LA supply 1100 USDC to pool #51",
+    "hash": "0x8d0bc8fe5970138ce2b8df5e09cd3e3872522c23f25047b703eea9366d6bda81",
+    "block": 63458569,
+    "gasUsed": "215624",
+    "status": 1,
+    "at": "2026-09-22T17:51:13.742Z"
+  },
+  {
+    "scenario": "v3-credit-ladder",
+    "label": "rung 0: A requestLoan 100 USDC (== creditLimit)",
+    "hash": "0x621b521d3fe84a54fdd18619ef8274a820f2f80d703710c873f7e3eacb8ccc85",
+    "block": 63458579,
+    "gasUsed": "580748",
+    "status": 1,
+    "at": "2026-09-22T17:51:18.769Z"
+  },
+  {
+    "scenario": "v3-credit-ladder",
+    "label": "rung 0: A repayLoan 14",
+    "hash": "0x1a077308f6a9f7a8c44ed3ce0322146976277d81dcd88a5036d93daf4333ac06",
+    "block": 63458593,
+    "gasUsed": "276372",
+    "status": 1,
+    "at": "2026-09-22T17:51:26.002Z"
+  },
+  {
+    "scenario": "v3-credit-ladder",
+    "label": "rung 1: A requestLoan 300 USDC (== creditLimit)",
+    "hash": "0xfbbe1d54aca446fae79b24c0dc32bf75339c8714c118b324609786e1012808ed",
+    "block": 63458603,
+    "gasUsed": "529448",
+    "status": 1,
+    "at": "2026-09-22T17:51:30.997Z"
+  },
+  {
+    "scenario": "v3-credit-ladder",
+    "label": "rung 1: A repayLoan 15",
+    "hash": "0x26f11fa3ac656b3746b27801d93d1b3ad24bbf226661cf96bfe665f80d98c299",
+    "block": 63458617,
+    "gasUsed": "207972",
+    "status": 1,
+    "at": "2026-09-22T17:51:38.121Z"
+  },
+  {
+    "scenario": "v3-credit-ladder",
+    "label": "rung 2: A requestLoan 700 USDC (== creditLimit)",
+    "hash": "0x0db82faa474f3523346629109b245e65d34057fe1cbfef4c3f303dec08bf13fc",
+    "block": 63458627,
+    "gasUsed": "529448",
+    "status": 1,
+    "at": "2026-09-22T17:51:43.082Z"
+  },
+  {
+    "scenario": "v3-credit-ladder",
+    "label": "rung 2: A repayLoan 16",
+    "hash": "0xefe9475f96aea7f472138a1b05a571a34f990301c70f02f8f44c512a53a74d9f",
+    "block": 63458641,
+    "gasUsed": "207972",
+    "status": 1,
+    "at": "2026-09-22T17:51:50.332Z"
+  },
+  {
+    "scenario": "v3-credit-ladder",
+    "label": "rung 3: A requestLoan 1000 USDC (== creditLimit)",
+    "hash": "0xcd1282976ed662e93c79eb9e3593e37605ba5884cd87a18d4f8f08563e620191",
+    "block": 63458651,
+    "gasUsed": "529452",
+    "status": 1,
+    "at": "2026-09-22T17:51:55.398Z"
+  },
+  {
+    "scenario": "v3-credit-ladder",
+    "label": "rung 3: A repayLoan 17",
+    "hash": "0x74df651cf88d7b9a5dc51f02c7838a3d55aac50140831c6cd49874d1c5916ba5",
+    "block": 63458666,
+    "gasUsed": "207972",
+    "status": 1,
+    "at": "2026-09-22T17:52:02.623Z"
+  },
+  {
+    "scenario": "v3-credit-ladder",
+    "label": "restore setScoringParameters(onTimeBonus = 50)",
+    "hash": "0x096be3a0ff74292b547b81a47d6ba255dc66c452f0cdc77ca3f1296c1d60f98f",
+    "block": 63458677,
+    "gasUsed": "55337",
+    "status": 1,
+    "at": "2026-09-22T17:52:08.251Z"
+  }
+]

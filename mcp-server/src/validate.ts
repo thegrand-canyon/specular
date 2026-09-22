@@ -50,7 +50,30 @@ export function maxAmountUsdc(): number {
   return n;
 }
 
-/** Highest credit limit any reputation tier grants (score 800+ => 50,000 USDC). */
+/**
+ * OFFLINE transport sanity cap for a loan principal — NOT a credit limit.
+ *
+ * This used to be documented as "the highest credit limit any reputation tier
+ * grants (score 800+ => 50,000 USDC)", i.e. a hardcoded copy of the tier table.
+ * On ReputationManagerV4 the tier table is on-chain, owner-settable state, so no
+ * client may hold such a copy: the authoritative limit is
+ * `calculateCreditLimit(address)` (checked in prepareTx, which reads the chain
+ * and warns), and the published table is `get_protocol_status.creditTiers`.
+ *
+ * What survives here is only a bound on what `encodeAction` — a PURE function
+ * with no RPC — will encode, so an absurd argument is rejected before any chain
+ * work happens. Raise it with SPECULAR_MAX_LOAN_USDC if a deployment's tier
+ * table is ever set above it.
+ */
+export function maxLoanUsdc(): number {
+  const raw = process.env.SPECULAR_MAX_LOAN_USDC;
+  if (!raw) return 50_000;
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n <= 0) throw new Error('SPECULAR_MAX_LOAN_USDC must be a positive number');
+  return n;
+}
+
+/** @deprecated offline sanity bound only — see `maxLoanUsdc()`. Kept for compatibility. */
 export const MAX_LOAN_USDC = 50_000;
 
 export const DURATION_DAYS_MIN = 7;

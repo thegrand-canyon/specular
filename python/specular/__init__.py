@@ -15,6 +15,25 @@ Quickstart:
     sdk.repay(loan_id)
 """
 
-from .client import SpecularClient
+from .client import (
+    CreditInfo,
+    CreditTier,
+    InsufficientSelfStake,
+    LoanInfo,
+    SelfStakeInfo,
+    SelfStakeLocked,
+    SpecularClient,
+    UnsupportedOnDeployment,
+)
 
-__all__ = ["SpecularClient"]
+__all__ = [
+    "SpecularClient",
+    "CreditInfo",
+    "CreditTier",
+    "LoanInfo",
+    "SelfStakeInfo",
+    # V7 (V6.2) errors an integrator must handle
+    "InsufficientSelfStake",
+    "SelfStakeLocked",
+    "UnsupportedOnDeployment",
+]

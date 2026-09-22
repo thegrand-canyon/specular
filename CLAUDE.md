@@ -192,6 +192,33 @@ non-zero exit incl. crash/watchdog). Incident runbook: `forensics/monitor/INCIDE
 
 ## Reputation & Loan Model
 
+**The tier table is NOT a constant any more — read it from the chain.** On `ReputationManagerV4` (the V7 model)
+it is owner-settable on-chain state bounded by the immutable `MAX_TIER_LIMIT` (10,000 USDC). Every client reads it:
+`sdk.tierTable()` (JS), `client.tier_table()` (Python), `get_protocol_status.creditTiers` (MCP/REST), or
+`tierLimits(i)` / `tierCollateralPct(i)` / `tierInterestBps(i)` / `unsecuredTierExposure(i)` directly. An agent's
+actual limit is always `calculateCreditLimit(address)`. The numbers below are the SHIPPED DEFAULTS of each
+generation, for orientation only — never hardcode them.
+
+### V7 defaults (`ReputationManagerV4`, live on Arc staging since 2026-09-22)
+
+| Score | Collateral | Interest | Tier limit | Unsecured exposure |
+|-------|-----------|----------|-----------|--------------------|
+| 800–1000 | 0% | 5% APR | 5,000 USDC | 5,000 |
+| 600–799 | 0% | 7% APR | 2,500 USDC | 2,500 |
+| 500–599 | 75% | 10% APR | 10,000 USDC | 2,500 |
+| 400–499 | 100% | 10% APR | 10,000 USDC | 0 |
+| 200–399 | 100% | 15% APR | 5,000 USDC | 0 |
+| 0–199 | 100% | 15% APR | 1,000 USDC | 0 |
+
+The effective limit is `min(tier limit, ladder limit)` where `ladderLimit = creditMultiple × maxRepaidPrincipal +
+growthStep` (floored at `bootstrapLimit`), and it is exactly **0** during a 180-day post-default lockout.
+A loan at a tier below 100% collateral also requires the agent's own **first-loss self-stake**:
+`selfStake >= unsecuredExposure / creditMultiple`, locked while any principal is outstanding.
+On-time repayment scales by principal AND hold time; default costs up to 500 pts plus a capacity reset.
+See `forensics/output/v7-model/V7_DESIGN_AND_VALIDATION.md`.
+
+### V3 defaults (`ReputationManagerV3` — Base mainnet, Arc mainnet)
+
 Verified live on Arc V6 — 95-cycle progression mapped score 0 → 950 (see `forensics/output/regression-2026-05-07/64-reputation-tiers.json`):
 
 | Score | Collateral | Interest | Credit Limit |
@@ -205,6 +232,10 @@ Verified live on Arc V6 — 95-cycle progression mapped score 0 → 950 (see `fo
 | 0 | 100% | 15% APR | 1,000 USDC |
 
 Initial score: 0 (uninitialized agent). On-time repayment: +10. Default: −50 (scaled by loan size). Max: 1000 (score-1000 tier not yet observed live — borrower ran out of gas at score 950).
+
+**Reputation does NOT migrate across a V7 deploy.** `ReputationManagerV4` starts empty by design (no `seedReputation`);
+every agent must call `initializeReputation()` again and re-climb. Agent NFTs/ids survive (the registry is not
+redeployed). Clients must never assume a prior score exists on a V7 deployment.
 
 ## Brand
 

@@ -35,9 +35,9 @@ Every tool and route takes `network`. There is deliberately no default because t
 
 | `network` | Chain | chainId | Money | Address source |
 |-----------|-------|---------|-------|----------------|
-| `arc-staging` | Arc testnet, V6-staging stack | 5042002 | test USDC | `src/config/arc-testnet-v6-addresses.json` |
+| `arc-staging` | Arc testnet, **V6.2 / V7 stack** | 5042002 | test USDC | `src/config/arc-testnet-v6-addresses.json` |
 | `base` | Base mainnet, V6 canonical | 8453 | **REAL USDC** | `src/config/base-addresses.json` |
-| `arc-mainnet` | Arc mainnet, V6 | 5042 | **REAL USDC** | `src/config/arc-mainnet-addresses.json` |
+| `arc-mainnet` | Arc mainnet, V6.1 | 5042 | **REAL USDC** | `src/config/arc-mainnet-addresses.json` |
 
 Addresses are resolved only from those repo files, never from request input. Restrict a deployment with
 `SPECULAR_ENABLED_NETWORKS=arc-staging`.
@@ -109,6 +109,8 @@ overruns. No request can sit on a hung upstream for minutes.
 | `preview_repayment` | read | `GET /v1/{network}/loans/{loanId}/repayment` (V6.1 only: exact amount `repayLoan` pulls now, incl. late interest) |
 | `can_top_up` | read | `GET /v1/{network}/pools/{agentId}/can-top-up/{lender}` (V6.1 only) |
 | `get_active_loan_ids` | read | `GET /v1/{network}/agents/{agentId}/active-loans` (V6.1 only) |
+| `required_self_stake` | read | `GET /v1/{network}/agents/{agentId}/required-self-stake?additionalAmount=` (**V6.2 only**: first-loss capital the agent must hold in its own pool before borrowing more) |
+| `get_self_stake` | read | `GET /v1/{network}/agents/{agentId}/self-stake` (**V6.2 only**: the creator's own position and whether it is locked) |
 | `get_transaction` | read | `GET /v1/{network}/tx/{hash}` |
 | `prepare_register_agent` | prepare | `POST /v1/{network}/tx/prepare/register_agent` |
 | `prepare_create_pool` | prepare | `POST /v1/{network}/tx/prepare/create_pool` |
@@ -178,7 +180,7 @@ curl -s -X POST localhost:3400/mcp -H 'content-type: application/json' -H 'accep
 See [`.env.example`](.env.example). Highlights: `PORT`, `SPECULAR_ENABLED_NETWORKS`, `SPECULAR_MCP_TOKEN`
 (optional bearer; when unset, everything is open and rate-limited per IP), `SPECULAR_RATE_LIMIT_PER_MIN` (120),
 `SPECULAR_BROADCAST_LIMIT_PER_MIN` (20), `SPECULAR_ALLOWED_ORIGINS`, `SPECULAR_BODY_LIMIT` (256kb),
-`SPECULAR_MAX_AMOUNT_USDC` (100,000 per call; loans capped at 50,000), `SPECULAR_TRUST_PROXY` (Railway: 2; verify
+`SPECULAR_MAX_AMOUNT_USDC` (100,000 per call), `SPECULAR_MAX_LOAN_USDC` (50,000 — an OFFLINE sanity bound on an encoded loan principal, **not** a credit limit: the tier table is on-chain and owner-settable on ReputationManagerV4, read it from `get_protocol_status.creditTiers`), `SPECULAR_TIER_TABLE_CACHE_MS` (60,000), `SPECULAR_TRUST_PROXY` (Railway: 2; verify
 the access log's `ip` is the real client), `SPECULAR_MAX_INFLIGHT` (64; excess requests get 503 + `Retry-After`),
 `SPECULAR_HEALTH_CACHE_MS` (10s), `LOG_LEVEL`.
 

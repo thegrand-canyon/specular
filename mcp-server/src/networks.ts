@@ -112,6 +112,12 @@ function findConfigFile(file: string): string {
 }
 
 function readAbi(name: string): ethers.InterfaceAbi {
+  const abi = tryReadAbi(name);
+  if (!abi) throw new Error(`ABI ${name} not found; run "node scripts/extract-abis.mjs" in mcp-server/`);
+  return abi;
+}
+
+function tryReadAbi(name: string): ethers.InterfaceAbi | null {
   const candidates = [
     path.join(MCP_ROOT, 'abi', `${name}.json`),
     path.join(REPO_ROOT, 'artifacts', 'contracts', 'core', `${name}.sol`, `${name}.json`),
@@ -119,7 +125,32 @@ function readAbi(name: string): ethers.InterfaceAbi {
   for (const c of candidates) {
     if (fs.existsSync(c)) return JSON.parse(fs.readFileSync(c, 'utf8')).abi;
   }
-  throw new Error(`ABI ${name} not found; run "node scripts/extract-abis.mjs" in mcp-server/`);
+  return null;
+}
+
+/** `type|name(inputTypes)` — a stable identity for ABI-fragment dedup. */
+function fragKey(f: any): string {
+  return `${f?.type}|${f?.name ?? ''}(${(f?.inputs ?? []).map((i: any) => i.type).join(',')})`;
+}
+
+/**
+ * Union two ABIs, keeping the first occurrence of each signature.
+ *
+ * Needed for the reputation manager: V4 is NOT a superset of V3 — it replaces
+ * the three `record*` write signatures with loanId-carrying ones. Those are
+ * `onlyAuthorizedPool` and this server never encodes them, but keeping both
+ * means one Interface can decode events and calldata from either generation.
+ */
+function unionAbi(first: ethers.InterfaceAbi, second: ethers.InterfaceAbi): ethers.InterfaceAbi {
+  const seen = new Set<string>();
+  const out: any[] = [];
+  for (const f of [...(first as any[]), ...(second as any[])]) {
+    const k = fragKey(f);
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(f);
+  }
+  return out as ethers.InterfaceAbi;
 }
 
 const cache = new Map<NetworkName, NetworkConfig>();
@@ -216,11 +247,14 @@ export function getNetwork(name: unknown): NetworkConfig {
   if (json.chainId !== undefined && Number(json.chainId) !== spec.chainId) {
     throw new Error(`chainId mismatch for ${name}: config says ${json.chainId}, server expects ${spec.chainId}`);
   }
-  const marketplace = json.agentLiquidityMarketplace_v6 || json.agentLiquidityMarketplace;
+  // A V7 deployment publishes agentLiquidityMarketplace_v62 / reputationManagerV4
+  // (fresh deploys, not upgrades). Prefer the newest key present so a config
+  // upgraded in place takes effect without a code change.
+  const marketplace = json.agentLiquidityMarketplace_v62 || json.agentLiquidityMarketplace_v6 || json.agentLiquidityMarketplace;
   const addresses = {
     marketplace: ethers.getAddress(marketplace),
     registry: ethers.getAddress(json.agentRegistryV2),
-    reputation: ethers.getAddress(json.reputationManagerV3),
+    reputation: ethers.getAddress(json.reputationManagerV4 || json.reputationManagerV3),
     usdc: ethers.getAddress(json.usdc),
   };
   // Multi-endpoint failover. Precedence:
@@ -254,11 +288,24 @@ export function getNetwork(name: unknown): NetworkConfig {
   return cfg;
 }
 
-/** Contract ABIs (bundled in mcp-server/abi, refreshed from hardhat artifacts by scripts/extract-abis.mjs). */
+/**
+ * Contract ABIs (bundled in mcp-server/abi, refreshed from hardhat artifacts by
+ * scripts/extract-abis.mjs).
+ *
+ * These are SUPERSETS spanning every deployment generation this server can be
+ * pointed at — marketplace V6 / V6.1 / V6.2, reputation V3 / V4. A selector that
+ * is in the ABI but not in the deployed bytecode is never called: every
+ * generation-specific path is gated on `marketplaceCapabilities` /
+ * `reputationCapabilities` (chain.ts), which probe the live contract.
+ *
+ * `AgentLiquidityMarketplaceV62` is a strict superset of V6 (it adds only
+ * `requiredSelfStake` and `selfStake`), so every V6/V6.1 call still encodes
+ * byte-identically and `ALLOWED_FUNCTIONS` is unaffected.
+ */
 export const ABI = {
-  marketplace: readAbi('AgentLiquidityMarketplaceV6'),
+  marketplace: tryReadAbi('AgentLiquidityMarketplaceV62') ?? readAbi('AgentLiquidityMarketplaceV6'),
   registry: readAbi('AgentRegistryV2'),
-  reputation: readAbi('ReputationManagerV3'),
+  reputation: unionAbi(readAbi('ReputationManagerV3'), tryReadAbi('ReputationManagerV4') ?? []),
   usdc: [
     'function balanceOf(address owner) view returns (uint256)',
     'function allowance(address owner, address spender) view returns (uint256)',

@@ -488,7 +488,7 @@
       "get": {
         "operationId": "get_protocol_status",
         "summary": "get_protocol_status",
-        "description": "Protocol-wide statistics for a network: paused flag, pools, loans, TVL, available liquidity, and live parameters (min supply, fee, loan limits).",
+        "description": "Protocol-wide statistics for a network: paused flag, pools, loans, TVL, available liquidity, live parameters (min supply, fee, loan limits), the deployment capability matrix (marketplace V6 / V6.1 / V6.2 and reputation V3 / V4), and creditTiers — the CREDIT TIER TABLE read live from the contract. On ReputationManagerV4 that table is owner-settable on-chain state bounded by an immutable MAX_TIER_LIMIT, so read it from here rather than hardcoding limits.",
         "tags": [
           "read"
         ],
@@ -586,7 +586,7 @@
       "get": {
         "operationId": "check_credit_score",
         "summary": "check_credit_score",
-        "description": "Credit profile of an agent wallet: registration, reputation score (0-1000) and tier, credit limit, remaining credit, collateral %, APR, active loans, plus USDC balance and current marketplace allowance.",
+        "description": "Credit profile of an agent wallet: registration, reputation score (0-1000) and tier, credit limit, remaining credit, collateral %, APR, active loans, plus USDC balance and current marketplace allowance. On a V7 deployment it also returns credit.model (why the limit is what it is: tier limit vs credit ladder, and whether the agent is LOCKED OUT after a default, which makes the limit exactly 0) and selfStake (the agent's own locked first-loss capital). Never assume a tier table client-side: every limit here is read from the chain.",
         "tags": [
           "read"
         ],
@@ -1586,6 +1586,235 @@
         }
       }
     },
+    "/v1/{network}/agents/{agentId}/required-self-stake": {
+      "get": {
+        "operationId": "required_self_stake",
+        "summary": "required_self_stake",
+        "description": "V6.2 (V7 credit model) only: how much of its OWN first-loss capital an agent must already hold in its OWN pool before it could borrow `additionalAmount` more. Any exposure the collateral percentage does not cover must be backed at creditMultiple leverage, or requestLoan reverts \"Insufficient self-stake\". Returns the requirement, what the agent currently holds and the exact shortfall to supply. Pass additionalAmount 0 to price the exposure already outstanding. Returns a \"not supported\" error on V6 / V6.1 deployments, which have no such requirement (Base mainnet and the current Arc deployments are in that group).",
+        "tags": [
+          "read"
+        ],
+        "parameters": [
+          {
+            "name": "network",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "base",
+                "arc-staging",
+                "arc-mainnet"
+              ]
+            },
+            "description": "REQUIRED, no default. \"arc-staging\" = Arc testnet V6-staging (test USDC, safe to experiment). \"base\" and \"arc-mainnet\" move REAL USDC."
+          },
+          {
+            "name": "agentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Agent ID whose pool holds the self-stake"
+          },
+          {
+            "name": "additionalAmount",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "number",
+                "string"
+              ],
+              "default": 0
+            },
+            "description": "Additional principal the agent wants to borrow in USDC display units (e.g. 12.5 = 12.5 USDC, max 6 decimals). Capped per call by the server."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (bad address/amount/network, unknown loan, etc.)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid bearer token (only when SPECULAR_MCP_TOKEN is configured)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (per IP)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream RPC failure (attempts across every endpoint exhausted)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Network temporarily unavailable (every RPC endpoint for this network is cold), or the server is shedding load. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "The request exceeded SPECULAR_REQUEST_DEADLINE_MS before the chain answered. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/{network}/agents/{agentId}/self-stake": {
+      "get": {
+        "operationId": "get_self_stake",
+        "summary": "get_self_stake",
+        "description": "V6.2 (V7 credit model) only: the pool creator's own position in its own pool — the agent's first-loss capital — and whether it is currently LOCKED. It is locked for as long as the agent carries outstanding principal (withdrawLiquidity then reverts \"Self-stake locked while borrowing\") and on a default it absorbs the loss BEFORE any third-party lender. Use this before prepare_withdraw_liquidity, and to render an agent's own position as subordinated capital rather than ordinary liquidity. Returns a \"not supported\" error on V6 / V6.1 deployments.",
+        "tags": [
+          "read"
+        ],
+        "parameters": [
+          {
+            "name": "network",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "base",
+                "arc-staging",
+                "arc-mainnet"
+              ]
+            },
+            "description": "REQUIRED, no default. \"arc-staging\" = Arc testnet V6-staging (test USDC, safe to experiment). \"base\" and \"arc-mainnet\" move REAL USDC."
+          },
+          {
+            "name": "agentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Agent ID of the pool"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (bad address/amount/network, unknown loan, etc.)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid bearer token (only when SPECULAR_MCP_TOKEN is configured)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (per IP)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream RPC failure (attempts across every endpoint exhausted)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Network temporarily unavailable (every RPC endpoint for this network is cold), or the server is shedding load. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "The request exceeded SPECULAR_REQUEST_DEADLINE_MS before the chain answered. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/{network}/tx/{hash}": {
       "get": {
         "operationId": "get_transaction",
@@ -2106,7 +2335,7 @@
       "post": {
         "operationId": "prepare_supply_liquidity",
         "summary": "prepare_supply_liquidity",
-        "description": "Prepare supplying USDC into an agent pool as a lender. Returns an UNSIGNED transaction {chainId,to,data,value:\"0\",gasEstimate,...} for YOUR wallet to sign; never executes anything. If a USDC approval is needed first, an exact-amount approve is returned in `prerequisite`.",
+        "description": "Prepare supplying USDC into an agent pool as a lender. Also the way an agent posts its OWN first-loss self-stake on a V6.2 deployment (supply into your own pool) — the pool creator is exempt from the minimum supply there, and that position is then locked while the agent borrows. Returns an UNSIGNED transaction {chainId,to,data,value:\"0\",gasEstimate,...} for YOUR wallet to sign; never executes anything. If a USDC approval is needed first, an exact-amount approve is returned in `prerequisite`.",
         "tags": [
           "prepare"
         ],
@@ -2244,7 +2473,7 @@
       "post": {
         "operationId": "prepare_withdraw_liquidity",
         "summary": "prepare_withdraw_liquidity",
-        "description": "Prepare withdrawal of supplied principal from an agent pool. Returns an UNSIGNED transaction {chainId,to,data,value:\"0\",gasEstimate,...} for YOUR wallet to sign; never executes anything. If a USDC approval is needed first, an exact-amount approve is returned in `prerequisite`.",
+        "description": "Prepare withdrawal of supplied principal from an agent pool. On a V6.2 deployment a POOL CREATOR's own position is first-loss capital and is LOCKED while the agent carries outstanding principal: the response warns and the transaction would revert \"Self-stake locked while borrowing\". Ordinary lenders are never locked. Returns an UNSIGNED transaction {chainId,to,data,value:\"0\",gasEstimate,...} for YOUR wallet to sign; never executes anything. If a USDC approval is needed first, an exact-amount approve is returned in `prerequisite`.",
         "tags": [
           "prepare"
         ],
@@ -2382,7 +2611,7 @@
       "post": {
         "operationId": "prepare_request_loan",
         "summary": "prepare_request_loan",
-        "description": "Prepare a loan request against `from`'s reputation. Includes projected interest, collateral and (if needed) the exact collateral approve. Returns an UNSIGNED transaction {chainId,to,data,value:\"0\",gasEstimate,...} for YOUR wallet to sign; never executes anything. If a USDC approval is needed first, an exact-amount approve is returned in `prerequisite`.",
+        "description": "Prepare a loan request against `from`'s reputation. Includes projected interest, collateral and (if needed) the exact collateral approve. On a V6.2 deployment it also checks the first-loss SELF-STAKE gate and returns requiredSelfStakeUsdc / currentSelfStakeUsdc / selfStakeShortfallUsdc, warning before the \"Insufficient self-stake\" revert; on V7 it also flags a post-default LOCKOUT, which makes the credit limit exactly 0. Returns an UNSIGNED transaction {chainId,to,data,value:\"0\",gasEstimate,...} for YOUR wallet to sign; never executes anything. If a USDC approval is needed first, an exact-amount approve is returned in `prerequisite`.",
         "tags": [
           "prepare"
         ],

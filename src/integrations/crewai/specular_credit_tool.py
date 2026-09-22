@@ -353,14 +353,24 @@ class SpecularCreditTool(BaseTool):
         }, indent=2)
 
     def _get_tier(self, score: int) -> str:
-        """Get reputation tier"""
+        """Human-readable tier NAME for a score.
+
+        [V7] The collateral percentage, credit limit and APR are deliberately NOT
+        part of this label any more. On ReputationManagerV4 the tier table is
+        on-chain, owner-settable state (bounded by an immutable MAX_TIER_LIMIT),
+        so a hardcoded "(25% collateral)" was already wrong for V3's 500-tier and
+        is wrong for every V7 deployment. Read the real values from the contract
+        (calculateCollateralRequirement / calculateCreditLimit), which
+        get_credit_profile already reports."""
         if score >= 800:
-            return "Elite (0% collateral)"
+            return "Elite"
         elif score >= 600:
-            return "Premium (0% collateral)"
+            return "Premium"
+        elif score >= 500:
+            return "Standard"
         elif score >= 400:
-            return "Standard (25% collateral)"
+            return "Building"
         elif score >= 200:
-            return "Basic (50% collateral)"
+            return "Basic"
         else:
-            return "Starter (100% collateral)"
+            return "Starter"

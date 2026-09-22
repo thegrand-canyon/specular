@@ -65,6 +65,7 @@ export function _setContractsForTest(network: string, contracts: Contracts | nul
   if (contracts) contractsOverride.set(network, contracts);
   else contractsOverride.delete(network);
   capabilityCache.delete(network);
+  reputationCapabilityCache.delete(network);
   // Swapping the contracts invalidates every cached answer (JSON-RPC level and
   // read-route level); without this a suite that re-mocks the same call would
   // be served the previous mock's result.
@@ -85,27 +86,56 @@ export function getContracts(cfg: NetworkConfig): Contracts {
 }
 
 // ---------------------------------------------------------------------------
-// Marketplace capability detection (V6 vs V6.1)
+// Capability detection — THREE marketplace generations, TWO reputation ones
 //
-// V6.1 (2026-09 audit fixes) added VERSION(), previewRepayment, canTopUp,
-// getActiveLoanIds, LATE_INTEREST_CAP and changed repayLoan to charge interest
-// on max(duration, elapsed) capped at duration + LATE_INTEREST_CAP. The
-// deployed V6 stacks (Arc testnet V6-staging, Base canonical) have none of
-// those selectors: a call to one reverts with empty data. Detection is one
-// VERSION() call per network, cached for the process (contracts are not
-// proxied, so a deployment's version cannot change under us).
+//  | generation | VERSION()  | v61 | v62 | adds                                          |
+//  |------------|------------|-----|-----|-----------------------------------------------|
+//  | V6         | (absent)   |  no |  no | baseline                                      |
+//  | V6.1       | "V6.1"     | yes |  no | previewRepayment/canTopUp/getActiveLoanIds,   |
+//  |            |            |     |     | LATE_INTEREST_CAP, elapsed-time late interest |
+//  | V6.2 (V7)  | "V6.2"     | yes | yes | requiredSelfStake/selfStake, first-loss lock, |
+//  |            |            |     |     | creator exempt from minSupplyAmount           |
+//
+//  | reputation | VERSION()  | v4  | adds                                                |
+//  |------------|------------|-----|-----------------------------------------------------|
+//  | V3         | (absent)   |  no | tier table compiled in (25,000 / 50,000)            |
+//  | V4 (V7)    | "V4"       | yes | tier table ON CHAIN + owner-settable, credit ladder,|
+//  |            |            |     | post-default lockout, MAX_TIER_LIMIT ceiling        |
+//
+// Base mainnet and the current Arc deployments are V6.1/V3 — nothing may assume
+// V6.2/V4. Detection is one VERSION() call per contract per network, cached for
+// the process (contracts are not proxied, so a version cannot change under us).
 // ---------------------------------------------------------------------------
 
+/** 'V6' -> 6, 'V6.1' -> 6.1, 'V6.2' -> 6.2. Unrecognised strings sort as 6 (most conservative). */
+export function versionOrdinal(v: string): number {
+  const m = /^V(\d+)(?:\.(\d+))?$/.exec(String(v ?? '').trim());
+  if (!m) return 6;
+  return Number(m[1]) + (m[2] ? Number(m[2]) / 10 : 0);
+}
+
 export interface MarketplaceCapabilities {
-  /** 'V6' when VERSION() is absent, otherwise the string the contract reports (e.g. 'V6.1'). */
+  /** 'V6' when VERSION() is absent, otherwise the string the contract reports (e.g. 'V6.1', 'V6.2'). */
   version: string;
+  /** Numeric ordering of `version`, so gates are `>=` comparisons rather than string equality. */
+  ordinal: number;
   /** previewRepayment / canTopUp / getActiveLoanIds / LATE_INTEREST_CAP present; repayLoan charges elapsed-time interest when late. */
   v61: boolean;
-  /** seconds; 30 days on V6.1, null on V6 (no late interest at all). */
+  /** requiredSelfStake / selfStake present; first-loss self-stake gate + withdrawal lock; creator exempt from minSupplyAmount. */
+  v62: boolean;
+  /** seconds; 30 days on V6.1+, null on V6 (no late interest at all). */
   lateInterestCapSeconds: number | null;
 }
 
+export interface ReputationCapabilities {
+  /** 'V3' when VERSION() is absent, otherwise the string the contract reports ('V4'). */
+  version: string;
+  /** Tier table is on-chain state (tierLimits/tierCollateralPct/tierInterestBps) rather than a compiled-in constant. */
+  v4: boolean;
+}
+
 const capabilityCache = new Map<string, MarketplaceCapabilities>();
+const reputationCapabilityCache = new Map<string, ReputationCapabilities>();
 
 export async function marketplaceCapabilities(cfg: NetworkConfig): Promise<MarketplaceCapabilities> {
   const hit = capabilityCache.get(cfg.name);
@@ -117,7 +147,19 @@ export async function marketplaceCapabilities(cfg: NetworkConfig): Promise<Marke
   } catch {
     version = 'V6'; // selector absent -> pre-V6.1 deployment (empty revert / BAD_DATA)
   }
+  const ordinal = versionOrdinal(version);
   const v61 = version !== 'V6';
+  let v62 = ordinal >= 6.2;
+  if (v62) {
+    // Belt and braces: confirm the self-stake view actually answers, so a
+    // mislabelled or partially-migrated deployment cannot make the server skip
+    // the pre-checks that exist to stop an "Insufficient self-stake" revert.
+    try {
+      await c.marketplace.requiredSelfStake(0, 0);
+    } catch {
+      v62 = false;
+    }
+  }
   let lateInterestCapSeconds: number | null = null;
   if (v61) {
     try {
@@ -126,14 +168,30 @@ export async function marketplaceCapabilities(cfg: NetworkConfig): Promise<Marke
       lateInterestCapSeconds = 30 * 86400;
     }
   }
-  const caps = { version, v61, lateInterestCapSeconds };
+  const caps = { version, ordinal, v61, v62, lateInterestCapSeconds };
   capabilityCache.set(cfg.name, caps);
   return caps;
 }
 
-/** Message used when a V6.1-only view is requested on a V6 deployment. */
-export function unsupportedMessage(cfg: NetworkConfig, caps: MarketplaceCapabilities, what: string): string {
-  return `${what} is not supported on this deployment: the ${cfg.name} marketplace ${cfg.addresses.marketplace} reports version ${caps.version} (requires V6.1 or later).`;
+/** Reputation manager generation. V4 publishes the credit tier table as on-chain state. */
+export async function reputationCapabilities(cfg: NetworkConfig): Promise<ReputationCapabilities> {
+  const hit = reputationCapabilityCache.get(cfg.name);
+  if (hit) return hit;
+  const c = getContracts(cfg);
+  let version = 'V3';
+  try {
+    version = String(await c.reputation.VERSION());
+  } catch {
+    version = 'V3'; // selector absent -> pre-V7 reputation manager
+  }
+  const caps = { version, v4: version !== 'V3' };
+  reputationCapabilityCache.set(cfg.name, caps);
+  return caps;
+}
+
+/** Message used when a newer-generation view is requested on an older deployment. */
+export function unsupportedMessage(cfg: NetworkConfig, caps: { version: string }, what: string, requires = 'V6.1'): string {
+  return `${what} is not supported on this deployment: the ${cfg.name} marketplace ${cfg.addresses.marketplace} reports version ${caps.version} (requires ${requires} or later).`;
 }
 
 export interface RpcStatus {

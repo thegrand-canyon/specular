@@ -33,14 +33,148 @@ from eth_utils import keccak
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
+_ARTIFACTS = REPO_ROOT / "artifacts" / "contracts" / "core"
+
+
+def _read_abi(name: str) -> list[dict]:
+    with open(_ARTIFACTS / f"{name}.sol" / f"{name}.json") as f:
+        return json.load(f)["abi"]
+
+
+def _frag_key(frag: dict) -> tuple:
+    return (frag.get("type"), frag.get("name"), tuple(i.get("type") for i in frag.get("inputs") or ()))
+
+
+def _union_abi(first: list[dict], second: list[dict]) -> list[dict]:
+    """Union two ABIs, keeping the first occurrence of each signature."""
+    seen: set[tuple] = set()
+    out: list[dict] = []
+    for frag in [*first, *second]:
+        k = _frag_key(frag)
+        if k in seen:
+            continue
+        seen.add(k)
+        out.append(frag)
+    return out
+
+
+_MP_ABI: list[dict] | None = None
+_REP_ABI: list[dict] | None = None
+
+
+def _marketplace_abi() -> list[dict]:
+    """Marketplace ABI covering V6, V6.1 and V6.2.
+
+    `AgentLiquidityMarketplaceV62` is a STRICT superset of
+    `AgentLiquidityMarketplaceV6` (it adds only `requiredSelfStake` and
+    `selfStake`), so every V6/V6.1 call still encodes byte-identically."""
+    global _MP_ABI
+    if _MP_ABI is None:
+        try:
+            _MP_ABI = _read_abi("AgentLiquidityMarketplaceV62")
+        except FileNotFoundError:
+            _MP_ABI = _read_abi("AgentLiquidityMarketplaceV6")
+    return _MP_ABI
+
+
+def _reputation_abi() -> list[dict]:
+    """Reputation ABI covering V3 and V4.
+
+    V4 is NOT a superset: it replaces the three `record*` write signatures with
+    loanId-carrying ones. Those are `onlyAuthorizedPool` and no client calls
+    them, but they are kept so operator tooling sharing this loader still works,
+    hence a union rather than a swap."""
+    global _REP_ABI
+    if _REP_ABI is None:
+        v3 = _read_abi("ReputationManagerV3")
+        try:
+            v4 = _read_abi("ReputationManagerV4")
+        except FileNotFoundError:
+            v4 = []
+        _REP_ABI = _union_abi(v3, v4)
+    return _REP_ABI
+
 
 @dataclass
 class CreditInfo:
-    """Snapshot of an agent's credit standing."""
+    """Snapshot of an agent's credit standing.
+
+    Every figure is read from the chain — this client carries no tier table.
+    The optional fields are populated only on the deployments that expose them
+    (ReputationManagerV4 for the ladder/lockout, AgentLiquidityMarketplaceV62
+    for the self-stake) and stay ``None`` elsewhere rather than being faked."""
     score: int
     credit_limit_usdc: float
     collateral_pct: int
     interest_rate_apr: float
+    # --- capability ------------------------------------------------------
+    marketplace_version: str | None = None
+    reputation_version: str | None = None
+    # --- ReputationManagerV4 only ----------------------------------------
+    agent_id: int | None = None
+    tier: int | None = None
+    tier_limit_usdc: float | None = None
+    ladder_limit_usdc: float | None = None
+    max_repaid_principal_usdc: float | None = None
+    max_tier_limit_usdc: float | None = None
+    locked_out: bool | None = None
+    locked_until: int | None = None
+    limit_explanation: str | None = None
+    # --- AgentLiquidityMarketplaceV62 only -------------------------------
+    self_stake: "SelfStakeInfo | None" = None
+
+
+@dataclass
+class SelfStakeInfo:
+    """[V6.2] The pool creator's own first-loss position in its own pool.
+
+    ``amount``/``required``/``shortfall`` are USDC base units (6 decimals);
+    the ``*_usdc`` fields are the display-unit equivalents."""
+    amount: int
+    amount_usdc: float
+    locked: bool
+    required: int
+    required_usdc: float
+    shortfall: int
+    shortfall_usdc: float
+
+
+@dataclass
+class CreditTier:
+    """One row of the credit tier table."""
+    index: int
+    min_score: int
+    limit: int
+    limit_usdc: float
+    collateral_pct: int
+    interest_rate_bps: int
+    unsecured_exposure: int
+
+
+class UnsupportedOnDeployment(RuntimeError):
+    """A V6.2-only feature was requested on a V6 / V6.1 deployment."""
+
+
+class InsufficientSelfStake(RuntimeError):
+    """[V6.2 / M2-c] The borrow would revert "Insufficient self-stake".
+
+    Carries ``agent_id``, ``required``, ``current`` and ``shortfall`` (base units)."""
+
+    def __init__(self, message: str, *, agent_id: int, required: int, current: int, shortfall: int):
+        super().__init__(message)
+        self.agent_id = agent_id
+        self.required = required
+        self.current = current
+        self.shortfall = shortfall
+
+
+class SelfStakeLocked(RuntimeError):
+    """[V6.2 / M2-a] The withdrawal would revert "Self-stake locked while borrowing"."""
+
+    def __init__(self, message: str, *, agent_id: int, outstanding_principal: int):
+        super().__init__(message)
+        self.agent_id = agent_id
+        self.outstanding_principal = outstanding_principal
 
 
 @dataclass
@@ -234,20 +368,24 @@ class SpecularClient:
         finally:
             self._approved_this_op = False
 
-    def _code_has_selector(self, signature: str) -> bool:
+    def _code_has_selector(self, signature: str, which: str = "marketplace") -> bool:
         """[F-R1 parity] Capability detection from DEPLOYED BYTECODE, not from
         whether an `eth_call` happened to fail. A 429/500/timeout during a call
         is indistinguishable from a missing selector at the client layer, so the
         old `try: VERSION() except: 'V6'` read one RPC hiccup as "old
-        deployment" — and then under-approved every late repayment."""
-        code = getattr(self, "_mp_code", None)
+        deployment" — and then under-approved every late repayment.
+
+        `which` selects the contract: "marketplace" (default) or "reputation"."""
+        attr = "_rep_code" if which == "reputation" else "_mp_code"
+        addr = self.reputation_addr if which == "reputation" else self.marketplace_addr
+        code = getattr(self, attr, None)
         if code is None:
-            code = bytes(self.w3.eth.get_code(Web3.to_checksum_address(self.marketplace_addr)))
+            code = bytes(self.w3.eth.get_code(Web3.to_checksum_address(addr)))
             if not code:
                 raise RuntimeError(
-                    f"SpecularClient: no contract code at marketplace {self.marketplace_addr} "
+                    f"SpecularClient: no contract code at {which} {addr} "
                     "(wrong address, wrong network, or an RPC serving an empty view).")
-            self._mp_code = code
+            setattr(self, attr, code)
         return SpecularClient._selector(signature) in code
 
     _LOAN_STATES = ["REQUESTED", "ACTIVE", "REPAID", "DEFAULTED"]
@@ -262,28 +400,35 @@ class SpecularClient:
         with open(cfg["addresses_path"]) as f:
             addr = json.load(f)
         # arc/arc-staging expose V6 at the _v6 key; Base's canonical V6 is at
-        # agentLiquidityMarketplace. Prefer _v6 when present.
-        self.marketplace_addr = addr.get("agentLiquidityMarketplace_v6") or addr["agentLiquidityMarketplace"]
+        # agentLiquidityMarketplace. A V7 (V6.2) deployment publishes
+        # agentLiquidityMarketplace_v62. Prefer the newest key present.
+        self.marketplace_addr = (addr.get("agentLiquidityMarketplace_v62")
+                                 or addr.get("agentLiquidityMarketplace_v6")
+                                 or addr["agentLiquidityMarketplace"])
         self.registry_addr = addr["agentRegistryV2"]
-        self.reputation_addr = addr["reputationManagerV3"]
+        # [V7] ReputationManagerV4 is a fresh deploy, not an upgrade: a V7 config
+        # names it reputationManagerV4. Older configs keep reputationManagerV3.
+        self.reputation_addr = addr.get("reputationManagerV4") or addr["reputationManagerV3"]
         self.usdc_addr = addr["usdc"]
         self.faucet_addr = addr.get("agentCreditFaucet")
         self.explorer = cfg["explorer_tx"]
 
-        self.marketplace = self._load_contract(
-            self.marketplace_addr,
-            REPO_ROOT / "artifacts" / "contracts" / "core" /
-            "AgentLiquidityMarketplaceV6.sol" / "AgentLiquidityMarketplaceV6.json",
+        # [V7] ABIs are SUPERSETS covering every deployment generation this client
+        # can meet (marketplace V6/V6.1/V6.2, reputation V3/V4). Nothing is called
+        # on a deployment whose bytecode lacks the selector — see
+        # `_code_has_selector` / `capabilities`.
+        self.marketplace = self.w3.eth.contract(
+            address=Web3.to_checksum_address(self.marketplace_addr),
+            abi=_marketplace_abi(),
         )
         self.registry = self._load_contract(
             self.registry_addr,
             REPO_ROOT / "artifacts" / "contracts" / "core" /
             "AgentRegistryV2.sol" / "AgentRegistryV2.json",
         )
-        self.reputation = self._load_contract(
-            self.reputation_addr,
-            REPO_ROOT / "artifacts" / "contracts" / "core" /
-            "ReputationManagerV3.sol" / "ReputationManagerV3.json",
+        self.reputation = self.w3.eth.contract(
+            address=Web3.to_checksum_address(self.reputation_addr),
+            abi=_reputation_abi(),
         )
         # USDC: just need approve/balanceOf/allowance
         self.usdc = self.w3.eth.contract(
@@ -415,16 +560,56 @@ class SpecularClient:
         return self._send(self.usdc.functions.approve(self.marketplace_addr, 0))
 
     def credit_info(self) -> CreditInfo:
+        """Current credit standing, every figure read from the chain.
+
+        On a V4 reputation manager the result also carries the ladder and lockout
+        state that EXPLAIN the limit, and on a V6.2 marketplace the agent's
+        first-loss self-stake. Those fields stay None on older deployments."""
         score = self.reputation.functions.getReputationScore(self.account.address).call()
         credit_limit = self.reputation.functions.calculateCreditLimit(self.account.address).call()
         coll = self.reputation.functions.calculateCollateralRequirement(self.account.address).call()
         rate = self.reputation.functions.calculateInterestRate(self.account.address).call()
-        return CreditInfo(
+        info = CreditInfo(
             score=score,
             credit_limit_usdc=credit_limit / 1e6,
             collateral_pct=coll,
             interest_rate_apr=rate / 100,
         )
+        try:
+            caps = self.capabilities()
+        except Exception:
+            return info  # capability probe failed: return the V3-shaped answer
+        info.marketplace_version = caps["version"]
+        info.reputation_version = caps["reputation_version"]
+        if not caps["reputation_v4"]:
+            return info
+
+        f = self.reputation.functions
+        agent_id = self._agent_id()
+        info.agent_id = agent_id
+        info.tier = int(f.tierOf(score).call())
+        info.tier_limit_usdc = int(f.tierLimit(score).call()) / 1e6
+        info.ladder_limit_usdc = int(f.ladderLimit(agent_id).call()) / 1e6
+        info.max_repaid_principal_usdc = int(f.maxRepaidPrincipal(agent_id).call()) / 1e6
+        info.max_tier_limit_usdc = int(f.MAX_TIER_LIMIT().call()) / 1e6
+        info.locked_out = bool(f.isLockedOut(agent_id).call())
+        info.locked_until = int(f.lockedUntil(agent_id).call())
+        # A post-default agent reads credit_limit_usdc == 0, which without this
+        # explanation looks like a bug rather than the 180-day lockout it is.
+        info.limit_explanation = (
+            f"Credit limit is 0 because agent #{agent_id} is LOCKED OUT after a default until "
+            f"unix {info.locked_until}. Capacity (maxRepaidPrincipal) was also reset to 0."
+            if info.locked_out else
+            f"Credit limit = min(tier limit {info.tier_limit_usdc}, ladder limit {info.ladder_limit_usdc}) USDC, "
+            f"where the ladder is creditMultiple x your largest on-time-repaid loan "
+            f"({info.max_repaid_principal_usdc} USDC) + growthStep. No tier may ever exceed "
+            f"{info.max_tier_limit_usdc} USDC (MAX_TIER_LIMIT, an immutable constant).")
+        if caps["v62"] and agent_id:
+            try:
+                info.self_stake = self.self_stake(agent_id)
+            except Exception:
+                pass  # pool may not exist yet
+        return info
 
     def borrow(self, amount: float, duration_days: int) -> dict[str, Any]:
         """Borrow USDC. Returns dict with loanId, tx hash, explorer URL."""
@@ -442,6 +627,11 @@ class SpecularClient:
         # Low-reputation agents must post collateral, pulled by requestLoan.
         # required = amount * collateralPercent / 100 (matches the contract).
         coll_pct = self.reputation.functions.calculateCollateralRequirement(self.account.address).call()
+        # [V7 / M2-c] On a V6.2 deployment any exposure the collateral does not
+        # cover must already be backed by the agent's OWN first-loss stake.
+        # requestLoan reverts "Insufficient self-stake" otherwise — and it does so
+        # AFTER the collateral approve, so the check belongs here, before any tx.
+        self._assert_self_stake_sufficient(amt_units, coll_pct)
         self._approve_exact(amt_units * coll_pct // 100)
         try:
             tx_hash = self._send(self.marketplace.functions.requestLoan(amt_units, duration_days))
@@ -500,8 +690,215 @@ class SpecularClient:
         self._mp_version = str(self.marketplace.functions.VERSION().call())
         return self._mp_version
 
+    @staticmethod
+    def version_ordinal(v: Any) -> float:
+        """Numeric ordering for a VERSION string, so capability gates are `>=`
+        comparisons rather than string equality: 'V6' -> 6.0, 'V6.1' -> 6.1,
+        'V6.2' -> 6.2. An unrecognised string sorts as 6.0 (most conservative)."""
+        m = re.match(r"^V(\d+)(?:\.(\d+))?$", str(v or "").strip())
+        if not m:
+            return 6.0
+        return float(m.group(1)) + (float(m.group(2)) / 10 if m.group(2) else 0.0)
+
+    def reputation_version(self) -> str:
+        """Reputation manager VERSION(); 'V3' when the selector is absent.
+
+        [F-R1 parity] Decided by deployed bytecode; a transient RPC failure is
+        SURFACED, never silently cached — guessing 'V3' would present a stale
+        hardcoded tier table instead of the on-chain one."""
+        cached = getattr(self, "_rep_version", None)
+        if cached is not None:
+            return cached
+        try:
+            present = self._code_has_selector("VERSION()", "reputation")
+        except Exception as e:
+            raise RuntimeError(
+                f"SpecularClient: could not determine the reputation manager version at "
+                f"{self.reputation_addr} ({e}). Refusing to guess. Retry against a healthy RPC.") from e
+        if not present:
+            self._rep_version = "V3"
+            return self._rep_version
+        self._rep_version = str(self.reputation.functions.VERSION().call())
+        return self._rep_version
+
+    def capabilities(self) -> dict[str, Any]:
+        """[V7] Three-way capability matrix for this deployment.
+
+        ============  ==========  =====  =====  ==========================================
+        generation    VERSION()   v61    v62    adds
+        ============  ==========  =====  =====  ==========================================
+        V6            (absent)    no     no     baseline
+        V6.1          "V6.1"      yes    no     previewRepayment/canTopUp/getActiveLoanIds
+        V6.2 (V7)     "V6.2"      yes    yes    requiredSelfStake/selfStake, first-loss lock
+        ============  ==========  =====  =====  ==========================================
+
+        Base mainnet and the current Arc deployments are V6.1 or V6, so every
+        V6.2 path must be gated — never assumed."""
+        cached = getattr(self, "_caps", None)
+        if cached is not None:
+            return cached
+        version = self.marketplace_version()
+        ordinal = self.version_ordinal(version)
+        v62 = ordinal >= 6.2
+        if v62:
+            # Belt and braces: confirm against the deployed bytecode so a
+            # mislabelled contract cannot make the client skip the pre-checks.
+            try:
+                v62 = self._code_has_selector("requiredSelfStake(uint256,uint256)")
+            except Exception:
+                pass
+        rep_version = self.reputation_version()
+        self._caps = {
+            "version": version,
+            "ordinal": ordinal,
+            "v61": ordinal >= 6.1,
+            "v62": v62,
+            "reputation_version": rep_version,
+            "reputation_v4": rep_version != "V3",
+        }
+        return self._caps
+
     def _has_v61_views(self) -> bool:
         return self.marketplace_version() != "V6"
+
+    def _has_v62(self) -> bool:
+        """True when the deployment is V6.2 (the V7 credit model)."""
+        return bool(self.capabilities()["v62"])
+
+    def _unsupported(self, what: str) -> UnsupportedOnDeployment:
+        return UnsupportedOnDeployment(
+            f"SpecularClient.{what}: not supported on this deployment — the {self.network} marketplace "
+            f"{self.marketplace_addr} reports version {getattr(self, '_mp_version', 'V6')} (requires V6.2 or later). "
+            "Base mainnet and the current Arc deployments predate the V7 credit model.")
+
+    # --------------------------------------------------- V6.2 / V7 self-stake
+
+    def _agent_id(self) -> int:
+        return int(self.registry.functions.addressToAgentId(self.account.address).call())
+
+    def required_self_stake(self, agent_id: int, additional_amount: float | int = 0) -> int:
+        """[V6.2] First-loss self-stake the agent must already hold in its OWN
+        pool before it could borrow `additional_amount` more (display units).
+        Returns base units. Pass 0 to price the exposure already outstanding."""
+        agent_id = self._to_agent_id(agent_id, "SpecularClient.required_self_stake")
+        extra = 0 if not additional_amount else self._to_base_units(
+            additional_amount, "SpecularClient.required_self_stake")
+        if not self._has_v62():
+            raise self._unsupported("required_self_stake")
+        return int(self.marketplace.functions.requiredSelfStake(agent_id, extra).call())
+
+    def self_stake(self, agent_id: int) -> SelfStakeInfo:
+        """[V6.2] The pool creator's own position — the agent's first-loss
+        capital — and whether it is LOCKED (the agent carries outstanding
+        principal). A locked position cannot be withdrawn and is seized before
+        any third-party lender's on a default."""
+        agent_id = self._to_agent_id(agent_id, "SpecularClient.self_stake")
+        if not self._has_v62():
+            raise self._unsupported("self_stake")
+        amount, locked = self.marketplace.functions.selfStake(agent_id).call()
+        required = int(self.marketplace.functions.requiredSelfStake(agent_id, 0).call())
+        shortfall = max(0, required - int(amount))
+        return SelfStakeInfo(
+            amount=int(amount), amount_usdc=int(amount) / 1e6, locked=bool(locked),
+            required=required, required_usdc=required / 1e6,
+            shortfall=shortfall, shortfall_usdc=shortfall / 1e6)
+
+    def _assert_self_stake_sufficient(self, amt_units: int, coll_pct: int) -> None:
+        """[V6.2 / M2-c] Refuse a borrow the self-stake gate would revert, saying
+        exactly how much more first-loss capital to supply. No-op on V6/V6.1 and
+        at the 100%-collateral tiers.
+
+        Unlike repayment sizing (F-R1), a failed probe here is not money-critical:
+        the gate is enforced on chain regardless, so a probe failure fails OPEN
+        and the caller merely gets the raw revert instead of an explanation."""
+        if int(coll_pct) >= 100:
+            return
+        try:
+            if not self._has_v62():
+                return
+        except Exception:
+            return
+        agent_id = self._agent_id()
+        if not agent_id:
+            return
+        try:
+            required = int(self.marketplace.functions.requiredSelfStake(agent_id, amt_units).call())
+            have = int(self.marketplace.functions.selfStake(agent_id).call()[0])
+        except Exception:
+            return
+        if have >= required:
+            return
+        short = required - have
+        raise InsufficientSelfStake(
+            f"SpecularClient.borrow: insufficient self-stake. This deployment (V6.2, the V7 credit model) "
+            f"requires agent #{agent_id} to hold {required / 1e6} USDC of its OWN first-loss capital in its own "
+            f"pool to carry this exposure, but the position holds {have / 1e6} USDC — {short / 1e6} USDC short. "
+            f'requestLoan would revert "Insufficient self-stake". Supply the difference first '
+            f"(client.supply({agent_id}, {short / 1e6})), then borrow. That stake is LOCKED while any principal "
+            "is outstanding and is seized before any third-party lender on a default.",
+            agent_id=agent_id, required=required, current=have, shortfall=short)
+
+    def _assert_withdraw_not_locked(self, agent_id: int) -> None:
+        """[V6.2 / M2-a] Refuse a withdrawal the first-loss lock would revert.
+        Only ever fires for the POOL CREATOR's own position while
+        `outstandingPrincipal > 0`; ordinary lenders are never locked."""
+        try:
+            if not self._has_v62():
+                return
+        except Exception:
+            return
+        try:
+            pool = self.marketplace.functions.agentPools(agent_id).call()
+            creator = str(pool[1])
+            if creator.lower() != str(self.account.address).lower():
+                return
+            outstanding = int(self.marketplace.functions.outstandingPrincipal(agent_id).call())
+        except Exception:
+            return  # advisory only — never block a withdraw on a failed pre-check
+        if outstanding == 0:
+            return
+        raise SelfStakeLocked(
+            f"SpecularClient.withdraw: your position in pool #{agent_id} is the agent's FIRST-LOSS SELF-STAKE and "
+            f"is locked while it borrows. Agent #{agent_id} still owes {outstanding / 1e6} USDC of principal, so "
+            'withdrawLiquidity would revert "Self-stake locked while borrowing". Repay the outstanding loans first '
+            "(client.active_loan_ids(agent_id) lists them), then withdraw. Ordinary lenders in this pool are not "
+            "locked — only the pool creator.",
+            agent_id=agent_id, outstanding_principal=outstanding)
+
+    def tier_table(self) -> dict[str, Any]:
+        """The credit tier table, READ FROM THE CHAIN.
+
+        On ReputationManagerV4 the table is on-chain state and owner-settable
+        (bounded by the immutable `MAX_TIER_LIMIT`), so no client may carry a
+        hardcoded copy. On V3 there is no view to read, so the historical
+        compiled-in constants are returned, flagged ``source='v3-constant'``."""
+        caps = self.capabilities()
+        if not caps["reputation_v4"]:
+            v3 = [(0, 0, 1_000_000000, 100, 1500), (1, 200, 5_000_000000, 100, 1500),
+                  (2, 400, 10_000_000000, 100, 1000), (3, 500, 10_000_000000, 25, 1000),
+                  (4, 600, 25_000_000000, 0, 700), (5, 800, 50_000_000000, 0, 500)]
+            return {
+                "source": "v3-constant",
+                "max_tier_limit": None,
+                "tiers": [CreditTier(index=i, min_score=ms, limit=lim, limit_usdc=lim / 1e6,
+                                     collateral_pct=cp, interest_rate_bps=bps,
+                                     unsecured_exposure=lim * (100 - cp) // 100)
+                          for (i, ms, lim, cp, bps) in v3],
+            }
+        f = self.reputation.functions
+        tiers = []
+        for i in range(6):
+            lim = int(f.tierLimits(i).call())
+            tiers.append(CreditTier(
+                index=i,
+                min_score=int(f.tierMinScore(i).call()),
+                limit=lim,
+                limit_usdc=lim / 1e6,
+                collateral_pct=int(f.tierCollateralPct(i).call()),
+                interest_rate_bps=int(f.tierInterestBps(i).call()),
+                unsecured_exposure=int(f.unsecuredTierExposure(i).call()),
+            ))
+        return {"source": "chain", "max_tier_limit": int(f.MAX_TIER_LIMIT().call()), "tiers": tiers}
 
     @staticmethod
     def interest_for_seconds(principal: int, rate_bps: int, seconds: int) -> int:
@@ -658,9 +1055,15 @@ class SpecularClient:
         return self._send(self.marketplace.functions.supplyLiquidity(agent_id, amt))
 
     def withdraw(self, agent_id: int, amount: float) -> str:
+        """Withdraw supplied principal from a pool.
+
+        [V6.2 / M2-a] A pool CREATOR's own position is first-loss capital and is
+        locked while the agent carries outstanding principal; that is pre-checked
+        so the caller gets an explanation instead of the raw revert."""
         agent_id = self._to_agent_id(agent_id, "SpecularClient.withdraw")
         amt = self._to_base_units(amount, "SpecularClient.withdraw")
         with self._write_lock:
+            self._assert_withdraw_not_locked(agent_id)
             return self._send(self.marketplace.functions.withdrawLiquidity(agent_id, amt))
 
     def claim_interest(self, agent_id: int) -> str:

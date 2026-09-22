@@ -9,13 +9,13 @@
  * Approvals are always EXACT (never MaxUint256) and always to the marketplace.
  */
 import { ethers } from 'ethers';
-import { getContracts, marketplaceCapabilities } from './chain.js';
+import { getContracts, marketplaceCapabilities, reputationCapabilities } from './chain.js';
 import { IFACE, NetworkConfig } from './networks.js';
 import { activeLoanStartTimes, correctedCanTopUp, formatQuote, interestForSeconds, LOAN_STATES, repaymentQuote, TOP_UP_RACE_WARNING, TOP_UP_VIEW_BUG_WARNING } from './reads.js';
 import {
   cleanErrorText,
   formatUsdc,
-  MAX_LOAN_USDC,
+  maxLoanUsdc,
   requireObject,
   validateAddress,
   validateAmountUsdc,
@@ -223,7 +223,10 @@ export function encodeAction(cfg: NetworkConfig, action: WriteAction, rawArgs: u
       };
     }
     case 'request_loan': {
-      const amount = validateAmountUsdc(a.amount, 'amount', { max: MAX_LOAN_USDC });
+      // Offline sanity bound only — the real limit is read from the chain in
+      // prepareTx (`calculateCreditLimit`) and published by
+      // get_protocol_status.creditTiers. See validate.maxLoanUsdc().
+      const amount = validateAmountUsdc(a.amount, 'amount', { max: maxLoanUsdc() });
       const durationDays = validateDurationDays(a.durationDays);
       const data = IFACE.marketplace.encodeFunctionData('requestLoan', [amount, durationDays]);
       return {
@@ -299,10 +302,14 @@ const REASON_MAP: Array<[RegExp, string]> = [
   [/Insufficient pool liquidity/i, 'The pool does not hold enough available USDC for this amount. Lower the amount, or supply/attract liquidity first.'],
   [/Borrow restricted to pool creator/i, 'Borrowing on this network is restricted to the wallet that created the pool.'],
   [/Invalid duration/i, 'durationDays must be between 7 and 365 (pass days, not seconds).'],
-  [/Exceeds credit limit/i, 'Outstanding principal plus this amount exceeds your reputation-based credit limit. Repay existing loans or borrow less.'],
+  [/Exceeds credit limit/i, 'Outstanding principal plus this amount exceeds your reputation-based credit limit. Repay existing loans or borrow less. On the V7 credit model the limit is min(tier limit, credit ladder) — and it is exactly 0 while an agent is LOCKED OUT after a default, so check check_credit_score.credit.model.lockedOut before assuming this is about the amount.'],
   [/Too many active loans/i, 'You already hold the maximum number of concurrent active loans. Repay one first.'],
   [/Pool not active/i, 'That pool is not active (wrong agentId?).'],
-  [/Below minimum supply/i, 'Amount is below the pool\'s minimum supply (see get_protocol_status.parameters.minSupplyUsdc).'],
+  [/Below minimum supply/i, 'Amount is below the pool\'s minimum supply (see get_protocol_status.parameters.minSupplyUsdc). On a V6.2 deployment the pool CREATOR supplying into its own pool is exempt from this minimum, because that position is locked first-loss capital rather than a lender-slot squat.'],
+  // [V7 / M2-c] The first-loss self-stake gate on AgentLiquidityMarketplaceV62.
+  [/Insufficient self-stake/i, 'This deployment runs the V7 credit model: any exposure your collateral does not cover must already be backed by YOUR OWN first-loss capital supplied into YOUR OWN pool, at creditMultiple leverage. Call required_self_stake (or read prepare_request_loan\'s requiredSelfStakeUsdc) to get the figure, supply the shortfall into your own pool with prepare_supply_liquidity, then request the loan. That capital is locked until every loan is repaid and is seized before any third-party lender on a default.'],
+  // [V7 / M2-a] The first-loss withdrawal lock.
+  [/Self-stake locked while borrowing/i, 'You are the creator of this pool, so your position is the agent\'s first-loss self-stake and is locked for as long as the agent carries outstanding principal. Repay the agent\'s active loans (get_active_loan_ids, then prepare_repay_loan) and the position unlocks. Ordinary lenders in the same pool are NOT locked, and claim_interest works while locked.'],
   [/Pool lender capacity reached|Lender cap/i, 'This pool already has the maximum number of lenders (50). Choose another pool.'],
   [/Insufficient balance/i, 'You are withdrawing more than you supplied to this pool.'],
   [/Not the borrower/i, 'Only the wallet that borrowed this loan (or, on V6.1, the current holder of the agent NFT) can repay it.'],
@@ -474,7 +481,22 @@ export async function prepareTx(cfg: NetworkConfig, action: WriteAction, rawArgs
         c.marketplace.minSupplyAmount() as Promise<bigint>,
       ]);
       if (!pool.isActive) warnings.push(`Agent #${agentId} has no active pool; the transaction will revert.`);
-      if (amt < minSupply) warnings.push(`Amount is below the minimum supply of ${formatUsdc(minSupply)} USDC.`);
+      // [V7 / M2] On V6.2 the pool CREATOR supplying into its own pool is EXEMPT
+      // from minSupplyAmount: that slot is locked first-loss capital, the opposite
+      // of the lender-slot squat the minimum exists to price, and the self-stake
+      // gate can legitimately require less than the minimum (a 50 USDC loan at the
+      // 75%-collateral tier needs 6.25 USDC at k=2). Warning here would be wrong.
+      let creatorExempt = false;
+      if (amt < minSupply && pool.isActive && String(pool.agentAddress).toLowerCase() === from.toLowerCase()) {
+        const caps = await marketplaceCapabilities(cfg).catch(() => null);
+        creatorExempt = Boolean(caps?.v62);
+        if (creatorExempt) {
+          warnings.push(
+            `Amount is below the pool minimum of ${formatUsdc(minSupply)} USDC, but you are the creator of pool #${agentId} and this deployment is ${caps!.version}: the creator's own first-loss position is exempt from the minimum, so this will NOT revert. Note that this position is locked while the agent borrows.`,
+          );
+        }
+      }
+      if (amt < minSupply && !creatorExempt) warnings.push(`Amount is below the minimum supply of ${formatUsdc(minSupply)} USDC.`);
       if (amt > bal) warnings.push(`Wallet holds ${formatUsdc(bal)} USDC, less than the ${formatUsdc(amt)} USDC being supplied.`);
       // Top-up (an existing position) can be refused by the contract. The DEPLOYED canTopUp()
       // view is off by one block and can say "yes" to a top-up the tx then rejects, so mirror the
@@ -527,7 +549,40 @@ export async function prepareTx(cfg: NetworkConfig, action: WriteAction, rawArgs
       const amt = BigInt(enc.args.amount);
       const [pos, pool] = await Promise.all([c.marketplace.getLenderPosition(agentId, from), c.marketplace.agentPools(agentId)]);
       if ((pos.amount as bigint) < amt) warnings.push(`You have ${formatUsdc(pos.amount)} USDC supplied in pool #${agentId}, less than the ${formatUsdc(amt)} requested; the transaction will revert.`);
-      if ((pool.availableLiquidity as bigint) < amt) warnings.push(`Pool #${agentId} only has ${formatUsdc(pool.availableLiquidity)} USDC available (rest is lent out); withdraw less or wait for repayments.`);
+      // [V7 / M2-a] The pool CREATOR's own position is first-loss capital, locked
+      // while the agent carries outstanding principal. The contract checks this
+      // BEFORE the liquidity require precisely so the real reason is not masked by
+      // "Insufficient pool liquidity" after a full draw — mirror that ordering here.
+      const isCreator = pool.isActive && String(pool.agentAddress).toLowerCase() === from.toLowerCase();
+      let locked = false;
+      if (isCreator) {
+        const caps = await marketplaceCapabilities(cfg).catch(() => null);
+        if (caps?.v62) {
+          try {
+            const st = await c.marketplace.selfStake(agentId);
+            locked = Boolean(st.locked);
+            enc.args.selfStakeUsdc = formatUsdc(st.amount as bigint);
+            enc.args.selfStakeLocked = String(locked);
+            if (locked) {
+              const outstanding = (await c.marketplace.outstandingPrincipal(agentId)) as bigint;
+              enc.args.outstandingPrincipalUsdc = formatUsdc(outstanding);
+              warnings.push(
+                `SELF-STAKE LOCKED: you created pool #${agentId}, so your position (${formatUsdc(st.amount as bigint)} USDC) is the agent's FIRST-LOSS capital. Agent #${agentId} still owes ${formatUsdc(outstanding)} USDC of principal, so withdrawLiquidity WILL revert "Self-stake locked while borrowing". Repay the agent's active loans (get_active_loan_ids then prepare_repay_loan) and the position unlocks. claim_interest is not blocked by the lock, and ordinary lenders in this pool are not locked.`,
+              );
+            } else {
+              warnings.push(
+                `You created pool #${agentId}, so this position is the agent's first-loss self-stake. It is currently UNLOCKED (no outstanding principal) — but it locks again the moment the agent opens a loan, and it is seized before any third-party lender on a default.`,
+              );
+            }
+          } catch {
+            warnings.push('Could not verify whether this position is a locked first-loss self-stake; simulate before sending.');
+          }
+        }
+      }
+      // Only report the liquidity shortfall when the lock is not the binding
+      // constraint: after a full draw availableLiquidity is 0 and the generic
+      // message would point the caller at the wrong problem.
+      if (!locked && (pool.availableLiquidity as bigint) < amt) warnings.push(`Pool #${agentId} only has ${formatUsdc(pool.availableLiquidity)} USDC available (rest is lent out); withdraw less or wait for repayments.`);
       break;
     }
     case 'request_loan': {
@@ -566,6 +621,54 @@ export async function prepareTx(cfg: NetworkConfig, action: WriteAction, rawArgs
       enc.args.projectedInterestUsdc = formatUsdc(interest);
       enc.args.projectedTotalRepaymentUsdc = formatUsdc(amt + interest);
       enc.humanReadableSummary += ` At your current tier: ${Number(rateBps) / 100}% APR, ${collateralPct}% collateral (${formatUsdc(collateral)} USDC), projected repayment ${formatUsdc(amt + interest)} USDC.`;
+
+      // [V7 / M2-c] First-loss self-stake gate. On V6.2, exposure the collateral
+      // does not cover must ALREADY be backed by the agent's own capital in its
+      // own pool, or requestLoan reverts "Insufficient self-stake" — after the
+      // collateral approve would have been sent. Surface the figure and the exact
+      // top-up, and explain a 0 credit limit caused by a post-default lockout.
+      {
+        const mcaps = await marketplaceCapabilities(cfg).catch(() => null);
+        const rcaps = await reputationCapabilities(cfg).catch(() => null);
+        if (rcaps?.v4) {
+          try {
+            const [lockedOut, lockedUntil] = await Promise.all([
+              c.reputation.isLockedOut(id) as Promise<boolean>,
+              c.reputation.lockedUntil(id) as Promise<bigint>,
+            ]);
+            enc.args.lockedOut = String(Boolean(lockedOut));
+            if (lockedOut) {
+              warnings.push(
+                `Agent #${id} is LOCKED OUT after a default until ${new Date(Number(lockedUntil) * 1000).toISOString()}: its credit limit is 0 until then and its ladder capacity was reset, so this request will revert "Exceeds credit limit" no matter how small the amount.`,
+              );
+            }
+          } catch {
+            /* advisory */
+          }
+        }
+        if (mcaps?.v62 && collateralPct < 100n && pool.isActive) {
+          try {
+            const [required, st] = await Promise.all([
+              c.marketplace.requiredSelfStake(id, amt) as Promise<bigint>,
+              c.marketplace.selfStake(id),
+            ]);
+            const held = st.amount as bigint;
+            const shortfall = required > held ? required - held : 0n;
+            enc.args.requiredSelfStakeUsdc = formatUsdc(required);
+            enc.args.currentSelfStakeUsdc = formatUsdc(held);
+            enc.args.selfStakeShortfallUsdc = formatUsdc(shortfall);
+            enc.humanReadableSummary += ` This deployment (${mcaps.version}) also requires ${formatUsdc(required)} USDC of your own first-loss self-stake in pool #${id}; you hold ${formatUsdc(held)} USDC.`;
+            if (shortfall > 0n) {
+              warnings.push(
+                `INSUFFICIENT SELF-STAKE: this request WILL revert "Insufficient self-stake". The V7 credit model requires agent #${id} to hold ${formatUsdc(required)} USDC of its OWN first-loss capital in its own pool to carry this exposure, but the position holds only ${formatUsdc(held)} USDC — supply ${formatUsdc(shortfall)} USDC more into pool #${id} from ${from} first (prepare_supply_liquidity; the pool creator is exempt from the minimum supply). That capital is then LOCKED until every loan is repaid and is seized before any third-party lender on a default.`,
+              );
+            }
+          } catch {
+            warnings.push('Could not verify the first-loss self-stake requirement for this deployment; simulate before sending.');
+          }
+        }
+      }
+
       if (collateral > 0n) {
         if (collateral > bal) warnings.push(`Collateral of ${formatUsdc(collateral)} USDC exceeds wallet balance ${formatUsdc(bal)} USDC.`);
         const pre = approvePrerequisite(cfg, from, collateral, allowance, `collateral for requestLoan(${formatUsdc(amt)}, ${durationDays}d)`);

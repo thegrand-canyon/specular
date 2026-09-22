@@ -3,7 +3,7 @@
  * network. Every result carries `rpc` (block number / age / stale flag).
  */
 import { ethers } from 'ethers';
-import { getContracts, marketplaceCapabilities, rpcStatus, RpcStatus, unsupportedMessage } from './chain.js';
+import { getContracts, marketplaceCapabilities, reputationCapabilities, rpcStatus, RpcStatus, unsupportedMessage } from './chain.js';
 import { NetworkConfig, publicNetworkInfo } from './networks.js';
 import { formatUsdc, UnsupportedOnDeploymentError, ValidationError } from './validate.js';
 
@@ -104,13 +104,148 @@ export function formatQuote(q: RepaymentQuote) {
   };
 }
 
-export function tierFor(score: number): { tier: string; collateralPct: number; aprPct: number; creditLimitUsdc: number } {
-  if (score >= 800) return { tier: 'Excellent', collateralPct: 0, aprPct: 5, creditLimitUsdc: 50_000 };
-  if (score >= 600) return { tier: 'Good', collateralPct: 0, aprPct: 7, creditLimitUsdc: 25_000 };
-  if (score >= 500) return { tier: 'Fair', collateralPct: 25, aprPct: 10, creditLimitUsdc: 10_000 };
-  if (score >= 400) return { tier: 'Building', collateralPct: 100, aprPct: 10, creditLimitUsdc: 10_000 };
-  if (score >= 200) return { tier: 'Low', collateralPct: 100, aprPct: 15, creditLimitUsdc: 5_000 };
-  return { tier: 'New', collateralPct: 100, aprPct: 15, creditLimitUsdc: 1_000 };
+// ---------------------------------------------------------------------------
+// Credit tiers
+//
+// THE TIER TABLE IS NOT A CLIENT-SIDE CONSTANT. On ReputationManagerV4 (V7) it
+// is on-chain, owner-settable state bounded by the immutable MAX_TIER_LIMIT, so
+// every limit / collateral % / APR below is READ FROM THE CONTRACT. The only
+// thing this module still owns is the human-readable NAME of each tier index,
+// which is presentation, not protocol.
+//
+// On ReputationManagerV3 there is no view to read the table from (it is compiled
+// into the contract), so the historic constants are returned and explicitly
+// flagged `source: 'v3-constant'` rather than being passed off as chain data.
+// ---------------------------------------------------------------------------
+
+/** Presentation labels for tier indices 0..5. Not protocol values. */
+export const TIER_NAMES = ['New', 'Low', 'Building', 'Fair', 'Good', 'Excellent'] as const;
+
+/** Tier boundaries, identical in V3 and V4 (set at construction, no setter). */
+export const TIER_MIN_SCORE = [0, 200, 400, 500, 600, 800] as const;
+
+/** The table ReputationManagerV3 compiles in. Used ONLY when the deployment is V3. */
+const V3_TIERS = [
+  { limit: 1_000_000000n, collateralPercent: 100, interestRateBps: 1500 },
+  { limit: 5_000_000000n, collateralPercent: 100, interestRateBps: 1500 },
+  { limit: 10_000_000000n, collateralPercent: 100, interestRateBps: 1000 },
+  { limit: 10_000_000000n, collateralPercent: 25, interestRateBps: 1000 },
+  { limit: 25_000_000000n, collateralPercent: 0, interestRateBps: 700 },
+  { limit: 50_000_000000n, collateralPercent: 0, interestRateBps: 500 },
+];
+
+export function tierIndexFor(score: number): number {
+  for (let i = TIER_MIN_SCORE.length - 1; i >= 0; i--) if (score >= TIER_MIN_SCORE[i]) return i;
+  return 0;
+}
+
+/** Human-readable tier name for a score. The limit/collateral/APR always come from the chain. */
+export function tierNameFor(score: number): string {
+  return TIER_NAMES[tierIndexFor(score)];
+}
+
+export interface CreditTierRow {
+  index: number;
+  name: string;
+  minScore: number;
+  creditLimitUsdc: string;
+  collateralPercent: number;
+  interestRateBps: number;
+  interestRateAprPercent: number;
+  /** creditLimit * (100 - collateral%) / 100 — the figure MAX_TIER_LIMIT bounds. */
+  unsecuredExposureUsdc: string;
+}
+
+export interface CreditTierTable {
+  /** 'chain' on ReputationManagerV4 (mutable, owner-settable). 'v3-constant' otherwise. */
+  source: 'chain' | 'v3-constant';
+  reputationVersion: string;
+  /** Immutable ceiling on any tier limit; null on V3, which has no such bound. */
+  maxTierLimitUsdc: string | null;
+  tiers: CreditTierRow[];
+  note: string;
+}
+
+/**
+ * Per-network tier-table cache. The table is owner-settable, so it is NOT
+ * cached for the life of the process like a capability is — but it changes
+ * roughly never, and re-reading 13 views on every credit check would undo the
+ * RPC-budget work of the 2026-09-22 resilience round.
+ */
+const tierTableCache = new Map<string, { at: number; value: CreditTierTable }>();
+const tierTableTtlMs = (): number => {
+  const n = Number(process.env.SPECULAR_TIER_TABLE_CACHE_MS ?? 60_000);
+  return Number.isFinite(n) && n >= 0 ? n : 60_000;
+};
+
+/** Test/ops hook: forget cached tier tables. */
+export function _clearTierTableCache(): void {
+  tierTableCache.clear();
+}
+
+/** The credit tier table for a network, read from the contract wherever it is readable. */
+export async function creditTierTable(cfg: NetworkConfig): Promise<CreditTierTable> {
+  const hit = tierTableCache.get(cfg.name);
+  if (hit && Date.now() - hit.at < tierTableTtlMs()) return hit.value;
+  const c = getContracts(cfg);
+  const rcaps = await reputationCapabilities(cfg);
+  let value: CreditTierTable;
+  if (!rcaps.v4) {
+    value = {
+      source: 'v3-constant',
+      reputationVersion: rcaps.version,
+      maxTierLimitUsdc: null,
+      tiers: V3_TIERS.map((t, i) => ({
+        index: i,
+        name: TIER_NAMES[i],
+        minScore: TIER_MIN_SCORE[i],
+        creditLimitUsdc: formatUsdc(t.limit),
+        collateralPercent: t.collateralPercent,
+        interestRateBps: t.interestRateBps,
+        interestRateAprPercent: t.interestRateBps / 100,
+        unsecuredExposureUsdc: formatUsdc((t.limit * BigInt(100 - t.collateralPercent)) / 100n),
+      })),
+      note:
+        'ReputationManagerV3 compiles the tier table into the contract; there is no view to read it from, so these are the known constants for that build. An agent\'s ACTUAL limit is always calculateCreditLimit(address).',
+    };
+  } else {
+    // One TIER at a time (5 concurrent calls per round), not all 31 at once:
+    // this route already fans out ~27 eth_calls, and a 31-call spike on a cold
+    // cache is the shape that gets batch-refused or rate-limited upstream. The
+    // whole table is cached for `SPECULAR_TIER_TABLE_CACHE_MS`, so the extra
+    // round-trips are paid roughly once a minute, not per request.
+    const maxTierLimit = (await c.reputation.MAX_TIER_LIMIT()) as bigint;
+    const tiers: CreditTierRow[] = [];
+    for (let i = 0; i < 6; i++) {
+      const [minScore, limit, coll, rate, unsecured] = (await Promise.all([
+        c.reputation.tierMinScore(i),
+        c.reputation.tierLimits(i),
+        c.reputation.tierCollateralPct(i),
+        c.reputation.tierInterestBps(i),
+        c.reputation.unsecuredTierExposure(i),
+      ])) as bigint[];
+      tiers.push({
+        index: i,
+        name: TIER_NAMES[i],
+        minScore: Number(minScore),
+        creditLimitUsdc: formatUsdc(limit),
+        collateralPercent: Number(coll),
+        interestRateBps: Number(rate),
+        interestRateAprPercent: Number(rate) / 100,
+        unsecuredExposureUsdc: formatUsdc(unsecured),
+      });
+    }
+    value = {
+      source: 'chain',
+      reputationVersion: rcaps.version,
+      maxTierLimitUsdc: formatUsdc(maxTierLimit),
+      tiers,
+      note:
+        'Read live from ReputationManagerV4. These limits are OWNER-SETTABLE and every entry is bounded by MAX_TIER_LIMIT (an immutable constant) — do not cache them in client code. An agent\'s actual limit is min(tier limit, credit ladder) and 0 during a post-default lockout.',
+    };
+  }
+  tierTableCache.set(cfg.name, { at: Date.now(), value });
+  return value;
 }
 
 const MAX_LIST = 200;
@@ -122,6 +257,11 @@ export async function readNetworkInfo(cfg: NetworkConfig) {
 
 export async function readProtocolStatus(cfg: NetworkConfig) {
   const c = getContracts(cfg);
+  const [mcaps, rcaps, tierTable] = await Promise.all([
+    marketplaceCapabilities(cfg).catch(() => null),
+    reputationCapabilities(cfg).catch(() => null),
+    creditTierTable(cfg).catch(() => null),
+  ]);
   const [rpc, paused, totalPools, nextLoanId, totalAgents, minSupply, bind, minHold, feeRate, maxActive, activeAgents] = await Promise.all([
     rpcStatus(cfg),
     c.marketplace.paused() as Promise<boolean>,
@@ -161,14 +301,33 @@ export async function readProtocolStatus(cfg: NetworkConfig) {
     tvlUsdc: formatUsdc(tvl),
     availableLiquidityUsdc: formatUsdc(available),
     totalLoanedUsdc: formatUsdc(loaned),
+    capabilities: mcaps
+      ? {
+          marketplaceVersion: mcaps.version,
+          reputationVersion: rcaps?.version ?? null,
+          /** previewRepayment / canTopUp / getActiveLoanIds / elapsed-time late interest. */
+          v61: mcaps.v61,
+          /** V7: requiredSelfStake / selfStake, first-loss lock, creator exempt from minSupplyAmount. */
+          v62: mcaps.v62,
+          /** V7: tier table is on-chain and owner-settable; credit ladder + post-default lockout. */
+          reputationV4: rcaps?.v4 ?? false,
+        }
+      : null,
     parameters: {
       minSupplyUsdc: formatUsdc(minSupply),
+      minSupplyAppliesToPoolCreator: mcaps ? !mcaps.v62 : true,
       borrowRestrictedToPoolCreator: bind,
       minHoldForReputationRewardSeconds: Number(minHold),
       platformFeeBps: Number(feeRate),
       maxActiveLoansPerAgent: Number(maxActive),
       loanDurationDays: { min: 7, max: 365 },
     },
+    /**
+     * The credit tier table. On ReputationManagerV4 this is LIVE, owner-settable
+     * on-chain state — clients must read it from here (or from the contract) and
+     * must not carry a hardcoded copy.
+     */
+    creditTiers: tierTable,
     truncated: activeAgents.length > MAX_LIST ? `TVL computed over first ${MAX_LIST} pools only` : undefined,
     rpc,
   };
@@ -209,8 +368,66 @@ export async function readCredit(cfg: NetworkConfig, address: string) {
     c.marketplace.MAX_ACTIVE_LOANS_PER_AGENT() as Promise<bigint>,
   ]);
   const s = Number(score);
-  const tier = tierFor(s);
   const remaining = (limit as bigint) - (outstanding as bigint);
+
+  // [V7] Everything below the tier NAME is chain data. On ReputationManagerV4 the
+  // ladder / lockout state explains WHY the limit is what it is (a post-default
+  // agent reads creditLimit 0, which otherwise looks like a bug), and on a V6.2
+  // marketplace the agent's own first-loss stake is part of its credit picture.
+  const [mcaps, rcaps] = await Promise.all([
+    marketplaceCapabilities(cfg).catch(() => null),
+    reputationCapabilities(cfg).catch(() => null),
+  ]);
+  let creditModel: Record<string, unknown> | null = null;
+  let selfStake: Record<string, unknown> | null = null;
+  if (rcaps?.v4) {
+    const [tierIdx, tierLimit, ladder, maxRepaid, lockedOut, lockedUntil, maxTierLimit] = await Promise.all([
+      c.reputation.tierOf(score) as Promise<bigint>,
+      c.reputation.tierLimit(score) as Promise<bigint>,
+      c.reputation.ladderLimit(agentId) as Promise<bigint>,
+      c.reputation.maxRepaidPrincipal(agentId) as Promise<bigint>,
+      c.reputation.isLockedOut(agentId) as Promise<boolean>,
+      c.reputation.lockedUntil(agentId) as Promise<bigint>,
+      c.reputation.MAX_TIER_LIMIT() as Promise<bigint>,
+    ]);
+    creditModel = {
+      reputationVersion: rcaps.version,
+      tierIndex: Number(tierIdx),
+      tierLimitUsdc: formatUsdc(tierLimit),
+      ladderLimitUsdc: formatUsdc(ladder),
+      maxRepaidPrincipalUsdc: formatUsdc(maxRepaid),
+      maxTierLimitUsdc: formatUsdc(maxTierLimit),
+      lockedOut: Boolean(lockedOut),
+      lockedUntil: Number(lockedUntil),
+      lockedUntilIso: Number(lockedUntil) ? new Date(Number(lockedUntil) * 1000).toISOString() : null,
+      explanation: lockedOut
+        ? `Credit limit is 0 because agent #${agentId} is LOCKED OUT after a default until ${new Date(Number(lockedUntil) * 1000).toISOString()}. Its ladder capacity (maxRepaidPrincipal) was reset to 0 as well, so the climb restarts from the bootstrap limit when the lockout ends.`
+        : `Credit limit = min(tier limit ${formatUsdc(tierLimit)}, ladder limit ${formatUsdc(ladder)}) USDC. The ladder is creditMultiple x the largest single on-time-repaid loan (${formatUsdc(maxRepaid)} USDC) + growthStep, floored at the bootstrap limit. No tier may ever exceed ${formatUsdc(maxTierLimit)} USDC (MAX_TIER_LIMIT, an immutable constant).`,
+    };
+  }
+  if (mcaps?.v62 && pool.isActive) {
+    try {
+      const [st, required] = await Promise.all([
+        c.marketplace.selfStake(agentId),
+        c.marketplace.requiredSelfStake(agentId, 0n) as Promise<bigint>,
+      ]);
+      const amount = st.amount as bigint;
+      const shortfall = required > amount ? required - amount : 0n;
+      selfStake = {
+        marketplaceVersion: mcaps.version,
+        amountUsdc: formatUsdc(amount),
+        locked: Boolean(st.locked),
+        requiredForCurrentExposureUsdc: formatUsdc(required),
+        shortfallUsdc: formatUsdc(shortfall),
+        note: st.locked
+          ? 'This position is the agent\'s FIRST-LOSS capital and is locked while it carries outstanding principal: withdrawLiquidity would revert "Self-stake locked while borrowing", and it is seized before any third-party lender on a default.'
+          : 'The agent holds no outstanding principal, so its first-loss position is currently withdrawable.',
+      };
+    } catch {
+      selfStake = null; // advisory; never fail a credit read on it
+    }
+  }
+
   return {
     network: cfg.name,
     address,
@@ -221,7 +438,7 @@ export async function readCredit(cfg: NetworkConfig, address: string) {
     agentURI: info.agentURI,
     isActive: info.isActive,
     registrationTime: Number(info.registrationTime),
-    reputation: { score: s, tier: tier.tier, max: 1000 },
+    reputation: { score: s, tier: tierNameFor(s), max: 1000 },
     credit: {
       creditLimitUsdc: formatUsdc(limit),
       outstandingPrincipalUsdc: formatUsdc(outstanding),
@@ -232,7 +449,11 @@ export async function readCredit(cfg: NetworkConfig, address: string) {
       activeLoans: Number(activeLoans),
       maxActiveLoans: Number(maxActive),
       canBorrow: Number(activeLoans) < Number(maxActive) && remaining > 0n,
+      /** V7 only (ReputationManagerV4): why the limit is what it is. null on V3. */
+      model: creditModel,
     },
+    /** V7 only (marketplace V6.2): the agent's own first-loss stake. null otherwise. */
+    selfStake,
     pool: pool.isActive
       ? {
           agentId,
@@ -313,7 +534,7 @@ export async function readPoolDetails(cfg: NetworkConfig, agentId: number) {
     outstandingPrincipalUsdc: formatUsdc(outstanding),
     borrower: {
       reputationScore: s,
-      tier: tierFor(s).tier,
+      tier: tierNameFor(s),
       interestRateAprPercent: Number(rateBps) / 100,
       collateralPercent: Number(collateralPct),
     },
@@ -365,6 +586,100 @@ async function requireV61(cfg: NetworkConfig, what: string) {
   const caps = await marketplaceCapabilities(cfg);
   if (!caps.v61) throw new UnsupportedOnDeploymentError(unsupportedMessage(cfg, caps, what));
   return caps;
+}
+
+/**
+ * Gate a V6.2-only (V7 credit model) read. A V6 / V6.1 deployment gets a clean
+ * 400 explaining the version it actually runs — never a raw revert or, worse,
+ * a fabricated zero that would read as "no self-stake required".
+ */
+async function requireV62(cfg: NetworkConfig, what: string) {
+  const caps = await marketplaceCapabilities(cfg);
+  if (!caps.v62) {
+    throw new UnsupportedOnDeploymentError(
+      `${unsupportedMessage(cfg, caps, what, 'V6.2')} The first-loss self-stake requirement is part of the V7 credit model and does not exist on this deployment, so there is nothing to report — not "zero required".`,
+    );
+  }
+  return caps;
+}
+
+/**
+ * requiredSelfStake(agentId, additionalAmount): the first-loss capital the agent
+ * must already hold in its OWN pool before it could borrow `additionalAmount`
+ * more. V6.2 only.
+ */
+export async function readRequiredSelfStake(cfg: NetworkConfig, agentId: number, additionalAmount: bigint) {
+  const c = getContracts(cfg);
+  const caps = await requireV62(cfg, 'required_self_stake');
+  const [rpc, pool] = await Promise.all([rpcStatus(cfg), c.marketplace.agentPools(agentId)]);
+  if (!pool.isActive) throw new ValidationError(`No active pool for agentId ${agentId} on ${cfg.name}`, 'agentId');
+  const [required, st, outstanding, collateralPct, creditMultiple] = await Promise.all([
+    c.marketplace.requiredSelfStake(agentId, additionalAmount) as Promise<bigint>,
+    c.marketplace.selfStake(agentId),
+    c.marketplace.outstandingPrincipal(agentId) as Promise<bigint>,
+    c.reputation.calculateCollateralRequirement(pool.agentAddress) as Promise<bigint>,
+    (c.reputation.creditMultiple() as Promise<bigint>).catch(() => null),
+  ]);
+  const held = st.amount as bigint;
+  const shortfall = required > held ? required - held : 0n;
+  return {
+    network: cfg.name,
+    marketplaceVersion: caps.version,
+    agentId,
+    agentAddress: pool.agentAddress,
+    additionalAmountUsdc: formatUsdc(additionalAmount),
+    outstandingPrincipalUsdc: formatUsdc(outstanding),
+    collateralPercent: Number(collateralPct),
+    creditMultiple: creditMultiple === null ? null : Number(creditMultiple),
+    requiredSelfStakeUsdc: formatUsdc(required),
+    currentSelfStakeUsdc: formatUsdc(held),
+    shortfallUsdc: formatUsdc(shortfall),
+    sufficient: shortfall === 0n,
+    note:
+      Number(collateralPct) >= 100
+        ? 'This agent is at a 100%-collateral tier, so none of its exposure is unsecured and no self-stake is required.'
+        : shortfall === 0n
+          ? 'The agent already holds enough first-loss capital for this exposure; requestLoan will not revert on the self-stake gate.'
+          : `requestLoan would revert "Insufficient self-stake". The agent must supply ${formatUsdc(shortfall)} more USDC into ITS OWN pool (prepare_supply_liquidity with agentId ${agentId} from ${pool.agentAddress}) first. That capital is then LOCKED until every loan is repaid and is seized before any third-party lender on a default.`,
+    rpc,
+  };
+}
+
+/** selfStake(agentId): the pool creator's own first-loss position and its lock state. V6.2 only. */
+export async function readSelfStake(cfg: NetworkConfig, agentId: number) {
+  const c = getContracts(cfg);
+  const caps = await requireV62(cfg, 'get_self_stake');
+  const [rpc, pool] = await Promise.all([rpcStatus(cfg), c.marketplace.agentPools(agentId)]);
+  if (!pool.isActive) throw new ValidationError(`No active pool for agentId ${agentId} on ${cfg.name}`, 'agentId');
+  const [st, required, outstanding, position] = await Promise.all([
+    c.marketplace.selfStake(agentId),
+    c.marketplace.requiredSelfStake(agentId, 0n) as Promise<bigint>,
+    c.marketplace.outstandingPrincipal(agentId) as Promise<bigint>,
+    c.marketplace.getLenderPosition(agentId, pool.agentAddress),
+  ]);
+  const amount = st.amount as bigint;
+  const locked = Boolean(st.locked);
+  const shortfall = required > amount ? required - amount : 0n;
+  const excess = amount > required ? amount - required : 0n;
+  return {
+    network: cfg.name,
+    marketplaceVersion: caps.version,
+    agentId,
+    agentAddress: pool.agentAddress,
+    selfStakeUsdc: formatUsdc(amount),
+    locked,
+    outstandingPrincipalUsdc: formatUsdc(outstanding),
+    requiredForCurrentExposureUsdc: formatUsdc(required),
+    shortfallUsdc: formatUsdc(shortfall),
+    withdrawableUsdc: locked ? '0.0' : formatUsdc(amount),
+    /** Stake above what the current exposure demands; still locked while any principal is outstanding. */
+    excessOverRequirementUsdc: formatUsdc(excess),
+    claimableInterestUsdc: formatUsdc(position.earnedInterest as bigint),
+    note: locked
+      ? `Agent #${agentId} carries ${formatUsdc(outstanding)} USDC of outstanding principal, so this position is LOCKED: withdrawLiquidity from ${pool.agentAddress} reverts "Self-stake locked while borrowing". It is subordinated first-loss capital — on a default it absorbs the loss BEFORE any third-party lender. Repay the outstanding loans to unlock it. claimInterest is not affected by the lock.`
+      : `Agent #${agentId} has no outstanding principal, so this position is not locked and can be withdrawn like any lender position. It becomes locked again the moment the agent opens a loan.`,
+    rpc,
+  };
 }
 
 /** previewRepayment(loanId): exact amount repayLoan would pull now. */
