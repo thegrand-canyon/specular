@@ -65,6 +65,51 @@ Website: specular.financial | GitHub: thegrand-canyon/specular | Deploy: specula
 - Simple/Advanced mode toggle with separate UIs per mode
 - Color system: orange (#FF6A00) for brand/primary, green for money, red for danger
 
+## ⚠️ Current risk posture (2026-09-22) — READ BEFORE ENABLING LENDING
+
+**Do NOT solicit third-party lender liquidity on any network, and do not hand the hosted
+agent endpoint to an external platform, until the V7 credit model (M1+M2) ships.**
+
+Why: F-04 is proven, on-chain and in simulation, to be unfixable by owner levers. Reputation
+is gated by time, not cost. Across **all 40 viable lever configurations** the attacker's cost
+stays pinned at `platformFeeRate/10000` of an honest agent's cost, capped at 5 % by the
+contract's own 500 bps fee ceiling. Measured worst case: **25,000 USDC of lender money for
+0.125 USDC** (200,642:1), and lenders **cannot withdraw** once a pool is drawn down. Confirmed
+live on Arc staging: 59 loans took one agent from score 20 → 610 (0 % collateral, 25,000 limit)
+for **0.149 USDC** of fees. The 2026-09-19 lever tightening bought 4× time and **zero** cost;
+`minSupplyAmount` is a complete no-op against this attack, and M-1 does not (and structurally
+cannot) stop Sybil fan-out — it only blocks a transferred agent NFT from borrowing.
+
+Today's real exposure is **zero** (no third-party lenders, no TVL, faucet 19 USDC), which is
+exactly why this is the cheapest moment to fix it. Fix = `ReputationManagerV4` + marketplace
+changes; the tier limits are hardcoded and `reputationManager` is `immutable`, so it is a
+fresh deploy of both (the registry and agent NFTs persist). See
+`forensics/output/testing-2026-09-20/ECONOMIC_ATTACK_SIMULATION.md` §8.2/§8.3 and
+`forensics/output/v7-model/`.
+
+Honest framing from that analysis: an unsecured line to a pseudonymous agent can only be made
+EV-negative by backing it with something the protocol can seize. Pick the parameters to
+**price** the residual risk; do not claim it is zero.
+
+## Testing round 2026-09-20/21 (6 tracks) — `forensics/output/testing-2026-09-20/`
+
+| Track | Headline |
+|---|---|
+| Contracts V6.1 | branch coverage 86.3→91.0 %, Foundry 6/6 over 768k calls, **mutation 17/17 killed**, `npm test` 698 passing |
+| E2E on Arc staging | **186 assertions green**; F-01/F-02/F-07/F-08/M-1/M-2/D1/F-C all confirmed on a live chain |
+| Economics | F-04 unfixable by levers (above); M1+M2 model change specified and simulated |
+| Hosted server | 15 findings (4 High: relay bypass, unbounded upstream, **rate limiter keyed on the edge not the caller**, `ws` CVE) — all fixed, redeployed 2026-09-21 |
+| Monitoring | old monitor caught **3 of 19** engineered violations; the §S5 check had been a **silent no-op since deploy** (keyed by wallet; V6.1 keys by agentId). Rewritten → 19/19, 13 check families, alerting, rotation |
+| SDK | 20 findings (2 High: a transient RPC error poisoned V6.1 capability detection → late repay under-approves → **agent cannot close its loan and defaults**). Exact-approval verified across all 14 USDC-pulling paths; Python brought to parity |
+
+Known-environmental: `test/api/tx-builder*` fail when the Arc testnet public RPC rate-limits
+this host (dRPC 429s us). Use `https://rpc.testnet.arc.io` or `https://arc-testnet-rpc.publicnode.com`.
+
+Operational: both launchd monitors run `forensics/monitor/run-with-alert.sh` (alerts on ANY
+non-zero exit incl. crash/watchdog). Incident runbook: `forensics/monitor/INCIDENT_RUNBOOK.md`.
+**`pause()` freezes lender exits AND repayment AND your own `liquidateLoan`** (6 of 18 ops) —
+`registry.deactivateAgent` is the better per-agent kill switch.
+
 ## Security Findings (audited, fixed in V6, awaiting external audit)
 
 | § | Severity | Mechanism on v4 | Fix in V6 | Status |
