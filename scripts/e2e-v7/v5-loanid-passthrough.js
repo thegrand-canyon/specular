@@ -24,8 +24,16 @@ const AMOUNT = 200;          // both loans, deliberately identical
 const REF_DURATION = 600;    // seconds, for this script only
 const GAP_SECONDS = 60;      // between the two borrows
 const HOLD_SECONDS = 36;     // before the first (younger-loan) repayment
+const MIN_HOLD_FOR_RUN = 10; // seconds, for this script only (live value is 86400)
 
-const bonusOf = (onTimeBonus, held, rd) => (BigInt(onTimeBonus) * BigInt(Math.min(held, rd))) / BigInt(rd);
+// The marketplace's `minHoldForReputationReward` gates the reward ENTIRELY, not just its
+// size (scenario V9's O-1): a loan held for less than minHold reports onTime=false and
+// earns nothing, however the pro-rata hold-time term would round. At the live 1-day
+// minHold that is every loan this script opens, so modelling only the pro-rata term makes
+// the expectation wrong whenever the hold happens to round up to >= 1 point — a flake that
+// depends purely on how long the RPC took. Gate first, then pro-rate.
+const bonusOf = (onTimeBonus, held, rd, minHold) =>
+    held < Number(minHold) ? 0n : (BigInt(onTimeBonus) * BigInt(Math.min(held, rd))) / BigInt(rd);
 
 async function main() {
     await L.assertStaging();
@@ -35,9 +43,18 @@ async function main() {
     const mpB = L.contracts(B).mp, repOwner = L.contracts(L.deployer).rep;
     const bId = Number(await reg.addressToAgentId(B.address));
 
+    const mpOwner = L.contracts(L.deployer).mp;
     const rdBefore = await rep.refDuration();
+    const minHoldBefore = await mp.minHoldForReputationReward();
     await L.send(S, `setLadderParameters(refDuration = ${REF_DURATION}s) — hold time measurable in one run`,
         repOwner.setLadderParameters(L.LIVE_LEVERS.rep.creditMultiple, L.LIVE_LEVERS.rep.growthStep, L.LIVE_LEVERS.rep.bootstrapLimit, REF_DURATION));
+    // minHoldForReputationReward gates the reward ENTIRELY (V9's O-1). At the live 1-day
+    // setting every loan this script opens earns exactly 0, which makes the hold-time
+    // proof below vacuous (0 == 0 proves nothing about attribution). Lower it alongside
+    // refDuration for the run — same class of clock lever — and restore both in `finally`.
+    const MIN_HOLD = BigInt(MIN_HOLD_FOR_RUN);
+    await L.send(S, `setMinHoldForReputationReward(${MIN_HOLD_FOR_RUN}s) — so a short hold can earn at all`,
+        mpOwner.setMinHoldForReputationReward(MIN_HOLD));
 
     try {
         const onTimeBonus = await rep.onTimeRepaymentBonus();
@@ -81,8 +98,8 @@ async function main() {
 
         const heldY = blkY.timestamp - Number(olY.start);
         const heldFifo = blkY.timestamp - Number(olX.start);
-        const expY = bonusOf(onTimeBonus, heldY, REF_DURATION);
-        const expFifo = bonusOf(onTimeBonus, heldFifo, REF_DURATION);
+        const expY = bonusOf(onTimeBonus, heldY, REF_DURATION, MIN_HOLD);
+        const expFifo = bonusOf(onTimeBonus, heldFifo, REF_DURATION, MIN_HOLD);
 
         const completedY = L.eventFromReceipt(rep.interface, rcRY, 'LoanCompleted');
         R.check('LoanCompleted carries the repaid loanId (indexed), not an amount match',
@@ -105,14 +122,14 @@ async function main() {
         const blkX = await L.provider.getBlock(rcRX.blockNumber);
         const scoreAfterX = await rep['getReputationScore(uint256)'](bId);
         const heldX = blkX.timestamp - Number(olX.start);
-        const expX = bonusOf(onTimeBonus, heldX, REF_DURATION);
+        const expX = bonusOf(onTimeBonus, heldX, REF_DURATION, MIN_HOLD);
         const completedX = L.eventFromReceipt(rep.interface, rcRX, 'LoanCompleted');
         R.check('LoanCompleted for the older loan carries ITS loanId',
             completedX !== null && Number(completedX.args.loanId) === loanX, completedX ? `loanId ${completedX.args.loanId}` : 'no event');
         R.check(`score delta on repaying X == bonus from X's own ${heldX}s hold (${expX} pts)`,
             scoreAfterX - scoreAfterY === expX, `delta ${scoreAfterX - scoreAfterY}, expected ${expX}`);
         R.check('openLoans(X) deleted; no open-loan records remain for this agent',
-            (await rep.openLoans(loanX)).start === 0n && (await mp.activeLoanCount(bId)) === 0n);
+            (await rep.openLoans(MP_ADDR, loanX)).start === 0n && (await mp.activeLoanCount(bId)) === 0n);
 
         const cons = await L.poolConservation(bId);
         R.check('per-pool conservation exact at the end', cons.conserved, `Σamt ${fmt(cons.sumAmt)} Σearned ${fmt(cons.sumEarned)}`);
@@ -125,6 +142,8 @@ async function main() {
     } finally {
         await L.send(S, `restore setLadderParameters(refDuration = ${rdBefore})`,
             repOwner.setLadderParameters(L.LIVE_LEVERS.rep.creditMultiple, L.LIVE_LEVERS.rep.growthStep, L.LIVE_LEVERS.rep.bootstrapLimit, rdBefore));
+        await L.send(S, `restore setMinHoldForReputationReward(${minHoldBefore})`,
+            mpOwner.setMinHoldForReputationReward(minHoldBefore));
     }
 }
 main().catch(e => { console.error(e); process.exit(1); });
