@@ -1,0 +1,113 @@
+{
+ "base": "http://127.0.0.1:3400",
+ "network": "arc-staging",
+ "tag": "before",
+ "at": "2026-09-22T16:05:48.117Z",
+ "rows": [
+  {
+   "case": "429 Too Many Requests (all endpoints)",
+   "first": {
+    "ms": 42,
+    "status": 502,
+    "retryAfter": null,
+    "error": "RPC endpoint rate-limited this server; try again shortly."
+   },
+   "second": {
+    "ms": 12,
+    "status": 502,
+    "retryAfter": null,
+    "error": "RPC endpoint rate-limited this server; try again shortly."
+   },
+   "upstreamCallsByEndpoint": [
+    {
+     "upstream": "https://rpc.testnet.arc.io",
+     "total": 7058
+    }
+   ]
+  },
+  {
+   "case": "500 upstream error (all endpoints)",
+   "first": {
+    "ms": 24,
+    "status": 502,
+    "retryAfter": null,
+    "error": "server response 500 Internal Server Error"
+   },
+   "second": {
+    "ms": 13,
+    "status": 502,
+    "retryAfter": null,
+    "error": "server response 500 Internal Server Error"
+   },
+   "upstreamCallsByEndpoint": [
+    {
+     "upstream": "https://rpc.testnet.arc.io",
+     "total": 7124
+    }
+   ]
+  },
+  {
+   "case": "connection refused / socket destroyed (all endpoints)",
+   "first": {
+    "ms": 24,
+    "status": 502,
+    "retryAfter": null,
+    "error": "RPC endpoint unreachable or timed out; try again shortly."
+   },
+   "second": {
+    "ms": 12,
+    "status": 502,
+    "retryAfter": null,
+    "error": "RPC endpoint unreachable or timed out; try again shortly."
+   },
+   "upstreamCallsByEndpoint": [
+    {
+     "upstream": "https://rpc.testnet.arc.io",
+     "total": 7154
+    }
+   ]
+  },
+  {
+   "case": "slow upstream, 30 s per call (all endpoints)",
+   "first": {
+    "ms": 15021,
+    "status": 502,
+    "retryAfter": null,
+    "error": "RPC endpoint unreachable or timed out; try again shortly."
+   },
+   "second": {
+    "ms": 15023,
+    "status": 502,
+    "retryAfter": null,
+    "error": "RPC endpoint unreachable or timed out; try again shortly."
+   },
+   "upstreamCallsByEndpoint": [
+    {
+     "upstream": "https://rpc.testnet.arc.io",
+     "total": 7203
+    }
+   ]
+  },
+  {
+   "case": "hung upstream, never answers (all endpoints)",
+   "first": {
+    "ms": 15024,
+    "status": 502,
+    "retryAfter": null,
+    "error": "RPC endpoint unreachable or timed out; try again shortly."
+   },
+   "second": {
+    "ms": 15022,
+    "status": 502,
+    "retryAfter": null,
+    "error": "RPC endpoint unreachable or timed out; try again shortly."
+   },
+   "upstreamCallsByEndpoint": [
+    {
+     "upstream": "https://rpc.testnet.arc.io",
+     "total": 7242
+    }
+   ]
+  }
+ ]
+}

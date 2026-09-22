@@ -23,6 +23,8 @@ import {
   readTransaction,
 } from './reads.js';
 import { optionalInteger, optionalUsdc, requireObject, validateAddress, validateHexData, validateId, validateTxHash, ValidationError } from './validate.js';
+import { CacheStats, registerCache, stableKey, TtlCache } from './cache.js';
+import { STALE_AFTER_SECONDS } from './chain.js';
 
 export type ToolKind = 'read' | 'prepare' | 'simulate' | 'broadcast';
 
@@ -85,7 +87,7 @@ function prepareTool(action: WriteAction, name: string, description: string, ext
   };
 }
 
-export const TOOLS: ToolDef[] = [
+const BASE_TOOLS: ToolDef[] = [
   // ------------------------------------------------------------------ reads
   {
     name: 'list_networks',
@@ -303,6 +305,97 @@ export const TOOLS: ToolDef[] = [
     handler: async (args) => broadcastSignedTx(net(args), args.signedTransaction),
   },
 ];
+
+// ---------------------------------------------------------------------------
+// Read-route response cache (2026-09-22 RPC-resilience round)
+//
+// rpc.ts already caches and coalesces at the JSON-RPC level; this second, route-
+// level layer exists for the thing the JSON-RPC layer cannot express: a PER-ROUTE
+// TTL that can depend on the ANSWER. A REPAID/DEFAULTED loan and a mined
+// transaction can never change, so they are cached for minutes, while live
+// protocol state is cached for seconds. It also saves the ABI decode and the
+// per-request fan-out entirely on a hit (a /status read is ~27 eth_calls).
+//
+// Only `kind: 'read'` tools are cached. prepare/simulate/broadcast never are.
+// ---------------------------------------------------------------------------
+
+const readCache = new TtlCache<unknown>(Number(process.env.SPECULAR_READ_CACHE_MAX_ENTRIES || 5_000));
+registerCache(readCache as unknown as TtlCache<never>);
+
+const readCacheEnabled = (): boolean => !/^(0|false|off|no)$/i.test((process.env.SPECULAR_READ_CACHE ?? '1').trim());
+const readTtlMs = (): number => {
+  const n = Number(process.env.SPECULAR_READ_CACHE_MS ?? 3_000);
+  return Number.isFinite(n) && n >= 0 ? n : 3_000;
+};
+const readImmutableTtlMs = (): number => {
+  const n = Number(process.env.SPECULAR_READ_CACHE_IMMUTABLE_MS ?? 300_000);
+  return Number.isFinite(n) && n >= 0 ? n : 300_000;
+};
+
+/** Tools whose answer never depends on the chain: no cache needed (and no RPC to save). */
+const NO_CACHE_READS = new Set(['list_networks']);
+
+/** True when this result can never change again, so it may be cached for minutes. */
+export function isImmutableRead(toolName: string, result: unknown): boolean {
+  const r = result as Record<string, unknown> | null;
+  if (!r || typeof r !== 'object') return false;
+  if (toolName === 'get_loan') return r.state === 'REPAID' || r.state === 'DEFAULTED';
+  if (toolName === 'get_transaction') return r.found === true && (r.status === 'confirmed' || r.status === 'reverted') && r.blockNumber != null;
+  return false;
+}
+
+export function readTtlFor(toolName: string, result: unknown): number {
+  if (!readCacheEnabled()) return 0;
+  return isImmutableRead(toolName, result) ? readImmutableTtlMs() : readTtlMs();
+}
+
+/**
+ * Stamp a cached body honestly: say it is cached and how old it is, and
+ * recompute block staleness from the cached block timestamp so `rpc.ageSeconds`
+ * and `rpc.stale` never lie about how fresh the chain view is.
+ */
+function stampCached(value: unknown, ageMs: number): unknown {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
+  const out: Record<string, unknown> = { ...(value as Record<string, unknown>), cached: true, cacheAgeMs: ageMs };
+  const rpc = out.rpc as { blockTimestamp?: number } | undefined;
+  if (rpc && typeof rpc.blockTimestamp === 'number') {
+    const ageSeconds = Math.max(0, Math.floor(Date.now() / 1000) - rpc.blockTimestamp);
+    const stale = ageSeconds > STALE_AFTER_SECONDS;
+    out.rpc = {
+      ...rpc,
+      ageSeconds,
+      stale,
+      ...(stale ? { warning: `RPC data may be stale: latest block is ${ageSeconds}s old (> ${STALE_AFTER_SECONDS}s). Values below may not reflect current chain state.` } : {}),
+    };
+  }
+  return out;
+}
+
+function withReadCache(t: ToolDef): ToolDef {
+  if (t.kind !== 'read' || NO_CACHE_READS.has(t.name)) return t;
+  const inner = t.handler;
+  return {
+    ...t,
+    handler: async (args) => {
+      if (!readCacheEnabled()) return inner(args);
+      const key = `${t.name}|${stableKey(args)}`;
+      return readCache.wrap(key, (v) => readTtlFor(t.name, v), () => inner(args), stampCached);
+    },
+  };
+}
+
+export const TOOLS: ToolDef[] = BASE_TOOLS.map(withReadCache);
+
+/** Read-route cache counters for /rpc-health. */
+export function readCacheStats(): CacheStats {
+  return readCache.stats();
+}
+
+/** Test/ops hook. */
+export function _resetReadCache(): void {
+  readCache.clear();
+  readCache.resetStats();
+}
 
 export const TOOL_BY_NAME = new Map(TOOLS.map((t) => [t.name, t]));
 

@@ -1,0 +1,233 @@
+{
+ "base": "http://127.0.0.1:3400",
+ "network": "arc-staging",
+ "tag": "before",
+ "at": "2026-09-22T15:52:23.882Z",
+ "totalRequests": 420,
+ "totalUpstreamCalls": 6344,
+ "rows": [
+  {
+   "scenario": "health",
+   "concurrency": 1,
+   "requests": 25,
+   "wallMs": 175,
+   "rps": 142.9,
+   "p50": 0,
+   "p95": 1,
+   "p99": 164,
+   "max": 164,
+   "errorRate": 0,
+   "upstreamCalls": 1,
+   "upstreamPerRequest": 0.04,
+   "statuses": {
+    "200": 25
+   }
+  },
+  {
+   "scenario": "health",
+   "concurrency": 5,
+   "requests": 25,
+   "wallMs": 18,
+   "rps": 1388.9,
+   "p50": 2,
+   "p95": 8,
+   "p99": 8,
+   "max": 8,
+   "errorRate": 0,
+   "upstreamCalls": 0,
+   "upstreamPerRequest": 0,
+   "statuses": {
+    "200": 25
+   }
+  },
+  {
+   "scenario": "health",
+   "concurrency": 20,
+   "requests": 25,
+   "wallMs": 17,
+   "rps": 1470.6,
+   "p50": 9,
+   "p95": 11,
+   "p99": 11,
+   "max": 11,
+   "errorRate": 0,
+   "upstreamCalls": 0,
+   "upstreamPerRequest": 0,
+   "statuses": {
+    "200": 25
+   }
+  },
+  {
+   "scenario": "status",
+   "concurrency": 1,
+   "requests": 25,
+   "wallMs": 6199,
+   "rps": 4,
+   "p50": 241,
+   "p95": 321,
+   "p99": 327,
+   "max": 327,
+   "errorRate": 84,
+   "upstreamCalls": 718,
+   "upstreamPerRequest": 28.72,
+   "statuses": {
+    "200": 4,
+    "502": 21
+   }
+  },
+  {
+   "scenario": "status",
+   "concurrency": 5,
+   "requests": 25,
+   "wallMs": 1309,
+   "rps": 19.1,
+   "p50": 227,
+   "p95": 387,
+   "p99": 395,
+   "max": 395,
+   "errorRate": 100,
+   "upstreamCalls": 729,
+   "upstreamPerRequest": 29.16,
+   "statuses": {
+    "502": 25
+   }
+  },
+  {
+   "scenario": "status",
+   "concurrency": 20,
+   "requests": 25,
+   "wallMs": 553,
+   "rps": 45.2,
+   "p50": 331,
+   "p95": 457,
+   "p99": 459,
+   "max": 459,
+   "errorRate": 100,
+   "upstreamCalls": 659,
+   "upstreamPerRequest": 26.36,
+   "statuses": {
+    "502": 25
+   }
+  },
+  {
+   "scenario": "mcp_read",
+   "concurrency": 1,
+   "requests": 25,
+   "wallMs": 6117,
+   "rps": 4.1,
+   "p50": 236,
+   "p95": 291,
+   "p99": 480,
+   "max": 480,
+   "errorRate": 0,
+   "upstreamCalls": 760,
+   "upstreamPerRequest": 30.4,
+   "statuses": {
+    "200": 25
+   }
+  },
+  {
+   "scenario": "mcp_read",
+   "concurrency": 5,
+   "requests": 25,
+   "wallMs": 1323,
+   "rps": 18.9,
+   "p50": 235,
+   "p95": 386,
+   "p99": 394,
+   "max": 394,
+   "errorRate": 0,
+   "upstreamCalls": 697,
+   "upstreamPerRequest": 27.88,
+   "statuses": {
+    "200": 25
+   }
+  },
+  {
+   "scenario": "mcp_read",
+   "concurrency": 20,
+   "requests": 25,
+   "wallMs": 594,
+   "rps": 42.1,
+   "p50": 392,
+   "p95": 524,
+   "p99": 539,
+   "max": 539,
+   "errorRate": 0,
+   "upstreamCalls": 656,
+   "upstreamPerRequest": 26.24,
+   "statuses": {
+    "200": 25
+   }
+  },
+  {
+   "scenario": "prepare_simulate",
+   "concurrency": 1,
+   "requests": 25,
+   "wallMs": 8989,
+   "rps": 2.8,
+   "p50": 257,
+   "p95": 516,
+   "p99": 554,
+   "max": 554,
+   "errorRate": 100,
+   "upstreamCalls": 75,
+   "upstreamPerRequest": 3,
+   "statuses": {
+    "502": 25
+   }
+  },
+  {
+   "scenario": "prepare_simulate",
+   "concurrency": 5,
+   "requests": 25,
+   "wallMs": 2072,
+   "rps": 12.1,
+   "p50": 477,
+   "p95": 599,
+   "p99": 612,
+   "max": 612,
+   "errorRate": 100,
+   "upstreamCalls": 75,
+   "upstreamPerRequest": 3,
+   "statuses": {
+    "502": 25
+   }
+  },
+  {
+   "scenario": "prepare_simulate",
+   "concurrency": 20,
+   "requests": 25,
+   "wallMs": 895,
+   "rps": 27.9,
+   "p50": 418,
+   "p95": 658,
+   "p99": 659,
+   "max": 659,
+   "errorRate": 100,
+   "upstreamCalls": 75,
+   "upstreamPerRequest": 3,
+   "statuses": {
+    "502": 25
+   }
+  },
+  {
+   "scenario": "mixed",
+   "concurrency": 10,
+   "requests": 120,
+   "wallMs": 2961,
+   "rps": 40.5,
+   "p50": 217,
+   "p95": 490,
+   "p99": 512,
+   "max": 597,
+   "errorRate": 50,
+   "upstreamCalls": 1899,
+   "upstreamPerRequest": 15.82,
+   "statuses": {
+    "200": 60,
+    "502": 60
+   }
+  }
+ ]
+}

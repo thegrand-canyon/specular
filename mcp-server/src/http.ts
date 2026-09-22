@@ -9,18 +9,21 @@
  * Env: PORT, HOST, SPECULAR_MCP_TOKEN (optional bearer), SPECULAR_ALLOWED_ORIGINS,
  *      SPECULAR_RATE_LIMIT_PER_MIN, SPECULAR_BROADCAST_LIMIT_PER_MIN,
  *      SPECULAR_ENABLED_NETWORKS, SPECULAR_RPC_*, SPECULAR_TRUST_PROXY,
- *      SPECULAR_CLIENT_IP_HEADER, SPECULAR_MAX_INFLIGHT, SPECULAR_HEALTH_CACHE_MS, LOG_LEVEL.
+ *      SPECULAR_CLIENT_IP_HEADER, SPECULAR_MAX_INFLIGHT, SPECULAR_HEALTH_CACHE_MS,
+ *      SPECULAR_REQUEST_DEADLINE_MS, SPECULAR_RPC_CACHE*, SPECULAR_READ_CACHE*, LOG_LEVEL.
  */
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import cors from 'cors';
 import { timingSafeEqual } from 'node:crypto';
 import express, { NextFunction, Request, Response } from 'express';
 import { describeRpcError, rpcStatus } from './chain.js';
+import { isRequestDeadlineError, requestDeadlineMs, runWithDeadline } from './deadline.js';
+import { isUpstreamUnavailable, rpcHealth, UpstreamUnavailableError } from './rpc.js';
 import { errorFields, logger } from './logger.js';
 import { createMcpServer, SERVER_VERSION } from './mcp.js';
 import { enabledNetworks, getNetwork, NetworkError } from './networks.js';
 import { buildOpenApi } from './openapi.js';
-import { TOOLS } from './tools.js';
+import { readCacheStats, TOOLS } from './tools.js';
 import { ValidationError } from './validate.js';
 
 // ---------------------------------------------------------------- config
@@ -123,6 +126,33 @@ function shed(req: Request, res: Response, next: NextFunction) {
   res.on('finish', release);
   res.on('close', release);
   next();
+}
+
+// ----------------------------------------------------------- request deadline
+/**
+ * Bounded waits (2026-09-22). The 2026-09-20 load report measured live requests
+ * dying at 164 s (p95) and 300 s (max) — Node's default requestTimeout killing
+ * them, not any policy of ours. Every /v1 and /mcp request now runs inside an
+ * explicit budget: the RPC layer clamps each upstream attempt to what is left,
+ * and a backstop timer answers 504 + Retry-After if a handler somehow overruns.
+ */
+function deadline(req: Request, res: Response, next: NextFunction) {
+  const ms = requestDeadlineMs();
+  if (!(ms > 0)) return next();
+  const timer = setTimeout(() => {
+    if (res.headersSent) return;
+    res.setHeader('Retry-After', '1');
+    res.status(504).json({
+      error: 'Request exceeded the server time budget before the chain answered; try again shortly.',
+      retryAfterSeconds: 1,
+      deadlineMs: ms,
+    });
+  }, ms + 250);
+  if (typeof timer.unref === 'function') timer.unref();
+  const clear = () => clearTimeout(timer);
+  res.on('finish', clear);
+  res.on('close', clear);
+  runWithDeadline(ms, next);
 }
 
 // ------------------------------------------------------------------ auth
@@ -341,10 +371,25 @@ export function createApp() {
     const ok = nets.every((n) => n.ok);
     return { ok, body: { status: ok ? 'ok' : 'degraded', version: SERVER_VERSION, networks: nets } };
   }
-  app.get('/health', async (_req, res) => {
+  /** Compact, secret-free upstream summary attached to every /health answer. */
+  function upstreamSummary() {
+    const h = rpcHealth();
+    return {
+      rpcCacheHitRate: h.cache.hitRate,
+      readCacheHitRate: readCacheStats().hitRate,
+      networks: h.networks.map((n) => ({
+        network: n.network,
+        circuitOpen: n.circuitOpen,
+        endpointsUp: n.endpoints.filter((e) => e.state === 'up').length,
+        endpointsTotal: n.endpoints.length,
+      })),
+    };
+  }
+
+  app.get('/health', deadline, async (_req, res) => {
     const now = Date.now();
     if (healthCache && now - healthCache.at < HEALTH_CACHE_MS) {
-      res.status(healthCache.ok ? 200 : 503).json({ ...healthCache.body, cached: true, cacheAgeMs: now - healthCache.at });
+      res.status(healthCache.ok ? 200 : 503).json({ ...healthCache.body, cached: true, cacheAgeMs: now - healthCache.at, upstream: upstreamSummary() });
       return;
     }
     if (!healthInflight) {
@@ -354,7 +399,25 @@ export function createApp() {
     }
     const r = await healthInflight;
     healthCache = { at: Date.now(), body: r.body, ok: r.ok };
-    res.status(r.ok ? 200 : 503).json({ ...r.body, cached: false, cacheAgeMs: 0 });
+    if (res.headersSent) return;
+    res.status(r.ok ? 200 : 503).json({ ...r.body, cached: false, cacheAgeMs: 0, upstream: upstreamSummary() });
+  });
+
+  /**
+   * Read-only upstream observability (2026-09-22). Endpoint URLs are REDACTED by
+   * the same rule as /v1/networks (H-3): a well-known public default verbatim,
+   * anything operator-configured reduced to scheme://host/ — never userinfo, a
+   * path key or a query key. No upstream call is made to serve this route.
+   */
+  app.get('/rpc-health', (_req, res) => {
+    const h = rpcHealth();
+    res.json({
+      status: h.networks.some((n) => n.circuitOpen) ? 'degraded' : 'ok',
+      version: SERVER_VERSION,
+      caches: { jsonRpc: h.cache, readRoutes: readCacheStats() },
+      networks: h.networks,
+      config: { ...h.config, requestDeadlineMs: requestDeadlineMs(), maxInflight: MAX_INFLIGHT, inflight: inflight },
+    });
   });
 
   const openapiCache = new Map<string, unknown>();
@@ -371,7 +434,7 @@ export function createApp() {
   });
 
   // ---- MCP Streamable HTTP (stateless: one server+transport per request)
-  app.use('/mcp', requireAuth, limit(generalLimiter));
+  app.use('/mcp', requireAuth, limit(generalLimiter), deadline);
   app.post('/mcp', shed, async (req, res) => {
     const body = req.body;
     const isBatch = Array.isArray(body);
@@ -415,7 +478,7 @@ export function createApp() {
   app.delete('/mcp', methodNotAllowed);
 
   // ---- REST, generated from the same tool registry
-  app.use('/v1', requireAuth, limit(generalLimiter), shed);
+  app.use('/v1', requireAuth, limit(generalLimiter), deadline, shed);
   for (const t of TOOLS) {
     const expressPath = t.rest.path.replace(/\{(\w+)\}/g, ':$1');
     const handler = async (req: Request, res: Response, next: NextFunction) => {
@@ -426,6 +489,7 @@ export function createApp() {
         }
         const args: Record<string, unknown> = { ...(source as Record<string, unknown>), ...req.params };
         const result = await t.handler(args);
+        if (res.headersSent) return; // the deadline backstop already answered 504
         res.json(result);
       } catch (e) {
         next(e);
@@ -444,6 +508,20 @@ export function createApp() {
 
   // ---- error mapping
   app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+    if (res.headersSent) return; // the deadline backstop (504) already answered
+    // Circuit breaker open: every upstream for this network is cold. Fail fast,
+    // say so plainly, and hand back a retry hint instead of queueing (§5).
+    if (isUpstreamUnavailable(err)) {
+      const e = err as UpstreamUnavailableError;
+      res.setHeader('Retry-After', String(e.retryAfterSeconds));
+      res.status(503).json({ error: e.message, network: e.network, retryAfterSeconds: e.retryAfterSeconds });
+      return;
+    }
+    if (isRequestDeadlineError(err)) {
+      res.setHeader('Retry-After', '1');
+      res.status(504).json({ error: describeRpcError(err), retryAfterSeconds: 1, deadlineMs: requestDeadlineMs() });
+      return;
+    }
     if (err instanceof ValidationError || err instanceof NetworkError) {
       res.status(400).json({ error: err.message, ...(err instanceof ValidationError && err.field ? { field: err.field } : {}) });
       return;
@@ -473,6 +551,8 @@ if (isMain) {
       ratePerMin: RATE_PER_MIN,
       broadcastPerMin: BROADCAST_PER_MIN,
       maxInflight: MAX_INFLIGHT,
+      requestDeadlineMs: requestDeadlineMs(),
+      rpcEndpoints: Object.fromEntries(enabledNetworks().map((n) => [n, getNetwork(n).rpcUrls.length])),
       trustProxy: app.get('trust proxy') ?? null,
       clientIpHeader: CLIENT_IP_HEADER || null,
       tools: TOOLS.length,

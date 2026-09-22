@@ -123,12 +123,13 @@ print(r.json()['result']['structuredContent'])
 - **Body limit**: 256 KB. **CORS**: configurable allow-list.
 - **Staleness**: every read includes `rpc.ageSeconds`/`rpc.stale` (latest block older than 5 minutes -> `stale: true` and a warning).
 - **Amount caps**: 100,000 USDC per prepared/relayed call (operator-configurable), loans capped at 50,000 USDC.
-- **Errors**: tool errors (bad address, unknown loan, ...) come back as `isError: true` with `{error, field?}`; protocol errors (unknown tool, malformed `tools/call` params) are JSON-RPC `-32602`, unknown methods `-32601`. REST answers HTTP 400/401/429/502 with `{error}`, and 503 + `Retry-After` when the server is at its concurrency cap.
+- **Errors**: tool errors (bad address, unknown loan, ...) come back as `isError: true` with `{error, field?}`; protocol errors (unknown tool, malformed `tools/call` params) are JSON-RPC `-32602`, unknown methods `-32601`. REST answers HTTP 400/401/429/502 with `{error}`; **503 + `Retry-After`** when the server is at its concurrency cap *or* when a network's upstream RPC endpoints are all cold (`{error, network, retryAfterSeconds}`); **504 + `Retry-After`** when a request exceeds the server's time budget. Retry on 503/504 after the hinted delay; they are always fast and never a hang.
+- **Upstream resilience**: each network is served from a list of RPC endpoints with health-aware failover, exponential backoff and automatic recovery, plus a per-network circuit breaker. Reads are cached (chain head ~2 s, `eth_call` ~4 s, a `REPAID`/`DEFAULTED` loan or a mined transaction ~5 min) and identical concurrent reads share one upstream call. A cached body is labelled `cached: true` with `cacheAgeMs`, and `rpc.ageSeconds`/`rpc.stale` are always recomputed for the moment you read them. Anything that must be live — a nonce, a relay, a `pending` tag, an unmined receipt — is never cached.
 - **Batches**: a JSON-RPC batch is answered with an array (even when only one member produces a response); an empty batch is `-32600`.
 - **Simulation**: `simulation.ok: false` always means the EVM reverted. An upstream RPC failure is an HTTP 502 / tool error, never a fabricated `revertReason`.
 - **`can_top_up` is advisory**: the deployed marketplace's `canTopUp()` view is off by one block, so the server also evaluates the corrected predicate and returns the conservative answer with `onChainView`, `correctedPredicate`, `viewDisagrees` and `warnings[]`. A loan can also start between your check and your transaction. Simulate `supply_liquidity` immediately before signing.
 - **Session**: stateless; no `Mcp-Session-Id` is issued and any sent is ignored. `Mcp-Protocol-Version` is honoured (`2024-11-05` … `2025-11-25`; other values get 400).
-- **Health**: `GET /health` (per-network RPC status). **Discovery**: `GET /` and `GET /openapi.json`.
+- **Health**: `GET /health` (per-network RPC status, plus an `upstream` summary: cache hit rates and, per network, whether the circuit is open and how many endpoints are healthy). `GET /rpc-health` gives the full picture — per-endpoint state / consecutive failures / last error class, circuit state with a retry hint, and both cache layers' counters. Neither route makes an upstream call, and neither publishes RPC credentials. **Discovery**: `GET /` and `GET /openapi.json`.
 
 ## Self-hosting
 
@@ -139,3 +140,18 @@ SPECULAR_ENABLED_NETWORKS=arc-staging SPECULAR_MCP_TOKEN=<random> PORT=3400 npm 
 
 or `docker build -f mcp-server/Dockerfile .` from the repo root (Railway config in `mcp-server/railway.json`).
 Full env reference: [`mcp-server/.env.example`](../../mcp-server/.env.example).
+
+RPC endpoints are configured per network and accept a **comma-separated failover list**; a single URL still works:
+
+```bash
+SPECULAR_RPC_ARC_MAINNET="https://rpc.mainnet.arc.io,https://arc-rpc.publicnode.com"
+SPECULAR_RPC_ARC_STAGING="https://rpc.testnet.arc.io,https://arc-testnet-rpc.publicnode.com"
+```
+
+Leaving them unset uses the verified public defaults. Tuning knobs (all optional):
+`SPECULAR_REQUEST_DEADLINE_MS` (20 s overall budget per request), `SPECULAR_RPC_TIMEOUT_MS` (8 s per attempt),
+`SPECULAR_RPC_MAX_ATTEMPTS` (3), `SPECULAR_RPC_FAILURE_THRESHOLD` (2), `SPECULAR_RPC_BACKOFF_MS` /
+`SPECULAR_RPC_BACKOFF_MAX_MS` (1 s → 30 s), `SPECULAR_RPC_CACHE` / `SPECULAR_RPC_COALESCE` (on),
+`SPECULAR_RPC_CACHE_{HEAD,CALL,STATIC,IMMUTABLE}_MS`, `SPECULAR_READ_CACHE{,_MS,_IMMUTABLE_MS}`.
+A keyed/paid endpoint is safe to configure: credentials are never echoed — `/v1/networks` and `/rpc-health`
+reduce an operator-configured endpoint to `scheme://host/`.

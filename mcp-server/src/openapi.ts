@@ -8,8 +8,52 @@ import { JsonSchema, TOOLS, ToolDef } from './tools.js';
 
 const ERROR_SCHEMA = {
   type: 'object',
-  properties: { error: { type: 'string' }, field: { type: 'string' } },
+  properties: {
+    error: { type: 'string' },
+    field: { type: 'string' },
+    network: { type: 'string', description: 'Set on 503 when a network\'s upstream RPC endpoints are all cold.' },
+    retryAfterSeconds: { type: 'integer', description: 'Set on 503/504; mirrors the Retry-After header.' },
+  },
   required: ['error'],
+};
+
+const CACHE_STATS_SCHEMA = {
+  type: 'object',
+  properties: {
+    hits: { type: 'integer' },
+    misses: { type: 'integer' },
+    coalesced: { type: 'integer', description: 'Requests that shared an in-flight upstream call instead of issuing their own.' },
+    stores: { type: 'integer' },
+    evictions: { type: 'integer' },
+    entries: { type: 'integer' },
+    hitRate: { type: 'number', description: '(hits + coalesced) / (hits + misses + coalesced)' },
+  },
+};
+
+const ENDPOINT_HEALTH_SCHEMA = {
+  type: 'object',
+  properties: {
+    endpoint: { type: 'string', description: 'REDACTED endpoint: a well-known public default verbatim, anything operator-configured reduced to scheme://host/.' },
+    state: { type: 'string', enum: ['up', 'cold', 'probing'] },
+    consecutiveFailures: { type: 'integer' },
+    coldForMs: { type: 'integer', description: 'Remaining backoff before this endpoint is tried again.' },
+    lastErrorClass: { type: ['string', 'null'], enum: ['rate_limited', 'timeout', 'connection', 'server_error', 'bad_response', 'other', null] },
+    lastErrorAt: { type: ['string', 'null'], format: 'date-time' },
+    calls: { type: 'integer' },
+    successes: { type: 'integer' },
+    failures: { type: 'integer' },
+  },
+};
+
+const NETWORK_RPC_HEALTH_SCHEMA = {
+  type: 'object',
+  properties: {
+    network: { type: 'string' },
+    endpoints: { type: 'array', items: { $ref: '#/components/schemas/EndpointHealth' } },
+    circuitOpen: { type: 'boolean', description: 'True when every endpoint for this network is cold: reads fail fast with 503 rather than queueing.' },
+    circuitOpens: { type: 'integer' },
+    retryAfterSeconds: { type: 'integer' },
+  },
 };
 
 const PREPARED_TX_SCHEMA = {
@@ -55,7 +99,9 @@ function errorResponses(withAuth: boolean) {
   const r: Record<string, unknown> = {
     '400': { description: 'Validation error (bad address/amount/network, unknown loan, etc.)', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
     '429': { description: 'Rate limited (per IP)', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
-    '502': { description: 'Upstream RPC failure', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+    '502': { description: 'Upstream RPC failure (attempts across every endpoint exhausted)', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+    '503': { description: 'Network temporarily unavailable (every RPC endpoint for this network is cold), or the server is shedding load. Carries Retry-After.', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+    '504': { description: 'The request exceeded SPECULAR_REQUEST_DEADLINE_MS before the chain answered. Carries Retry-After.', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
   };
   if (withAuth) r['401'] = { description: 'Missing/invalid bearer token (only when SPECULAR_MCP_TOKEN is configured)', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } };
   return r;
@@ -108,7 +154,50 @@ export function buildOpenApi(publicUrl?: string) {
     paths[t.rest.path][t.rest.method.toLowerCase()] = operationFor(t);
   }
   paths['/health'] = {
-    get: { operationId: 'health', summary: 'Liveness + per-network RPC staleness', tags: ['meta'], security: [], responses: { '200': { description: 'OK', content: { 'application/json': { schema: { type: 'object' } } } } } },
+    get: {
+      operationId: 'health',
+      summary: 'Liveness + per-network RPC staleness, with a compact upstream summary',
+      description: 'Cached for SPECULAR_HEALTH_CACHE_MS. `upstream` carries the cache hit rates and, per network, whether the circuit breaker is open and how many configured RPC endpoints are healthy.',
+      tags: ['meta'],
+      security: [],
+      responses: {
+        '200': { description: 'OK', content: { 'application/json': { schema: { type: 'object' } } } },
+        '503': { description: 'At least one enabled network is stale or unreachable', content: { 'application/json': { schema: { type: 'object' } } } },
+      },
+    },
+  };
+  paths['/rpc-health'] = {
+    get: {
+      operationId: 'rpcHealth',
+      summary: 'Upstream RPC observability: per-endpoint health, circuit-breaker state and cache counters',
+      description:
+        'Read-only and makes no upstream call. Endpoint URLs are REDACTED: a well-known public default is shown verbatim, anything operator-configured is reduced to scheme://host/ so credentials in a paid RPC URL are never published.',
+      tags: ['meta'],
+      security: [],
+      responses: {
+        '200': {
+          description: 'Upstream health snapshot',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  status: { type: 'string', enum: ['ok', 'degraded'] },
+                  version: { type: 'string' },
+                  caches: {
+                    type: 'object',
+                    properties: { jsonRpc: { $ref: '#/components/schemas/CacheStats' }, readRoutes: { $ref: '#/components/schemas/CacheStats' } },
+                  },
+                  networks: { type: 'array', items: { $ref: '#/components/schemas/NetworkRpcHealth' } },
+                  config: { type: 'object' },
+                },
+                required: ['status', 'caches', 'networks', 'config'],
+              },
+            },
+          },
+        },
+      },
+    },
   };
   paths['/mcp'] = {
     post: {
@@ -141,7 +230,13 @@ export function buildOpenApi(publicUrl?: string) {
     ],
     components: {
       securitySchemes: { bearerAuth: { type: 'http', scheme: 'bearer', description: 'Only enforced when the server sets SPECULAR_MCP_TOKEN.' } },
-      schemas: { Error: ERROR_SCHEMA, PreparedTransaction: PREPARED_TX_SCHEMA },
+      schemas: {
+        Error: ERROR_SCHEMA,
+        PreparedTransaction: PREPARED_TX_SCHEMA,
+        CacheStats: CACHE_STATS_SCHEMA,
+        EndpointHealth: ENDPOINT_HEALTH_SCHEMA,
+        NetworkRpcHealth: NETWORK_RPC_HEALTH_SCHEMA,
+      },
     },
     security: [{ bearerAuth: [] }, {}],
     paths,

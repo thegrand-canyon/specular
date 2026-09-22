@@ -66,12 +66,16 @@ after(() => {
   hang?.close();
 });
 
-test('H-5: hung RPC -> fast 502 on reads and 503 on /health (SPECULAR_RPC_TIMEOUT_MS)', async () => {
+test('H-5: hung RPC -> fast 502/503 on reads and 503 on /health (SPECULAR_RPC_TIMEOUT_MS)', async () => {
   const S = await boot({ SPECULAR_RPC_ARC_STAGING: `http://127.0.0.1:${hangPort}`, SPECULAR_RPC_TIMEOUT_MS: '1500' });
   let t = Date.now();
   const st = await json(`${S.base}/v1/${NET}/status`);
-  assert.equal(st.status, 502, st.text);
-  assert.match(st.body.error, /unreachable or timed out/);
+  // 2026-09-22: with the resilient transport the second consecutive timeout takes
+  // the (single) endpoint out of rotation, so the read can also come back as the
+  // circuit-breaker's 503 instead of the exhausted-attempts 502. Both are fast,
+  // explicit and sanitised — which is what H-5 is about.
+  assert.ok([502, 503].includes(st.status), st.text);
+  assert.match(st.body.error, /timed out|unreachable|temporarily unavailable/i);
   assert.ok(Date.now() - t < 6000, `status took ${Date.now() - t}ms`);
   t = Date.now();
   const h = await json(`${S.base}/health`);
@@ -99,21 +103,35 @@ test('H-7: in-flight cap sheds load with 503 + Retry-After instead of queueing',
   const S = await boot({ SPECULAR_RPC_ARC_STAGING: `http://127.0.0.1:${hangPort}`, SPECULAR_RPC_TIMEOUT_MS: '3000', SPECULAR_MAX_INFLIGHT: '2' });
   const t = Date.now();
   const results = await Promise.all(Array.from({ length: 6 }, () => json(`${S.base}/v1/${NET}/status`)));
-  const shed = results.filter((r) => r.status === 503);
-  const timedOut = results.filter((r) => r.status === 502);
-  assert.equal(shed.length, 4, JSON.stringify(results.map((r) => r.status)));
-  assert.equal(timedOut.length, 2);
+  // 2026-09-22: the upstream failure itself can now be a 503 (circuit breaker) as
+  // well as a 502, so shed responses are identified by their body ("server busy"),
+  // not by status alone. The contract under test is unchanged: exactly
+  // MAX_INFLIGHT requests execute and the rest are refused immediately.
+  const shed = results.filter((r) => /busy/i.test(String(r.body?.error ?? '')));
+  const executed = results.filter((r) => !/busy/i.test(String(r.body?.error ?? '')));
+  assert.equal(shed.length, 4, JSON.stringify(results.map((r) => [r.status, r.body?.error])));
+  assert.equal(executed.length, 2);
+  for (const r of executed) assert.ok([502, 503].includes(r.status), `executed request status ${r.status}`);
   for (const r of shed) {
+    assert.equal(r.status, 503);
     assert.ok(r.headers.get('retry-after'));
-    assert.match(r.body.error, /busy/i);
   }
   assert.ok(Date.now() - t < 10_000);
   // capacity is released afterwards
   const again = await json(`${S.base}/v1/networks`);
   assert.equal(again.status, 200);
-  // MCP tool calls count against the same cap
+  // MCP tool calls go through the same shed() cap. 2026-09-22: by this point the
+  // circuit breaker has taken the dead endpoint out, so these calls are refused
+  // in milliseconds instead of occupying a slot — they must be either an HTTP 503
+  // shed OR an isError tool result that says the network is unavailable. What must
+  // never happen is a caller waiting on a hung upstream.
   const mcp = await Promise.all(Array.from({ length: 4 }, () => post(`${S.base}/mcp`, { jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'get_protocol_status', arguments: { network: NET } } })));
-  assert.ok(mcp.some((r) => r.status === 503), JSON.stringify(mcp.map((r) => r.status)));
+  for (const r of mcp) {
+    if (r.status === 503) continue;
+    assert.equal(r.status, 200, r.text);
+    assert.equal(r.body.result?.isError, true, r.text);
+    assert.match(r.text, /temporarily unavailable|timed out|unreachable/i);
+  }
 }, { timeout: 40_000 });
 
 test('H-8: MCP tolerates Accept without text/event-stream (and no Accept at all)', async () => {

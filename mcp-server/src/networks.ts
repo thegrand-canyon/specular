@@ -12,6 +12,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ethers } from 'ethers';
+import { parseEndpointList } from './rpc.js';
 
 export type NetworkName = 'base' | 'arc-staging' | 'arc-mainnet';
 
@@ -20,7 +21,10 @@ export const ALL_NETWORKS: readonly NetworkName[] = ['base', 'arc-staging', 'arc
 export interface NetworkConfig {
   name: NetworkName;
   chainId: number;
+  /** Primary RPC endpoint (rpcUrls[0]). Kept for compatibility with the single-URL form. */
   rpcUrl: string;
+  /** Full failover list, in preference order (SPECULAR_RPC_* accepts a comma-separated list). */
+  rpcUrls: string[];
   explorerTx: string;
   explorerAddress: string;
   /** True when the network moves real USDC. */
@@ -46,7 +50,15 @@ const REPO_ROOT = process.env.SPECULAR_REPO_ROOT
 interface NetworkSpec {
   file: string;
   chainId: number;
+  /** Primary well-known public endpoint (defaultRpcs[0]). */
   defaultRpc: string;
+  /**
+   * Failover list used when the operator sets no override. Every entry was
+   * verified live on 2026-09-22 (eth_chainId + an eth_call against the Specular
+   * marketplace) before being baked in. dRPC is deliberately LAST on every list:
+   * it 429s this project's host after moderate use (2026-09-20 report §6.2).
+   */
+  defaultRpcs: readonly string[];
   rpcEnv: string;
   explorerTx: string;
   explorerAddress: string;
@@ -59,6 +71,7 @@ const SPECS: Record<NetworkName, NetworkSpec> = {
     file: 'base-addresses.json',
     chainId: 8453,
     defaultRpc: 'https://mainnet.base.org',
+    defaultRpcs: ['https://mainnet.base.org', 'https://base-rpc.publicnode.com'],
     rpcEnv: 'SPECULAR_RPC_BASE',
     explorerTx: 'https://basescan.org/tx/',
     explorerAddress: 'https://basescan.org/address/',
@@ -68,7 +81,8 @@ const SPECS: Record<NetworkName, NetworkSpec> = {
   'arc-staging': {
     file: 'arc-testnet-v6-addresses.json',
     chainId: 5042002,
-    defaultRpc: 'https://arc-testnet.drpc.org',
+    defaultRpc: 'https://rpc.testnet.arc.io',
+    defaultRpcs: ['https://rpc.testnet.arc.io', 'https://arc-testnet-rpc.publicnode.com', 'https://arc-testnet.drpc.org'],
     rpcEnv: 'SPECULAR_RPC_ARC_STAGING',
     explorerTx: 'https://testnet.arcscan.app/tx/',
     explorerAddress: 'https://testnet.arcscan.app/address/',
@@ -79,6 +93,7 @@ const SPECS: Record<NetworkName, NetworkSpec> = {
     file: 'arc-mainnet-addresses.json',
     chainId: 5042,
     defaultRpc: 'https://rpc.mainnet.arc.io',
+    defaultRpcs: ['https://rpc.mainnet.arc.io', 'https://arc-rpc.publicnode.com', 'https://arc.drpc.org'],
     rpcEnv: 'SPECULAR_RPC_ARC_MAINNET',
     explorerTx: 'https://explorer.arc.io/tx/',
     explorerAddress: 'https://explorer.arc.io/address/',
@@ -108,6 +123,11 @@ function readAbi(name: string): ethers.InterfaceAbi {
 }
 
 const cache = new Map<NetworkName, NetworkConfig>();
+
+/** Test/ops hook: forget resolved network configs so env changes take effect. */
+export function _clearNetworkCache(): void {
+  cache.clear();
+}
 
 export function isNetworkName(x: unknown): x is NetworkName {
   return typeof x === 'string' && (ALL_NETWORKS as readonly string[]).includes(x);
@@ -141,15 +161,34 @@ function describeValue(x: unknown): string {
   }
 }
 
-/** Public form of an RPC URL: the well-known default verbatim, anything operator-configured reduced to origin (no userinfo, path keys or query). */
-function publicRpcUrl(cfg: NetworkConfig): string {
-  if (cfg.rpcUrl === SPECS[cfg.name].defaultRpc) return cfg.rpcUrl;
+/**
+ * Public form of an RPC URL (H-3, 2026-09-20): a well-known default is shown
+ * verbatim; anything operator-configured is reduced to its origin, so an
+ * endpoint carrying userinfo, a path key or an `?apikey=` query never reaches a
+ * client. Applies to every endpoint in the failover list and to /rpc-health.
+ */
+export function publicRpcUrlFor(name: NetworkName, url: string): string {
+  if ((SPECS[name].defaultRpcs as readonly string[]).includes(url)) return url;
   try {
-    const u = new URL(cfg.rpcUrl);
+    const u = new URL(url);
     return `${u.protocol}//${u.host}/`;
   } catch {
     return '[configured]';
   }
+}
+
+function publicRpcUrl(cfg: NetworkConfig): string {
+  return publicRpcUrlFor(cfg.name, cfg.rpcUrl);
+}
+
+/** Redacted failover list for a network, in preference order. */
+export function publicRpcUrls(cfg: NetworkConfig): string[] {
+  return cfg.rpcUrls.map((u) => publicRpcUrlFor(cfg.name, u));
+}
+
+/** Default (no-override) endpoint list for a network. */
+export function defaultRpcUrls(name: NetworkName): readonly string[] {
+  return SPECS[name].defaultRpcs;
 }
 
 /**
@@ -184,10 +223,25 @@ export function getNetwork(name: unknown): NetworkConfig {
     reputation: ethers.getAddress(json.reputationManagerV3),
     usdc: ethers.getAddress(json.usdc),
   };
+  // Multi-endpoint failover. Precedence:
+  //   1. SPECULAR_RPC_<NET> — a comma-separated list, or a single URL (still a
+  //      valid one-element list, so an existing deployment is unchanged).
+  //   2. the verified default list for this network, with the repo config's own
+  //      `rpcUrl` appended as a last-resort backstop when it is not already in it.
+  // The config file names one endpoint; taking it as THE endpoint would have
+  // silently reduced every un-overridden deployment back to a single upstream,
+  // which is the failure this round exists to remove.
+  const configuredRpc = typeof json.rpcUrl === 'string' && json.rpcUrl ? json.rpcUrl : undefined;
+  const fallbackList =
+    configuredRpc && !(spec.defaultRpcs as readonly string[]).includes(configuredRpc)
+      ? [...spec.defaultRpcs, configuredRpc]
+      : spec.defaultRpcs;
+  const rpcUrls = parseEndpointList(process.env[spec.rpcEnv], fallbackList);
   const cfg: NetworkConfig = {
     name,
     chainId: spec.chainId,
-    rpcUrl: process.env[spec.rpcEnv] || json.rpcUrl || spec.defaultRpc,
+    rpcUrl: rpcUrls[0],
+    rpcUrls,
     explorerTx: spec.explorerTx,
     explorerAddress: spec.explorerAddress,
     realMoney: spec.realMoney,
@@ -227,6 +281,7 @@ export function publicNetworkInfo(cfg: NetworkConfig) {
     chainId: cfg.chainId,
     realMoney: cfg.realMoney,
     rpcUrl: publicRpcUrl(cfg),
+    rpcUrls: publicRpcUrls(cfg),
     explorerTx: cfg.explorerTx,
     contracts: { ...cfg.addresses },
     usdcDecimals: cfg.usdcDecimals,

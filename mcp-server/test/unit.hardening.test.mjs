@@ -58,8 +58,16 @@ test('H-3: operator RPC URL credentials are never exposed to clients', () => {
   const info = publicNetworkInfo(getNetwork('arc-mainnet'));
   assert.doesNotMatch(JSON.stringify(info), /SECRET|apipass|apiuser|apikey/);
   assert.match(info.rpcUrl, /^https:\/\/rpc\.example\.test\/?$/);
-  // the public default stays fully visible (nothing secret in it)
-  assert.equal(publicNetworkInfo(getNetwork('arc-staging')).rpcUrl, 'https://arc-testnet.drpc.org');
+  // every public default stays fully visible (nothing secret in it); 2026-09-22
+  // the defaults became a failover LIST, and each entry is redacted by the same rule
+  const staging = publicNetworkInfo(getNetwork('arc-staging'));
+  assert.equal(staging.rpcUrl, 'https://rpc.testnet.arc.io');
+  assert.ok(staging.rpcUrls.length >= 2, 'the failover list is published');
+  for (const u of staging.rpcUrls) assert.match(u, /^https:\/\/[a-z0-9.-]+$/, `default endpoint shown verbatim: ${u}`);
+
+  // the operator-configured mainnet list is reduced to origins, every entry
+  const mainnet = publicNetworkInfo(getNetwork('arc-mainnet'));
+  assert.deepEqual(mainnet.rpcUrls, ['https://rpc.example.test/']);
 });
 
 test('H-4: get_available_liquidity validates query values before any RPC', async () => {

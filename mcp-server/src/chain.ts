@@ -4,41 +4,51 @@
  * Nothing in this module can sign.
  */
 import { ethers } from 'ethers';
-import { ABI, NetworkConfig } from './networks.js';
+import { ABI, NetworkConfig, publicRpcUrlFor } from './networks.js';
+import {
+  getPool,
+  isUpstreamUnavailable,
+  ResilientJsonRpcProvider,
+  rpcMaxAttempts,
+  rpcTimeoutMs,
+  UpstreamFailedError,
+  UpstreamUnavailableError,
+} from './rpc.js';
+import { isRequestDeadlineError } from './deadline.js';
+import { invalidateAllCaches } from './cache.js';
 
 const providers = new Map<string, ethers.JsonRpcProvider>();
 
 export const STALE_AFTER_SECONDS = 5 * 60;
 
 /**
- * Upstream RPC bounds (2026-09-20 review, H-5): without these a hung RPC held
- * requests open indefinitely and a throttling RPC (429) made ethers retry up to
- * 12 times with exponential stalls, so single reads took minutes and piled up
- * in memory. Per-attempt timeout + few attempts => fast 502 instead.
+ * Upstream RPC bounds. 2026-09-20 (H-5) introduced a per-attempt timeout and an
+ * attempt cap; 2026-09-22 moved the whole transport into rpc.ts, so the same two
+ * knobs now govern a health-aware endpoint RING (a failure moves to the next
+ * endpoint instead of retrying the dead one) and every attempt is additionally
+ * clamped by the request deadline (deadline.ts).
  */
-export function rpcTimeoutMs(): number {
-  const n = Number(process.env.SPECULAR_RPC_TIMEOUT_MS || 15_000);
-  return Number.isFinite(n) && n > 0 ? n : 15_000;
-}
-export function rpcMaxAttempts(): number {
-  const n = Number(process.env.SPECULAR_RPC_MAX_ATTEMPTS || 3);
-  return Number.isInteger(n) && n > 0 ? n : 3;
+export { rpcTimeoutMs, rpcMaxAttempts };
+
+/**
+ * One provider per network, backed by the resilient multi-endpoint transport:
+ * failover + health/backoff + circuit breaker + response cache + coalescing.
+ * Every read path in the server — rpcStatus, every contract view, eth_call in
+ * simulate — inherits all of it because the transport is the seam.
+ */
+export function getProvider(cfg: NetworkConfig): ethers.JsonRpcProvider {
+  const key = `${cfg.name}|${cfg.rpcUrls.join(',')}`;
+  const hit = providers.get(key);
+  if (hit) return hit;
+  const pool = getPool(cfg.name, cfg.rpcUrls, cfg.rpcUrls.map((u) => publicRpcUrlFor(cfg.name, u)));
+  const p: ethers.JsonRpcProvider = new ResilientJsonRpcProvider(pool, { chainId: cfg.chainId, name: cfg.name });
+  providers.set(key, p);
+  return p;
 }
 
-export function getProvider(cfg: NetworkConfig): ethers.JsonRpcProvider {
-  const key = `${cfg.name}|${cfg.rpcUrl}`;
-  let p = providers.get(key);
-  if (!p) {
-    const req = new ethers.FetchRequest(cfg.rpcUrl);
-    req.timeout = rpcTimeoutMs();
-    req.setThrottleParams({ maxAttempts: rpcMaxAttempts(), slotInterval: 250 });
-    p = new ethers.JsonRpcProvider(req, { chainId: cfg.chainId, name: cfg.name }, {
-      staticNetwork: true,
-      batchMaxCount: 1,
-    });
-    providers.set(key, p);
-  }
-  return p;
+/** Test/ops hook: drop cached providers so a changed endpoint list takes effect. */
+export function _clearProviderCache(): void {
+  providers.clear();
 }
 
 export interface Contracts {
@@ -55,6 +65,10 @@ export function _setContractsForTest(network: string, contracts: Contracts | nul
   if (contracts) contractsOverride.set(network, contracts);
   else contractsOverride.delete(network);
   capabilityCache.delete(network);
+  // Swapping the contracts invalidates every cached answer (JSON-RPC level and
+  // read-route level); without this a suite that re-mocks the same call would
+  // be served the previous mock's result.
+  invalidateAllCaches();
 }
 
 export function getContracts(cfg: NetworkConfig): Contracts {
@@ -150,6 +164,10 @@ export async function rpcStatus(cfg: NetworkConfig): Promise<RpcStatus> {
 
 /** Wraps an RPC error into a plain-language message without leaking internals. */
 export function describeRpcError(e: unknown): string {
+  // Our own transport errors already carry a safe, actionable message.
+  if (isUpstreamUnavailable(e)) return (e as UpstreamUnavailableError).message;
+  if (isRequestDeadlineError(e)) return 'Request exceeded the server time budget before the chain answered; try again shortly.';
+  if (e instanceof UpstreamFailedError) return e.message;
   const msg = e instanceof Error ? e.message : String(e);
   if (/ECONNREFUSED|ENOTFOUND|ECONNRESET|ETIMEDOUT|fetch failed|network error|timeout|timed out|socket hang up/i.test(msg)) {
     return 'RPC endpoint unreachable or timed out; try again shortly.';
