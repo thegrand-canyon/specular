@@ -1,5 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  NOT INSTALLED BY DEFAULT (disabled 2026-09-22, re-confirmed 2026-09-24).
+
+  This targets the superseded Arc TESTNET v4 stack, which carries a documented, accepted
+  S1 leak (~74.87 USDC of phantom availableLiquidity). The monitor correctly reports it
+  CRITICAL on every run, forever, against a stack that protects nothing. A monitor that
+  cries wolf every 30 minutes is one people stop reading, so it is deliberately left
+  uninstalled. It also predates run-with-alert.sh, so it cannot page anyway.
+
+  Install only if you are actively working that stack.
+-->
 <plist version="1.0">
 <dict>
     <key>Label</key>

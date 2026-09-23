@@ -1,0 +1,62 @@
+Funder      : 0x656086A21073272533c8A3f56A94c1f3D8BCFcE2
+Fresh wallet: 0x7954d8017707eD27AC4C61Bb76E6A19dEafe30fc
+Marketplace : 0x048363A325A5B188b7FF157d725C5e329f0171D3
+SALT        : phase5-1777999995026
+SUPPLY      : 5 USDC
+LOAN        : 1 USDC
+DAYS        : 7
+
+=== 0. FUND FRESH WALLET ===
+  fund ETH tx: 0x446696f4e20d48b785da6a1d38bdc7bb81a4782434667a1dee89664cfbc50ce7
+  fund USDC tx: 0xf951c4b8240cd458954c4bc3fd37e9db7b927f02970d771868d0dbfab936d75a
+  ✅ fresh wallet has 0.05 ETH
+  ✅ fresh wallet has 24 USDC
+
+=== 1. REGISTER AS AGENT ===
+  register tx: 0xb6ceaf6e6c5b6718ecea5093cb8f887562576b8442b1b4b72ae6617aef6b5bcc
+  ✅ confirmed in block 40683358, gas 394840
+  agentId = 91
+  createAgentPool tx: 0x32c47dba21f245cb8cc8f74bb1b9c8613903db0585ff98c1a48146bad619091c
+  ✅ pool created
+
+=== 2. PRE-STATE ===
+  [pre] agentId=91
+     fresh USDC  : 24.000000
+     fresh ETH   : 0.039409350494
+     MP    USDC  : 38241.866003
+     pool totalLiquidity   : 0.000000
+     pool availableLiq     : 0.000000
+     pool totalLoaned      : 0.000000
+     pool totalEarned      : 0.000000
+     pool isActive         : 0
+     position amount       : 0.000000
+     position earnedInt    : 0.000000
+     position depositTS    : 0
+  -- pre poolLenders[] (agent 91) --
+     ✅ No duplicates in poolLenders[].
+
+=== 3. APPROVE USDC ===
+  approve tx: 0xd0bf41afccfa76bea150f8e8d34fba4ebbec2758d07a62932482e61491682ecb
+  ✅ approved
+
+=== 4. SUPPLY 5 USDC (entry #1 in poolLenders[]) ===
+  supply tx: 0xe1119bc12d21d971717d5a435aaaf021a1da492a9281799cd18cec547275255d
+  ✅ confirmed in block 40683393, gas 187624
+  [post-supply-1] agentId=91
+     fresh USDC  : 19.000000
+     fresh ETH   : 0.034737856931
+     MP    USDC  : 38246.866003
+     pool totalLiquidity   : 5.000000
+     pool availableLiq     : 0.000000
+     pool totalLoaned      : 0.000000
+     pool totalEarned      : 0.000000
+     pool isActive         : 1
+     position amount       : 5.000000
+     position earnedInt    : 0.000000
+     position depositTS    : 1778000026
+  -- post-supply-1 poolLenders[] (agent 91) --
+     [0] 0x7954d8017707eD27AC4C61Bb76E6A19dEafe30fc
+     ✅ No duplicates in poolLenders[].
+
+=== 5. WITHDRAW 5 USDC (forces position.amount=0) ===
+  cannot withdraw (position=5, available=0); aborting

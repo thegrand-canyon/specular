@@ -19,7 +19,7 @@ Website: specular.financial | GitHub: thegrand-canyon/specular | Deploy: specula
 - `ReputationManager.sol` — credit scoring 0–1000, affects interest rates and loan limits
 - `LendingPool.sol` — loan lifecycle (request → approve → repay/default), interest calculation, collateral
 - `MockUSDC.sol` — test token with 6 decimals (matches real USDC)
-- **93/93 tests passing** — run with `npm test`
+- **872 passing, 5 pending** — run with `npm test` (executed 2026-09-24, ~2 min; the long-standing "93/93" in this file predated the V6/V6.1/V6.2 suites)
 - Deploy locally: `npm run node` (terminal 1) then `npm run deploy:local` (terminal 2)
 
 ### Production Contracts (deployed)
@@ -28,18 +28,19 @@ Website: specular.financial | GitHub: thegrand-canyon/specular | Deploy: specula
 - `AgentLiquidityMarketplaceV6.sol` — V6, surgical patch with §B1/§S1/§S5 fixes (NEW, deployed Arc only)
 - Arc Testnet addresses: `src/config/arc-testnet-addresses.json`
 - Base Mainnet addresses: `src/config/base-addresses.json`
-- **Arc Testnet V6-STAGING (2026-08 self-audit fixes)**: `src/config/arc-testnet-v6-addresses.json` — the FIXED stack (H-1..H-3, A1, D1–D5, D11/D12 + all levers) deployed to Arc testnet as a mainnet rehearsal. **Marketplace redeployed to V6.1 `0xB2d88bbFF61EF2CcF4B4A2CFd75aeed0f11F6878` on 2026-09-19** (audit fixes F-01/F-02/F-03/F-05/F-07, Sourcify exact_match, migration finalized; old V6.0 `0xDbDf60AE…` left live because it still holds ~849 test USDC of lender funds — pausing would freeze exits). Original marketplace `0xDbDf60AE5CB46D23aA44c062a4943655a6820f31`, RegistryV2 `0x4712A978A0EADe68f0b485b981112Ae66aA622d9`, ReputationV3 `0x085D581FB56d4aD428d9852466557286099dD46c`, Faucet `0x11D3e3A358D0Ef572260E33DAC66D0276EB97c57`, MockUSDC `0x9F3C10985998D1354D1465c5135Aa924775bd11D`. Owner = secure wallet. Launch levers ON (M-1, M-2=1d, F-C=1 USDC, D1 rate-limit 20/day, 1% fee, faucet cohort 100). On-chain smoke test 19/19 (`scripts/smoke-test-arc-testnet-v6.js`). Deploy: `scripts/deploy-arc-testnet-v6.js`. NOTE: this is the fixed code on TESTNET; the older Arc-testnet V6 `0x7a05…` below predates these fixes.
+- **Arc Testnet STAGING**: `src/config/arc-testnet-v6-addresses.json`. **Canonical today (read on-chain 2026-09-24): Marketplace V6.2 `0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18` + ReputationManagerV4 `0xD7906fDFBf69BA89a4c2FE148797e24f386fE3d2`** (deployed 2026-09-22). RegistryV2 `0x4712A978A0EADe68f0b485b981112Ae66aA622d9`, Faucet `0x11D3e3A358D0Ef572260E33DAC66D0276EB97c57`, MockUSDC `0x9F3C10985998D1354D1465c5135Aa924775bd11D`. Owner = secure wallet on all of them, unpaused, `migrationFinalized=true`. **Live levers are the same as mainnet's: M-1 on, M-2=86400s, minSupply=10 USDC, rate limit 5/day, 1% fee, faucet cohort 100** — the old "F-C=1 USDC / rate-limit 20/day" figures are two generations stale. Read-only config check: `node scripts/smoke-test-arc-testnet-v6.js --read-only` (9 assertions, sends nothing). Superseded and still live: V6.0 `0xDbDf60AE…` (849.16 test USDC), V6.1 `0xB2d88bbF…` (482.24), V6.2-pre-scale-fix `0xa736EE7B…` (3,487.69) — see `supersededDeployments[]`; **none is monitored**. `ReputationV3 0x085D581FB…` belongs to the retired V6.0 generation. The older Arc-testnet V6 `0x7a05…` below predates all of this.
 
 | Network | v4 (canonical) | V6 (with fixes) | Owner | Paused |
 |---------|---------------|------------------|-------|--------|
 | Arc Testnet | `0x048363A325A5B188b7FF157d725C5e329f0171D3` | `0x7a0560551b2370ee87458186c0b1eFCc38c7c57a` (post-WORLDCLASS audit, deployed 2026-05-17 — predates 2026-08 self-audit fixes) | `0x800e305A...F72C` (secure) | **No** |
-| Arc Testnet **V6-staging (fixed)** | — | `0xDbDf60AE5CB46D23aA44c062a4943655a6820f31` (2026-08 self-audit fixes + levers, fresh MockUSDC) | `0x800e305A...F72C` (secure) | **No** |
-| Base Mainnet | `0x0a4e3C745aB95aceb45B05C28D89fe4Db8815F9a` (CANONICAL 2026-05-17 — V6, post-WORLDCLASS audit) | (v4 archived: `0xd7b4dEE74C61844DFA75aEbe224e4635463b1C8f`, paused) | `0x800e305A...F72C` (secure) | **No** |
+| Arc Testnet **staging** | — | **`0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18` (V6.2 CANONICAL + ReputationManagerV4 `0xD7906fDF…`, 2026-09-22)**; superseded & still live: `0xDbDf60AE…` (V6.0), `0xB2d88bbF…` (V6.1), `0xa736EE7B…` (V6.2 pre-scale-fix) | `0x800e305A...F72C` (secure) | **No** |
+| Base Mainnet | `0x0a4e3C745aB95aceb45B05C28D89fe4Db8815F9a` (CANONICAL 2026-05-17 — V6, post-WORLDCLASS audit; **unmonitored**) | (v4 archived: `0xd7b4dEE74C61844DFA75aEbe224e4635463b1C8f`, paused) | `0x800e305A...F72C` (secure) | **No** |
 | **Arc Mainnet** (chainId 5042) | — | **`0xCb23f2fb03Bfd4775Cc0e76E28f64c1e545071be` (V6.2 CANONICAL, V7 credit model, 2026-09-23)** with **ReputationManagerV4 `0x12953e732e5D1aFdA640554125367d1CEC2ac4FB`**; superseded: V6.1 `0x358c5E69…` (left running, monitored), V6.0 `0xb9996de0…` (retired) | `0x800e305A...F72C` (secure) | **No** |
 
 - **Arc Mainnet (deployed 2026-09-19, migrated to V7 2026-09-23)**: `src/config/arc-mainnet-addresses.json`. RegistryV2 `0x6F1EbF50290f6D4A9947E9EB77f98a683684fBF5`, **ReputationManagerV4 `0x12953e732e5D1aFdA640554125367d1CEC2ac4FB`**, **Marketplace V6.2 `0xCb23f2fb03Bfd4775Cc0e76E28f64c1e545071be`** (CANONICAL, V7 credit model). Superseded but deliberately still live, unpaused and separately monitored: ReputationV3 `0x1577Eb9985CcA859F25ED2EDaeD16A464ADFaE5e` + Marketplace V6.1 `0x358c5E69f712A4b3558333090a45A054bAeEb282` — verified 2026-09-23 as holding nothing beyond its own 0.000014 USDC `accumulatedFees`, zero lender positions, zero active loans, so it already meets the §6 retirement preconditions (do NOT retire it before the hosted API is redeployed off it). Fully retired: V6.0 `0xb9996de05fD514A0cB2B81fa25448EECD4559Aaa` (paused, revoked, 0 balance). Faucet `0xD854F80031A8d0CB166587AafA0969Da8C3757bF` — **unaffected by the V7 migration** (it references only the registry, which was reused); claim path re-verified live 2026-09-23 by state-override `eth_call`. USDC = Arc native ERC-20 `0x3600000000000000000000000000000000000000` (6 dec; gas is the same USDC in its 18-dec native view). RPC `https://rpc.mainnet.arc.io`, explorer `https://explorer.arc.io`. Levers (tightened 2026-09-19 post-audit): M-1 on, M-2=86400s, **F-C minSupply=10 USDC, D1 rate-limit 5 pts/day**, 1% fee, faucet cohort 100, **claimAmount=1 USDC, faucet funded 20 USDC** (claim verified live; agent #1 = secure wallet already claimed). Smoke test: `scripts/smoke-test-arc-mainnet.js` (real USDC, tiny amounts). Deployed ahead of the runbook's Gate 1 external re-audit (owner decision 2026-09-19). **Internal audit 2026-09-19** (`forensics/output/audit-2026-09/INTERNAL_AUDIT_2026-09-19.md`) found F-01 HIGH (NFT transfer freezes loan) + F-04 HIGH (D1 economics) + 3 MEDIUM + 3 LOW; F-01/02/03/05/07 fixed in **V6.1** (source in repo, `VERSION()=="V6.1"`, pre-fix mainnet source at git tag `arc-mainnet-v6-deployed-2026-09-19`). **Mainnet redeployed to V6.1 on 2026-09-19** via `scripts/redeploy-marketplace-v6.1.js` (marketplace-only; old retired, migration finalized = F-08 closed). Sourcify exact_match; smoke 22/22; invariants OK. **Superseded by the V7 stack on 2026-09-23**; all levers above were re-applied and re-verified on the V6.2/V4 contracts (2026-09-23): `platformFeeRate=100`, `minSupplyAmount=10 USDC`, `bindBorrowToPoolCreator=true`, `minHoldForReputationReward=86400`, `maxReputationGainPerWindow=5` / `reputationGainWindow=86400`, `migrationFinalized=true`. The late-repay reputation penalty **now exists** in V4 (`latePenaltyBase=10`, `perDay=5`, `max=100`) and F-04 was answered by the M1+M2 model change — but **F-04 is priced, not closed** (residual attacker EV ~24 %/yr), so keep third-party lender exposure modest.
 
-- Base stale marketplace: `0x77F8D49cdE6Ae7481BeA38C8a70b5A893bD4d9AF` (60.5 USDC residual, different owner — ignore)
+- Base stale marketplace: `0x77F8D49cdE6Ae7481BeA38C8a70b5A893bD4d9AF` — different owner, ignore. **Its USDC balance is 0.0, not the 60.5 recorded earlier** (read on Base mainnet 2026-09-24); it also does not answer the V6 ABI at all, so it is a different contract shape. Nothing to recover there.
+- **⚠️ Base mainnet is NOT monitored.** `forensics/monitor/v6-invariants.js` has no `base` network (`arc-testnet | arc-staging | arc-mainnet | local` only) and no launchd job watches Base. The canonical Base V6 `0x0a4e3C74…` held **1.506031 USDC** across 4 pools with `accumulatedFees` 0.000054 on 2026-09-24 — small, but unwatched. `forensics/monitor/invariant-monitor.js` (the old multi-network daemon that did cover Base) is not running and is v4-era.
 - Arc compromised wallet: `0x656086A21073272533c8A3f56A94c1f3D8BCFcE2` (key published; agentId 43, 777+ loans, USDC swept to secure wallet 2026-05-08)
 - Base v4 deployed bytecode was compiled from a stash revision with MAX_LENDERS=50 (matches V6); committed v4 source has MAX_LENDERS=200
 
@@ -47,7 +48,7 @@ Website: specular.financial | GitHub: thegrand-canyon/specular | Deploy: specula
 
 - **URL:** `https://specular-agent-api-production.up.railway.app` (Railway project `resplendent-determination`, service `specular-agent-api`, built from `mcp-server/Dockerfile` via `RAILWAY_DOCKERFILE_PATH`; the older `specular` service is the legacy Express API).
 - MCP Streamable HTTP at `/mcp`, REST under `/v1/{network}/…`, `/openapi.json`, `/health`. Networks enabled: `arc-mainnet` (real USDC) + `arc-staging`. **Requires a bearer token** since 2026-09-22 (`fe94781`) — `SPECULAR_MCP_TOKEN` in `.env`; `/health` and `/openapi.json` stay open without one, `/mcp` and `/v1/…` return 401. Per-IP rate-limited.
-- **⚠️ STALE DEPLOY as of 2026-09-23:** the running container still serves the **superseded** V6.1 stack on `arc-mainnet` (`marketplace: 0x358c5E69…`, `v62: false`, `creditTiers.source: "v3-constant"`, self-stake endpoints 400) and so overstates an agent's credit limit 10× (1,000 vs the chain's 100 USDC). The repo is correct — `networks.ts:253,257` already prefers `agentLiquidityMarketplace_v62`/`reputationManagerV4` — the image just predates `af2f5ae`. **Fix = redeploy from HEAD**, then confirm `/v1/arc-mainnet/status` reports `v62: true`, `reputationV4: true`, `creditTiers.source: "chain"`.
+- **✅ Deploy is current (re-checked live 2026-09-24).** The stale-container problem flagged on 2026-09-23 is resolved: `/v1/arc-mainnet/status` now reports `marketplace: 0xCb23f2fb…`, `capabilities.v62: true`, `reputationV4: true`, `creditTiers.source: "chain"`, `maxTierLimitUsdc: 10000`, `minSupplyUsdc: 10.0`, version `2.1.0`. Bearer auth confirmed live: `/health` 200 without a token, `/v1/arc-mainnet/status` **401** without one and 200 with `SPECULAR_MCP_TOKEN`. RPC failover is live (3 upstreams on arc-mainnet, 2 on arc-staging; `/rpc-health` is open and unauthenticated by design). **After any future redeploy of the contracts, re-check this endpoint** — a stale image silently overstates credit limits 10×.
 - **Non-custodial:** reads run server-side; `prepare_*` return unsigned txs for the agent's own wallet; `broadcast_signed_transaction` relays only to Specular contracts. Server refuses to boot if `SPECULAR_PRIVATE_KEY` is set.
 - Deploy: `RAILWAY_TOKEN` (project token, in `.env`) then `railway up --service specular-agent-api --ci` from repo root. Docs: `docs/integrations/{REMOTE_MCP,GROK_BOT,MUSE_CONNECTOR}.md`.
 
@@ -133,12 +134,19 @@ two strategies rather than two models and was refuted on re-measurement).
 - **Arc MAINNET (canonical, 2026-09-23):** ReputationManagerV4 `0x12953e732e5D1aFdA640554125367d1CEC2ac4FB`,
   MarketplaceV6.2 `0xCb23f2fb03Bfd4775Cc0e76E28f64c1e545071be`. Both Sourcify `exact_match`; smoke 21/21.
 - **Arc staging (rehearsal, scale-fixed, 2026-09-22):** ReputationManagerV4 `0xD7906fDFBf69BA89a4c2FE148797e24f386fE3d2`,
-  MarketplaceV6.2 `0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18`. E2E 237/237.
-  Canonical config keys now point at V7; on **staging** the superseded V6.1 stack is under
-  `*_legacy` keys, still live and still holding test lender funds. **On mainnet the convention
-  differs** — the superseded pair is at `agentLiquidityMarketplacePrevious` /
-  `reputationManagerPrevious` plus an appended `supersededDeployments[]` entry. There is no
-  `*_legacy` key in `src/config/arc-mainnet-addresses.json`.
+  MarketplaceV6.2 `0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18`. E2E 237/237. Live levers
+  re-read 2026-09-24 and identical to mainnet's: minSupply 10 USDC, fee 100 bps, minHold 86400,
+  M-1 on, rate limit 5/86400, migrationFinalized true.
+- **Superseded stacks: `supersededDeployments[]` is the authority on BOTH networks.** Do not
+  look for a `*_legacy` key — the only such key anywhere is staging's
+  `agentLiquidityMarketplace_v6_0_legacy_still_live`, which names the **V6.0** contract, not the
+  V6.1 one. `agentLiquidityMarketplacePrevious` / `reputationManagerPrevious` name the most
+  recent superseded pair. A monitor must be pointed at a superseded stack **by address**
+  (`V6_MONITOR_MARKETPLACE=0x…`); `V6_MONITOR_MARKETPLACE_KEY` naming a key that does not exist
+  makes the monitor `exit(2)` and alert every cycle while watching nothing.
+  - Arc mainnet: one superseded marketplace, `0x358c5E69…`, and it **is** monitored.
+  - Arc staging: **three**, all unpaused and unmonitored, holding real test USDC (read
+    2026-09-24): `0xDbDf60AE…` 849.16, `0xB2d88bbF…` 482.24, `0xa736EE7B…` 3,487.69.
 - **Deploy:** `scripts/deploy-v7.js --network <arc-staging|arc-mainnet>` (dry run by default).
 - **Migration plan:** `forensics/output/v7-model/V7_MAINNET_MIGRATION_RUNBOOK.md`.
 - **⚠️ Reputation does NOT migrate** — V4 ships no seed helper on purpose (that is the F-08
@@ -155,12 +163,22 @@ two strategies rather than two models and was refuted on re-measurement).
     node forensics/monitor/v6-invariants.js
   ```
   This is live as launchd `com.specular.v6-invariants-arc-mainnet-legacy` (verified 2026-09-23).
-  Both mainnet jobs currently share one log/state/heartbeat, so the legacy job's liveness is not
-  independently observable.
-- **⚠️ Alert storm (open):** `af2f5ae` unloaded the arc-testnet job but left
-  `forensics/monitor/heartbeat-arc-testnet.json` on disk, so every surviving monitor's
-  dead-man's switch (`v6-invariants.js:808-819`) raises 2 CRITICALs every 30 min about a monitor
-  retired on purpose. Invariants themselves pass (`findings: 0`). Fix: delete that heartbeat file.
+- **⚠️ FIXED 2026-09-24 — the two mainnet jobs were cancelling `CP-CHANGED`.** Both used
+  `V6_MONITOR_NETWORK=arc-mainnet` and therefore shared `state-arc-mainnet.json`. The legacy
+  marketplace points at ReputationManagerV3, which has no on-chain tier table, so its run wrote
+  `creditPolicy: null` — and it runs ~30 s **before** the canonical job on every cycle
+  (confirmed in the log). The canonical run therefore never had a previous policy to compare
+  against and **`CP-CHANGED` could never fire** — the single signal a hostile owner key reliably
+  produces. Setting `V6_MONITOR_MARKETPLACE` now gives a run its own instance namespace
+  (`state-<net>-<addr8>.json`, own log, own heartbeat), which also makes the legacy job's
+  liveness independently observable in `alert.js --status`. **Re-check this after every future
+  supersession.**
+- **✅ Alert storm (closed):** `heartbeat-arc-testnet.json` has been deleted; `alert.js --status`
+  shows only live jobs and no `MONITOR_DOWN` fires. Rule: **retiring a job means deleting its
+  heartbeat file**, or the dead-man's switch alerts about it for ever.
+- **⚠️ Every alert channel is local to this Mac.** `SPECULAR_ALERT_WEBHOOK` is unset and
+  `forensics/monitor/monitor.env` does not exist, so alerts are a latch file, `~/SPECULAR-ALERT.txt`,
+  a macOS banner and a spoken line. Verified end to end 2026-09-24 by forcing a real failure.
 
 ## Testing round 2026-09-20/21 (6 tracks) — `forensics/output/testing-2026-09-20/`
 
@@ -170,16 +188,38 @@ two strategies rather than two models and was refuted on re-measurement).
 | E2E on Arc staging | **186 assertions green**; F-01/F-02/F-07/F-08/M-1/M-2/D1/F-C all confirmed on a live chain |
 | Economics | F-04 unfixable by levers (above); M1+M2 model change specified and simulated |
 | Hosted server | 15 findings (4 High: relay bypass, unbounded upstream, **rate limiter keyed on the edge not the caller**, `ws` CVE) — all fixed, redeployed 2026-09-21 |
-| Monitoring | old monitor caught **3 of 19** engineered violations; the §S5 check had been a **silent no-op since deploy** (keyed by wallet; V6.1 keys by agentId). Rewritten → 19/19, 13 check families, alerting, rotation |
+| Monitoring | old monitor caught **3 of 19** engineered violations; the §S5 check had been a **silent no-op since deploy** (keyed by wallet; V6.1 keys by agentId). Rewritten → 19/19, alerting, rotation. **15 check families defined today** (V6.2-SELFSTAKE and V7-CREDIT-POLICY were added after that round); a clean Arc-mainnet run emits **14** — observed 2026-09-24 |
 | SDK | 20 findings (2 High: a transient RPC error poisoned V6.1 capability detection → late repay under-approves → **agent cannot close its loan and defaults**). Exact-approval verified across all 14 USDC-pulling paths; Python brought to parity |
 
-Known-environmental: `test/api/tx-builder*` fail when the Arc testnet public RPC rate-limits
-this host (dRPC 429s us). Use `https://rpc.testnet.arc.io` or `https://arc-testnet-rpc.publicnode.com`.
+Known-environmental: `test/api/tx-builder*` can fail when the Arc testnet public RPC
+rate-limits this host (dRPC 429s us). Use `https://rpc.testnet.arc.io` or
+`https://arc-testnet-rpc.publicnode.com`. Note `.env` still sets
+`ARC_TESTNET_RPC_URL=https://arc-testnet.drpc.org`, so a shell that loads `.env` gets dRPC even
+though every script now DEFAULTS to `rpc.testnet.arc.io`; the launchd staging job pins the good
+endpoint in its plist. (Full suite ran clean on 2026-09-24: 872 passing, 0 failing.)
 
-Operational: both launchd monitors run `forensics/monitor/run-with-alert.sh` (alerts on ANY
-non-zero exit incl. crash/watchdog). Incident runbook: `forensics/monitor/INCIDENT_RUNBOOK.md`.
-**`pause()` freezes lender exits AND repayment AND your own `liquidateLoan`** (6 of 18 ops) —
-`registry.deactivateAgent` is the better per-agent kill switch.
+Operational: the three invariant monitors run `forensics/monitor/run-with-alert.sh` (alerts on
+ANY non-zero exit incl. crash/watchdog). Incident runbook: `forensics/monitor/INCIDENT_RUNBOOK.md`.
+**`pause()` freezes lender exits AND repayment AND your own `liquidateLoan`** — **9 of 35**
+measured operations on V6.2 (the older "6 of 18" was the coarser V6.1 probe set; nothing in V6.2
+made pause safer). `registry.deactivateAgent` breaks exactly **1** operation and is reversible —
+it is the better per-agent kill switch.
+
+### launchd jobs installed on this machine (audited 2026-09-24)
+
+`launchctl list | grep specular` — five jobs, every plist pointing at a file that exists:
+
+| label | script | interval | notes |
+|---|---|---|---|
+| `com.specular.v6-invariants-arc-mainnet` | `run-with-alert.sh arc-mainnet` | 1800 s | canonical V6.2 + V4 |
+| `com.specular.v6-invariants-arc-mainnet-legacy` | `run-with-alert.sh arc-mainnet` + `V6_MONITOR_MARKETPLACE=0x358c5E69…` | 1800 s | superseded V6.1 |
+| `com.specular.v6-invariants-arc-staging` | `run-with-alert.sh arc-staging` | 1800 s | `ARC_TESTNET_RPC_URL=https://rpc.testnet.arc.io` |
+| `com.specular.overdue-loans-arc-mainnet` | `run-overdue-check.sh arc-mainnet` | 3600 s | stamps **no heartbeat** |
+| `com.specular.rpc-health-sample` | `rpc-health-sample.sh` | 900 s | stamps **no heartbeat** |
+
+`com.specular.v6-invariants.plist.disabled` is the retired arc-testnet job — do not reload it.
+All five plists are now committed under `forensics/monitor/`; before 2026-09-24 four of them
+existed **only** in `~/Library/LaunchAgents` and in no git history.
 
 ## Security Findings (audited, fixed in V6, awaiting external audit)
 
@@ -192,7 +232,7 @@ non-zero exit incl. crash/watchdog). Incident runbook: `forensics/monitor/INCIDE
 ### Live impact still extant on v4
 
 - **Base mainnet loans #2/#3/#4 — RESOLVED** (verified on-chain 2026-07). The liquidation cron ran on schedule; all three are now `DEFAULTED` (state 3) and the v4 marketplace USDC balance is 0. v4 is `paused: true`, owner = secure wallet. (Historical: they were the 0.10-USDC self-borrows whose `repayLoan` reverted `Panic(0x11)`; `liquidateLoan` avoids the buggy interest path and succeeded.)
-- Base canonical V6 verified clean 2026-07: unpaused, owner = secure wallet, 13 loans all `REPAID`, no phantom liquidity (§S1 holds).
+- Base canonical V6 re-read 2026-09-24: unpaused, owner = secure wallet, **14** loans all `REPAID` (state 2), 4 pools, `accumulatedFees` 0.000054, USDC balance 1.506031 (lender positions, not phantom). No `VERSION()` — it is the V6.0 generation.
 - **Arc v4 §S1 leak**: ~74.87 USDC of phantom availableLiquidity across 40 lenders (cumulative)
 - **Arc v4 agent #43**: 777+ lifetime loans, 3.94M gas per requestLoan, ~5,665 loans from full DoS
 
@@ -221,7 +261,7 @@ non-zero exit incl. crash/watchdog). Incident runbook: `forensics/monitor/INCIDE
 - `forensics/output/regression-2026-05-07/V6_MIGRATION_RUNBOOK.md` — post-deploy migration steps
 - `forensics/output/regression-2026-05-07/BASE_DEPLOY_PREP.md` — Base deployment checklist
 - `forensics/output/regression-2026-05-07/LIQUIDATION_RUNBOOK_2026-05-11.md` — Base #2/#3/#4 cron-scheduled liquidation
-- `forensics/monitor/v6-invariants.js` + launchd `com.specular.v6-invariants` (every 30 min)
+- `forensics/monitor/v6-invariants.js` + the launchd jobs listed above (every 30 min). **Not** `com.specular.v6-invariants` — that label is the retired arc-testnet job and is installed only as `.disabled`.
 
 ### Earlier audit context
 - `AUDIT_BUNDLE.md` — original severity table + all findings on v4
@@ -240,7 +280,7 @@ it is owner-settable on-chain state bounded by the immutable `MAX_TIER_LIMIT` (1
 actual limit is always `calculateCreditLimit(address)`. The numbers below are the SHIPPED DEFAULTS of each
 generation, for orientation only — never hardcode them.
 
-### V7 defaults (`ReputationManagerV4`, live on Arc staging since 2026-09-22)
+### V7 defaults (`ReputationManagerV4` — Arc staging since 2026-09-22, **Arc mainnet since 2026-09-23**; table re-read from both chains 2026-09-24)
 
 | Score | Collateral | Interest | Tier limit | Unsecured exposure |
 |-------|-----------|----------|-----------|--------------------|
@@ -284,6 +324,29 @@ Initial score: 0 (uninitialized agent). On-time repayment: +10. Default: −50 (
 every agent must call `initializeReputation()` again and re-climb. Agent NFTs/ids survive (the registry is not
 redeployed). Clients must never assume a prior score exists on a V7 deployment.
 
+## Disaster recovery — what lives ONLY on this machine (audited 2026-09-24)
+
+`origin/main` == local `HEAD` (`503b4d2`, github.com/thegrand-canyon/specular), so all
+**1,280 tracked files** — contracts, SDK, scripts, monitor, runbooks — are recoverable from
+GitHub. What is not:
+
+| Only here | Recoverable? | If the machine is lost |
+|---|---|---|
+| **`.env` — `PRIVATE_KEY` of `0x800e305A…F72C`** | **NO** | **Total, permanent loss of control.** That one EOA owns the marketplace, reputation manager, registry and faucet on Arc mainnet, Arc staging and Base. There is no multisig, no timelock, no guardian, no recovery path, and `renounceOwnership` reverting on the marketplace/reputation manager does not help you — the contracts simply become unadministrable: no `pause`, no `liquidateLoan`, no `deactivateAgent`, no lever changes, for ever. **Back this key up offline. It is the single highest-value item in the whole system.** |
+| `.env` — `SPECULAR_MCP_TOKEN`, `RAILWAY_TOKEN`, `MOLTBOOK_API_KEY`, RPC URLs | partly | MCP token: rotate and redistribute to agents. Railway token: reissue from the Railway dashboard. RPC URLs are public. |
+| launchd plists | **now yes** | All five are committed under `forensics/monitor/` and reinstalled with `./forensics/monitor/install-v6-monitor.sh`. Before 2026-09-24 four of the five existed only in `~/Library/LaunchAgents` — a rebuild would have silently come back with monitoring gone. |
+| Monitor state: `state-*.json`, `heartbeat-*.json`, `alerts.log`, `v6-invariants-*.log`, `rpc-health.jsonl`, `overdue-*.log` | NO (gitignored) | Only history is lost. Everything is re-derived from chain on the next run — except the `CP-CHANGED` baseline and the `FRESH-STUCK`/lateness comparisons, which are **blind for exactly one cycle** after a rebuild. Expect no alert on a policy change made during that window. |
+| `monitor.env` (webhook) | n/a | Does not exist. Nothing to lose; nothing remote to notify. |
+| **~142 untracked root `*.md` reports** (252 on disk, 110 tracked) | **NO** | Session summaries, test reports and campaign docs from 2026-02 onward. Not load-bearing for operations, but gone for good. `git add` them or accept the loss. |
+| `artifacts/`, `node_modules/`, `cache/` | yes | `npm ci && npx hardhat compile`. |
+
+**Rebuild, in order:** clone the repo → restore `.env` from offline backup → `npm ci` →
+`npx hardhat compile` → edit the plist paths if the repo is not at `~/Specular` →
+`./forensics/monitor/install-v6-monitor.sh` → `node forensics/monitor/alert.js --self-test`
+→ `node forensics/monitor/alert.js --status` (one fresh heartbeat per invariant job) →
+`node scripts/incident-drill/verify-runbook-levers.js` (exit 0) →
+`node scripts/smoke-test-arc-mainnet.js --read-only` (11/11).
+
 ## Brand
 
 - Primary color: `#FF6A00` (orange)
@@ -294,7 +357,7 @@ redeployed). Clients must never assume a prior score exists on a V7 deployment.
 ## npm Scripts
 
 ```
-npm test                  # all tests (93/93)
+npm test                  # all tests (872 passing, 5 pending — verified 2026-09-24)
 npm run compile           # compile contracts
 npm run node              # start local Hardhat node
 npm run deploy:local      # deploy to localhost

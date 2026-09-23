@@ -38,7 +38,17 @@ if [ "$CODE" -ne 0 ]; then
     # The monitor alerts on its own for findings it understands, and records that
     # in its heartbeat. This branch is the catch-all for everything it CANNOT
     # report on: a crash before it logged anything, OOM, node missing, repo moved.
-    HB="${SPECULAR_ALERT_DIR:-$REPO/forensics/monitor}/heartbeat-$NETWORK.json"
+    # Heartbeat name must match v6-invariants.js's INSTANCE, which is the network name
+    # unless a specific (superseded) marketplace is being watched — those get their own
+    # state/log/heartbeat so two jobs on one network cannot overwrite each other.
+    INSTANCE="$NETWORK"
+    if [ -n "${V6_MONITOR_INSTANCE:-}" ]; then
+        INSTANCE="$V6_MONITOR_INSTANCE"
+    elif [ -n "${V6_MONITOR_MARKETPLACE:-}" ]; then
+        SHORT=$(printf '%s' "${V6_MONITOR_MARKETPLACE#0x}" | cut -c1-8 | tr '[:upper:]' '[:lower:]')
+        INSTANCE="$NETWORK-$SHORT"
+    fi
+    HB="${SPECULAR_ALERT_DIR:-$REPO/forensics/monitor}/heartbeat-$INSTANCE.json"
     ALREADY=""
     if [ -f "$HB" ]; then
         ALREADY=$(node -e 'try{const h=require(process.argv[1]);process.stdout.write(h.alerted&&(Date.now()-h.epoch)<120000?"1":"")}catch(e){}' "$HB" 2>/dev/null)

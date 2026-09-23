@@ -1,203 +1,142 @@
-# Specular Invariant Monitor
+# Specular monitoring
 
-**Real-time monitoring daemon for critical invariant violations in Specular marketplace deployments.**
+**What is actually running, what it watches, and how an alert reaches a human.**
 
-## Overview
+> Rewritten 2026-09-24. The previous version of this file described `invariant-monitor.js`,
+> a long-running daemon polling Base mainnet and Arc **testnet** for three v4-era bugs, and
+> documented a `WEBHOOK_URL` env var that nothing reads any more. None of that has been the
+> monitoring for months. `invariant-monitor.js` is kept only as historical context — nothing
+> runs it.
 
-This daemon continuously polls Base Mainnet and Arc Testnet to detect the three critical vulnerabilities:
+Incident response: **`INCIDENT_RUNBOOK.md`** (start there when something fires).
 
-- **§S1**: Fund drain via `claimInterest` (checks `Σ claimed ≤ actual USDC`)
-- **§B1**: Duplicate poolLenders causing repay panic (scans `poolLenders[]` arrays)
-- **§S5**: DoS via unbounded loops (tracks agent lifetime loan counts)
+---
 
-## Features
+## The five jobs that run on this machine
 
-- ✅ **Read-only monitoring** - no state mutations, only view calls
-- ✅ **Multi-network support** - Base canonical + stale + Arc Testnet
-- ✅ **Real-time alerts** - Slack/Discord webhook integration
-- ✅ **Structured logging** - JSON output for ingestion by monitoring systems
-- ✅ **Graceful degradation** - continues monitoring even if one network fails
+`launchctl list | grep specular`
 
-## Quick Start
+| launchd label | runs | every | watches |
+|---|---|---|---|
+| `com.specular.v6-invariants-arc-mainnet` | `run-with-alert.sh arc-mainnet` | 30 min | the **canonical** Arc-mainnet marketplace (V6.2 + ReputationManagerV4) |
+| `com.specular.v6-invariants-arc-mainnet-legacy` | `run-with-alert.sh arc-mainnet` with `V6_MONITOR_MARKETPLACE` | 30 min | the **superseded** V6.1 marketplace, still live and still authorized |
+| `com.specular.v6-invariants-arc-staging` | `run-with-alert.sh arc-staging` | 30 min | the Arc-testnet staging stack |
+| `com.specular.overdue-loans-arc-mainnet` | `run-overdue-check.sh arc-mainnet` | 60 min | ACTIVE loans past `endTime` (the invariant monitor has **no** overdue check) |
+| `com.specular.rpc-health-sample` | `rpc-health-sample.sh` | 15 min | the hosted agent API's upstream-RPC health, appended to `rpc-health.jsonl` |
 
-```bash
-# Install dependencies (if not already present)
-npm install ethers node-fetch
+The plists live beside this file and are installed with `./install-v6-monitor.sh`. They
+hardcode `/Users/peterschroeder/Specular`; edit the paths before installing elsewhere.
 
-# Basic monitoring (stdout logs only)
-BASE_RPC_URL=https://mainnet.base.org \
-ARC_TESTNET_RPC_URL=https://arc-testnet.drpc.org \
-node invariant-monitor.js
+`com.specular.v6-invariants.plist` is the **retired** arc-testnet job. It is kept for
+history and is deliberately not installed.
 
-# With Slack alerts
-WEBHOOK_URL=https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK \
-BASE_RPC_URL=https://mainnet.base.org \
-ARC_TESTNET_RPC_URL=https://arc-testnet.drpc.org \
-POLL_INTERVAL_SEC=30 \
-LOG_LEVEL=INFO \
-node invariant-monitor.js
-```
+---
 
-## Configuration
+## Files
 
-| Environment Variable | Default | Description |
-|---------------------|---------|-------------|
-| `BASE_RPC_URL` | `https://mainnet.base.org` | Base mainnet RPC endpoint |
-| `ARC_TESTNET_RPC_URL` | `https://arc-testnet.drpc.org` | Arc testnet RPC endpoint |
-| `POLL_INTERVAL_SEC` | `60` | Seconds between monitoring cycles |
-| `LOG_LEVEL` | `INFO` | Logging level: `DEBUG`, `INFO`, `WARN`, `ERROR` |
-| `WEBHOOK_URL` | (none) | Slack/Discord webhook for alerts |
+| file | role |
+|---|---|
+| `v6-invariants.js` | the checker. One run = one snapshot + 14 check families. Exit 0 clear / 1 violation / 2 could not complete. |
+| `run-with-alert.sh` | launchd entry point. Fans **any** non-zero exit — including a crash the checker never got to report — into `alert.js`. |
+| `check-overdue-loans.js` | read-only list of liquidation candidates. Exit 0 none / 1 some / 2 could not read. |
+| `run-overdue-check.sh` | launchd entry point for the above. |
+| `rpc-health-sample.sh` | one JSON line of hosted-API RPC health per run. |
+| `alert.js` | the fan-out: latch file, `~/SPECULAR-ALERT.txt`, macOS banner (+ spoken CRITICAL), `alerts.log`, optional webhook. Also the dead-man's switch. |
+| `INCIDENT_RUNBOOK.md` | what a human does when one of these fires. |
+| `WEBHOOK_SETUP.md` / `webhook-test.js` | optional remote notification. |
+| `invariant-monitor.js` | **historical** v4-era daemon. Not run by anything. |
 
-## Output Format
+---
 
-### Normal Operation
-```json
-{"timestamp":"2026-05-05T10:30:00.000Z","level":"INFO","message":"S1 invariant healthy","network":"base-canonical","actualBalance":"1.500000","claimedTotal":"1.500000","deficit":"0.000000","violatesS1":false}
-```
+## How an alert reaches you
 
-### Invariant Violation
-```json
-{"timestamp":"2026-05-05T10:30:00.000Z","level":"ERROR","message":"S1 invariant violation detected","network":"base-canonical","actualBalance":"1.500000","claimedTotal":"1.500002","deficit":"0.000002","violatesS1":true}
-```
-
-## Alert Conditions
-
-### 🚨 CRITICAL Alerts
-
-- **S1 Fund Drain**: `claimedTotal > actualBalance` by any amount
-- **B1 Duplicate Lenders**: Any `poolLenders[]` array contains duplicate addresses
-- **S5 DoS Reached**: Any agent exceeds the brick threshold (~6,500 lifetime loans)
-
-### ⚠️  WARNING Alerts
-
-- **S5 DoS Warning**: Any agent exceeds 80% of brick threshold
-
-## Monitored Deployments
-
-### Base Mainnet
-- **Canonical**: `0xd7b4dEE74C61844DFA75aEbe224e4635463b1C8f` (current production)
-- **Stale**: `0x77f8D49CDE6Ae7481bea38C8a70B5a893bD4d9aF` (legacy instance)
-
-### Arc Testnet
-- **Current**: `0x048363A325A5B188b7FF157d725C5e329f0171D3`
-
-## Production Deployment
-
-### Systemd Service
-
-```ini
-# /etc/systemd/system/specular-monitor.service
-[Unit]
-Description=Specular Invariant Monitor
-After=network.target
-
-[Service]
-Type=simple
-User=monitor
-WorkingDirectory=/opt/specular-monitor
-Environment=BASE_RPC_URL=https://mainnet.base.org
-Environment=ARC_TESTNET_RPC_URL=https://arc-testnet.drpc.org
-Environment=WEBHOOK_URL=https://hooks.slack.com/services/YOUR/WEBHOOK
-Environment=POLL_INTERVAL_SEC=60
-Environment=LOG_LEVEL=INFO
-ExecStart=/usr/bin/node invariant-monitor.js
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-```
+1. `ALERT-ACTIVE.json` — a **latch**. Its existence means "unacknowledged incident".
+   Never cleared automatically; clear it with `node alert.js --ack`.
+2. `~/SPECULAR-ALERT.txt` — plain text in your home directory.
+3. A macOS notification banner, plus a spoken alert for CRITICAL.
+4. `alerts.log` — append-only JSONL history.
+5. `SPECULAR_ALERT_WEBHOOK` — **only if you set it** in `monitor.env` (gitignored).
+   Nothing is hardcoded. **It is not set on this machine today**, so every channel above is
+   local: if nobody is logged in at this Mac, nobody is told. See `WEBHOOK_SETUP.md`.
 
 ```bash
-sudo systemctl enable specular-monitor.service
-sudo systemctl start specular-monitor.service
-sudo journalctl -u specular-monitor.service -f
+export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
+node forensics/monitor/alert.js --status     # latch + a heartbeat per job
+node forensics/monitor/alert.js --self-test  # prove the channels still work
+node forensics/monitor/alert.js --ack        # clear the latch AFTER handling it
 ```
 
-### Docker Deployment
+`SPECULAR_ALERT_DIR` sandboxes every artifact — latch, history, heartbeats **and** the
+home-dir flag — so a drill cannot pollute the real channels.
 
-```dockerfile
-FROM node:18-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
-COPY . .
-USER node
-CMD ["node", "invariant-monitor.js"]
-```
+---
+
+## Running one by hand
 
 ```bash
-docker build -t specular-monitor .
-docker run -d --name specular-monitor \
-  -e BASE_RPC_URL=https://mainnet.base.org \
-  -e ARC_TESTNET_RPC_URL=https://arc-testnet.drpc.org \
-  -e WEBHOOK_URL=https://hooks.slack.com/... \
-  --restart=unless-stopped \
-  specular-monitor
+export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
+cd ~/Specular
+
+# canonical Arc mainnet, verbose, no alert fan-out
+V6_MONITOR_NETWORK=arc-mainnet V6_EXPECTED_OWNER=0x800e305A0caDdE6289dFDFEDF38218f45C06F72C \
+  node forensics/monitor/v6-invariants.js --verbose --no-alert
+
+# a SUPERSEDED marketplace — always by ADDRESS. Superseded stacks live in the
+# `supersededDeployments` LIST in the addresses file, so no fixed config key resolves them;
+# V6_MONITOR_MARKETPLACE_KEY=<a key that does not exist> makes the monitor exit 2 and alert
+# for ever while watching nothing.
+V6_MONITOR_NETWORK=arc-mainnet V6_MONITOR_MARKETPLACE=0x358c5E69f712A4b3558333090a45A054bAeEb282 \
+  node forensics/monitor/v6-invariants.js --no-alert
+
+# overdue loans (read-only)
+node forensics/monitor/check-overdue-loans.js            # NET=arc-staging|local to switch
 ```
 
-## Log Ingestion
+### One network, several marketplaces
 
-### Elasticsearch/Logstash
-```ruby
-# logstash.conf
-filter {
-  if [fields][service] == "specular-monitor" {
-    json {
-      source => "message"
-    }
-    if [violatesS1] == true or [violatesB1] == true or [violatesS5] == true {
-      mutate {
-        add_tag => [ "critical-alert" ]
-      }
-    }
-  }
-}
-```
+Setting `V6_MONITOR_MARKETPLACE` also gives that run its own **instance namespace** —
+`state-<network>-<addr8>.json`, `v6-invariants-<network>-<addr8>.log`,
+`heartbeat-<network>-<addr8>.json`.
 
-### Prometheus Metrics
-```javascript
-// Add to monitor (optional)
-const client = require('prom-client');
-const violations = new client.Gauge({
-  name: 'specular_invariant_violations',
-  help: 'Current invariant violations',
-  labelNames: ['network', 'type']
-});
-```
+That is not cosmetic. Before 2026-09-24 the two Arc-mainnet jobs shared one state file; the
+legacy job ran ~30 s before the canonical job on every cycle and rewrote the shared state with
+`creditPolicy: null` (a V3 reputation manager has no on-chain tier table), so the canonical
+run never had a previous policy to compare against and **`CP-CHANGED` could never fire** —
+the one signal a hostile owner key reliably produces. Override the namespace explicitly with
+`V6_MONITOR_INSTANCE` if you need to.
 
-## Troubleshooting
+---
 
-### Common Issues
+## Env
 
-**RPC Rate Limiting**
-- Reduce `POLL_INTERVAL_SEC`
-- Use dedicated RPC endpoints (Alchemy, Infura)
-- Add retry logic with exponential backoff
+| var | default | meaning |
+|---|---|---|
+| `V6_MONITOR_NETWORK` | `arc-testnet` | `arc-testnet` \| `arc-staging` \| `arc-mainnet` \| `local` |
+| `V6_MONITOR_MARKETPLACE` | canonical pointer | watch this address instead; also namespaces state/log/heartbeat |
+| `V6_MONITOR_INSTANCE` | derived | explicit namespace override |
+| `V6_EXPECTED_OWNER` | `deployer` from the addresses file | pinned so an ownership change is detectable even if the repo is edited |
+| `V6_EXPECT_PAUSED` | `0` | `1` when a pause is intentional |
+| `V6_MAX_BLOCK_AGE_SEC` | `1800` | chain-head staleness threshold; `0` disables |
+| `V6_MAX_RUNTIME_SEC` | `300` | watchdog; a run that outlives the interval delays the next one |
+| `V6_RPC_TIMEOUT_MS` | `20000` | per-request timeout |
+| `V6_SURPLUS_WARN_USDC` | `1` | unexplained-surplus WARN threshold |
+| `V6_LOG_MAX_BYTES` | `5 MiB` | in-process log rotation |
+| `SPECULAR_ALERT_WEBHOOK` | unset | opt-in remote notification |
+| `SPECULAR_ALERT_DIR` | this directory | sandbox every alert artifact (drills/tests) |
+| `SPECULAR_ALERT_QUIET` | unset | suppress banner/voice |
 
-**Memory Usage**
-- Expected: ~50MB baseline + ~10MB per monitored network
-- Large pools may cause spikes during `poolLenders[]` enumeration
+---
 
-**Network Connectivity**
-- Monitor will continue on partial failures
-- Check logs for specific network error patterns
-- Webhook failures are logged but don't stop monitoring
+## Known gaps
 
-### Debug Mode
-```bash
-LOG_LEVEL=DEBUG node invariant-monitor.js
-```
+These are properties of the setup, not bugs to be surprised by. Full list and consequences
+in `INCIDENT_RUNBOOK.md` §6.
 
-This will output detailed information about each pool scan, RPC call timing, and intermediate calculations.
-
-## Security Notes
-
-- ⚠️  **RPC Endpoints**: Use trusted providers (Alchemy, Infura) for production
-- ⚠️  **Webhook URLs**: Treat as sensitive; attackers could spam your channels
-- ✅ **No Private Keys**: Monitor is read-only, requires no wallet access
-- ✅ **No State Writes**: Uses only `eth_call` and log queries
-
-## License
-
-Same as parent project. This tool is provided for legitimate security monitoring purposes only.
+- **No all-jobs-dead detector.** The jobs cross-check each other's heartbeats, but a sleeping
+  or powered-off Mac silences all of them. Weekly `alert.js --status` is the only backstop.
+- **No remote channel is configured.** Every alert is local to this Mac.
+- **Only the marketplace owner is watched.** Registry / reputation-manager / faucet ownership
+  changes, `authorizePool`, `revokePool` and every fee-and-limit lever are invisible.
+- **`run-overdue-check.sh` and `rpc-health-sample.sh` stamp no heartbeat.** If either job
+  stops, nothing notices.
+- **Read-only.** Nothing here holds a key or sends a transaction.

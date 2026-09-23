@@ -1,0 +1,2127 @@
+diff --git a/CLAUDE.md b/CLAUDE.md
+index adb9c01..abc2fd9 100644
+--- a/CLAUDE.md
++++ b/CLAUDE.md
+@@ -19,7 +19,7 @@ Website: specular.financial | GitHub: thegrand-canyon/specular | Deploy: specula
+ - `ReputationManager.sol` — credit scoring 0–1000, affects interest rates and loan limits
+ - `LendingPool.sol` — loan lifecycle (request → approve → repay/default), interest calculation, collateral
+ - `MockUSDC.sol` — test token with 6 decimals (matches real USDC)
+-- **93/93 tests passing** — run with `npm test`
++- **872 passing, 5 pending** — run with `npm test` (executed 2026-09-24, ~2 min; the long-standing "93/93" in this file predated the V6/V6.1/V6.2 suites)
+ - Deploy locally: `npm run node` (terminal 1) then `npm run deploy:local` (terminal 2)
+ 
+ ### Production Contracts (deployed)
+@@ -28,18 +28,19 @@ Website: specular.financial | GitHub: thegrand-canyon/specular | Deploy: specula
+ - `AgentLiquidityMarketplaceV6.sol` — V6, surgical patch with §B1/§S1/§S5 fixes (NEW, deployed Arc only)
+ - Arc Testnet addresses: `src/config/arc-testnet-addresses.json`
+ - Base Mainnet addresses: `src/config/base-addresses.json`
+-- **Arc Testnet V6-STAGING (2026-08 self-audit fixes)**: `src/config/arc-testnet-v6-addresses.json` — the FIXED stack (H-1..H-3, A1, D1–D5, D11/D12 + all levers) deployed to Arc testnet as a mainnet rehearsal. **Marketplace redeployed to V6.1 `0xB2d88bbFF61EF2CcF4B4A2CFd75aeed0f11F6878` on 2026-09-19** (audit fixes F-01/F-02/F-03/F-05/F-07, Sourcify exact_match, migration finalized; old V6.0 `0xDbDf60AE…` left live because it still holds ~849 test USDC of lender funds — pausing would freeze exits). Original marketplace `0xDbDf60AE5CB46D23aA44c062a4943655a6820f31`, RegistryV2 `0x4712A978A0EADe68f0b485b981112Ae66aA622d9`, ReputationV3 `0x085D581FB56d4aD428d9852466557286099dD46c`, Faucet `0x11D3e3A358D0Ef572260E33DAC66D0276EB97c57`, MockUSDC `0x9F3C10985998D1354D1465c5135Aa924775bd11D`. Owner = secure wallet. Launch levers ON (M-1, M-2=1d, F-C=1 USDC, D1 rate-limit 20/day, 1% fee, faucet cohort 100). On-chain smoke test 19/19 (`scripts/smoke-test-arc-testnet-v6.js`). Deploy: `scripts/deploy-arc-testnet-v6.js`. NOTE: this is the fixed code on TESTNET; the older Arc-testnet V6 `0x7a05…` below predates these fixes.
++- **Arc Testnet STAGING**: `src/config/arc-testnet-v6-addresses.json`. **Canonical today (read on-chain 2026-09-24): Marketplace V6.2 `0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18` + ReputationManagerV4 `0xD7906fDFBf69BA89a4c2FE148797e24f386fE3d2`** (deployed 2026-09-22). RegistryV2 `0x4712A978A0EADe68f0b485b981112Ae66aA622d9`, Faucet `0x11D3e3A358D0Ef572260E33DAC66D0276EB97c57`, MockUSDC `0x9F3C10985998D1354D1465c5135Aa924775bd11D`. Owner = secure wallet on all of them, unpaused, `migrationFinalized=true`. **Live levers are the same as mainnet's: M-1 on, M-2=86400s, minSupply=10 USDC, rate limit 5/day, 1% fee, faucet cohort 100** — the old "F-C=1 USDC / rate-limit 20/day" figures are two generations stale. Read-only config check: `node scripts/smoke-test-arc-testnet-v6.js --read-only` (9 assertions, sends nothing). Superseded and still live: V6.0 `0xDbDf60AE…` (849.16 test USDC), V6.1 `0xB2d88bbF…` (482.24), V6.2-pre-scale-fix `0xa736EE7B…` (3,487.69) — see `supersededDeployments[]`; **none is monitored**. `ReputationV3 0x085D581FB…` belongs to the retired V6.0 generation. The older Arc-testnet V6 `0x7a05…` below predates all of this.
+ 
+ | Network | v4 (canonical) | V6 (with fixes) | Owner | Paused |
+ |---------|---------------|------------------|-------|--------|
+ | Arc Testnet | `0x048363A325A5B188b7FF157d725C5e329f0171D3` | `0x7a0560551b2370ee87458186c0b1eFCc38c7c57a` (post-WORLDCLASS audit, deployed 2026-05-17 — predates 2026-08 self-audit fixes) | `0x800e305A...F72C` (secure) | **No** |
+-| Arc Testnet **V6-staging (fixed)** | — | `0xDbDf60AE5CB46D23aA44c062a4943655a6820f31` (2026-08 self-audit fixes + levers, fresh MockUSDC) | `0x800e305A...F72C` (secure) | **No** |
+-| Base Mainnet | `0x0a4e3C745aB95aceb45B05C28D89fe4Db8815F9a` (CANONICAL 2026-05-17 — V6, post-WORLDCLASS audit) | (v4 archived: `0xd7b4dEE74C61844DFA75aEbe224e4635463b1C8f`, paused) | `0x800e305A...F72C` (secure) | **No** |
++| Arc Testnet **staging** | — | **`0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18` (V6.2 CANONICAL + ReputationManagerV4 `0xD7906fDF…`, 2026-09-22)**; superseded & still live: `0xDbDf60AE…` (V6.0), `0xB2d88bbF…` (V6.1), `0xa736EE7B…` (V6.2 pre-scale-fix) | `0x800e305A...F72C` (secure) | **No** |
++| Base Mainnet | `0x0a4e3C745aB95aceb45B05C28D89fe4Db8815F9a` (CANONICAL 2026-05-17 — V6, post-WORLDCLASS audit; **unmonitored**) | (v4 archived: `0xd7b4dEE74C61844DFA75aEbe224e4635463b1C8f`, paused) | `0x800e305A...F72C` (secure) | **No** |
+ | **Arc Mainnet** (chainId 5042) | — | **`0xCb23f2fb03Bfd4775Cc0e76E28f64c1e545071be` (V6.2 CANONICAL, V7 credit model, 2026-09-23)** with **ReputationManagerV4 `0x12953e732e5D1aFdA640554125367d1CEC2ac4FB`**; superseded: V6.1 `0x358c5E69…` (left running, monitored), V6.0 `0xb9996de0…` (retired) | `0x800e305A...F72C` (secure) | **No** |
+ 
+ - **Arc Mainnet (deployed 2026-09-19, migrated to V7 2026-09-23)**: `src/config/arc-mainnet-addresses.json`. RegistryV2 `0x6F1EbF50290f6D4A9947E9EB77f98a683684fBF5`, **ReputationManagerV4 `0x12953e732e5D1aFdA640554125367d1CEC2ac4FB`**, **Marketplace V6.2 `0xCb23f2fb03Bfd4775Cc0e76E28f64c1e545071be`** (CANONICAL, V7 credit model). Superseded but deliberately still live, unpaused and separately monitored: ReputationV3 `0x1577Eb9985CcA859F25ED2EDaeD16A464ADFaE5e` + Marketplace V6.1 `0x358c5E69f712A4b3558333090a45A054bAeEb282` — verified 2026-09-23 as holding nothing beyond its own 0.000014 USDC `accumulatedFees`, zero lender positions, zero active loans, so it already meets the §6 retirement preconditions (do NOT retire it before the hosted API is redeployed off it). Fully retired: V6.0 `0xb9996de05fD514A0cB2B81fa25448EECD4559Aaa` (paused, revoked, 0 balance). Faucet `0xD854F80031A8d0CB166587AafA0969Da8C3757bF` — **unaffected by the V7 migration** (it references only the registry, which was reused); claim path re-verified live 2026-09-23 by state-override `eth_call`. USDC = Arc native ERC-20 `0x3600000000000000000000000000000000000000` (6 dec; gas is the same USDC in its 18-dec native view). RPC `https://rpc.mainnet.arc.io`, explorer `https://explorer.arc.io`. Levers (tightened 2026-09-19 post-audit): M-1 on, M-2=86400s, **F-C minSupply=10 USDC, D1 rate-limit 5 pts/day**, 1% fee, faucet cohort 100, **claimAmount=1 USDC, faucet funded 20 USDC** (claim verified live; agent #1 = secure wallet already claimed). Smoke test: `scripts/smoke-test-arc-mainnet.js` (real USDC, tiny amounts). Deployed ahead of the runbook's Gate 1 external re-audit (owner decision 2026-09-19). **Internal audit 2026-09-19** (`forensics/output/audit-2026-09/INTERNAL_AUDIT_2026-09-19.md`) found F-01 HIGH (NFT transfer freezes loan) + F-04 HIGH (D1 economics) + 3 MEDIUM + 3 LOW; F-01/02/03/05/07 fixed in **V6.1** (source in repo, `VERSION()=="V6.1"`, pre-fix mainnet source at git tag `arc-mainnet-v6-deployed-2026-09-19`). **Mainnet redeployed to V6.1 on 2026-09-19** via `scripts/redeploy-marketplace-v6.1.js` (marketplace-only; old retired, migration finalized = F-08 closed). Sourcify exact_match; smoke 22/22; invariants OK. **Superseded by the V7 stack on 2026-09-23**; all levers above were re-applied and re-verified on the V6.2/V4 contracts (2026-09-23): `platformFeeRate=100`, `minSupplyAmount=10 USDC`, `bindBorrowToPoolCreator=true`, `minHoldForReputationReward=86400`, `maxReputationGainPerWindow=5` / `reputationGainWindow=86400`, `migrationFinalized=true`. The late-repay reputation penalty **now exists** in V4 (`latePenaltyBase=10`, `perDay=5`, `max=100`) and F-04 was answered by the M1+M2 model change — but **F-04 is priced, not closed** (residual attacker EV ~24 %/yr), so keep third-party lender exposure modest.
+ 
+-- Base stale marketplace: `0x77F8D49cdE6Ae7481BeA38C8a70b5A893bD4d9AF` (60.5 USDC residual, different owner — ignore)
++- Base stale marketplace: `0x77F8D49cdE6Ae7481BeA38C8a70b5A893bD4d9AF` — different owner, ignore. **Its USDC balance is 0.0, not the 60.5 recorded earlier** (read on Base mainnet 2026-09-24); it also does not answer the V6 ABI at all, so it is a different contract shape. Nothing to recover there.
++- **⚠️ Base mainnet is NOT monitored.** `forensics/monitor/v6-invariants.js` has no `base` network (`arc-testnet | arc-staging | arc-mainnet | local` only) and no launchd job watches Base. The canonical Base V6 `0x0a4e3C74…` held **1.506031 USDC** across 4 pools with `accumulatedFees` 0.000054 on 2026-09-24 — small, but unwatched. `forensics/monitor/invariant-monitor.js` (the old multi-network daemon that did cover Base) is not running and is v4-era.
+ - Arc compromised wallet: `0x656086A21073272533c8A3f56A94c1f3D8BCFcE2` (key published; agentId 43, 777+ loans, USDC swept to secure wallet 2026-05-08)
+ - Base v4 deployed bytecode was compiled from a stash revision with MAX_LENDERS=50 (matches V6); committed v4 source has MAX_LENDERS=200
+ 
+@@ -47,7 +48,7 @@ Website: specular.financial | GitHub: thegrand-canyon/specular | Deploy: specula
+ 
+ - **URL:** `https://specular-agent-api-production.up.railway.app` (Railway project `resplendent-determination`, service `specular-agent-api`, built from `mcp-server/Dockerfile` via `RAILWAY_DOCKERFILE_PATH`; the older `specular` service is the legacy Express API).
+ - MCP Streamable HTTP at `/mcp`, REST under `/v1/{network}/…`, `/openapi.json`, `/health`. Networks enabled: `arc-mainnet` (real USDC) + `arc-staging`. **Requires a bearer token** since 2026-09-22 (`fe94781`) — `SPECULAR_MCP_TOKEN` in `.env`; `/health` and `/openapi.json` stay open without one, `/mcp` and `/v1/…` return 401. Per-IP rate-limited.
+-- **⚠️ STALE DEPLOY as of 2026-09-23:** the running container still serves the **superseded** V6.1 stack on `arc-mainnet` (`marketplace: 0x358c5E69…`, `v62: false`, `creditTiers.source: "v3-constant"`, self-stake endpoints 400) and so overstates an agent's credit limit 10× (1,000 vs the chain's 100 USDC). The repo is correct — `networks.ts:253,257` already prefers `agentLiquidityMarketplace_v62`/`reputationManagerV4` — the image just predates `af2f5ae`. **Fix = redeploy from HEAD**, then confirm `/v1/arc-mainnet/status` reports `v62: true`, `reputationV4: true`, `creditTiers.source: "chain"`.
++- **✅ Deploy is current (re-checked live 2026-09-24).** The stale-container problem flagged on 2026-09-23 is resolved: `/v1/arc-mainnet/status` now reports `marketplace: 0xCb23f2fb…`, `capabilities.v62: true`, `reputationV4: true`, `creditTiers.source: "chain"`, `maxTierLimitUsdc: 10000`, `minSupplyUsdc: 10.0`, version `2.1.0`. Bearer auth confirmed live: `/health` 200 without a token, `/v1/arc-mainnet/status` **401** without one and 200 with `SPECULAR_MCP_TOKEN`. RPC failover is live (3 upstreams on arc-mainnet, 2 on arc-staging; `/rpc-health` is open and unauthenticated by design). **After any future redeploy of the contracts, re-check this endpoint** — a stale image silently overstates credit limits 10×.
+ - **Non-custodial:** reads run server-side; `prepare_*` return unsigned txs for the agent's own wallet; `broadcast_signed_transaction` relays only to Specular contracts. Server refuses to boot if `SPECULAR_PRIVATE_KEY` is set.
+ - Deploy: `RAILWAY_TOKEN` (project token, in `.env`) then `railway up --service specular-agent-api --ci` from repo root. Docs: `docs/integrations/{REMOTE_MCP,GROK_BOT,MUSE_CONNECTOR}.md`.
+ 
+@@ -133,12 +134,19 @@ two strategies rather than two models and was refuted on re-measurement).
+ - **Arc MAINNET (canonical, 2026-09-23):** ReputationManagerV4 `0x12953e732e5D1aFdA640554125367d1CEC2ac4FB`,
+   MarketplaceV6.2 `0xCb23f2fb03Bfd4775Cc0e76E28f64c1e545071be`. Both Sourcify `exact_match`; smoke 21/21.
+ - **Arc staging (rehearsal, scale-fixed, 2026-09-22):** ReputationManagerV4 `0xD7906fDFBf69BA89a4c2FE148797e24f386fE3d2`,
+-  MarketplaceV6.2 `0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18`. E2E 237/237.
+-  Canonical config keys now point at V7; on **staging** the superseded V6.1 stack is under
+-  `*_legacy` keys, still live and still holding test lender funds. **On mainnet the convention
+-  differs** — the superseded pair is at `agentLiquidityMarketplacePrevious` /
+-  `reputationManagerPrevious` plus an appended `supersededDeployments[]` entry. There is no
+-  `*_legacy` key in `src/config/arc-mainnet-addresses.json`.
++  MarketplaceV6.2 `0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18`. E2E 237/237. Live levers
++  re-read 2026-09-24 and identical to mainnet's: minSupply 10 USDC, fee 100 bps, minHold 86400,
++  M-1 on, rate limit 5/86400, migrationFinalized true.
++- **Superseded stacks: `supersededDeployments[]` is the authority on BOTH networks.** Do not
++  look for a `*_legacy` key — the only such key anywhere is staging's
++  `agentLiquidityMarketplace_v6_0_legacy_still_live`, which names the **V6.0** contract, not the
++  V6.1 one. `agentLiquidityMarketplacePrevious` / `reputationManagerPrevious` name the most
++  recent superseded pair. A monitor must be pointed at a superseded stack **by address**
++  (`V6_MONITOR_MARKETPLACE=0x…`); `V6_MONITOR_MARKETPLACE_KEY` naming a key that does not exist
++  makes the monitor `exit(2)` and alert every cycle while watching nothing.
++  - Arc mainnet: one superseded marketplace, `0x358c5E69…`, and it **is** monitored.
++  - Arc staging: **three**, all unpaused and unmonitored, holding real test USDC (read
++    2026-09-24): `0xDbDf60AE…` 849.16, `0xB2d88bbF…` 482.24, `0xa736EE7B…` 3,487.69.
+ - **Deploy:** `scripts/deploy-v7.js --network <arc-staging|arc-mainnet>` (dry run by default).
+ - **Migration plan:** `forensics/output/v7-model/V7_MAINNET_MIGRATION_RUNBOOK.md`.
+ - **⚠️ Reputation does NOT migrate** — V4 ships no seed helper on purpose (that is the F-08
+@@ -155,12 +163,22 @@ two strategies rather than two models and was refuted on re-measurement).
+     node forensics/monitor/v6-invariants.js
+   ```
+   This is live as launchd `com.specular.v6-invariants-arc-mainnet-legacy` (verified 2026-09-23).
+-  Both mainnet jobs currently share one log/state/heartbeat, so the legacy job's liveness is not
+-  independently observable.
+-- **⚠️ Alert storm (open):** `af2f5ae` unloaded the arc-testnet job but left
+-  `forensics/monitor/heartbeat-arc-testnet.json` on disk, so every surviving monitor's
+-  dead-man's switch (`v6-invariants.js:808-819`) raises 2 CRITICALs every 30 min about a monitor
+-  retired on purpose. Invariants themselves pass (`findings: 0`). Fix: delete that heartbeat file.
++- **⚠️ FIXED 2026-09-24 — the two mainnet jobs were cancelling `CP-CHANGED`.** Both used
++  `V6_MONITOR_NETWORK=arc-mainnet` and therefore shared `state-arc-mainnet.json`. The legacy
++  marketplace points at ReputationManagerV3, which has no on-chain tier table, so its run wrote
++  `creditPolicy: null` — and it runs ~30 s **before** the canonical job on every cycle
++  (confirmed in the log). The canonical run therefore never had a previous policy to compare
++  against and **`CP-CHANGED` could never fire** — the single signal a hostile owner key reliably
++  produces. Setting `V6_MONITOR_MARKETPLACE` now gives a run its own instance namespace
++  (`state-<net>-<addr8>.json`, own log, own heartbeat), which also makes the legacy job's
++  liveness independently observable in `alert.js --status`. **Re-check this after every future
++  supersession.**
++- **✅ Alert storm (closed):** `heartbeat-arc-testnet.json` has been deleted; `alert.js --status`
++  shows only live jobs and no `MONITOR_DOWN` fires. Rule: **retiring a job means deleting its
++  heartbeat file**, or the dead-man's switch alerts about it for ever.
++- **⚠️ Every alert channel is local to this Mac.** `SPECULAR_ALERT_WEBHOOK` is unset and
++  `forensics/monitor/monitor.env` does not exist, so alerts are a latch file, `~/SPECULAR-ALERT.txt`,
++  a macOS banner and a spoken line. Verified end to end 2026-09-24 by forcing a real failure.
+ 
+ ## Testing round 2026-09-20/21 (6 tracks) — `forensics/output/testing-2026-09-20/`
+ 
+@@ -170,16 +188,38 @@ two strategies rather than two models and was refuted on re-measurement).
+ | E2E on Arc staging | **186 assertions green**; F-01/F-02/F-07/F-08/M-1/M-2/D1/F-C all confirmed on a live chain |
+ | Economics | F-04 unfixable by levers (above); M1+M2 model change specified and simulated |
+ | Hosted server | 15 findings (4 High: relay bypass, unbounded upstream, **rate limiter keyed on the edge not the caller**, `ws` CVE) — all fixed, redeployed 2026-09-21 |
+-| Monitoring | old monitor caught **3 of 19** engineered violations; the §S5 check had been a **silent no-op since deploy** (keyed by wallet; V6.1 keys by agentId). Rewritten → 19/19, 13 check families, alerting, rotation |
++| Monitoring | old monitor caught **3 of 19** engineered violations; the §S5 check had been a **silent no-op since deploy** (keyed by wallet; V6.1 keys by agentId). Rewritten → 19/19, alerting, rotation. **15 check families defined today** (V6.2-SELFSTAKE and V7-CREDIT-POLICY were added after that round); a clean Arc-mainnet run emits **14** — observed 2026-09-24 |
+ | SDK | 20 findings (2 High: a transient RPC error poisoned V6.1 capability detection → late repay under-approves → **agent cannot close its loan and defaults**). Exact-approval verified across all 14 USDC-pulling paths; Python brought to parity |
+ 
+-Known-environmental: `test/api/tx-builder*` fail when the Arc testnet public RPC rate-limits
+-this host (dRPC 429s us). Use `https://rpc.testnet.arc.io` or `https://arc-testnet-rpc.publicnode.com`.
++Known-environmental: `test/api/tx-builder*` can fail when the Arc testnet public RPC
++rate-limits this host (dRPC 429s us). Use `https://rpc.testnet.arc.io` or
++`https://arc-testnet-rpc.publicnode.com`. Note `.env` still sets
++`ARC_TESTNET_RPC_URL=https://arc-testnet.drpc.org`, so a shell that loads `.env` gets dRPC even
++though every script now DEFAULTS to `rpc.testnet.arc.io`; the launchd staging job pins the good
++endpoint in its plist. (Full suite ran clean on 2026-09-24: 872 passing, 0 failing.)
+ 
+-Operational: both launchd monitors run `forensics/monitor/run-with-alert.sh` (alerts on ANY
+-non-zero exit incl. crash/watchdog). Incident runbook: `forensics/monitor/INCIDENT_RUNBOOK.md`.
+-**`pause()` freezes lender exits AND repayment AND your own `liquidateLoan`** (6 of 18 ops) —
+-`registry.deactivateAgent` is the better per-agent kill switch.
++Operational: the three invariant monitors run `forensics/monitor/run-with-alert.sh` (alerts on
++ANY non-zero exit incl. crash/watchdog). Incident runbook: `forensics/monitor/INCIDENT_RUNBOOK.md`.
++**`pause()` freezes lender exits AND repayment AND your own `liquidateLoan`** — **9 of 35**
++measured operations on V6.2 (the older "6 of 18" was the coarser V6.1 probe set; nothing in V6.2
++made pause safer). `registry.deactivateAgent` breaks exactly **1** operation and is reversible —
++it is the better per-agent kill switch.
++
++### launchd jobs installed on this machine (audited 2026-09-24)
++
++`launchctl list | grep specular` — five jobs, every plist pointing at a file that exists:
++
++| label | script | interval | notes |
++|---|---|---|---|
++| `com.specular.v6-invariants-arc-mainnet` | `run-with-alert.sh arc-mainnet` | 1800 s | canonical V6.2 + V4 |
++| `com.specular.v6-invariants-arc-mainnet-legacy` | `run-with-alert.sh arc-mainnet` + `V6_MONITOR_MARKETPLACE=0x358c5E69…` | 1800 s | superseded V6.1 |
++| `com.specular.v6-invariants-arc-staging` | `run-with-alert.sh arc-staging` | 1800 s | `ARC_TESTNET_RPC_URL=https://rpc.testnet.arc.io` |
++| `com.specular.overdue-loans-arc-mainnet` | `run-overdue-check.sh arc-mainnet` | 3600 s | stamps **no heartbeat** |
++| `com.specular.rpc-health-sample` | `rpc-health-sample.sh` | 900 s | stamps **no heartbeat** |
++
++`com.specular.v6-invariants.plist.disabled` is the retired arc-testnet job — do not reload it.
++All five plists are now committed under `forensics/monitor/`; before 2026-09-24 four of them
++existed **only** in `~/Library/LaunchAgents` and in no git history.
+ 
+ ## Security Findings (audited, fixed in V6, awaiting external audit)
+ 
+@@ -192,7 +232,7 @@ non-zero exit incl. crash/watchdog). Incident runbook: `forensics/monitor/INCIDE
+ ### Live impact still extant on v4
+ 
+ - **Base mainnet loans #2/#3/#4 — RESOLVED** (verified on-chain 2026-07). The liquidation cron ran on schedule; all three are now `DEFAULTED` (state 3) and the v4 marketplace USDC balance is 0. v4 is `paused: true`, owner = secure wallet. (Historical: they were the 0.10-USDC self-borrows whose `repayLoan` reverted `Panic(0x11)`; `liquidateLoan` avoids the buggy interest path and succeeded.)
+-- Base canonical V6 verified clean 2026-07: unpaused, owner = secure wallet, 13 loans all `REPAID`, no phantom liquidity (§S1 holds).
++- Base canonical V6 re-read 2026-09-24: unpaused, owner = secure wallet, **14** loans all `REPAID` (state 2), 4 pools, `accumulatedFees` 0.000054, USDC balance 1.506031 (lender positions, not phantom). No `VERSION()` — it is the V6.0 generation.
+ - **Arc v4 §S1 leak**: ~74.87 USDC of phantom availableLiquidity across 40 lenders (cumulative)
+ - **Arc v4 agent #43**: 777+ lifetime loans, 3.94M gas per requestLoan, ~5,665 loans from full DoS
+ 
+@@ -221,7 +261,7 @@ non-zero exit incl. crash/watchdog). Incident runbook: `forensics/monitor/INCIDE
+ - `forensics/output/regression-2026-05-07/V6_MIGRATION_RUNBOOK.md` — post-deploy migration steps
+ - `forensics/output/regression-2026-05-07/BASE_DEPLOY_PREP.md` — Base deployment checklist
+ - `forensics/output/regression-2026-05-07/LIQUIDATION_RUNBOOK_2026-05-11.md` — Base #2/#3/#4 cron-scheduled liquidation
+-- `forensics/monitor/v6-invariants.js` + launchd `com.specular.v6-invariants` (every 30 min)
++- `forensics/monitor/v6-invariants.js` + the launchd jobs listed above (every 30 min). **Not** `com.specular.v6-invariants` — that label is the retired arc-testnet job and is installed only as `.disabled`.
+ 
+ ### Earlier audit context
+ - `AUDIT_BUNDLE.md` — original severity table + all findings on v4
+@@ -240,7 +280,7 @@ it is owner-settable on-chain state bounded by the immutable `MAX_TIER_LIMIT` (1
+ actual limit is always `calculateCreditLimit(address)`. The numbers below are the SHIPPED DEFAULTS of each
+ generation, for orientation only — never hardcode them.
+ 
+-### V7 defaults (`ReputationManagerV4`, live on Arc staging since 2026-09-22)
++### V7 defaults (`ReputationManagerV4` — Arc staging since 2026-09-22, **Arc mainnet since 2026-09-23**; table re-read from both chains 2026-09-24)
+ 
+ | Score | Collateral | Interest | Tier limit | Unsecured exposure |
+ |-------|-----------|----------|-----------|--------------------|
+@@ -284,6 +324,29 @@ Initial score: 0 (uninitialized agent). On-time repayment: +10. Default: −50 (
+ every agent must call `initializeReputation()` again and re-climb. Agent NFTs/ids survive (the registry is not
+ redeployed). Clients must never assume a prior score exists on a V7 deployment.
+ 
++## Disaster recovery — what lives ONLY on this machine (audited 2026-09-24)
++
++`origin/main` == local `HEAD` (`503b4d2`, github.com/thegrand-canyon/specular), so all
++**1,280 tracked files** — contracts, SDK, scripts, monitor, runbooks — are recoverable from
++GitHub. What is not:
++
++| Only here | Recoverable? | If the machine is lost |
++|---|---|---|
++| **`.env` — `PRIVATE_KEY` of `0x800e305A…F72C`** | **NO** | **Total, permanent loss of control.** That one EOA owns the marketplace, reputation manager, registry and faucet on Arc mainnet, Arc staging and Base. There is no multisig, no timelock, no guardian, no recovery path, and `renounceOwnership` reverting on the marketplace/reputation manager does not help you — the contracts simply become unadministrable: no `pause`, no `liquidateLoan`, no `deactivateAgent`, no lever changes, for ever. **Back this key up offline. It is the single highest-value item in the whole system.** |
++| `.env` — `SPECULAR_MCP_TOKEN`, `RAILWAY_TOKEN`, `MOLTBOOK_API_KEY`, RPC URLs | partly | MCP token: rotate and redistribute to agents. Railway token: reissue from the Railway dashboard. RPC URLs are public. |
++| launchd plists | **now yes** | All five are committed under `forensics/monitor/` and reinstalled with `./forensics/monitor/install-v6-monitor.sh`. Before 2026-09-24 four of the five existed only in `~/Library/LaunchAgents` — a rebuild would have silently come back with monitoring gone. |
++| Monitor state: `state-*.json`, `heartbeat-*.json`, `alerts.log`, `v6-invariants-*.log`, `rpc-health.jsonl`, `overdue-*.log` | NO (gitignored) | Only history is lost. Everything is re-derived from chain on the next run — except the `CP-CHANGED` baseline and the `FRESH-STUCK`/lateness comparisons, which are **blind for exactly one cycle** after a rebuild. Expect no alert on a policy change made during that window. |
++| `monitor.env` (webhook) | n/a | Does not exist. Nothing to lose; nothing remote to notify. |
++| **~142 untracked root `*.md` reports** (252 on disk, 110 tracked) | **NO** | Session summaries, test reports and campaign docs from 2026-02 onward. Not load-bearing for operations, but gone for good. `git add` them or accept the loss. |
++| `artifacts/`, `node_modules/`, `cache/` | yes | `npm ci && npx hardhat compile`. |
++
++**Rebuild, in order:** clone the repo → restore `.env` from offline backup → `npm ci` →
++`npx hardhat compile` → edit the plist paths if the repo is not at `~/Specular` →
++`./forensics/monitor/install-v6-monitor.sh` → `node forensics/monitor/alert.js --self-test`
++→ `node forensics/monitor/alert.js --status` (one fresh heartbeat per invariant job) →
++`node scripts/incident-drill/verify-runbook-levers.js` (exit 0) →
++`node scripts/smoke-test-arc-mainnet.js --read-only` (11/11).
++
+ ## Brand
+ 
+ - Primary color: `#FF6A00` (orange)
+@@ -294,7 +357,7 @@ redeployed). Clients must never assume a prior score exists on a V7 deployment.
+ ## npm Scripts
+ 
+ ```
+-npm test                  # all tests (93/93)
++npm test                  # all tests (872 passing, 5 pending — verified 2026-09-24)
+ npm run compile           # compile contracts
+ npm run node              # start local Hardhat node
+ npm run deploy:local      # deploy to localhost
+diff --git a/forensics/monitor/INCIDENT_RUNBOOK.md b/forensics/monitor/INCIDENT_RUNBOOK.md
+index f8211a4..889b15a 100644
+--- a/forensics/monitor/INCIDENT_RUNBOOK.md
++++ b/forensics/monitor/INCIDENT_RUNBOOK.md
+@@ -5,8 +5,11 @@
+ AgentRegistryV2 and AgentCreditFaucet — the stack live on Arc mainnet.
+ **Owner:** the holder of the secure wallet `0x800e305A0caDdE6289dFDFEDF38218f45C06F72C`.
+ **Written:** 2026-09-20 · **Rewritten 2026-09-23** after the first end-to-end incident drill
+-against V6.2 + V4. Every number, revert string and lever effect below was **executed**, not
+-assumed. Evidence and method: `forensics/output/testing-2026-09-23/INCIDENT_DRILL_REPORT.md`.
++against V6.2 + V4 · **Re-verified and corrected 2026-09-24** (operational verification round:
++every lever below re-probed on the live contracts, every drill re-executed, every path in this
++file walked). Every number, revert string and lever effect below was **executed**, not
++assumed. Evidence and method: `forensics/output/testing-2026-09-23/INCIDENT_DRILL_REPORT.md`
++and `forensics/output/testing-2026-09-24/OPERATIONAL_VERIFICATION.md`.
+ 
+ > ## Read this first
+ >
+@@ -17,11 +20,19 @@ assumed. Evidence and method: `forensics/output/testing-2026-09-23/INCIDENT_DRIL
+ >
+ > **2. Nothing pages you about an overdue loan.** The monitor has no overdue-ACTIVE-loan check.
+ > A borrower a full day past `endTime` produces `exit 0, no findings`. **Liquidation is a polling
+-> job, not an alert-driven one** — run `scripts/incident-drill/check-overdue-loans.js` daily (§7).
++> job, not an alert-driven one.** It IS polled: launchd `com.specular.overdue-loans-arc-mainnet`
++> runs `forensics/monitor/check-overdue-loans.js` hourly. Run it by hand whenever you want the
++> current picture (§7).
+ >
+ > **3. The monitor watches the MARKETPLACE owner and nothing else.** Registry, reputation-manager
+ > and faucet ownership can change — including a permanent `renounceOwnership` that destroys
+ > `deactivateAgent` for ever — and the monitor stays green (§4, §6).
++>
++> **4. Every alert channel is LOCAL to this Mac.** `SPECULAR_ALERT_WEBHOOK` is not set and
++> `forensics/monitor/monitor.env` does not exist, so an alert is a latch file, a file in `$HOME`,
++> a banner and a spoken line — all of which require somebody to be at this machine. If you want
++> to be told while you are away, set the webhook (`WEBHOOK_SETUP.md`). Verified 2026-09-24 by
++> forcing a real failure end to end.
+ 
+ ---
+ 
+@@ -31,7 +42,7 @@ assumed. Evidence and method: `forensics/output/testing-2026-09-23/INCIDENT_DRIL
+ |---|---|---|
+ | `SOLV` / `S1` / `POOL` (money doesn't add up) | **Do not pause. Do not run `resetPoolAccounting` yet.** Snapshot (§2.1), confirm on a second RPC. **Establish whether the USDC is missing or only the books are wrong** — the monitor cannot tell you. | §3.1 |
+ | `OWN` / `OWN-PENDING` / `PAUS` (control plane moved) | **Assume key compromise.** Seconds matter. | §3.2 |
+-| `CP-CHANGED` (WARN — credit policy drifted) | If you did not make that change, treat it as §3.2. It is the **only** signal a hostile key reliably produces. | §3.2 |
++| `CP-CHANGED` (WARN — credit policy drifted) | If you did not make that change, treat it as §3.2. It is the **only** signal a hostile key reliably produces — and it was **structurally dead on Arc mainnet** until 2026-09-24; see the box below §3.2. | §3.2 |
+ | `B1` / `S5-*` / `ALI` / `PT` / `QUAL-*` / `LATE-*` | Snapshot, stop new inflow, no pause. | §3.3 |
+ | `SS-UNLOCKED` / `SS-MISMATCH` / `SS-ORPHAN` (V6.2 self-stake) | The M2 first-loss tranche is not holding. Stop new borrowing on that agent. | §3.4 |
+ | `FRESH` / `FRESH-STUCK` / `MONITOR-FAILED` / `[WATCHDOG]` / `MONITOR-DOWN` | You are **blind**, not necessarily broken. | §3.5 |
+@@ -52,7 +63,12 @@ Every 30 minutes `launchd` runs `forensics/monitor/run-with-alert.sh <network>`,
+ 3. A macOS notification banner (plus a spoken alert for CRITICAL).
+ 4. `forensics/monitor/alerts.log` — append-only JSONL history.
+ 5. `SPECULAR_ALERT_WEBHOOK` — **only if you set it** in `forensics/monitor/monitor.env`
+-   (gitignored). Nothing is hardcoded.
++   (gitignored). Nothing is hardcoded. **Checked 2026-09-24: not set** — channels 1–4 are all
++   there is, and all four need you to be at this Mac.
++
++The **overdue-loan** job (`run-overdue-check.sh`, hourly) alerts through the same `alert.js`,
++CRITICAL, with the full report — loan ids, principal, collateral, unsecured amount, days
++overdue — in the alert details.
+ 
+ ```bash
+ export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
+@@ -84,10 +100,15 @@ V6_MONITOR_NETWORK=arc-mainnet V6_EXPECTED_OWNER=0x800e305A0caDdE6289dFDFEDF3821
+ 
+ # EVERY owner lever on V6.2 + V4 + registry + faucet, read-only
+ node scripts/incident-drill/read-live-levers.js
++
++# Prove the levers this runbook names STILL EXIST, with these signatures, on the deployed
++# bytecode — and that each is owner-gated. eth_call only; sends nothing, needs no key.
++# Exit 0 = every lever present and gated. Last run 2026-09-24: 52/52.
++node scripts/incident-drill/verify-runbook-levers.js
+ ```
+ 
+-> `scripts/incident-drill/read-live-levers.js` ships in
+-> `forensics/output/testing-2026-09-23/incident-drill.patch` (`git apply` it once).
++> `read-live-levers.js` and `verify-runbook-levers.js` are committed under
++> `scripts/incident-drill/` — no patch to apply.
+ > **Do not rely on the older `scripts/op-resilience/read-mainnet-levers.js`** — it loads the
+ > ReputationManagerV3 ABI against the V4 address and the V6.1 ABI against V6.2, so it silently
+ > omits the tier table, the ladder parameters, the default lockout, the late-penalty parameters,
+@@ -113,8 +134,8 @@ From the snapshot: `usdcBalance`, `sumAvail`, `sumActiveCollateral`, ACTIVE loan
+ lenders, and **`selfStake` per pool**. **If third-party lender principal is zero, almost nothing
+ is urgent** — take the slow, reversible path.
+ 
+-Live figures, read on-chain 2026-09-23 (block 22 287 733), canonical V6.2
+-`0xCb23f2fb03Bfd4775Cc0e76E28f64c1e545071be`:
++Live figures, read on-chain 2026-09-23 (block 22 287 733) and **re-read unchanged 2026-09-24
++(block 22 416 766)**, canonical V6.2 `0xCb23f2fb03Bfd4775Cc0e76E28f64c1e545071be`:
+ 
+ | | |
+ |---|---|
+@@ -202,6 +223,29 @@ survivor could still withdraw or claim.
+ 
+ ### 3.2 Control plane moved — `OWN`, `OWN-PENDING`, `PAUS`, `CP-CHANGED`
+ 
++> **⚠️ `CP-CHANGED` was dead on Arc mainnet from the V7 migration until 2026-09-24. Know why,
++> because the same shape will come back the next time a stack is superseded.**
++>
++> Two launchd jobs watch Arc mainnet — the canonical V6.2 stack and the superseded V6.1 one —
++> and both used `V6_MONITOR_NETWORK=arc-mainnet`, so both wrote
++> `forensics/monitor/state-arc-mainnet.json`. The legacy marketplace points at
++> ReputationManagerV**3**, which has no on-chain tier table, so its run recorded
++> `creditPolicy: null`. It ran ~30 s before the canonical job on **every** cycle (confirmed in
++> the log: 19:36:37/19:37:05, 20:06:39/20:07:09, …), so the canonical run always found a null
++> previous policy and skipped the comparison entirely. The one signal a hostile owner key
++> reliably produces could never fire. Proven by re-running the two jobs in that order and
++> watching the WARN disappear.
++>
++> **Fixed:** setting `V6_MONITOR_MARKETPLACE` now gives a run its own instance namespace
++> (`state-<net>-<addr8>.json`, its own log, its own heartbeat), so the two jobs cannot
++> overwrite each other, and `alert.js --status` shows a heartbeat per job instead of one for
++> both. Re-verified: with the fix, the tampered baseline survives the legacy run and
++> `CP-CHANGED` fires.
++>
++> **Whenever you add a monitor for a superseded stack, check afterwards that
++> `alert.js --status` gained a heartbeat and that `state-*.json` gained a file.** If it did
++> not, the new job is silently cannibalising the old one's memory.
++
+ The only scenario measured in seconds. If the owner is not the secure wallet, a `pendingOwner` you
+ did not set exists, the contract is paused and you did not pause it, **or the credit policy changed
+ and you did not change it**:
+@@ -306,11 +350,21 @@ non-zero and latches an alert.
+ | `FRESH` | Chain head older than `V6_MAX_BLOCK_AGE_SEC` (1800 s) | exit **1**, CRITICAL, latched | Endpoint is serving stale data, or the chain stalled. Compare height against the explorer. |
+ | `FRESH-STUCK` | Head identical to the previous run | exit **1**, **WARN**, latched | **The most dangerous mode and the quietest one.** Every state read still succeeds and looks self-consistent. **It only fires on the SECOND run** — the first run after an endpoint freezes reports a clean OK, so you are confidently wrong for up to 30 minutes. Switch endpoints. Arc mainnet advances 1 400–4 800 blocks per cycle, so this never fires on a healthy chain. |
+ | `FRESH-REORG` | Head went backwards | — | Reorg, or the RPC is answering for a different chain. Verify `chainId == 5042`. |
+-| `MONITOR-DOWN` | A *sibling* network's job has not stamped a heartbeat in 90 min | exit 1 | `launchctl list \| grep specular`; reload the plist. |
++| `MONITOR-DOWN` | A *sibling* job has not stamped a heartbeat in 90 min | exit 1 | `launchctl list \| grep specular`; reload the plist. |
+ 
+ **Nothing detects all jobs being dead at once.** The jobs cross-check each other, but a sleeping or
+ powered-off Mac silences everything. Do a weekly manual `node forensics/monitor/alert.js --status`
+-and confirm both heartbeats are fresh (§6 gap 1).
++and confirm there is a **fresh heartbeat per invariant job** — as of 2026-09-24 that is
++`arc-mainnet`, `arc-mainnet-358c5e69` (the superseded V6.1 marketplace) and `arc-staging`
++(§6 gap 1). Two jobs that are **not** covered by the dead-man's switch at all, because they
++stamp no heartbeat: `com.specular.overdue-loans-arc-mainnet` and
++`com.specular.rpc-health-sample`. Check those with `launchctl list | grep specular` and by
++confirming `overdue-arc-mainnet.log` and `rpc-health.jsonl` have recent lines.
++
++**If you retire a job, delete its heartbeat file.** A leftover `heartbeat-<instance>.json`
++makes every surviving monitor raise `MONITOR_DOWN` twice an hour, for ever, about a job you
++removed on purpose. That happened to `heartbeat-arc-testnet.json` after the arc-testnet job
++was unloaded; it has since been deleted and the storm is gone (confirmed 2026-09-24).
+ 
+ ### 3.6 `NFT-MOVED` (WARN)
+ 
+@@ -483,7 +537,8 @@ freeze identity, credit policy or the control plane.**
+    `authorizePool`, `revokePool`, `setValidationRegistry`, `setBindBorrowToPoolCreator`, and every
+    fee / limit / scoring lever. **23 of 29 successful hostile owner calls produce no signal at all.**
+ 3. **No overdue-loan detector in the monitor.** A loan past `endTime` and unliquidated produces
+-   `exit 0`. Liquidation is a polling job — `scripts/incident-drill/check-overdue-loans.js` (§7).
++   `exit 0`. Liquidation is a polling job — `forensics/monitor/check-overdue-loans.js`, run
++   hourly by `com.specular.overdue-loans-arc-mainnet` (§7).
+ 4. **The monitor cannot distinguish phantom liquidity from a real shortfall.** Same codes, opposite
+    remedies (§3.1).
+ 5. **Single owner EOA, no timelock, no multisig.** Every lever in §4 is one key away, and §3.2 has
+@@ -498,6 +553,17 @@ freeze identity, credit policy or the control plane.**
+ 10. **`NFT-MOVED` re-latches every cycle** for the life of the loan, so a legitimate agent sale is
+     indistinguishable from an unhandled incident at a glance (§3.6).
+ 11. **The marketplace is one USDC pot.** A shortfall in one pool is paid out of every other pool.
++12. **No remote alert channel.** `SPECULAR_ALERT_WEBHOOK` is unset and `monitor.env` does not
++    exist, so every channel needs somebody at this Mac. Closing this is one line in
++    `monitor.env` (`WEBHOOK_SETUP.md`) and is the cheapest resilience win available.
++13. **Two monitor jobs on one network used to share one state file** and silently killed
++    `CP-CHANGED` (§3.2 box). Fixed 2026-09-24; re-check after every future supersession.
++14. **The superseded Arc-STAGING stacks have no monitor at all.** Three of them are live and
++    unpaused and hold 849 + 482 + 3 488 = **4 819 test USDC** between them
++    (`supersededDeployments` in `src/config/arc-testnet-v6-addresses.json`, read 2026-09-24).
++    Mainnet's one superseded marketplace does have a job; staging's three do not. Test money,
++    but it is the same checklist item that will matter on mainnet
++    (`V7_MAINNET_MIGRATION_RUNBOOK.md` §5b).
+ 
+ ---
+ 
+@@ -507,30 +573,45 @@ freeze identity, credit policy or the control plane.**
+ export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
+ cd ~/Specular
+ 
+-# 1. OVERDUE LOANS — nothing alerts on these. Run at least daily.
++# 1. OVERDUE LOANS — the invariant monitor never reports these.
+ #    Read-only. Exit 0 = nothing overdue, 1 = liquidation candidates, 2 = could not read.
+-node scripts/incident-drill/check-overdue-loans.js            # NET=arc-staging|local to switch
++#    Already polled hourly by com.specular.overdue-loans-arc-mainnet; run it by hand for now.
++node forensics/monitor/check-overdue-loans.js                 # NET=arc-staging|local to switch
+ 
+ # 2. ALL FOUR OWNERS — the monitor only checks the marketplace.
+ node scripts/incident-drill/read-live-levers.js | grep -A1 '"owner"'
+ 
+-# 3. HEARTBEATS — the only backstop against every job being dead.
++# 3. THE LEVERS THIS RUNBOOK NAMES still exist on the deployed bytecode, and are owner-gated.
++node scripts/incident-drill/verify-runbook-levers.js          # exit 0 = all present + gated
++
++# 4. HEARTBEATS — the only backstop against every job being dead.
++#    Expect one fresh heartbeat PER invariant job (arc-mainnet, arc-mainnet-358c5e69,
++#    arc-staging). The overdue and rpc-health jobs stamp none — check those with launchctl.
+ node forensics/monitor/alert.js --status
++
++# 5. READ-ONLY SMOKE: is the live config still what we think it is? Sends nothing, no key.
++node scripts/smoke-test-arc-mainnet.js --read-only
++node scripts/smoke-test-arc-testnet-v6.js --read-only
+ ```
+ 
+ `check-overdue-loans.js` prints each overdue loan with its principal, collateral, **unsecured**
+ amount, days overdue and what `repayLoan` would pull right now — so you can see whether
+ liquidating actually recovers anything before you spend the gas. It also refuses to advise
+ liquidation while the contract is paused, because `liquidateLoan` is blocked by pause (§5).
+-Wire it into cron next to the invariant monitor; it is the piece the monitor does not have.
++All four behaviours (exit 0 / exit 1 with the full detail / exit 2 on a dead RPC / the paused
++advice) were executed on 2026-09-24.
+ 
+ ---
+ 
+ ## 8. After the incident
+ 
+ 1. `node forensics/monitor/alert.js --ack` — only once the underlying condition is gone.
+-2. Confirm two consecutive clean runs (`exitCode: 0`) in
+-   `forensics/monitor/v6-invariants-arc-mainnet.log`.
++   (`--ack` clears the latch **and** deletes `~/SPECULAR-ALERT.txt`.)
++2. Confirm two consecutive clean runs (`exitCode: 0`) in the log of the job that fired —
++   `forensics/monitor/v6-invariants-arc-mainnet.log` for the canonical stack,
++   `v6-invariants-arc-mainnet-358c5e69.log` for the superseded V6.1 one. Also check
++   `alert.js --status`: a heartbeat can still carry `lastExitCode: 2` from the incident until
++   that job's next scheduled run.
+ 3. Append a dated entry to this file: what fired, what was true, what you did, what it cost.
+ 4. If the monitor missed it or cried wolf, add a scenario to `scripts/op-resilience/scenarios.js`
+    and re-run `run-detection-matrix.js` — that matrix is the regression suite for the monitor.
+diff --git a/forensics/monitor/README.md b/forensics/monitor/README.md
+index 06df303..8e84f2a 100644
+--- a/forensics/monitor/README.md
++++ b/forensics/monitor/README.md
+@@ -1,203 +1,142 @@
+-# Specular Invariant Monitor
++# Specular monitoring
+ 
+-**Real-time monitoring daemon for critical invariant violations in Specular marketplace deployments.**
++**What is actually running, what it watches, and how an alert reaches a human.**
+ 
+-## Overview
++> Rewritten 2026-09-24. The previous version of this file described `invariant-monitor.js`,
++> a long-running daemon polling Base mainnet and Arc **testnet** for three v4-era bugs, and
++> documented a `WEBHOOK_URL` env var that nothing reads any more. None of that has been the
++> monitoring for months. `invariant-monitor.js` is kept only as historical context — nothing
++> runs it.
+ 
+-This daemon continuously polls Base Mainnet and Arc Testnet to detect the three critical vulnerabilities:
++Incident response: **`INCIDENT_RUNBOOK.md`** (start there when something fires).
+ 
+-- **§S1**: Fund drain via `claimInterest` (checks `Σ claimed ≤ actual USDC`)
+-- **§B1**: Duplicate poolLenders causing repay panic (scans `poolLenders[]` arrays)
+-- **§S5**: DoS via unbounded loops (tracks agent lifetime loan counts)
++---
+ 
+-## Features
++## The five jobs that run on this machine
+ 
+-- ✅ **Read-only monitoring** - no state mutations, only view calls
+-- ✅ **Multi-network support** - Base canonical + stale + Arc Testnet
+-- ✅ **Real-time alerts** - Slack/Discord webhook integration
+-- ✅ **Structured logging** - JSON output for ingestion by monitoring systems
+-- ✅ **Graceful degradation** - continues monitoring even if one network fails
++`launchctl list | grep specular`
+ 
+-## Quick Start
++| launchd label | runs | every | watches |
++|---|---|---|---|
++| `com.specular.v6-invariants-arc-mainnet` | `run-with-alert.sh arc-mainnet` | 30 min | the **canonical** Arc-mainnet marketplace (V6.2 + ReputationManagerV4) |
++| `com.specular.v6-invariants-arc-mainnet-legacy` | `run-with-alert.sh arc-mainnet` with `V6_MONITOR_MARKETPLACE` | 30 min | the **superseded** V6.1 marketplace, still live and still authorized |
++| `com.specular.v6-invariants-arc-staging` | `run-with-alert.sh arc-staging` | 30 min | the Arc-testnet staging stack |
++| `com.specular.overdue-loans-arc-mainnet` | `run-overdue-check.sh arc-mainnet` | 60 min | ACTIVE loans past `endTime` (the invariant monitor has **no** overdue check) |
++| `com.specular.rpc-health-sample` | `rpc-health-sample.sh` | 15 min | the hosted agent API's upstream-RPC health, appended to `rpc-health.jsonl` |
+ 
+-```bash
+-# Install dependencies (if not already present)
+-npm install ethers node-fetch
+-
+-# Basic monitoring (stdout logs only)
+-BASE_RPC_URL=https://mainnet.base.org \
+-ARC_TESTNET_RPC_URL=https://arc-testnet.drpc.org \
+-node invariant-monitor.js
+-
+-# With Slack alerts
+-WEBHOOK_URL=https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK \
+-BASE_RPC_URL=https://mainnet.base.org \
+-ARC_TESTNET_RPC_URL=https://arc-testnet.drpc.org \
+-POLL_INTERVAL_SEC=30 \
+-LOG_LEVEL=INFO \
+-node invariant-monitor.js
+-```
+-
+-## Configuration
+-
+-| Environment Variable | Default | Description |
+-|---------------------|---------|-------------|
+-| `BASE_RPC_URL` | `https://mainnet.base.org` | Base mainnet RPC endpoint |
+-| `ARC_TESTNET_RPC_URL` | `https://arc-testnet.drpc.org` | Arc testnet RPC endpoint |
+-| `POLL_INTERVAL_SEC` | `60` | Seconds between monitoring cycles |
+-| `LOG_LEVEL` | `INFO` | Logging level: `DEBUG`, `INFO`, `WARN`, `ERROR` |
+-| `WEBHOOK_URL` | (none) | Slack/Discord webhook for alerts |
+-
+-## Output Format
+-
+-### Normal Operation
+-```json
+-{"timestamp":"2026-05-05T10:30:00.000Z","level":"INFO","message":"S1 invariant healthy","network":"base-canonical","actualBalance":"1.500000","claimedTotal":"1.500000","deficit":"0.000000","violatesS1":false}
+-```
+-
+-### Invariant Violation
+-```json
+-{"timestamp":"2026-05-05T10:30:00.000Z","level":"ERROR","message":"S1 invariant violation detected","network":"base-canonical","actualBalance":"1.500000","claimedTotal":"1.500002","deficit":"0.000002","violatesS1":true}
+-```
+-
+-## Alert Conditions
+-
+-### 🚨 CRITICAL Alerts
+-
+-- **S1 Fund Drain**: `claimedTotal > actualBalance` by any amount
+-- **B1 Duplicate Lenders**: Any `poolLenders[]` array contains duplicate addresses
+-- **S5 DoS Reached**: Any agent exceeds the brick threshold (~6,500 lifetime loans)
+-
+-### ⚠️  WARNING Alerts
+-
+-- **S5 DoS Warning**: Any agent exceeds 80% of brick threshold
+-
+-## Monitored Deployments
+-
+-### Base Mainnet
+-- **Canonical**: `0xd7b4dEE74C61844DFA75aEbe224e4635463b1C8f` (current production)
+-- **Stale**: `0x77f8D49CDE6Ae7481bea38C8a70B5a893bD4d9aF` (legacy instance)
++The plists live beside this file and are installed with `./install-v6-monitor.sh`. They
++hardcode `/Users/peterschroeder/Specular`; edit the paths before installing elsewhere.
+ 
+-### Arc Testnet
+-- **Current**: `0x048363A325A5B188b7FF157d725C5e329f0171D3`
++`com.specular.v6-invariants.plist` is the **retired** arc-testnet job. It is kept for
++history and is deliberately not installed.
+ 
+-## Production Deployment
++---
+ 
+-### Systemd Service
++## Files
+ 
+-```ini
+-# /etc/systemd/system/specular-monitor.service
+-[Unit]
+-Description=Specular Invariant Monitor
+-After=network.target
++| file | role |
++|---|---|
++| `v6-invariants.js` | the checker. One run = one snapshot + 14 check families. Exit 0 clear / 1 violation / 2 could not complete. |
++| `run-with-alert.sh` | launchd entry point. Fans **any** non-zero exit — including a crash the checker never got to report — into `alert.js`. |
++| `check-overdue-loans.js` | read-only list of liquidation candidates. Exit 0 none / 1 some / 2 could not read. |
++| `run-overdue-check.sh` | launchd entry point for the above. |
++| `rpc-health-sample.sh` | one JSON line of hosted-API RPC health per run. |
++| `alert.js` | the fan-out: latch file, `~/SPECULAR-ALERT.txt`, macOS banner (+ spoken CRITICAL), `alerts.log`, optional webhook. Also the dead-man's switch. |
++| `INCIDENT_RUNBOOK.md` | what a human does when one of these fires. |
++| `WEBHOOK_SETUP.md` / `webhook-test.js` | optional remote notification. |
++| `invariant-monitor.js` | **historical** v4-era daemon. Not run by anything. |
+ 
+-[Service]
+-Type=simple
+-User=monitor
+-WorkingDirectory=/opt/specular-monitor
+-Environment=BASE_RPC_URL=https://mainnet.base.org
+-Environment=ARC_TESTNET_RPC_URL=https://arc-testnet.drpc.org
+-Environment=WEBHOOK_URL=https://hooks.slack.com/services/YOUR/WEBHOOK
+-Environment=POLL_INTERVAL_SEC=60
+-Environment=LOG_LEVEL=INFO
+-ExecStart=/usr/bin/node invariant-monitor.js
+-Restart=always
+-RestartSec=10
++---
+ 
+-[Install]
+-WantedBy=multi-user.target
+-```
+-
+-```bash
+-sudo systemctl enable specular-monitor.service
+-sudo systemctl start specular-monitor.service
+-sudo journalctl -u specular-monitor.service -f
+-```
++## How an alert reaches you
+ 
+-### Docker Deployment
+-
+-```dockerfile
+-FROM node:18-alpine
+-WORKDIR /app
+-COPY package*.json ./
+-RUN npm ci --only=production
+-COPY . .
+-USER node
+-CMD ["node", "invariant-monitor.js"]
+-```
++1. `ALERT-ACTIVE.json` — a **latch**. Its existence means "unacknowledged incident".
++   Never cleared automatically; clear it with `node alert.js --ack`.
++2. `~/SPECULAR-ALERT.txt` — plain text in your home directory.
++3. A macOS notification banner, plus a spoken alert for CRITICAL.
++4. `alerts.log` — append-only JSONL history.
++5. `SPECULAR_ALERT_WEBHOOK` — **only if you set it** in `monitor.env` (gitignored).
++   Nothing is hardcoded. **It is not set on this machine today**, so every channel above is
++   local: if nobody is logged in at this Mac, nobody is told. See `WEBHOOK_SETUP.md`.
+ 
+ ```bash
+-docker build -t specular-monitor .
+-docker run -d --name specular-monitor \
+-  -e BASE_RPC_URL=https://mainnet.base.org \
+-  -e ARC_TESTNET_RPC_URL=https://arc-testnet.drpc.org \
+-  -e WEBHOOK_URL=https://hooks.slack.com/... \
+-  --restart=unless-stopped \
+-  specular-monitor
+-```
+-
+-## Log Ingestion
+-
+-### Elasticsearch/Logstash
+-```ruby
+-# logstash.conf
+-filter {
+-  if [fields][service] == "specular-monitor" {
+-    json {
+-      source => "message"
+-    }
+-    if [violatesS1] == true or [violatesB1] == true or [violatesS5] == true {
+-      mutate {
+-        add_tag => [ "critical-alert" ]
+-      }
+-    }
+-  }
+-}
++export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
++node forensics/monitor/alert.js --status     # latch + a heartbeat per job
++node forensics/monitor/alert.js --self-test  # prove the channels still work
++node forensics/monitor/alert.js --ack        # clear the latch AFTER handling it
+ ```
+ 
+-### Prometheus Metrics
+-```javascript
+-// Add to monitor (optional)
+-const client = require('prom-client');
+-const violations = new client.Gauge({
+-  name: 'specular_invariant_violations',
+-  help: 'Current invariant violations',
+-  labelNames: ['network', 'type']
+-});
+-```
+-
+-## Troubleshooting
+-
+-### Common Issues
+-
+-**RPC Rate Limiting**
+-- Reduce `POLL_INTERVAL_SEC`
+-- Use dedicated RPC endpoints (Alchemy, Infura)
+-- Add retry logic with exponential backoff
++`SPECULAR_ALERT_DIR` sandboxes every artifact — latch, history, heartbeats **and** the
++home-dir flag — so a drill cannot pollute the real channels.
+ 
+-**Memory Usage**
+-- Expected: ~50MB baseline + ~10MB per monitored network
+-- Large pools may cause spikes during `poolLenders[]` enumeration
++---
+ 
+-**Network Connectivity**
+-- Monitor will continue on partial failures
+-- Check logs for specific network error patterns
+-- Webhook failures are logged but don't stop monitoring
++## Running one by hand
+ 
+-### Debug Mode
+ ```bash
+-LOG_LEVEL=DEBUG node invariant-monitor.js
++export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
++cd ~/Specular
++
++# canonical Arc mainnet, verbose, no alert fan-out
++V6_MONITOR_NETWORK=arc-mainnet V6_EXPECTED_OWNER=0x800e305A0caDdE6289dFDFEDF38218f45C06F72C \
++  node forensics/monitor/v6-invariants.js --verbose --no-alert
++
++# a SUPERSEDED marketplace — always by ADDRESS. Superseded stacks live in the
++# `supersededDeployments` LIST in the addresses file, so no fixed config key resolves them;
++# V6_MONITOR_MARKETPLACE_KEY=<a key that does not exist> makes the monitor exit 2 and alert
++# for ever while watching nothing.
++V6_MONITOR_NETWORK=arc-mainnet V6_MONITOR_MARKETPLACE=0x358c5E69f712A4b3558333090a45A054bAeEb282 \
++  node forensics/monitor/v6-invariants.js --no-alert
++
++# overdue loans (read-only)
++node forensics/monitor/check-overdue-loans.js            # NET=arc-staging|local to switch
+ ```
+ 
+-This will output detailed information about each pool scan, RPC call timing, and intermediate calculations.
+-
+-## Security Notes
+-
+-- ⚠️  **RPC Endpoints**: Use trusted providers (Alchemy, Infura) for production
+-- ⚠️  **Webhook URLs**: Treat as sensitive; attackers could spam your channels
+-- ✅ **No Private Keys**: Monitor is read-only, requires no wallet access
+-- ✅ **No State Writes**: Uses only `eth_call` and log queries
+-
+-## License
+-
+-Same as parent project. This tool is provided for legitimate security monitoring purposes only.
+\ No newline at end of file
++### One network, several marketplaces
++
++Setting `V6_MONITOR_MARKETPLACE` also gives that run its own **instance namespace** —
++`state-<network>-<addr8>.json`, `v6-invariants-<network>-<addr8>.log`,
++`heartbeat-<network>-<addr8>.json`.
++
++That is not cosmetic. Before 2026-09-24 the two Arc-mainnet jobs shared one state file; the
++legacy job ran ~30 s before the canonical job on every cycle and rewrote the shared state with
++`creditPolicy: null` (a V3 reputation manager has no on-chain tier table), so the canonical
++run never had a previous policy to compare against and **`CP-CHANGED` could never fire** —
++the one signal a hostile owner key reliably produces. Override the namespace explicitly with
++`V6_MONITOR_INSTANCE` if you need to.
++
++---
++
++## Env
++
++| var | default | meaning |
++|---|---|---|
++| `V6_MONITOR_NETWORK` | `arc-testnet` | `arc-testnet` \| `arc-staging` \| `arc-mainnet` \| `local` |
++| `V6_MONITOR_MARKETPLACE` | canonical pointer | watch this address instead; also namespaces state/log/heartbeat |
++| `V6_MONITOR_INSTANCE` | derived | explicit namespace override |
++| `V6_EXPECTED_OWNER` | `deployer` from the addresses file | pinned so an ownership change is detectable even if the repo is edited |
++| `V6_EXPECT_PAUSED` | `0` | `1` when a pause is intentional |
++| `V6_MAX_BLOCK_AGE_SEC` | `1800` | chain-head staleness threshold; `0` disables |
++| `V6_MAX_RUNTIME_SEC` | `300` | watchdog; a run that outlives the interval delays the next one |
++| `V6_RPC_TIMEOUT_MS` | `20000` | per-request timeout |
++| `V6_SURPLUS_WARN_USDC` | `1` | unexplained-surplus WARN threshold |
++| `V6_LOG_MAX_BYTES` | `5 MiB` | in-process log rotation |
++| `SPECULAR_ALERT_WEBHOOK` | unset | opt-in remote notification |
++| `SPECULAR_ALERT_DIR` | this directory | sandbox every alert artifact (drills/tests) |
++| `SPECULAR_ALERT_QUIET` | unset | suppress banner/voice |
++
++---
++
++## Known gaps
++
++These are properties of the setup, not bugs to be surprised by. Full list and consequences
++in `INCIDENT_RUNBOOK.md` §6.
++
++- **No all-jobs-dead detector.** The jobs cross-check each other's heartbeats, but a sleeping
++  or powered-off Mac silences all of them. Weekly `alert.js --status` is the only backstop.
++- **No remote channel is configured.** Every alert is local to this Mac.
++- **Only the marketplace owner is watched.** Registry / reputation-manager / faucet ownership
++  changes, `authorizePool`, `revokePool` and every fee-and-limit lever are invisible.
++- **`run-overdue-check.sh` and `rpc-health-sample.sh` stamp no heartbeat.** If either job
++  stops, nothing notices.
++- **Read-only.** Nothing here holds a key or sends a transaction.
+diff --git a/forensics/monitor/alert.js b/forensics/monitor/alert.js
+index 1f449ac..055a841 100755
+--- a/forensics/monitor/alert.js
++++ b/forensics/monitor/alert.js
+@@ -41,7 +41,16 @@ const { execFile } = require('child_process');
+ const DIR = process.env.SPECULAR_ALERT_DIR || __dirname;
+ const ACTIVE = path.join(DIR, 'ALERT-ACTIVE.json');
+ const HISTORY = path.join(DIR, 'alerts.log');
+-const HOME_FLAG = path.join(os.homedir(), 'SPECULAR-ALERT.txt');
++// The home-dir flag is the channel an operator trips over in a shell, so its presence has
++// to mean "there is a real unacknowledged incident".
++// [2026-09-24] SPECULAR_ALERT_DIR sandboxed the latch and the history but NOT this file, so
++// every drill and self-test appended to the operator's REAL ~/SPECULAR-ALERT.txt while the
++// latch stayed clean — the two channels disagreed, and the louder one was the lying one.
++// Honour the sandbox here too: a run with SPECULAR_ALERT_DIR set keeps its flag in the
++// sandbox. Unset (i.e. every launchd job) behaves exactly as before.
++const HOME_FLAG = process.env.SPECULAR_ALERT_DIR
++    ? path.join(DIR, 'SPECULAR-ALERT.txt')
++    : path.join(os.homedir(), 'SPECULAR-ALERT.txt');
+ const HEARTBEAT_DIR = DIR;
+ 
+ const QUIET = process.env.SPECULAR_ALERT_QUIET === '1';
+diff --git a/forensics/monitor/com.specular.overdue-loans-arc-mainnet.plist b/forensics/monitor/com.specular.overdue-loans-arc-mainnet.plist
+new file mode 100644
+index 0000000..c140db2
+--- /dev/null
++++ b/forensics/monitor/com.specular.overdue-loans-arc-mainnet.plist
+@@ -0,0 +1,25 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
++<plist version="1.0">
++<dict>
++    <key>Label</key><string>com.specular.overdue-loans-arc-mainnet</string>
++    <key>ProgramArguments</key>
++    <array>
++        <string>/bin/bash</string>
++        <string>/Users/peterschroeder/Specular/forensics/monitor/run-overdue-check.sh</string>
++        <string>arc-mainnet</string>
++    </array>
++    <key>EnvironmentVariables</key>
++    <dict>
++        <key>SPECULAR_REPO</key><string>/Users/peterschroeder/Specular</string>
++        <key>ARC_MAINNET_RPC_URL</key><string>https://rpc.mainnet.arc.io</string>
++    </dict>
++    <key>StartInterval</key><integer>3600</integer>
++    <key>RunAtLoad</key><true/>
++    <key>ProcessType</key><string>Background</string>
++    <key>LowPriorityIO</key><true/>
++    <key>WorkingDirectory</key><string>/Users/peterschroeder/Specular</string>
++    <key>StandardOutPath</key><string>/Users/peterschroeder/Specular/forensics/monitor/overdue-arc-mainnet-stdout.log</string>
++    <key>StandardErrorPath</key><string>/Users/peterschroeder/Specular/forensics/monitor/overdue-arc-mainnet-stderr.log</string>
++</dict>
++</plist>
+diff --git a/forensics/monitor/com.specular.rpc-health-sample.plist b/forensics/monitor/com.specular.rpc-health-sample.plist
+new file mode 100644
+index 0000000..bbe7eed
+--- /dev/null
++++ b/forensics/monitor/com.specular.rpc-health-sample.plist
+@@ -0,0 +1,19 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
++<plist version="1.0">
++<dict>
++    <key>Label</key><string>com.specular.rpc-health-sample</string>
++    <key>ProgramArguments</key>
++    <array>
++        <string>/bin/bash</string>
++        <string>/Users/peterschroeder/Specular/forensics/monitor/rpc-health-sample.sh</string>
++    </array>
++    <key>StartInterval</key><integer>900</integer>
++    <key>RunAtLoad</key><true/>
++    <key>ProcessType</key><string>Background</string>
++    <key>LowPriorityIO</key><true/>
++    <key>WorkingDirectory</key><string>/Users/peterschroeder/Specular</string>
++    <key>StandardOutPath</key><string>/Users/peterschroeder/Specular/forensics/monitor/rpc-health-sample-stdout.log</string>
++    <key>StandardErrorPath</key><string>/Users/peterschroeder/Specular/forensics/monitor/rpc-health-sample-stderr.log</string>
++</dict>
++</plist>
+diff --git a/forensics/monitor/com.specular.v6-invariants-arc-mainnet-legacy.plist b/forensics/monitor/com.specular.v6-invariants-arc-mainnet-legacy.plist
+new file mode 100644
+index 0000000..570dc7a
+--- /dev/null
++++ b/forensics/monitor/com.specular.v6-invariants-arc-mainnet-legacy.plist
+@@ -0,0 +1,41 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
++<plist version="1.0">
++<dict>
++	<key>EnvironmentVariables</key>
++	<dict>
++		<key>SPECULAR_REPO</key>
++		<string>/Users/peterschroeder/Specular</string>
++		<key>V6_EXPECTED_OWNER</key>
++		<string>0x800e305A0caDdE6289dFDFEDF38218f45C06F72C</string>
++		<key>V6_MAX_BLOCK_AGE_SEC</key>
++		<string>1800</string>
++		<key>V6_MAX_RUNTIME_SEC</key>
++		<string>600</string>
++		<key>V6_MONITOR_MARKETPLACE</key>
++		<string>0x358c5E69f712A4b3558333090a45A054bAeEb282</string>
++	</dict>
++	<key>Label</key>
++	<string>com.specular.v6-invariants-arc-mainnet-legacy</string>
++	<key>LowPriorityIO</key>
++	<true/>
++	<key>ProcessType</key>
++	<string>Background</string>
++	<key>ProgramArguments</key>
++	<array>
++		<string>/bin/bash</string>
++		<string>/Users/peterschroeder/Specular/forensics/monitor/run-with-alert.sh</string>
++		<string>arc-mainnet</string>
++	</array>
++	<key>RunAtLoad</key>
++	<true/>
++	<key>StandardErrorPath</key>
++	<string>/Users/peterschroeder/Specular/forensics/monitor/v6-invariants-arc-mainnet-legacy-stderr.log</string>
++	<key>StandardOutPath</key>
++	<string>/Users/peterschroeder/Specular/forensics/monitor/v6-invariants-arc-mainnet-legacy-stdout.log</string>
++	<key>StartInterval</key>
++	<integer>1800</integer>
++	<key>WorkingDirectory</key>
++	<string>/Users/peterschroeder/Specular</string>
++</dict>
++</plist>
+diff --git a/forensics/monitor/com.specular.v6-invariants-arc-staging.plist b/forensics/monitor/com.specular.v6-invariants-arc-staging.plist
+new file mode 100644
+index 0000000..b3ed7da
+--- /dev/null
++++ b/forensics/monitor/com.specular.v6-invariants-arc-staging.plist
+@@ -0,0 +1,41 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
++<plist version="1.0">
++<dict>
++	<key>EnvironmentVariables</key>
++	<dict>
++		<key>ARC_TESTNET_RPC_URL</key>
++		<string>https://rpc.testnet.arc.io</string>
++		<key>SPECULAR_REPO</key>
++		<string>/Users/peterschroeder/Specular</string>
++		<key>V6_EXPECTED_OWNER</key>
++		<string>0x800e305A0caDdE6289dFDFEDF38218f45C06F72C</string>
++		<key>V6_MAX_BLOCK_AGE_SEC</key>
++		<string>1800</string>
++		<key>V6_MAX_RUNTIME_SEC</key>
++		<string>600</string>
++	</dict>
++	<key>Label</key>
++	<string>com.specular.v6-invariants-arc-staging</string>
++	<key>LowPriorityIO</key>
++	<true/>
++	<key>ProcessType</key>
++	<string>Background</string>
++	<key>ProgramArguments</key>
++	<array>
++		<string>/bin/bash</string>
++		<string>/Users/peterschroeder/Specular/forensics/monitor/run-with-alert.sh</string>
++		<string>arc-staging</string>
++	</array>
++	<key>RunAtLoad</key>
++	<true/>
++	<key>StandardErrorPath</key>
++	<string>/Users/peterschroeder/Specular/forensics/monitor/v6-invariants-arc-staging-stderr.log</string>
++	<key>StandardOutPath</key>
++	<string>/Users/peterschroeder/Specular/forensics/monitor/v6-invariants-arc-staging-stdout.log</string>
++	<key>StartInterval</key>
++	<integer>1800</integer>
++	<key>WorkingDirectory</key>
++	<string>/Users/peterschroeder/Specular</string>
++</dict>
++</plist>
+diff --git a/forensics/monitor/install-v6-monitor.sh b/forensics/monitor/install-v6-monitor.sh
+index 15dc3a5..8e7fff8 100755
+--- a/forensics/monitor/install-v6-monitor.sh
++++ b/forensics/monitor/install-v6-monitor.sh
+@@ -1,48 +1,83 @@
+ #!/usr/bin/env bash
+-# Install the V6 invariant monitor as a launchd agent (macOS) running every 30 min.
++# Install / uninstall the Specular monitoring launchd agents (macOS).
++#
++# [2026-09-24] This script used to install ONE plist — `com.specular.v6-invariants.plist`,
++# an arc-TESTNET job that ran the bare monitor with no alert wrapper and was deliberately
++# disabled on this machine. Running it resurrected a retired job pointed at a retired stack,
++# and (because a retired job's heartbeat file keeps triggering the dead-man's switch) it
++# could restart the every-30-minutes MONITOR_DOWN alert storm. It now installs the jobs that
++# are ACTUALLY meant to run, and nothing else.
++#
++# Four of the five jobs that were running on 2026-09-24 existed only in ~/Library/LaunchAgents
++# and in no git history at all — lose the machine and you lose the monitoring. The plists now
++# live beside this script, so `install` is a real rebuild step.
+ #
+ # Usage:
+-#   ./forensics/monitor/install-v6-monitor.sh         # install + load
+-#   ./forensics/monitor/install-v6-monitor.sh uninstall  # unload + remove
++#   ./forensics/monitor/install-v6-monitor.sh            # install + load every job
++#   ./forensics/monitor/install-v6-monitor.sh status     # what is loaded
++#   ./forensics/monitor/install-v6-monitor.sh uninstall  # unload + remove every job
++#
++# After `install`, verify the alert path is real before trusting it:
++#   node forensics/monitor/alert.js --self-test
++#   node forensics/monitor/alert.js --status     # every job must have a fresh heartbeat
++#
++# Notes:
++#   * The plists hardcode /Users/peterschroeder/Specular. On a rebuilt machine with a
++#     different path, edit them (SPECULAR_REPO, ProgramArguments, StandardOutPath,
++#     WorkingDirectory) before installing.
++#   * Webhook URL, if any, goes in forensics/monitor/monitor.env (gitignored) — never a plist.
++#   * If you REMOVE a job, delete its heartbeat file too
++#     (forensics/monitor/heartbeat-<instance>.json); otherwise every surviving monitor
++#     raises MONITOR_DOWN about it every 30 minutes, for ever.
+ 
+ set -euo pipefail
+ 
+-PLIST_NAME="com.specular.v6-invariants"
+-SOURCE_PLIST="$(cd "$(dirname "$0")" && pwd)/${PLIST_NAME}.plist"
+-TARGET_PLIST="${HOME}/Library/LaunchAgents/${PLIST_NAME}.plist"
++HERE="$(cd "$(dirname "$0")" && pwd)"
++LA="${HOME}/Library/LaunchAgents"
++
++# The jobs that are meant to run. `com.specular.v6-invariants` (arc-testnet) is intentionally
++# NOT in this list: that deployment is retired.
++JOBS=(
++    com.specular.v6-invariants-arc-mainnet          # canonical V6.2 + V4 stack, every 30 min
++    com.specular.v6-invariants-arc-mainnet-legacy   # superseded V6.1 marketplace, every 30 min
++    com.specular.v6-invariants-arc-staging          # staging stack, every 30 min
++    com.specular.overdue-loans-arc-mainnet          # liquidation candidates, hourly
++    com.specular.rpc-health-sample                  # hosted-API upstream RPC health, every 15 min
++)
+ 
+ case "${1:-install}" in
+     install)
+-        if [[ ! -f "$SOURCE_PLIST" ]]; then
+-            echo "ERROR: source plist not found at $SOURCE_PLIST"; exit 1
+-        fi
+-        mkdir -p "${HOME}/Library/LaunchAgents"
+-        cp "$SOURCE_PLIST" "$TARGET_PLIST"
+-        echo "Installed: $TARGET_PLIST"
+-        # Unload first if already loaded (safe to call when not loaded)
+-        launchctl unload "$TARGET_PLIST" 2>/dev/null || true
+-        launchctl load "$TARGET_PLIST"
+-        echo "Loaded launchd job: $PLIST_NAME (fires every 30 min)"
+-        echo ""
+-        echo "Logs:"
+-        echo "  forensics/monitor/v6-invariants.log         (JSONL — append-only)"
+-        echo "  forensics/monitor/v6-invariants-stdout.log  (stdout if any)"
+-        echo "  forensics/monitor/v6-invariants-stderr.log  (stderr / errors)"
+-        echo ""
+-        echo "Status:    launchctl list | grep $PLIST_NAME"
+-        echo "Tail log:  tail -f forensics/monitor/v6-invariants.log"
++        mkdir -p "$LA"
++        for j in "${JOBS[@]}"; do
++            src="$HERE/${j}.plist"
++            dst="$LA/${j}.plist"
++            if [[ ! -f "$src" ]]; then echo "ERROR: missing $src"; exit 1; fi
++            cp "$src" "$dst"
++            launchctl unload "$dst" 2>/dev/null || true
++            launchctl load "$dst"
++            echo "loaded  $j"
++        done
++        echo
++        echo "Verify:"
++        echo "  launchctl list | grep specular"
++        echo "  node forensics/monitor/alert.js --status     # every job must have a fresh heartbeat"
++        echo "  node forensics/monitor/alert.js --self-test  # prove the channels still work"
+         ;;
+     uninstall)
+-        if [[ -f "$TARGET_PLIST" ]]; then
+-            launchctl unload "$TARGET_PLIST" 2>/dev/null || true
+-            rm "$TARGET_PLIST"
+-            echo "Uninstalled: $TARGET_PLIST"
+-        else
+-            echo "Not installed."
+-        fi
++        for j in "${JOBS[@]}"; do
++            dst="$LA/${j}.plist"
++            if [[ -f "$dst" ]]; then
++                launchctl unload "$dst" 2>/dev/null || true
++                rm "$dst"
++                echo "removed $j"
++            fi
++        done
++        echo
++        echo "Also delete the heartbeat files of the jobs you removed, or the dead-man's"
++        echo "switch will alert about them for ever:  rm forensics/monitor/heartbeat-*.json"
+         ;;
+     status)
+-        launchctl list | grep "$PLIST_NAME" || echo "Not loaded."
++        launchctl list | grep specular || echo "No Specular jobs loaded."
+         ;;
+     *)
+         echo "Usage: $0 [install|uninstall|status]" >&2
+diff --git a/forensics/monitor/rpc-health-sample.sh b/forensics/monitor/rpc-health-sample.sh
+index cd65c44..406c119 100755
+--- a/forensics/monitor/rpc-health-sample.sh
++++ b/forensics/monitor/rpc-health-sample.sh
+@@ -21,7 +21,13 @@ if [ -z "$BODY" ]; then
+   exit 0
+ fi
+ # Keep only the decision-relevant fields; the full payload is large and mostly static.
+-printf '%s' "$BODY" | /usr/bin/python3 -c '
++#
++# [2026-09-24] The timestamp used to be passed as `python3 -c '...' TS="$TS"`, which makes
++# TS=... sys.argv[1], NOT an environment variable — so `os.environ["TS"]` raised KeyError,
++# the `||` fallback fired, and EVERY sample ever taken was
++# {"ok":false,"error":"parse failed"} (84 of 84 rows, 15-minute cadence, zero usable data).
++# The env assignment has to come BEFORE the command.
++printf '%s' "$BODY" | TS="$TS" /usr/bin/python3 -c '
+ import sys, json, os
+ ts = os.environ["TS"]
+ try:
+@@ -36,15 +42,31 @@ row = {
+     "jsonRpcMisses": c.get("jsonRpc", {}).get("misses", 0),
+     "networks": [],
+ }
++# [2026-09-24] The field map below was wrong for the payload /rpc-health actually serves:
++# there is no per-network "circuit" object (it is circuitOpen/circuitOpens on the network
++# itself) and no per-endpoint "rateLimited" counter (throttling shows as
++# lastErrorClass == "rate_limited" together with the failure count). Both therefore logged
++# a constant 0 — i.e. the two numbers this whole job exists to collect. Read the real keys,
++# and carry the per-endpoint call/failure counts so a week of rows can be differenced.
+ for n in d.get("networks", []):
+     eps = n.get("endpoints", [])
+     row["networks"].append({
+         "network": n.get("network"),
+-        "circuit": (n.get("circuit") or {}).get("state"),
+-        "circuitOpens": (n.get("circuit") or {}).get("opens", 0),
+-        "rateLimited": sum(int(e.get("rateLimited") or 0) for e in eps),
++        "circuitOpen": bool(n.get("circuitOpen")),
++        "circuitOpens": int(n.get("circuitOpens") or 0),
++        "retryAfterSeconds": int(n.get("retryAfterSeconds") or 0),
++        "rateLimitedEndpoints": sum(1 for e in eps if e.get("lastErrorClass") == "rate_limited"),
++        "calls": sum(int(e.get("calls") or 0) for e in eps),
++        "failures": sum(int(e.get("failures") or 0) for e in eps),
+         "down": sum(1 for e in eps if e.get("state") not in ("up", None)),
+         "endpoints": len(eps),
++        "perEndpoint": [{
++            "endpoint": e.get("endpoint"),
++            "state": e.get("state"),
++            "calls": int(e.get("calls") or 0),
++            "failures": int(e.get("failures") or 0),
++            "lastErrorClass": e.get("lastErrorClass"),
++        } for e in eps],
+     })
+ print(json.dumps(row))
+-' TS="$TS" >> "$OUT" 2>/dev/null || printf '{"ts":"%s","ok":false,"error":"parse failed"}\n' "$TS" >> "$OUT"
++' >> "$OUT" 2>/dev/null || printf '{"ts":"%s","ok":false,"error":"parse failed"}\n' "$TS" >> "$OUT"
+diff --git a/forensics/monitor/run-overdue-check.sh b/forensics/monitor/run-overdue-check.sh
+index fb032fc..0b93c6d 100755
+--- a/forensics/monitor/run-overdue-check.sh
++++ b/forensics/monitor/run-overdue-check.sh
+@@ -11,6 +11,15 @@
+ # this wrapper invented `--raise --severity ...`; alert.js would have treated "--raise" as
+ # the severity and the whole alert path would have been decorative. Verified by forcing a
+ # non-zero exit and confirming the latch file appears.
++#
++# [2026-09-24] The details argument was ALSO decorative, for a second reason. It was built
++# with sed+awk inline in the `node ... "$( ... )"` argument list, and the resulting
++# `{"network":"x","detail":"..."}` was brace-expanded by the shell into TWO words. alert.js
++# got `"network":"local"` as its details argument (invalid JSON -> {raw:...}), the real
++# payload landed in an argv slot it ignores, and the alert's `network` field read "unknown".
++# So a 3am page said "overdue loans" and carried no loan ids, no principals and no
++# days-overdue. Build the JSON with a JSON encoder, assign it to a variable FIRST, and pass
++# that variable quoted — never construct a JSON argument inline.
+ set -u
+ NETWORK="${1:-arc-mainnet}"
+ REPO="${SPECULAR_REPO:-/Users/peterschroeder/Specular}"
+@@ -22,9 +31,15 @@ CODE=$?
+ printf '%s\n' "$OUT" >> "$REPO/forensics/monitor/overdue-${NETWORK}.log"
+ 
+ if [ "$CODE" -eq 1 ]; then
++    DETAILS="$(printf '%s' "$OUT" | node -e '
++        const fs = require("fs");
++        const raw = fs.readFileSync(0, "utf8");
++        let report; try { report = JSON.parse(raw); } catch { report = { unparsed: raw.slice(0, 4000) }; }
++        process.stdout.write(JSON.stringify({ network: process.argv[1], report }));
++    ' "$NETWORK")"
+     node "$REPO/forensics/monitor/alert.js" CRITICAL \
+         "Overdue loans awaiting liquidation on $NETWORK" \
+-        "$(printf '%s' "$OUT" | tr -d '\n' | sed 's/"/\\"/g' | awk -v n="$NETWORK" '{print "{\"network\":\""n"\",\"detail\":\""$0"\"}"}')" >/dev/null 2>&1
++        "$DETAILS" >/dev/null 2>&1
+ elif [ "$CODE" -ne 0 ]; then
+     node "$REPO/forensics/monitor/alert.js" ERROR \
+         "Overdue-loan check could not complete on $NETWORK (exit $CODE)" \
+diff --git a/forensics/monitor/run-with-alert.sh b/forensics/monitor/run-with-alert.sh
+index 2214056..08354ee 100755
+--- a/forensics/monitor/run-with-alert.sh
++++ b/forensics/monitor/run-with-alert.sh
+@@ -38,7 +38,17 @@ if [ "$CODE" -ne 0 ]; then
+     # The monitor alerts on its own for findings it understands, and records that
+     # in its heartbeat. This branch is the catch-all for everything it CANNOT
+     # report on: a crash before it logged anything, OOM, node missing, repo moved.
+-    HB="${SPECULAR_ALERT_DIR:-$REPO/forensics/monitor}/heartbeat-$NETWORK.json"
++    # Heartbeat name must match v6-invariants.js's INSTANCE, which is the network name
++    # unless a specific (superseded) marketplace is being watched — those get their own
++    # state/log/heartbeat so two jobs on one network cannot overwrite each other.
++    INSTANCE="$NETWORK"
++    if [ -n "${V6_MONITOR_INSTANCE:-}" ]; then
++        INSTANCE="$V6_MONITOR_INSTANCE"
++    elif [ -n "${V6_MONITOR_MARKETPLACE:-}" ]; then
++        SHORT=$(printf '%s' "${V6_MONITOR_MARKETPLACE#0x}" | cut -c1-8 | tr '[:upper:]' '[:lower:]')
++        INSTANCE="$NETWORK-$SHORT"
++    fi
++    HB="${SPECULAR_ALERT_DIR:-$REPO/forensics/monitor}/heartbeat-$INSTANCE.json"
+     ALREADY=""
+     if [ -f "$HB" ]; then
+         ALREADY=$(node -e 'try{const h=require(process.argv[1]);process.stdout.write(h.alerted&&(Date.now()-h.epoch)<120000?"1":"")}catch(e){}' "$HB" 2>/dev/null)
+diff --git a/forensics/monitor/v6-invariants.js b/forensics/monitor/v6-invariants.js
+index 8cf4be6..ed56852 100755
+--- a/forensics/monitor/v6-invariants.js
++++ b/forensics/monitor/v6-invariants.js
+@@ -53,6 +53,10 @@
+ //
+ // Env:
+ //   V6_MONITOR_NETWORK      arc-testnet (default) | arc-staging | arc-mainnet | local
++//   V6_MONITOR_MARKETPLACE  watch this address instead of the config's canonical pointer
++//                           (how a SUPERSEDED stack keeps being monitored). Setting it also
++//                           gives the run its own state/log/heartbeat namespace — see INSTANCE.
++//   V6_MONITOR_INSTANCE     override that namespace explicitly
+ //   ARC_MAINNET_RPC_URL / ARC_TESTNET_RPC_URL / LOCAL_RPC_URL
+ //   V6_EXPECTED_OWNER       expected owner address (default: addresses.json `deployer`)
+ //   V6_EXPECT_PAUSED        "1" if the contract is intentionally paused (default 0)
+@@ -108,8 +112,24 @@ if (!V6) { console.error(`No marketplace address: key "${MP_KEY}" absent from ${
+ const QUIET = process.argv.includes('--quiet');
+ const VERBOSE = process.argv.includes('--verbose');
+ const NO_ALERT = process.argv.includes('--no-alert');
+-const LOGFILE = path.join(__dirname, NET.log);
+-const STATEFILE = path.join(__dirname, `state-${NETNAME}.json`);
++
++// INSTANCE — one network can carry SEVERAL monitored marketplaces (the canonical one
++// plus every superseded stack that still holds funds). They must not share a state file.
++// [2026-09-24] Measured failure: on Arc mainnet the legacy job (V6.1 + ReputationManagerV3)
++// ran ~30 s before the canonical job on every cycle and rewrote state-arc-mainnet.json with
++// `creditPolicy: null` — because a V3 reputation manager has no on-chain tier table. The
++// canonical run then found no previous policy to compare against, so CP-CHANGED could
++// NEVER fire. CP-CHANGED is the ONLY signal a hostile owner key reliably produces
++// (INCIDENT_RUNBOOK §3.2), so the two jobs were silently cancelling the stack's single
++// best intrusion detector. The same sharing can also cross-contaminate the lateness
++// monotonicity baseline between two different contracts.
++// Deriving the instance from the watched address keeps the default (canonical) job's
++// filenames exactly as they were, so nothing existing moves.
++const INSTANCE = process.env.V6_MONITOR_INSTANCE
++    || (process.env.V6_MONITOR_MARKETPLACE ? `${NETNAME}-${process.env.V6_MONITOR_MARKETPLACE.replace(/^0x/i, '').slice(0, 8).toLowerCase()}` : NETNAME);
++const LOGFILE = INSTANCE === NETNAME ? path.join(__dirname, NET.log)
++    : path.join(__dirname, NET.log.replace(/\.log$/, `-${INSTANCE.slice(NETNAME.length + 1)}.log`));
++const STATEFILE = path.join(__dirname, `state-${INSTANCE}.json`);
+ 
+ const EXPECTED_OWNER = (process.env.V6_EXPECTED_OWNER || ADDR.deployer || '').toLowerCase();
+ const EXPECT_PAUSED = process.env.V6_EXPECT_PAUSED === '1';
+@@ -715,7 +735,7 @@ function checkCreditPolicy(s, prevState) {
+             if (alerts) {
+                 try {
+                     await alerts.raise('CRITICAL', `Invariant monitor timed out on ${NETNAME} — deployment is UNMONITORED`, { network: NETNAME, maxRuntimeSec: MAX_RUNTIME_SEC }, { silent: QUIET });
+-                    alerts.stamp(NETNAME, { lastExitCode: 2, watchdog: true });
++                    alerts.stamp(INSTANCE, { lastExitCode: 2, watchdog: true });
+                 } catch {}
+             }
+             process.exit(2);
+@@ -804,13 +824,13 @@ function checkCreditPolicy(s, prevState) {
+     if (alerts) {
+         // `alerted` tells run-with-alert.sh that this run already fanned the
+         // incident out, so the wrapper's catch-all does not double-page.
+-        alerts.stamp(NETNAME, { lastExitCode: exitCode, block: block ? block.number : null, findings: findings.length, alerted: findings.length > 0 });
++        alerts.stamp(INSTANCE, { lastExitCode: exitCode, block: block ? block.number : null, findings: findings.length, alerted: findings.length > 0 });
+         // Dead-man's switch: if a sibling network's job has stopped running, this run
+         // says so. A monitor that is not running reports no violations, which is
+         // indistinguishable from "all clear" — so it is itself an incident, and it
+         // makes this run exit non-zero too.
+         try {
+-            const stale = await alerts.checkHeartbeats(Number(process.env.V6_HEARTBEAT_MAX_AGE_SEC || 5400), NETNAME);
++            const stale = await alerts.checkHeartbeats(Number(process.env.V6_HEARTBEAT_MAX_AGE_SEC || 5400), INSTANCE);
+             if (stale.length) {
+                 log('ERROR', '[MONITOR-DOWN] a sibling invariant monitor has stopped running', { stale });
+                 if (exitCode === 0) exitCode = 1;
+diff --git a/forensics/output/v7-model/V7_MAINNET_MIGRATION_RUNBOOK.md b/forensics/output/v7-model/V7_MAINNET_MIGRATION_RUNBOOK.md
+index 72e81cb..7724b5e 100644
+--- a/forensics/output/v7-model/V7_MAINNET_MIGRATION_RUNBOOK.md
++++ b/forensics/output/v7-model/V7_MAINNET_MIGRATION_RUNBOOK.md
+@@ -3,14 +3,33 @@
+ Moving Arc mainnet from **V6.1 + ReputationManagerV3** to **V6.2 + ReputationManagerV4**
+ (the M1 ladder + M2 self-stake model), which is the fix for **F-04**.
+ 
+-Status: **staging rehearsal round 2 in progress.** Round 1 validated the design (230/230
+-on-chain) but scale testing then found a BLOCKING DoS; that is fixed and staging has been
+-redeployed. Do not run the mainnet steps until the re-run passes. This document is the
+-plan, not a green light.
++## Status: DONE. This migration was executed on Arc mainnet on 2026-09-23.
+ 
+-Current staging stack (the scale-fixed build, deployed 2026-09-22):
++This is no longer a plan. It is kept as (a) the record of what was done and (b) the procedure
++for doing it again on another network. Everything below has been re-checked against the chain
++on **2026-09-24**; the sequence in §4 was additionally **re-executed end to end, twice, on a
++local hardhat chain** to prove it is repeatable and that the §5b trap stays closed.
++
++**What is live on Arc mainnet (chainId 5042) today, read on-chain 2026-09-24 at block
++22 416 766:**
++
++| | |
++|---|---|
++| Marketplace | `0xCb23f2fb03Bfd4775Cc0e76E28f64c1e545071be` · `VERSION() == "V6.2"` |
++| Reputation | `0x12953e732e5D1aFdA640554125367d1CEC2ac4FB` · `VERSION() == "V4"` |
++| Registry (reused, agent NFTs persist) | `0x6F1EbF50290f6D4A9947E9EB77f98a683684fBF5` |
++| Faucet (untouched by the migration) | `0xD854F80031A8d0CB166587AafA0969Da8C3757bF` · 19 USDC · claim 1 USDC · cohort ≤ 100 |
++| Owner / pendingOwner / paused | secure wallet `0x800e…F72C` / `0x0` / `false` — on all four contracts |
++| `migrationFinalized` | `true` (F-08 closed at deploy; `seedPool`/`seedPosition`/`setMigrationFinalized` all revert `Migration finalized`) |
++| Levers | fee 100 bps · minSupply 10 USDC · minHold 86 400 s · M-1 on · rate limit 5 / 86 400 s |
++| Ladder | k = 2 · growthStep 100 USDC · bootstrap 100 USDC · lockout 180 d · `MAX_TIER_LIMIT` 10 000 USDC (immutable) |
++| Tier limits | `[1000, 5000, 10000, 10000, 2500, 5000]` USDC |
++| Superseded, still live and monitored | V6.1 `0x358c5E69f712A4b3558333090a45A054bAeEb282` + ReputationV3 `0x1577Eb9985CcA859F25ED2EDaeD16A464ADFaE5e` |
++| Fully retired | V6.0 `0xb9996de05fD514A0cB2B81fa25448EECD4559Aaa` |
++
++Staging (the rehearsal target) runs the same generation:
+ `ReputationManagerV4 0xD7906fDFBf69BA89a4c2FE148797e24f386fE3d2`,
+-`MarketplaceV6.2 0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18`.
++`MarketplaceV6.2 0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18` (deployed 2026-09-22).
+ 
+ ---
+ 
+@@ -50,7 +69,10 @@ gets worse.**
+ 
+ ## 3. Preconditions (ALL must hold)
+ 
+-- [ ] Staging rehearsal green ON THE SCALE-FIXED BUILD: `V7_E2E_STAGING_REPORT.md`. Round 1
++*(All were satisfied before the 2026-09-23 mainnet run. Kept as the checklist for the next
++network. The one deliberately-waived item is the last: no external audit.)*
++
++- [x] Staging rehearsal green ON THE SCALE-FIXED BUILD: `V7_E2E_STAGING_REPORT.md`. Round 1
+       passed 230/230 against the PRE-FIX contracts; that result does not carry over. In
+       particular re-confirm the M2 self-stake lock, the M1 ladder, and the new refusals
+       introduced by the squat fix.
+@@ -79,13 +101,34 @@ gets worse.**
+ ```bash
+ export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
+ 
+-# 1. Dry run — validates chain, USDC decimals, prints the plan. No broadcast.
++# 0. OPTIONAL but recommended: walk the whole thing on a throwaway chain first.
++#    npx hardhat node  (terminal 1)
++#    npx hardhat run --network localhost scripts/incident-drill/deploy-v7-local.js
++#    node scripts/deploy-v7.js --network local            # dry
++#    DEPLOY_CONFIRM=YES node scripts/deploy-v7.js --network local
++#    Run it TWICE and confirm supersededDeployments[] has two entries (§5b).
++
++# 1. Dry run — validates chain id, USDC decimals, mock-token, deployer balance;
++#    prints the plan. No broadcast.
+ node scripts/deploy-v7.js --network arc-mainnet
+ 
+ # 2. Broadcast (IRREVERSIBLE).
+ DEPLOY_CONFIRM=YES node scripts/deploy-v7.js --network arc-mainnet
+ ```
+ 
++**The guards that stand between a typo and a real-money mistake** (each one forced and
++observed refusing, 2026-09-24):
++
++| guard | fires when | message |
++|---|---|---|
++| network | `--network` missing or unknown | `--network required: arc-staging \| arc-mainnet \| local` |
++| chain id | the endpoint answers a different chain | `GUARD: chainId mismatch — <rpc> reports 5042002, expected 5042 …` |
++| token shape | configured USDC is not an ERC-20 | `GUARD: … does not answer decimals()/symbol()/name()` |
++| decimals | USDC is not 6-decimal (e.g. Arc's 18-dec native view) | `GUARD: USDC decimals 18 != 6 — refusing.` |
++| mock token | a real-money network wired to a mock/test token | `GUARD: token … looks like a mock ("Mock USDC"/"USDC") …` |
++| balance | deployer below `DEPLOY_MIN_BALANCE` (default 1 native) | `GUARD: deployer balance 0.0 < required 1.0 …` |
++| confirmation | `DEPLOY_CONFIRM` is not exactly `YES` | `DRY RUN — nothing broadcast.` |
++
+ The script deploys `ReputationManagerV4(registry)` then
+ `AgentLiquidityMarketplaceV62(registry, V4, usdc)`, wires `authorizePool`, applies the
+ launch levers (M-1 on, minHold 86400s, minSupply 10 USDC, fee 100 bps, rate limit 5/86400s),
+@@ -97,39 +140,89 @@ pointing the canonical keys at V7.
+ **The registry is reused, so agent NFTs and identities persist.** Only reputation resets.
+ 
+ **The old marketplace is deliberately left running, unpaused and still authorized.** Per the
+-2026-09 audit, `pause()` freezes lender exits, repayment, and our own `liquidateLoan`
+-(6 of 18 operations), and revoking its pool would break repayment for anyone mid-loan. It is
+-retired separately, once it is drained — see §6.
++2026-09 audit and the 2026-09-23 drill, `pause()` freezes lender exits, repayment, and our own
++`liquidateLoan` — **9 of 35 measured operations on V6.2** (the "6 of 18" in earlier drafts was
++the coarser V6.1 probe set; the set of broken families is the same). Revoking its pool would
++break repayment for anyone mid-loan. It is retired separately, once it is drained — see §6.
+ 
+ ## 5. Post-deploy (same session)
+ 
++Every item states **how you check it**, so "done" is observable rather than asserted.
++
+ 1. **Verify source** — submit both contracts to Sourcify v2 for chain 5042 and confirm
+    `exact_match` (the Arc explorer's own `/api` is Cloudflare-challenged and `hardhat verify`
+    cannot reach it; hardhat-verify also targets Sourcify's retired v1 API):
+    `POST https://sourcify.dev/server/v2/verify/5042/<addr>` with the hardhat build-info.
++   *Check:* `GET https://sourcify.dev/server/v2/contract/5042/<addr>` returns `exact_match`.
+ 2. **Smoke test** with real USDC at tiny amounts, including the two new paths: the self-stake
+    lock refusing a creator withdrawal while borrowing, and `requiredSelfStake` gating a loan.
+-3. **Monitoring — two jobs, not one.** The canonical pointer now names V7, so the existing job
+-   follows V7 automatically. The superseded marketplace **stops being watched** unless you add:
++   *Check:* `node scripts/smoke-test-arc-mainnet.js` (writes) — and afterwards, and any time
++   you just want the config read back with no transactions,
++   `node scripts/smoke-test-arc-mainnet.js --read-only` (11 assertions, sends nothing).
++3. **Levers still exist and are still owner-gated on the deployed bytecode.**
++   *Check:* `node scripts/incident-drill/verify-runbook-levers.js` — exit 0, `missing: 0`,
++   `notOwnerGated: 0`. (52/52 on 2026-09-24.) This is the item that catches "the runbook names
++   a function the new contract does not have".
++4. **Monitoring — two jobs, not one.** The canonical pointer now names V7, so the existing job
++   follows V7 automatically. The superseded marketplace **stops being watched** unless you add
++   a second job. Use the **address** form: superseded stacks live in the
++   `supersededDeployments` LIST, so no fixed config key resolves them, and
++   `V6_MONITOR_MARKETPLACE_KEY=<a key that does not exist>` makes the monitor `exit(2)` and
++   alert every cycle while watching nothing (verified: `No marketplace address: key "…" absent
++   from src/config/arc-mainnet-addresses.json`, exit 2).
+    ```
+-   # address form, since superseded stacks no longer live under a fixed key:
+    V6_MONITOR_NETWORK=arc-mainnet V6_MONITOR_MARKETPLACE=<superseded marketplace address> \
+      node forensics/monitor/v6-invariants.js
+    ```
+-   Keep that second job until the legacy contract is drained and retired. Confirm the V7 job
+-   emits the `V6.2-SELFSTAKE` check family once a pool exists — if that line never appears, the
+-   self-stake invariants are not actually running.
+-4. **Update** `CLAUDE.md` (network table + risk posture), `src/config/chains.json`, and memory.
+-5. **Faucet**: it points at the registry, not the marketplace, so it keeps working. Confirm.
++   Live as launchd `com.specular.v6-invariants-arc-mainnet-legacy`.
++   *Checks, all three:*
++   - the V7 job emits the `V6.2-SELFSTAKE` check family once a pool exists — if that line never
++     appears, the self-stake invariants are not actually running (present 2026-09-24);
++   - `node forensics/monitor/alert.js --status` gained a **separate heartbeat** for the new job
++     (`arc-mainnet-<addr8>`). If it did not, the two jobs are sharing one state file and the
++     second is destroying the first's `CP-CHANGED` baseline — that is exactly what happened
++     between 2026-09-23 and 2026-09-24 (INCIDENT_RUNBOOK §3.2 box);
++   - `forensics/monitor/state-arc-mainnet-<addr8>.json` exists.
++5. **Update** `CLAUDE.md` (network table + risk posture), `src/config/chains.json`, and memory.
++   *Check:* every address in `CLAUDE.md` appears in the addresses file, and no `*_legacy` key is
++   claimed that the file does not contain.
++6. **Faucet**: it points at the registry, not the marketplace, so it keeps working.
++   *Check:* `read-live-levers.js` shows the faucet owner/claimAmount/cohort/balance unchanged
++   (19 USDC / 1 USDC / 100 on 2026-09-24).
++7. **Hosted API**: redeploy it, then confirm it is serving the NEW stack. A stale container
++   keeps answering from the superseded marketplace and will overstate credit limits 10×.
++   *Check:* `GET /v1/arc-mainnet/status` (bearer token) reports `capabilities.v62: true`,
++   `reputationV4: true`, `creditTiers.source: "chain"` and the new marketplace address.
++   (Confirmed serving V6.2/V4 from chain on 2026-09-24.)
+ 
+ ## 5b. Do not lose the address of the contract you just superseded
+ 
+ `deploy-v7.js` once recorded superseded stacks under fixed `*_legacy` keys, so a SECOND
+ redeploy overwrote the first's record. On staging that dropped the last reference to a
+ marketplace still holding 482 USDC of lender funds. Superseded stacks now APPEND to
+-`supersededDeployments` in the addresses file. After any redeploy, confirm that list grew
+-and that every entry still has a monitor pointed at it. An address you cannot name is one
+-you cannot monitor, drain or retire.
++`supersededDeployments` in the addresses file. An address you cannot name is one you cannot
++monitor, drain or retire.
++
++**Verified by execution 2026-09-24**: `deploy-v7.js` was run twice against a local chain and
++`supersededDeployments[]` ended with **both** generations, `agentLiquidityMarketplacePrevious`
++naming the most recent. The script also now prints the monitoring command in **address** form,
++never a config key.
++
++`scripts/redeploy-marketplace-v6.1.js` had the *original* version of this bug and was never
++fixed: it wrote the superseded address to the single key
++`agentLiquidityMarketplace_v6_0_retired`, which on Arc mainnet already held the V6.0 address —
++a second run would have silently overwritten it. It now appends to `supersededDeployments[]`
++as well. **If you write another deploy script, make it append.**
++
++**Two checks after any redeploy, both of which fail today on staging:**
++
++1. `supersededDeployments[]` grew by one.
++2. **Every entry has a monitor pointed at it.** Arc mainnet's single superseded marketplace
++   does (`com.specular.v6-invariants-arc-mainnet-legacy`). Arc **staging** has three
++   superseded marketplaces — `0xDbDf60AE…` (849.16 USDC), `0xB2d88bbF…` (482.24),
++   `0xa736EE7B…` (3 487.69), all unpaused, read 2026-09-24 — and **none of them is
++   monitored**. It is test money, but it is the same checklist item that will matter the day a
++   mainnet stack is superseded with lender funds still in it.
+ 
+ ## 6. Retiring the legacy stack
+ 
+@@ -143,6 +236,23 @@ withdrawFees(accumulatedFees) → pause() → reputation(V3).revokePool(legacy m
+ `scripts/redeploy-marketplace-v6.1.js` already refuses to retire a contract holding lender
+ funds; apply the same rule by hand here. Until then, leave it running and monitored.
+ 
++**Status of the Arc-mainnet legacy stack, 2026-09-24:** V6.1 `0x358c5E69…` has zero ACTIVE
++loans, zero lender positions and holds nothing beyond its own `accumulatedFees`, so it meets
++the preconditions above. The one thing that previously blocked retiring it — the hosted API
++still serving from it — is **cleared**: `/v1/arc-mainnet/status` now reports the V6.2
++marketplace with `v62: true` and `creditTiers.source: "chain"`. Retiring it is therefore a
++decision, not a blocker. If you do retire it, remember to unload
++`com.specular.v6-invariants-arc-mainnet-legacy` **and delete
++`forensics/monitor/heartbeat-arc-mainnet-358c5e69.json`**, or the dead-man's switch will raise
++`MONITOR_DOWN` about it every 30 minutes for ever.
++
++⚠️ **Do not reach for `redeploy-marketplace-v6.1.js` to do any of this.** It deploys V6.1, which
++is now OLDER than what is live; pointed at Arc mainnet it would deploy a downgrade, repoint the
++canonical config key at it, and — because the live V6.2 holds only its own fees — trip the
++retirement branch and **pause and revoke the canonical marketplace**. A version guard now
++refuses (`GUARD: the canonical marketplace on arc-mainnet is V6.2; this script deploys V6.1,
++which is OLDER`), overridable only with `ALLOW_VERSION_DOWNGRADE=YES`.
++
+ ## 7. What this migration does NOT fix
+ 
+ - **Residual attacker EV is still positive** (~24 %/yr at the chosen parameters). V7 **prices**
+@@ -155,9 +265,11 @@ funds; apply the same rule by hand here. Until then, leave it running and monito
+   refuted on re-measurement. The gain is structural (capacity tracks demonstrated usage, and the
+   attacker's added cost is seized while the honest agent's is recoverable).
+ - **Single owner EOA, no multisig or timelock.** The owner key can retune tiers (within the
+-  immutable `MAX_TIER_LIMIT`), levers, and fees. Monitoring detects an ownership change; it
+-  cannot prevent a compromised key. This is the largest remaining structural risk and it is
+-  outside what any of this work addresses.
++  immutable `MAX_TIER_LIMIT`), levers, and fees. Monitoring detects an ownership change **on
++  the marketplace only**; registry, reputation-manager and faucet ownership changes are
++  invisible, and of 29 successful hostile owner calls enumerated in the 2026-09-23 drill,
++  **23 produce no signal at all**. It cannot prevent a compromised key. This is the largest
++  remaining structural risk and it is outside what any of this work addresses.
+ - **No external audit** of V6.1, V6.2 or V4. Gate 1 of `ARC_MAINNET_DEPLOY_PREP.md` remains open
+   by owner decision.
+ 
+diff --git a/scripts/deploy-v7.js b/scripts/deploy-v7.js
+index 498844b..8f95d5e 100644
+--- a/scripts/deploy-v7.js
++++ b/scripts/deploy-v7.js
+@@ -15,10 +15,23 @@
+  * pause() freezes lender exits, and revoking its pool would break repayment. Retire
+  * it separately once it holds nothing.
+  *
++ * Guards, each of which refuses BEFORE anything is broadcast (all four are exercised on
++ * `--network local` — see forensics/output/testing-2026-09-24/OPERATIONAL_VERIFICATION.md):
++ *   1. --network must name a known target
++ *   2. the endpoint's chain id must match that target
++ *   3. the configured USDC must be an ERC-20 with exactly 6 decimals
++ *   4. on a real-money network the token must not look like a mock
++ *   5. the deployer must hold at least DEPLOY_MIN_BALANCE (default 1) native
++ *
+  * Usage:
+  *   node scripts/deploy-v7.js --network arc-staging
+  *   DEPLOY_CONFIRM=YES node scripts/deploy-v7.js --network arc-staging
+  *   DEPLOY_CONFIRM=YES node scripts/deploy-v7.js --network arc-mainnet
++ *   node scripts/deploy-v7.js --network local            # rehearsal on a hardhat node
++ *
++ * Env: DEPLOY_CONFIRM=YES broadcast · DEPLOY_MIN_BALANCE native floor ·
++ *      DEPLOY_ASSUME_REAL=1 apply the real-money guards on a rehearsal target ·
++ *      SPECULAR_ADDRESSES_FILE alternate addresses file (--network local only)
+  */
+ require('dotenv').config();
+ const { ethers } = require('ethers');
+@@ -28,11 +41,28 @@ const path = require('path');
+ const NETWORKS = {
+     'arc-staging': { file: 'src/config/arc-testnet-v6-addresses.json', rpc: process.env.ARC_TESTNET_RPC_URL || 'https://rpc.testnet.arc.io', chainId: 5042002, real: false },
+     'arc-mainnet': { file: 'src/config/arc-mainnet-addresses.json',    rpc: process.env.ARC_MAINNET_RPC_URL || 'https://rpc.mainnet.arc.io',  chainId: 5042,    real: true  },
++    // Rehearsal target. The guards below are the only thing standing between a typo and
++    // a real-money deploy, so there has to be somewhere they can be FIRED and watched.
++    // `local` also lets the whole sequence be walked end to end before it is walked on Arc.
++    'local':       { file: 'src/config/local-addresses.json',          rpc: process.env.LOCAL_RPC_URL || 'http://127.0.0.1:8545',            chainId: 31337,   real: false },
+ };
+ const netArg = process.argv[process.argv.indexOf('--network') + 1];
+ const NET = NETWORKS[netArg];
+ if (!NET) { console.error(`--network required: ${Object.keys(NETWORKS).join(' | ')}`); process.exit(1); }
++// Addresses-file override exists ONLY for the local rehearsal target — on a real chain
++// the file is pinned by the network name and cannot be redirected by an env var.
++if (process.env.SPECULAR_ADDRESSES_FILE) {
++    if (netArg !== 'local') { console.error('SPECULAR_ADDRESSES_FILE is only honoured for --network local — refusing.'); process.exit(1); }
++    NET.file = process.env.SPECULAR_ADDRESSES_FILE;
++}
+ const DRY = process.env.DEPLOY_CONFIRM !== 'YES';
++// Treat this run as real-money even on a rehearsal target. Strictness-only: it can enable
++// a guard, never disable one. It exists so the mainnet guards can be FIRED and watched on
++// a local chain instead of being believed.
++const REAL = NET.real || process.env.DEPLOY_ASSUME_REAL === '1';
++// Minimum native balance required to broadcast. The full V7 sequence is ~8 txs; running
++// out halfway leaves an unauthorised marketplace and a half-levered reputation manager.
++const MIN_BALANCE = ethers.parseEther(process.env.DEPLOY_MIN_BALANCE || '1');
+ 
+ // Launch config. Marketplace levers mirror the live V6.1 settings; the V4 ladder
+ // parameters are the validated defaults from V7_DESIGN_AND_VALIDATION.md.
+@@ -47,11 +77,21 @@ const LEVERS = {
+ const art = (r) => JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'artifacts', 'contracts', 'core', r), 'utf8'));
+ 
+ async function main() {
+-    const cfgPath = path.join(__dirname, '..', NET.file);
++    // path.resolve (not join) so an absolute SPECULAR_ADDRESSES_FILE works as given.
++    const cfgPath = path.resolve(path.join(__dirname, '..'), NET.file);
+     const cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
+-    const provider = new ethers.JsonRpcProvider(NET.rpc, NET.chainId, { batchMaxCount: 1 });
+-    const live = await provider.getNetwork();
+-    if (Number(live.chainId) !== NET.chainId) { console.error(`chainId mismatch ${live.chainId} != ${NET.chainId}`); process.exit(1); }
++    // Pin the expected chain id on the provider AND assert it. ethers throws its own
++    // NETWORK_ERROR first when the endpoint disagrees, so catch that and print the
++    // operator-legible message instead of a stack trace at 3am.
++    const provider = new ethers.JsonRpcProvider(NET.rpc, NET.chainId, { batchMaxCount: 1, cacheTimeout: -1 });
++    let live;
++    try { live = await provider.getNetwork(); }
++    catch (e) {
++        const m = /=> *(\d+)/.exec(e.shortMessage || e.message || '');
++        console.error(`GUARD: chainId mismatch — ${NET.rpc} reports ${m ? m[1] : 'a different chain'}, expected ${NET.chainId} for --network ${netArg}. Refusing.`);
++        process.exit(1);
++    }
++    if (Number(live.chainId) !== NET.chainId) { console.error(`GUARD: chainId mismatch ${live.chainId} != ${NET.chainId} — refusing.`); process.exit(1); }
+     const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+ 
+     const R4 = art('ReputationManagerV4.sol/ReputationManagerV4.json');
+@@ -59,18 +99,36 @@ async function main() {
+     const registryAddr = cfg.agentRegistryV2;
+     const usdcAddr = cfg.usdc;
+ 
+-    console.log(`\n=== Specular V7 (ReputationManagerV4 + Marketplace V6.2) on ${netArg} ${DRY ? '[DRY RUN]' : '[LIVE BROADCAST]'} ${NET.real ? '⚠ REAL USDC' : '(testnet)'} ===`);
++    console.log(`\n=== Specular V7 (ReputationManagerV4 + Marketplace V6.2) on ${netArg} ${DRY ? '[DRY RUN]' : '[LIVE BROADCAST]'} ${REAL ? (NET.real ? "⚠ REAL USDC" : "⚠ REAL-MONEY GUARDS FORCED") : "(testnet)"} ===`);
+     console.log(`deployer   ${wallet.address}  balance ${ethers.formatEther(await provider.getBalance(wallet.address))}`);
+     console.log(`registry   ${registryAddr}   (reused — agent NFTs persist)`);
+     console.log(`usdc       ${usdcAddr}`);
+     console.log(`current    marketplace ${cfg.agentLiquidityMarketplace_v6}  reputation ${cfg.reputationManagerV3}`);
+     console.log('⚠ reputation does NOT migrate: every agent restarts at score 0 / bootstrap limit.');
+ 
+-    // Sanity: USDC must be a 6-decimal ERC-20 (blocks Arc's 18-decimal native view).
+-    const usdc = new ethers.Contract(usdcAddr, ['function decimals() view returns (uint8)', 'function symbol() view returns (string)'], provider);
+-    const dec = Number(await usdc.decimals());
+-    if (dec !== 6) { console.error(`USDC decimals ${dec} != 6 — refusing.`); process.exit(1); }
+-    console.log(`usdc check ${await usdc.symbol()} ${dec} dec ✅`);
++    // GUARD 1 — USDC must be a 6-decimal ERC-20 (blocks Arc's 18-decimal native view).
++    const usdc = new ethers.Contract(usdcAddr, ['function decimals() view returns (uint8)', 'function symbol() view returns (string)', 'function name() view returns (string)'], provider);
++    let dec, sym, nam;
++    try { [dec, sym, nam] = [Number(await usdc.decimals()), await usdc.symbol(), await usdc.name()]; }
++    catch (e) { console.error(`GUARD: ${usdcAddr} does not answer decimals()/symbol()/name() — is it an ERC-20? Refusing.`); process.exit(1); }
++    if (dec !== 6) { console.error(`GUARD: USDC decimals ${dec} != 6 — refusing.`); process.exit(1); }
++
++    // GUARD 2 — never wire a REAL deployment to a mock/test token. The staging stack runs
++    // on MockUSDC and the two configs are one flag apart; a mis-set --network that also
++    // passed the chain-id check would otherwise deploy a mainnet stack against play money.
++    if (REAL && /mock|test|fake|dummy/i.test(`${sym} ${nam}`)) {
++        console.error(`GUARD: token ${usdcAddr} looks like a mock ("${nam}"/"${sym}") but --network ${netArg} is a REAL-money network. Refusing.`);
++        process.exit(1);
++    }
++    console.log(`usdc check ${sym} (${nam}) ${dec} dec ✅`);
++
++    // GUARD 3 — enough gas to finish. A half-applied V7 deploy leaves an unauthorised
++    // marketplace and a reputation manager at default levers, which is worse than none.
++    const bal = await provider.getBalance(wallet.address);
++    if (bal < MIN_BALANCE) {
++        console.error(`GUARD: deployer balance ${ethers.formatEther(bal)} < required ${ethers.formatEther(MIN_BALANCE)} (DEPLOY_MIN_BALANCE) — refusing.`);
++        process.exit(1);
++    }
+ 
+     const f4 = new ethers.ContractFactory(R4.abi, R4.bytecode, wallet);
+     const f62 = new ethers.ContractFactory(M62.abi, M62.bytecode, wallet);
+@@ -124,7 +182,14 @@ async function main() {
+     cfg.reputationManagerV3 = repAddr;           // canonical pointer clients follow
+     cfg.marketplaceVersion = 'V6.2 + ReputationManagerV4 (V7 credit model: M1 ladder + M2 self-stake)';
+     cfg.v7DeployedAt = new Date().toISOString();
+-    cfg.v7Note = 'Reputation did NOT migrate from the V3 manager; agents restart at score 0. Legacy contracts remain live under *_legacy keys.';
++    // This note is read by humans triaging an incident, so it must name the keys that are
++    // actually written. There is no `*_legacy` key: the superseded stack is the last entry
++    // of `supersededDeployments[]`, mirrored by
++    // `agentLiquidityMarketplacePrevious` / `reputationManagerPrevious`.
++    cfg.v7Note = 'Reputation did NOT migrate from the V3 manager; agents restart at score 0. '
++        + 'The superseded contracts are left live on purpose — find them in supersededDeployments[] '
++        + '(most recent also at agentLiquidityMarketplacePrevious / reputationManagerPrevious). '
++        + 'Each needs its own monitor job via V6_MONITOR_MARKETPLACE=<address> until it is drained and retired.';
+     fs.writeFileSync(cfgPath, JSON.stringify(cfg, null, 2) + '\n');
+     console.log(`\n✅ ${NET.file} updated. Next: Sourcify-verify both, run the E2E rehearsal, update CLAUDE.md.`);
+     console.log('\n⚠️  MONITORING: the canonical pointer now names the V6.2 marketplace, so the');
+diff --git a/scripts/incident-drill/verify-runbook-levers.js b/scripts/incident-drill/verify-runbook-levers.js
+new file mode 100644
+index 0000000..f781373
+--- /dev/null
++++ b/scripts/incident-drill/verify-runbook-levers.js
+@@ -0,0 +1,164 @@
++// READ-ONLY. Proves that every lever INCIDENT_RUNBOOK.md tells a human to reach for
++// actually exists, with that exact signature, on the CURRENTLY DEPLOYED contracts —
++// and that the owner-only ones are owner-gated.
++//
++// Method: `eth_call` only. A simulated call from the owner address exercises the real
++// deployed bytecode (dispatcher + modifiers + body) without broadcasting anything, so
++// it distinguishes "function is absent" (no matching selector → the fallback reverts
++// with empty data) from "function exists and reverted for a business reason" (a revert
++// string) from "function exists and would succeed".
++//
++// It NEVER sends a transaction and holds no private key.
++//
++//   node scripts/incident-drill/verify-runbook-levers.js            # arc-mainnet
++//   NET=arc-staging node scripts/incident-drill/verify-runbook-levers.js
++//
++// Exit codes: 0 every runbook lever present and correctly gated · 1 at least one
++// MISSING or mis-gated · 2 could not read.
++
++const { ethers } = require('ethers');
++const fs = require('fs');
++const path = require('path');
++
++const ROOT = path.resolve(__dirname, '..', '..');
++const NETS = {
++    'arc-mainnet': { file: 'src/config/arc-mainnet-addresses.json', env: 'ARC_MAINNET_RPC_URL' },
++    'arc-staging': { file: 'src/config/arc-testnet-v6-addresses.json', env: 'ARC_TESTNET_RPC_URL' },
++};
++const NET = process.env.NET || 'arc-mainnet';
++if (!NETS[NET]) { console.error(`unknown NET; expected ${Object.keys(NETS).join(', ')}`); process.exit(2); }
++const A = JSON.parse(fs.readFileSync(path.join(ROOT, NETS[NET].file)));
++const RPC = process.env[NETS[NET].env] || A.rpcUrl;
++const STRANGER = '0x000000000000000000000000000000000000dEaD';
++
++let missing = 0, misgated = 0, checked = 0;
++const rows = [];
++
++// Classify one simulated call.
++//   absent      — no such selector on the deployed contract
++//   ok          — selector present; call would succeed
++//   revert:...  — selector present; reverted with a reason (still proves it exists)
++async function probe(provider, addr, sig, args, from) {
++    const iface = new ethers.Interface([`function ${sig}`]);
++    const name = sig.slice(0, sig.indexOf('('));
++    const data = iface.encodeFunctionData(name, args);
++    try {
++        await provider.call({ to: addr, data, from });
++        return { state: 'ok' };
++    } catch (e) {
++        const body = e.data ?? e.info?.error?.data ?? null;
++        const reason = e.reason || e.shortMessage || e.message || '';
++        // An unknown selector hits the (absent) fallback and reverts with NO return data.
++        if ((body === '0x' || body === null || body === undefined) && /missing revert data|require\(false\)|CALL_EXCEPTION/i.test(reason) && !e.reason) {
++            return { state: 'absent', reason: reason.slice(0, 90) };
++        }
++        // OZ v5 reverts with custom errors, which carry no reason string. Decode the
++        // two that matter here by selector so "blocked because you are not the owner"
++        // is distinguishable from "blocked for a business reason".
++        const sel = typeof body === 'string' ? body.slice(0, 10) : '';
++        const CUSTOM = { '0x118cdaa7': 'OwnableUnauthorizedAccount', '0xd93c0665': 'EnforcedPause', '0x8dfc202b': 'ExpectedPause', '0x1e4fbdf7': 'OwnableInvalidOwner' };
++        if (CUSTOM[sel]) return { state: 'revert', reason: CUSTOM[sel] };
++        return { state: 'revert', reason: (e.reason || reason).slice(0, 90) };
++    }
++}
++
++async function check(provider, label, addr, sig, args, { ownerOnly = false, owner } = {}) {
++    checked++;
++    const asOwner = await probe(provider, addr, sig, args, owner);
++    const row = { contract: label, signature: sig, asOwner: asOwner.state, detail: asOwner.reason || '' };
++    if (asOwner.state === 'absent') { row.verdict = 'MISSING'; missing++; }
++    else row.verdict = 'present';
++    if (ownerOnly && asOwner.state !== 'absent') {
++        const asStranger = await probe(provider, addr, sig, args, STRANGER);
++        row.asStranger = asStranger.state;
++        row.strangerReason = asStranger.reason || '';
++        const gated = asStranger.state === 'revert' && /Ownable|owner|caller is not/i.test(asStranger.reason || '');
++        row.ownerGated = gated;
++        if (!gated) { row.verdict = 'NOT OWNER-GATED'; misgated++; }
++    }
++    rows.push(row);
++}
++
++(async () => {
++    const provider = new ethers.JsonRpcProvider(RPC, undefined, { staticNetwork: true });
++    const mpAddr = A.agentLiquidityMarketplace_v6;
++    const mp = new ethers.Contract(mpAddr, ['function owner() view returns (address)', 'function reputationManager() view returns (address)'], provider);
++    const owner = await mp.owner();
++    const rmAddr = await mp.reputationManager();
++    const regAddr = A.agentRegistryV2;
++    const faAddr = A.agentCreditFaucet;
++
++    // --- marketplace levers named in INCIDENT_RUNBOOK.md §3, §4.1, §5 -----------------
++    const M = [
++        ['pause()', [], true], ['unpause()', [], true],
++        ['setPlatformFeeRate(uint256)', [100n], true],
++        ['setMinSupplyAmount(uint256)', [10000000n], true],
++        ['setMinHoldForReputationReward(uint256)', [86400n], true],
++        ['setBindBorrowToPoolCreator(bool)', [true], true],
++        ['liquidateLoan(uint256)', [1n], true],
++        ['withdrawFees(uint256)', [1n], true],
++        ['compactPoolLenders(uint256)', [1n], true],
++        ['resetPoolAccounting(uint256)', [1n], true],
++        ['setMigrationFinalized()', [], true],
++        ['seedPool(uint256,address,uint256,uint256,uint256)', [1n, STRANGER, 0n, 0n, 0n], true],
++        ['seedPosition(uint256,address,uint256,uint256,uint256)', [1n, STRANGER, 0n, 0n, 0n], true],
++        ['transferOwnership(address)', [owner], true],
++        ['acceptOwnership()', [], false],
++        ['renounceOwnership()', [], true],
++    ];
++    for (const [sig, args, ownerOnly] of M) await check(provider, 'marketplace', mpAddr, sig, args, { ownerOnly, owner });
++    // views the runbook's triage steps depend on
++    for (const [sig, args] of [
++        ['selfStake(uint256)', [1n]], ['requiredSelfStake(uint256,uint256)', [1n, 0n]],
++        ['qualifiedAmountAt(uint256,address,uint256)', [1n, owner, 0n]],
++        ['previewRepayment(uint256)', [1n]], ['getActiveLoanIds(uint256)', [1n]],
++        ['outstandingPrincipal(uint256)', [1n]], ['activeLoanCount(uint256)', [1n]],
++        ['MAX_ACTIVE_LOANS_PER_AGENT()', []], ['migrationFinalized()', []],
++    ]) await check(provider, 'marketplace(view)', mpAddr, sig, args, { owner });
++
++    // --- ReputationManagerV4 levers, §4.2 --------------------------------------------
++    const R = [
++        ['setTierLimits(uint256[6])', [[1000000000n, 5000000000n, 10000000000n, 10000000000n, 2500000000n, 5000000000n]], true],
++        ['setLadderParameters(uint256,uint256,uint256,uint256)', [2n, 100000000n, 100000000n, 604800n], true],
++        ['setDefaultLockout(uint256)', [15552000n], true],
++        ['setReputationRateLimit(uint256,uint256)', [5n, 86400n], true],
++        ['setScoringParameters(uint256,uint256,uint256,uint256)', [10n, 50n, 100n, 1000000000n], true],
++        ['setBonusReferenceAmount(uint256)', [100000000n], true],
++        ['setLatePenaltyParameters(uint256,uint256,uint256)', [10n, 5n, 100n], true],
++        ['setValidationBonusParameters(uint256,uint256)', [75n, 2000000000n], true],
++        ['setValidationRegistry(address)', [ethers.ZeroAddress], true],
++        ['authorizePool(address)', [STRANGER], true],
++        ['revokePool(address)', [STRANGER], true],
++        ['transferOwnership(address)', [owner], true],
++        ['renounceOwnership()', [], true],
++    ];
++    for (const [sig, args, ownerOnly] of R) await check(provider, 'reputation', rmAddr, sig, args, { ownerOnly, owner });
++    for (const [sig, args] of [['calculateCreditLimit(address)', [owner]], ['MAX_TIER_LIMIT()', []], ['validationRegistry()', []]])
++        await check(provider, 'reputation(view)', rmAddr, sig, args, { owner });
++
++    // --- AgentRegistryV2, §4.3 --------------------------------------------------------
++    for (const [sig, args, ownerOnly] of [
++        ['deactivateAgent(uint256)', [1n], true],
++        ['reactivateAgent(uint256)', [1n], true],
++        ['pause()', [], true],
++        ['transferOwnership(address)', [owner], true],
++        ['renounceOwnership()', [], true],
++    ]) await check(provider, 'registry', regAddr, sig, args, { ownerOnly, owner });
++    await check(provider, 'registry(view)', regAddr, 'isAgentActive(address)', [owner], { owner });
++
++    // --- AgentCreditFaucet, §4.4 ------------------------------------------------------
++    for (const [sig, args, ownerOnly] of [
++        ['drain(uint256)', [1n], true],
++        ['setClaimAmount(uint256)', [1000000n], true],
++        ['setMaxEligibleAgentId(uint256)', [100n], true],
++        ['transferOwnership(address)', [owner], true],
++        ['renounceOwnership()', [], true],
++    ]) await check(provider, 'faucet', faAddr, sig, args, { ownerOnly, owner });
++
++    console.log(JSON.stringify({
++        network: NET, rpc: RPC, block: await provider.getBlockNumber(),
++        marketplace: mpAddr, reputation: rmAddr, registry: regAddr, faucet: faAddr, owner,
++        checked, missing, notOwnerGated: misgated, rows,
++    }, null, 2));
++    process.exit(missing || misgated ? 1 : 0);
++})().catch(e => { console.error('READ FAILED:', e.shortMessage || e.message); process.exit(2); });
+diff --git a/scripts/redeploy-marketplace-v6.1.js b/scripts/redeploy-marketplace-v6.1.js
+index f93afe4..2caae45 100644
+--- a/scripts/redeploy-marketplace-v6.1.js
++++ b/scripts/redeploy-marketplace-v6.1.js
+@@ -5,9 +5,23 @@
+  * Steps: deploy V6.1(registry, reputation, usdc) → reputation.authorizePool(new) →
+  *        levers on new → new.setMigrationFinalized() [F-08: fresh deploy needs no migration]
+  *        → retire old: withdrawFees, pause, reputation.revokePool(old)  [only if old has no ACTIVE loans]
+- *        → rewrite the addresses JSON (old kept under agentLiquidityMarketplace_v6_0_retired).
++ *        → rewrite the addresses JSON (the superseded stack is APPENDED to
++ *          `supersededDeployments[]`; `agentLiquidityMarketplace_v6_0_retired` /
++ *          `..._legacy_still_live` are kept only as back-compat pointers).
++ *
++ * ⚠️ THIS SCRIPT DEPLOYS V6.1, WHICH IS OLDER THAN WHAT IS LIVE.
++ * Arc mainnet and Arc staging both run V6.2 + ReputationManagerV4 (the V7 credit model)
++ * since 2026-09-22/23. Pointing this script at either of them is a DOWNGRADE: it drops the
++ * M2 self-stake — the F-04 mitigation — repoints the canonical config key at the older
++ * contract, and (because the live V6.2 holds nothing but its own fees) trips the retirement
++ * branch, i.e. it PAUSES AND REVOKES the live canonical marketplace. A version guard now
++ * refuses that; override only with ALLOW_VERSION_DOWNGRADE=YES and only deliberately.
++ * For a new generation use `scripts/deploy-v7.js`.
+  *
+  * SAFETY: dry run by default. DEPLOY_CONFIRM=YES to broadcast. Network is REQUIRED.
++ * Guards, all of which refuse before anything is broadcast: network name, chain id,
++ * deployer owns both contracts, USDC is a 6-decimal non-mock ERC-20 on a real network,
++ * deployer balance, and no version downgrade.
+  *
+  * Usage:
+  *   node scripts/redeploy-marketplace-v6.1.js --network arc-staging     # testnet rehearsal (dry)
+@@ -16,7 +30,8 @@
+  *   DEPLOY_CONFIRM=YES node scripts/redeploy-marketplace-v6.1.js --network arc-mainnet
+  * Lever env (same names as deploy-arc-mainnet.js): SPECULAR_BIND_BORROW=1,
+  *   SPECULAR_MIN_HOLD_SECONDS, SPECULAR_MIN_SUPPLY, SPECULAR_PLATFORM_FEE_BPS.
+- *   Defaults below mirror the 2026-09-19 mainnet launch config.
++ *   Defaults mirror the levers actually in force on Arc mainnet (read 2026-09-24):
++ *   bind on, minHold 86400 s, minSupply 10 USDC, fee 100 bps.
+  */
+ require('dotenv').config();
+ const { ethers } = require('ethers');
+@@ -24,8 +39,11 @@ const fs = require('fs');
+ const path = require('path');
+ 
+ const NETWORKS = {
+-    'arc-staging': { file: 'src/config/arc-testnet-v6-addresses.json', rpc: process.env.ARC_TESTNET_RPC_URL || 'https://arc-testnet.drpc.org', chainId: 5042002, real: false },
++    // Default staging RPC is rpc.testnet.arc.io, not arc-testnet.drpc.org: dRPC rate-limits
++    // this host (see CLAUDE.md), and every other tool in the repo already defaults here.
++    'arc-staging': { file: 'src/config/arc-testnet-v6-addresses.json', rpc: process.env.ARC_TESTNET_RPC_URL || 'https://rpc.testnet.arc.io', chainId: 5042002, real: false },
+     'arc-mainnet': { file: 'src/config/arc-mainnet-addresses.json',    rpc: process.env.ARC_MAINNET_RPC_URL || 'https://rpc.mainnet.arc.io', chainId: 5042,    real: true },
++    'local':       { file: 'src/config/local-addresses.json',          rpc: process.env.LOCAL_RPC_URL || 'http://127.0.0.1:8545',            chainId: 31337,   real: false },
+ };
+ const netArg = process.argv[process.argv.indexOf('--network') + 1];
+ const NET = NETWORKS[netArg];
+@@ -36,17 +54,29 @@ const DRY = process.env.DEPLOY_CONFIRM !== 'YES';
+ const LEVERS = {
+     bind: (process.env.SPECULAR_BIND_BORROW ?? '1') === '1',
+     minHold: BigInt(process.env.SPECULAR_MIN_HOLD_SECONDS ?? '86400'),
+-    minSupply: BigInt(process.env.SPECULAR_MIN_SUPPLY ?? '1000000'),
++    // 10 USDC. The old default was 1 USDC while the header claimed the defaults mirrored
++    // the mainnet launch config — mainnet has been at 10 USDC since the 2026-09-19
++    // post-audit tightening (minSupplyAmount == 10000000, re-read on chain 2026-09-24).
++    minSupply: BigInt(process.env.SPECULAR_MIN_SUPPLY ?? '10000000'),
+     feeBps: BigInt(process.env.SPECULAR_PLATFORM_FEE_BPS ?? '100'),
+ };
++const MIN_BALANCE = ethers.parseEther(process.env.DEPLOY_MIN_BALANCE || '1');
++// Generations this script is allowed to replace. Anything newer is a downgrade.
++const REPLACEABLE = ['V6.0 (no VERSION())', 'V6', 'V6.0', 'V6.1'];
+ const art = (r) => JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'artifacts', 'contracts', 'core', r), 'utf8'));
+ 
+ async function main() {
+     const cfgPath = path.join(__dirname, '..', NET.file);
+     const cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
+-    const provider = new ethers.JsonRpcProvider(NET.rpc, NET.chainId, { batchMaxCount: 1 });
+-    const live = await provider.getNetwork();
+-    if (Number(live.chainId) !== NET.chainId) { console.error(`chainId mismatch ${live.chainId} != ${NET.chainId}`); process.exit(1); }
++    const provider = new ethers.JsonRpcProvider(NET.rpc, NET.chainId, { batchMaxCount: 1, cacheTimeout: -1 });
++    let live;
++    try { live = await provider.getNetwork(); }
++    catch (e) {
++        const m = /=> *(\d+)/.exec(e.shortMessage || e.message || '');
++        console.error(`GUARD: chainId mismatch — ${NET.rpc} reports ${m ? m[1] : 'a different chain'}, expected ${NET.chainId} for --network ${netArg}. Refusing.`);
++        process.exit(1);
++    }
++    if (Number(live.chainId) !== NET.chainId) { console.error(`GUARD: chainId mismatch ${live.chainId} != ${NET.chainId} — refusing.`); process.exit(1); }
+     const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+ 
+     const M = art('AgentLiquidityMarketplaceV6.sol/AgentLiquidityMarketplaceV6.json');
+@@ -62,7 +92,42 @@ async function main() {
+     // Preconditions
+     let oldVersion = 'V6.0 (no VERSION())'; try { oldVersion = await old.VERSION(); } catch {}
+     const oldOwner = await old.owner(); const repOwner = await rep.owner();
+-    if (oldOwner !== wallet.address || repOwner !== wallet.address) { console.error(`deployer must own old marketplace (${oldOwner}) and reputation (${repOwner})`); process.exit(1); }
++    if (oldOwner !== wallet.address || repOwner !== wallet.address) { console.error(`GUARD: deployer must own old marketplace (${oldOwner}) and reputation (${repOwner}) — refusing.`); process.exit(1); }
++
++    // GUARD — no silent downgrade. The canonical pointer on Arc mainnet and Arc staging
++    // names a V6.2 contract; replacing it with V6.1 drops the M2 self-stake (the F-04
++    // mitigation) AND, since the live V6.2 holds only its own fees, the retirement branch
++    // below would pause and revoke the CANONICAL marketplace.
++    if (!REPLACEABLE.includes(oldVersion) && process.env.ALLOW_VERSION_DOWNGRADE !== 'YES') {
++        console.error(`GUARD: the canonical marketplace on ${netArg} is ${oldVersion}; this script deploys V6.1, which is OLDER.`);
++        console.error('       That would drop the M2 self-stake (F-04) and pause/revoke the live contract.');
++        console.error('       Use scripts/deploy-v7.js for a new generation. To override deliberately: ALLOW_VERSION_DOWNGRADE=YES');
++        process.exit(1);
++    }
++
++    // GUARD — USDC shape, and never a mock token on a real-money network.
++    {
++        const t = new ethers.Contract(cfg.usdc, ['function decimals() view returns (uint8)', 'function symbol() view returns (string)', 'function name() view returns (string)'], provider);
++        let dec, sym, nam;
++        try { [dec, sym, nam] = [Number(await t.decimals()), await t.symbol(), await t.name()]; }
++        catch { console.error(`GUARD: ${cfg.usdc} does not answer decimals()/symbol()/name() — refusing.`); process.exit(1); }
++        if (dec !== 6) { console.error(`GUARD: USDC decimals ${dec} != 6 — refusing.`); process.exit(1); }
++        if (NET.real && /mock|test|fake|dummy/i.test(`${sym} ${nam}`)) {
++            console.error(`GUARD: token ${cfg.usdc} looks like a mock ("${nam}"/"${sym}") on REAL-money network ${netArg} — refusing.`);
++            process.exit(1);
++        }
++        console.log(`usdc check ${sym} (${nam}) ${dec} dec ✅`);
++    }
++
++    // GUARD — enough gas to finish; a half-applied redeploy leaves an unauthorised
++    // marketplace and an un-levered one, which is worse than not starting.
++    {
++        const bal = await provider.getBalance(wallet.address);
++        if (bal < MIN_BALANCE) {
++            console.error(`GUARD: deployer balance ${ethers.formatEther(bal)} < required ${ethers.formatEther(MIN_BALANCE)} (DEPLOY_MIN_BALANCE) — refusing.`);
++            process.exit(1);
++        }
++    }
+     const next = await old.nextLoanId(); let active = 0;
+     for (let i = 1n; i < next; i++) if (Number((await old.loans(i)).state) === 1) active++;
+     const fees = await old.accumulatedFees();
+@@ -108,11 +173,40 @@ async function main() {
+     } else {
+         console.log('ℹ old marketplace left running (still authorized, unpaused) until lenders/borrowers exit.');
+     }
++    // Superseded stacks APPEND to a list. A fixed key loses the previous generation on the
++    // second redeploy — on Arc staging that dropped the last reference to a marketplace
++    // still holding 482 USDC of lender funds (V7_MAINNET_MIGRATION_RUNBOOK §5b). The fixed
++    // keys are kept as back-compat pointers to the MOST RECENT superseded contract only.
++    cfg.supersededDeployments = Array.isArray(cfg.supersededDeployments) ? cfg.supersededDeployments : [];
++    if (!cfg.supersededDeployments.some(d => (d.marketplace || '').toLowerCase() === oldAddr.toLowerCase())) {
++        cfg.supersededDeployments.push({
++            supersededAt: new Date().toISOString(),
++            marketplace: oldAddr,
++            reputationManager: cfg.reputationManagerV3,
++            version: oldVersion,
++            note: retireOld
++                ? 'Retired: fees withdrawn, paused, pool revoked. Holds nothing.'
++                : 'Left running and authorized on purpose (pausing would freeze lender exits). Monitor it with V6_MONITOR_MARKETPLACE=<address> until drained, then retire.',
++        });
++    }
+     cfg[retireOld ? 'agentLiquidityMarketplace_v6_0_retired' : 'agentLiquidityMarketplace_v6_0_legacy_still_live'] = oldAddr;
++    cfg.agentLiquidityMarketplacePrevious = oldAddr;
+     cfg.agentLiquidityMarketplace_v6 = newAddr;
+     cfg.marketplaceVersion = 'V6.1 (2026-09-19 audit fixes F-01/F-02/F-03/F-05/F-07; migration finalized at deploy)';
+     cfg.marketplaceRedeployedAt = new Date().toISOString();
+     fs.writeFileSync(cfgPath, JSON.stringify(cfg, null, 2) + '\n');
+     console.log(`\n✅ ${NET.file} updated. Next: Sourcify-verify ${newAddr}, run the smoke test, update CLAUDE.md.`);
++    if (!retireOld) {
++        console.log('\n⚠️  MONITORING: the canonical pointer now names the NEW marketplace, so the');
++        console.log('    invariant monitor follows it and STOPS WATCHING the superseded one, which is');
++        console.log('    still live and may hold lender funds. Add a second launchd job — by ADDRESS,');
++        console.log('    because superseded stacks live in the supersededDeployments LIST and no fixed');
++        console.log('    config key resolves them (a key that does not exist makes the monitor exit 2');
++        console.log('    and alert for ever while watching nothing):');
++        console.log(`      V6_MONITOR_NETWORK=${netArg} V6_MONITOR_MARKETPLACE=${oldAddr} \\`);
++        console.log('        node forensics/monitor/v6-invariants.js');
++        console.log('    Setting V6_MONITOR_MARKETPLACE also gives that job its own state/log/heartbeat,');
++        console.log('    so it cannot overwrite the canonical job\'s change-detection baseline.');
++    }
+ }
+ main().catch((e) => { console.error(e); process.exit(1); });
+diff --git a/scripts/smoke-test-arc-mainnet.js b/scripts/smoke-test-arc-mainnet.js
+index b0a16a2..3917d77 100644
+--- a/scripts/smoke-test-arc-mainnet.js
++++ b/scripts/smoke-test-arc-mainnet.js
+@@ -1,9 +1,16 @@
+ /**
+- * Arc MAINNET smoke test for the deployed V6 stack — REAL USDC, tiny amounts.
++ * Arc MAINNET smoke test for the deployed stack (V6.2 + ReputationManagerV4 since
++ * 2026-09-23) — REAL USDC, tiny amounts.
+  * Reads src/config/arc-mainnet-addresses.json. Flow: lever read-back → register
+  * → pool → F-C sub-min supply reverts → supply 1 USDC → borrow 0.5 (100% collateral)
+  * → repay → claim interest → withdraw. No faucet claim (would need 10 USDC funding).
+  * Net cost ≈ gas + 7-day interest on 0.5 USDC + 1% fee.
++ *
++ * ⚠️ SECTIONS 2-4 SEND REAL TRANSACTIONS ON A REAL-MONEY NETWORK.
++ * `--read-only` (or SMOKE_READ_ONLY=1) runs ONLY section 1 — the lever/config read-back —
++ * and exits. That is the mode to use for a routine "is the live config still what we think
++ * it is" check, for verifying a runbook, or from any automation: it holds the same
++ * assertions, sends nothing, and needs no funded key.
+  */
+ require('dotenv').config();
+ const { ethers } = require('ethers');
+@@ -13,12 +20,17 @@ const path = require('path');
+ const cfg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'src', 'config', 'arc-mainnet-addresses.json'), 'utf8'));
+ const load = (rel) => JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'artifacts', 'contracts', rel), 'utf8')).abi;
+ const USDC = (n) => ethers.parseUnits(String(n), 6);
++const READ_ONLY = process.argv.includes('--read-only') || process.env.SMOKE_READ_ONLY === '1';
+ let pass = 0, fail = 0;
+ const check = (label, ok, extra = '') => { ok ? pass++ : fail++; console.log(`  ${ok ? '✅' : '❌'} ${label} ${extra}`); };
+ 
+ async function main() {
+-    const provider = new ethers.JsonRpcProvider(cfg.rpcUrl, cfg.chainId, { batchMaxCount: 1 });
+-    const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
++    const provider = new ethers.JsonRpcProvider(process.env.ARC_MAINNET_RPC_URL || cfg.rpcUrl, cfg.chainId, { batchMaxCount: 1, cacheTimeout: -1 });
++    // In read-only mode no key is needed: a random wallet is enough to build view calls,
++    // and section 1's owner assertion is made against the address recorded in the config.
++    const wallet = READ_ONLY
++        ? new ethers.Wallet(process.env.PRIVATE_KEY || ethers.Wallet.createRandom().privateKey, provider)
++        : new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+     const usdc = new ethers.Contract(cfg.usdc, ['function approve(address,uint256) returns (bool)', 'function balanceOf(address) view returns (uint256)', 'function allowance(address,address) view returns (uint256)'], wallet);
+     const registry = new ethers.Contract(cfg.agentRegistryV2, load('core/AgentRegistryV2.sol/AgentRegistryV2.json'), wallet);
+     const reputation = new ethers.Contract(cfg.reputationManagerV3, load('core/ReputationManagerV3.sol/ReputationManagerV3.json'), wallet);
+@@ -29,8 +41,13 @@ async function main() {
+     console.log(`Arc Mainnet ${cfg.chainId} · wallet ${wallet.address} · start balance ${ethers.formatUnits(startBal, 6)} USDC\n`);
+ 
+     console.log('=== 1. Config / levers read-back ===');
+-    check('marketplace owner = secure wallet', (await mp.owner()) === wallet.address);
++    // Compare against the config's recorded owner, not the signer: that is the assertion
++    // that actually matters (the live owner is still the secure wallet), and it keeps the
++    // check meaningful in --read-only mode where there may be no key at all.
++    check('marketplace owner = secure wallet', (await mp.owner()).toLowerCase() === String(cfg.deployer).toLowerCase(), `(${await mp.owner()})`);
+     check('reputation authorized marketplace', await reputation.authorizedPools(cfg.agentLiquidityMarketplace_v6));
++    check('marketplace VERSION = V6.2', (await mp.VERSION().catch(() => 'V6')) === 'V6.2');
++    check('migration finalized (F-08 closed)', (await mp.migrationFinalized().catch(() => false)) === true);
+     check('M-1 bindBorrowToPoolCreator', (await mp.bindBorrowToPoolCreator()) === true);
+     check('M-2 minHold = 86400', (await mp.minHoldForReputationReward()) === 86400n);
+     // Levers tightened 2026-09-19 after the internal audit (F-04 / F-06): 5 pts/day, 10 USDC min supply.
+@@ -40,6 +57,12 @@ async function main() {
+     check('faucet maxEligibleAgentId = 100', (await faucet.maxEligibleAgentId()) === 100n);
+     check('not paused', (await mp.paused()) === false);
+ 
++    if (READ_ONLY) {
++        console.log(`\n=== READ-ONLY: ${pass} passed, ${fail} failed (no transactions sent) ===`);
++        if (fail > 0) process.exit(1);
++        return;
++    }
++
+     console.log('\n=== 2. Onboard (exact approval, no MaxUint256) ===');
+     // Budget: 10 supply + 0.5 collateral + ~0.51 repay (principal+interest+fee), plus the
+     // 5 USDC probe in section 3 on a V6.2 deployment where the creator is exempt from the
+diff --git a/scripts/smoke-test-arc-testnet-v6.js b/scripts/smoke-test-arc-testnet-v6.js
+index 02eb250..7c8d305 100644
+--- a/scripts/smoke-test-arc-testnet-v6.js
++++ b/scripts/smoke-test-arc-testnet-v6.js
+@@ -1,42 +1,84 @@
+ /**
+- * On-chain verification + smoke test of the fixed V6 staging stack on Arc testnet.
++ * On-chain verification + smoke test of the Arc-testnet STAGING stack.
+  * Reads back the deployed config/levers, then drives register → createPool →
+  * supply → borrow → repay → claim + a faucet claim, all live on-chain, asserting
+  * the results. Read-mostly except the lifecycle it deliberately exercises.
++ *
++ * `--read-only` (or SMOKE_READ_ONLY=1) runs ONLY section 1 — the lever/config read-back —
++ * and sends nothing. Use that to check for config drift without minting or borrowing.
++ *
++ * Staging has moved generation twice since this file was written (V6.0 → V6.1 → V6.2 +
++ * ReputationManagerV4, 2026-09-22). The lever expectations below are therefore NOT
++ * hardcoded to a generation: they are the values read live from the chain on 2026-09-24,
++ * kept in one place and overridable by env, so a drift shows up as a named failing
++ * assertion rather than as a stale constant nobody notices.
+  */
+ require('dotenv').config();
+ const { ethers } = require('ethers');
+ const fs = require('fs');
+ const path = require('path');
+ 
+-const RPC_URL = process.env.ARC_TESTNET_RPC_URL || 'https://arc-testnet.drpc.org';
++// rpc.testnet.arc.io, not arc-testnet.drpc.org: dRPC rate-limits this host (CLAUDE.md),
++// and it is what the monitor and every other tool already default to.
++const RPC_URL = process.env.ARC_TESTNET_RPC_URL || 'https://rpc.testnet.arc.io';
+ const CHAIN_ID = 5042002;
+ const cfg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'src', 'config', 'arc-testnet-v6-addresses.json'), 'utf8'));
+ const load = (rel) => JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'artifacts', 'contracts', rel), 'utf8')).abi;
++const READ_ONLY = process.argv.includes('--read-only') || process.env.SMOKE_READ_ONLY === '1';
++
++// Expected levers — read live from Arc staging 2026-09-24.
++const EXPECT = {
++    minSupply: BigInt(process.env.SPECULAR_MIN_SUPPLY ?? '10000000'),        // 10 USDC
++    minHold: BigInt(process.env.SPECULAR_MIN_HOLD_SECONDS ?? '86400'),
++    feeBps: BigInt(process.env.SPECULAR_PLATFORM_FEE_BPS ?? '100'),
++    repRateMax: BigInt(process.env.SPECULAR_REP_RATE_MAX ?? '5'),
++    faucetCohort: BigInt(process.env.SPECULAR_FAUCET_COHORT ?? '100'),
++};
+ 
+ let pass = 0, fail = 0;
+ const check = (label, cond, detail = '') => { if (cond) { pass++; console.log(`  ✅ ${label} ${detail}`); } else { fail++; console.log(`  ❌ ${label} ${detail}`); } };
+ 
+ async function main() {
+-    const provider = new ethers.JsonRpcProvider(RPC_URL, CHAIN_ID, { batchMaxCount: 1 });
+-    const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
++    const provider = new ethers.JsonRpcProvider(RPC_URL, CHAIN_ID, { batchMaxCount: 1, cacheTimeout: -1 });
++    const wallet = READ_ONLY
++        ? new ethers.Wallet(process.env.PRIVATE_KEY || ethers.Wallet.createRandom().privateKey, provider)
++        : new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+     const USDC = (n) => ethers.parseUnits(String(n), 6);
+ 
+     const usdc = new ethers.Contract(cfg.usdc, load('tokens/MockUSDC.sol/MockUSDC.json'), wallet);
+     const registry = new ethers.Contract(cfg.agentRegistryV2, load('core/AgentRegistryV2.sol/AgentRegistryV2.json'), wallet);
+-    const reputation = new ethers.Contract(cfg.reputationManagerV3, load('core/ReputationManagerV3.sol/ReputationManagerV3.json'), wallet);
+-    const mp = new ethers.Contract(cfg.agentLiquidityMarketplace_v6, load('core/AgentLiquidityMarketplaceV6.sol/AgentLiquidityMarketplaceV6.json'), wallet);
++    // `reputationManagerV3` is the CANONICAL POINTER, not a generation claim — on staging
++    // and mainnet it names ReputationManagerV4. Load the V4 ABI, which is a superset of the
++    // views used here; probe VERSION() rather than assuming.
++    const reputation = new ethers.Contract(cfg.reputationManagerV3, load('core/ReputationManagerV4.sol/ReputationManagerV4.json'), wallet);
++    const mp = new ethers.Contract(cfg.agentLiquidityMarketplace_v6, load('core/AgentLiquidityMarketplaceV62.sol/AgentLiquidityMarketplaceV62.json'), wallet);
+     const faucet = new ethers.Contract(cfg.agentCreditFaucet, load('core/AgentCreditFaucet.sol/AgentCreditFaucet.json'), wallet);
+ 
+     console.log('=== 1. Config / levers read-back ===');
+-    check('marketplace owner = deployer', (await mp.owner()) === wallet.address);
++    console.log(`  marketplace ${await mp.VERSION().catch(() => 'V6')} · reputation ${await reputation.VERSION().catch(() => 'V3')} · rpc ${RPC_URL}`);
++    check('marketplace owner = configured deployer', (await mp.owner()).toLowerCase() === String(cfg.deployer).toLowerCase(), `(${await mp.owner()})`);
+     check('reputation authorized marketplace', await reputation.authorizedPools(cfg.agentLiquidityMarketplace_v6));
++    check('not paused', (await mp.paused()) === false);
+     check('M-1 bindBorrowToPoolCreator', (await mp.bindBorrowToPoolCreator()) === true);
+-    check('M-2 minHold = 86400', (await mp.minHoldForReputationReward()) === 86400n);
+-    check('F-C minSupplyAmount = 1 USDC', (await mp.minSupplyAmount()) === USDC(1));
+-    check('D1 platformFeeRate = 100 bps', (await mp.platformFeeRate()) === 100n);
+-    check('D1 rate limit = 20', (await reputation.maxReputationGainPerWindow()) === 20n);
+-    check('faucet maxEligibleAgentId = 100', (await faucet.maxEligibleAgentId()) === 100n);
++    check(`M-2 minHold = ${EXPECT.minHold}`, (await mp.minHoldForReputationReward()) === EXPECT.minHold);
++    check(`F-C minSupplyAmount = ${ethers.formatUnits(EXPECT.minSupply, 6)} USDC`, (await mp.minSupplyAmount()) === EXPECT.minSupply, `(${ethers.formatUnits(await mp.minSupplyAmount(), 6)})`);
++    check(`D1 platformFeeRate = ${EXPECT.feeBps} bps`, (await mp.platformFeeRate()) === EXPECT.feeBps);
++    check(`D1 rate limit = ${EXPECT.repRateMax}`, (await reputation.maxReputationGainPerWindow()) === EXPECT.repRateMax, `(${await reputation.maxReputationGainPerWindow()})`);
++    check(`faucet maxEligibleAgentId = ${EXPECT.faucetCohort}`, (await faucet.maxEligibleAgentId()) === EXPECT.faucetCohort);
++
++    // Superseded staging stacks are left running on purpose and still hold test lender
++    // funds. Report them here so "which contracts still need a monitor" is answerable from
++    // the smoke test rather than from memory.
++    const bal = new ethers.Contract(cfg.usdc, ['function balanceOf(address) view returns (uint256)'], provider);
++    for (const d of cfg.supersededDeployments || []) {
++        console.log(`  superseded ${d.marketplace} (${d.version}) holds ${ethers.formatUnits(await bal.balanceOf(d.marketplace), 6)} USDC — needs its own monitor job`);
++    }
++
++    if (READ_ONLY) {
++        console.log(`\n=== READ-ONLY: ${pass} passed, ${fail} failed (no transactions sent) ===`);
++        if (fail > 0) process.exit(1);
++        return;
++    }
+ 
+     console.log('\n=== 2. Fund + onboard ===');
+     await (await usdc.mint(wallet.address, USDC(10000))).wait();

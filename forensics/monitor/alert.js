@@ -41,7 +41,16 @@ const { execFile } = require('child_process');
 const DIR = process.env.SPECULAR_ALERT_DIR || __dirname;
 const ACTIVE = path.join(DIR, 'ALERT-ACTIVE.json');
 const HISTORY = path.join(DIR, 'alerts.log');
-const HOME_FLAG = path.join(os.homedir(), 'SPECULAR-ALERT.txt');
+// The home-dir flag is the channel an operator trips over in a shell, so its presence has
+// to mean "there is a real unacknowledged incident".
+// [2026-09-24] SPECULAR_ALERT_DIR sandboxed the latch and the history but NOT this file, so
+// every drill and self-test appended to the operator's REAL ~/SPECULAR-ALERT.txt while the
+// latch stayed clean — the two channels disagreed, and the louder one was the lying one.
+// Honour the sandbox here too: a run with SPECULAR_ALERT_DIR set keeps its flag in the
+// sandbox. Unset (i.e. every launchd job) behaves exactly as before.
+const HOME_FLAG = process.env.SPECULAR_ALERT_DIR
+    ? path.join(DIR, 'SPECULAR-ALERT.txt')
+    : path.join(os.homedir(), 'SPECULAR-ALERT.txt');
 const HEARTBEAT_DIR = DIR;
 
 const QUIET = process.env.SPECULAR_ALERT_QUIET === '1';

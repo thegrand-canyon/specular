@@ -1,0 +1,66 @@
+totalAgents on Arc: 90
+
+=== Top agents by lifetime loan count ===
+┌─────────┬────┬──────────────────────────────────────────────┬──────────┬──────────┐
+│ (index) │ id │ agentAddr                                    │ lifetime │ isActive │
+├─────────┼────┼──────────────────────────────────────────────┼──────────┼──────────┤
+│ 0       │ 43 │ '0x656086A21073272533c8A3f56A94c1f3D8BCFcE2' │ 776      │ true     │
+│ 1       │ 45 │ '0x6Df560f9DFfB9bd97c4aC208FfA5A162D4c03035' │ 279      │ true     │
+│ 2       │ 46 │ '0xd0A1761bd207c12eF63253943417e64a78D3895a' │ 268      │ true     │
+│ 3       │ 47 │ '0xa0983956484D74af695aAE4FB5b1b90914415F37' │ 268      │ true     │
+│ 4       │ 44 │ '0xd673e66BF1C3Bf696d88A147Cfddc17AaB7C9F8A' │ 140      │ true     │
+│ 5       │ 5  │ '0x05E7092f2E3b303499783260DB72786a0788fb80' │ 135      │ true     │
+│ 6       │ 56 │ '0x96B5D3E4b05013d1D56581DAD6C6AbFBDf9d2EBD' │ 10       │ true     │
+│ 7       │ 57 │ '0x30e57E9a9857bf2e409d3764A8183cD9c06d23C0' │ 10       │ true     │
+│ 8       │ 58 │ '0xF408ecbD8Fc97EcE90f11eD927999556d2Ee306D' │ 10       │ true     │
+│ 9       │ 59 │ '0x4bc2A7C0C689671487246e3c89B517826683FdA7' │ 10       │ true     │
+│ 10      │ 60 │ '0x442ee05d58f38fCD774d5341f1cCFB8A5211EEE0' │ 10       │ true     │
+│ 11      │ 61 │ '0x6b730f863F507a9FAB7D8e56EC972E5BC47Ba5e9' │ 10       │ true     │
+│ 12      │ 62 │ '0xA3cE2c0d7ba39F6E5644cefbD95937769c5a87c1' │ 10       │ true     │
+│ 13      │ 63 │ '0x79B9D208839951C3a7FFa0B0c1DDE470764da4B3' │ 10       │ true     │
+│ 14      │ 64 │ '0xc9aF8de0c513E0ABf690bd5FE69C32c9293B0198' │ 10       │ true     │
+└─────────┴────┴──────────────────────────────────────────────┴──────────┴──────────┘
+
+=== Analytical gas projection for _countActiveLoans ===
+  Per iteration (one element of agentLoans):
+    - MLOAD loanIds[i]                       :    3 gas
+    - SLOAD on loans[id].state (cold)        : 2100 gas
+    - SLOAD on loans[id].state (warm)        :  100 gas
+    - Hash + branch + counter                :  ~50 gas
+    - Memory expansion / copy cost           :  ~10 gas / element
+  → cold per-iter ~2160 gas, warm ~160 gas
+
+  agentLoans[] copied to memory at function entry:
+    - copy cost ~3 gas/word + quadratic memory expansion
+    - dominant for N > ~512 entries due to memory expansion quadratic term
+
+  Base       block gas limit 30,000,000:
+    brick threshold (all cold) : 13,726 loans
+    brick threshold (all warm) : 185,312 loans (theoretical max)
+  Arbitrum   block gas limit 32,000,000:
+    brick threshold (all cold) : 14,652 loans
+    brick threshold (all warm) : 197,812 loans (theoretical max)
+  Arc        block gas limit 32,000,000:
+    brick threshold (all cold) : 14,652 loans
+    brick threshold (all warm) : 197,812 loans (theoretical max)
+
+=== Empirical gas estimates ===
+┌─────────┬────┬──────────┬────────────────────────────────────────────────────────┐
+│ (index) │ id │ lifetime │ gasEstimate                                            │
+├─────────┼────┼──────────┼────────────────────────────────────────────────────────┤
+│ 0       │ 43 │ 776      │ 3951572                                                │
+│ 1       │ 45 │ 279      │ 'reverts: execution reverted: "Too many active loans"' │
+│ 2       │ 46 │ 268      │ 1582677                                                │
+│ 3       │ 47 │ 268      │ 1582589                                                │
+│ 4       │ 44 │ 140      │ 1007310                                                │
+│ 5       │ 5  │ 135      │ 967460                                                 │
+│ 6       │ 56 │ 10       │ 433339                                                 │
+│ 7       │ 57 │ 10       │ 433339                                                 │
+└─────────┴────┴──────────┴────────────────────────────────────────────────────────┘
+
+  Regression: gas ≈ 4600.5 × lifetime + 366471
+  Per-iteration measured cost : 4600.5 gas
+  Baseline overhead           : 366471 gas
+  Base       brick threshold (empirical): 6,441 loans
+  Arbitrum   brick threshold (empirical): 6,876 loans
+  Arc        brick threshold (empirical): 6,876 loans

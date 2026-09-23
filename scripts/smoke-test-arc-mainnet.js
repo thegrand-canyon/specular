@@ -1,9 +1,16 @@
 /**
- * Arc MAINNET smoke test for the deployed V6 stack — REAL USDC, tiny amounts.
+ * Arc MAINNET smoke test for the deployed stack (V6.2 + ReputationManagerV4 since
+ * 2026-09-23) — REAL USDC, tiny amounts.
  * Reads src/config/arc-mainnet-addresses.json. Flow: lever read-back → register
  * → pool → F-C sub-min supply reverts → supply 1 USDC → borrow 0.5 (100% collateral)
  * → repay → claim interest → withdraw. No faucet claim (would need 10 USDC funding).
  * Net cost ≈ gas + 7-day interest on 0.5 USDC + 1% fee.
+ *
+ * ⚠️ SECTIONS 2-4 SEND REAL TRANSACTIONS ON A REAL-MONEY NETWORK.
+ * `--read-only` (or SMOKE_READ_ONLY=1) runs ONLY section 1 — the lever/config read-back —
+ * and exits. That is the mode to use for a routine "is the live config still what we think
+ * it is" check, for verifying a runbook, or from any automation: it holds the same
+ * assertions, sends nothing, and needs no funded key.
  */
 require('dotenv').config();
 const { ethers } = require('ethers');
@@ -13,12 +20,17 @@ const path = require('path');
 const cfg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'src', 'config', 'arc-mainnet-addresses.json'), 'utf8'));
 const load = (rel) => JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'artifacts', 'contracts', rel), 'utf8')).abi;
 const USDC = (n) => ethers.parseUnits(String(n), 6);
+const READ_ONLY = process.argv.includes('--read-only') || process.env.SMOKE_READ_ONLY === '1';
 let pass = 0, fail = 0;
 const check = (label, ok, extra = '') => { ok ? pass++ : fail++; console.log(`  ${ok ? '✅' : '❌'} ${label} ${extra}`); };
 
 async function main() {
-    const provider = new ethers.JsonRpcProvider(cfg.rpcUrl, cfg.chainId, { batchMaxCount: 1 });
-    const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+    const provider = new ethers.JsonRpcProvider(process.env.ARC_MAINNET_RPC_URL || cfg.rpcUrl, cfg.chainId, { batchMaxCount: 1, cacheTimeout: -1 });
+    // In read-only mode no key is needed: a random wallet is enough to build view calls,
+    // and section 1's owner assertion is made against the address recorded in the config.
+    const wallet = READ_ONLY
+        ? new ethers.Wallet(process.env.PRIVATE_KEY || ethers.Wallet.createRandom().privateKey, provider)
+        : new ethers.Wallet(process.env.PRIVATE_KEY, provider);
     const usdc = new ethers.Contract(cfg.usdc, ['function approve(address,uint256) returns (bool)', 'function balanceOf(address) view returns (uint256)', 'function allowance(address,address) view returns (uint256)'], wallet);
     const registry = new ethers.Contract(cfg.agentRegistryV2, load('core/AgentRegistryV2.sol/AgentRegistryV2.json'), wallet);
     const reputation = new ethers.Contract(cfg.reputationManagerV3, load('core/ReputationManagerV3.sol/ReputationManagerV3.json'), wallet);
@@ -29,8 +41,13 @@ async function main() {
     console.log(`Arc Mainnet ${cfg.chainId} · wallet ${wallet.address} · start balance ${ethers.formatUnits(startBal, 6)} USDC\n`);
 
     console.log('=== 1. Config / levers read-back ===');
-    check('marketplace owner = secure wallet', (await mp.owner()) === wallet.address);
+    // Compare against the config's recorded owner, not the signer: that is the assertion
+    // that actually matters (the live owner is still the secure wallet), and it keeps the
+    // check meaningful in --read-only mode where there may be no key at all.
+    check('marketplace owner = secure wallet', (await mp.owner()).toLowerCase() === String(cfg.deployer).toLowerCase(), `(${await mp.owner()})`);
     check('reputation authorized marketplace', await reputation.authorizedPools(cfg.agentLiquidityMarketplace_v6));
+    check('marketplace VERSION = V6.2', (await mp.VERSION().catch(() => 'V6')) === 'V6.2');
+    check('migration finalized (F-08 closed)', (await mp.migrationFinalized().catch(() => false)) === true);
     check('M-1 bindBorrowToPoolCreator', (await mp.bindBorrowToPoolCreator()) === true);
     check('M-2 minHold = 86400', (await mp.minHoldForReputationReward()) === 86400n);
     // Levers tightened 2026-09-19 after the internal audit (F-04 / F-06): 5 pts/day, 10 USDC min supply.
@@ -39,6 +56,12 @@ async function main() {
     check('D1 rate limit = 5', (await reputation.maxReputationGainPerWindow()) === 5n);
     check('faucet maxEligibleAgentId = 100', (await faucet.maxEligibleAgentId()) === 100n);
     check('not paused', (await mp.paused()) === false);
+
+    if (READ_ONLY) {
+        console.log(`\n=== READ-ONLY: ${pass} passed, ${fail} failed (no transactions sent) ===`);
+        if (fail > 0) process.exit(1);
+        return;
+    }
 
     console.log('\n=== 2. Onboard (exact approval, no MaxUint256) ===');
     // Budget: 10 supply + 0.5 collateral + ~0.51 repay (principal+interest+fee), plus the

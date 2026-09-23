@@ -1,0 +1,44 @@
+Target deployed address: 0xd7b4dEE74C61844DFA75aEbe224e4635463b1C8f
+On-chain bytecode length: 18510 chars
+On-chain bytecode hash: 0x3f04bd421b6aa3601fc34e6eea2e23f0fb8ce3bbd85f5a3847e425a261f53417
+
+Local artifact deployedBytecode length: 18510 chars
+Local artifact bytecode hash: 0x903e05e659d1828b1d48b3210785af6d525ceedef862dba536abd649b80facaf
+
+Byte length match: true
+
+Metadata-stripped on-chain length: 18404
+Metadata-stripped local    length: 18404
+Stripped lengths equal             : true
+Stripped bytecode equal            : false
+First difference at char index: 1364 (byte 682)
+  on-chain context: f35b83865260078352603260408720541015610336578386526007835260
+  local    context: f35b8386526007835260c860408720541015610336578386526007835260
+
+Strings only in on-chain bytecode: 2
+  + "W` `@Q`2"
+  + "QdsolcC"
+
+Strings only in local artifact bytecode: 1
+  + "dsolcC"
+
+Selector presence in on-chain bytecode:
+   ✅ createAgentPool() (0xe09645aa)
+   ✅ supplyLiquidity(uint256,uint256) (0xf9dbb69f)
+   ✅ withdrawLiquidity(uint256,uint256) (0x7ddced5a)
+   ✅ requestLoan(uint256,uint256) (0xaa452fa6)
+   ✅ repayLoan(uint256) (0xab7b1c89)
+   ✅ liquidateLoan(uint256) (0xccdd9f5d)
+   ✅ claimInterest(uint256) (0x2eb375ea)
+   ❌ withdrawFees() (0x476343ee)
+   ✅ getAgentPool(uint256) (0x4bb1cc71)
+   ✅ loans(uint256) (0xe1ec3c68)
+   ✅ agentLoans(address,uint256) (0x9dff5556)
+   ❌ calculateRepayment(uint256) (0xfeb569e5)
+   ❌ requestLoan(uint256,uint256,uint256) (0xedadbbfe)
+   ❌ repayLoan(uint256,uint256) (0x8a700b53)
+   ❌ borrow(uint256,uint256) (0x0ecbcdab)
+   ❌ supply(uint256,uint256) (0xdaecfa6c)
+   ❌ repay(uint256) (0x371fd8e6)
+
+→ /tmp/phase3_a_bytecode.json

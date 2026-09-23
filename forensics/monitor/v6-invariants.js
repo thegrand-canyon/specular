@@ -53,6 +53,10 @@
 //
 // Env:
 //   V6_MONITOR_NETWORK      arc-testnet (default) | arc-staging | arc-mainnet | local
+//   V6_MONITOR_MARKETPLACE  watch this address instead of the config's canonical pointer
+//                           (how a SUPERSEDED stack keeps being monitored). Setting it also
+//                           gives the run its own state/log/heartbeat namespace — see INSTANCE.
+//   V6_MONITOR_INSTANCE     override that namespace explicitly
 //   ARC_MAINNET_RPC_URL / ARC_TESTNET_RPC_URL / LOCAL_RPC_URL
 //   V6_EXPECTED_OWNER       expected owner address (default: addresses.json `deployer`)
 //   V6_EXPECT_PAUSED        "1" if the contract is intentionally paused (default 0)
@@ -108,8 +112,24 @@ if (!V6) { console.error(`No marketplace address: key "${MP_KEY}" absent from ${
 const QUIET = process.argv.includes('--quiet');
 const VERBOSE = process.argv.includes('--verbose');
 const NO_ALERT = process.argv.includes('--no-alert');
-const LOGFILE = path.join(__dirname, NET.log);
-const STATEFILE = path.join(__dirname, `state-${NETNAME}.json`);
+
+// INSTANCE — one network can carry SEVERAL monitored marketplaces (the canonical one
+// plus every superseded stack that still holds funds). They must not share a state file.
+// [2026-09-24] Measured failure: on Arc mainnet the legacy job (V6.1 + ReputationManagerV3)
+// ran ~30 s before the canonical job on every cycle and rewrote state-arc-mainnet.json with
+// `creditPolicy: null` — because a V3 reputation manager has no on-chain tier table. The
+// canonical run then found no previous policy to compare against, so CP-CHANGED could
+// NEVER fire. CP-CHANGED is the ONLY signal a hostile owner key reliably produces
+// (INCIDENT_RUNBOOK §3.2), so the two jobs were silently cancelling the stack's single
+// best intrusion detector. The same sharing can also cross-contaminate the lateness
+// monotonicity baseline between two different contracts.
+// Deriving the instance from the watched address keeps the default (canonical) job's
+// filenames exactly as they were, so nothing existing moves.
+const INSTANCE = process.env.V6_MONITOR_INSTANCE
+    || (process.env.V6_MONITOR_MARKETPLACE ? `${NETNAME}-${process.env.V6_MONITOR_MARKETPLACE.replace(/^0x/i, '').slice(0, 8).toLowerCase()}` : NETNAME);
+const LOGFILE = INSTANCE === NETNAME ? path.join(__dirname, NET.log)
+    : path.join(__dirname, NET.log.replace(/\.log$/, `-${INSTANCE.slice(NETNAME.length + 1)}.log`));
+const STATEFILE = path.join(__dirname, `state-${INSTANCE}.json`);
 
 const EXPECTED_OWNER = (process.env.V6_EXPECTED_OWNER || ADDR.deployer || '').toLowerCase();
 const EXPECT_PAUSED = process.env.V6_EXPECT_PAUSED === '1';
@@ -715,7 +735,7 @@ function checkCreditPolicy(s, prevState) {
             if (alerts) {
                 try {
                     await alerts.raise('CRITICAL', `Invariant monitor timed out on ${NETNAME} — deployment is UNMONITORED`, { network: NETNAME, maxRuntimeSec: MAX_RUNTIME_SEC }, { silent: QUIET });
-                    alerts.stamp(NETNAME, { lastExitCode: 2, watchdog: true });
+                    alerts.stamp(INSTANCE, { lastExitCode: 2, watchdog: true });
                 } catch {}
             }
             process.exit(2);
@@ -804,13 +824,13 @@ function checkCreditPolicy(s, prevState) {
     if (alerts) {
         // `alerted` tells run-with-alert.sh that this run already fanned the
         // incident out, so the wrapper's catch-all does not double-page.
-        alerts.stamp(NETNAME, { lastExitCode: exitCode, block: block ? block.number : null, findings: findings.length, alerted: findings.length > 0 });
+        alerts.stamp(INSTANCE, { lastExitCode: exitCode, block: block ? block.number : null, findings: findings.length, alerted: findings.length > 0 });
         // Dead-man's switch: if a sibling network's job has stopped running, this run
         // says so. A monitor that is not running reports no violations, which is
         // indistinguishable from "all clear" — so it is itself an incident, and it
         // makes this run exit non-zero too.
         try {
-            const stale = await alerts.checkHeartbeats(Number(process.env.V6_HEARTBEAT_MAX_AGE_SEC || 5400), NETNAME);
+            const stale = await alerts.checkHeartbeats(Number(process.env.V6_HEARTBEAT_MAX_AGE_SEC || 5400), INSTANCE);
             if (stale.length) {
                 log('ERROR', '[MONITOR-DOWN] a sibling invariant monitor has stopped running', { stale });
                 if (exitCode === 0) exitCode = 1;

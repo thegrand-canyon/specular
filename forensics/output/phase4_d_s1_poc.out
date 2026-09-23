@@ -1,0 +1,34 @@
+=== Base canonical marketplace ===
+  address          : 0xd7b4dEE74C61844DFA75aEbe224e4635463b1C8f
+  usdc balance     : 1.5 USDC (=1500000 base units)
+  accumulatedFees  : 0.0 USDC (=0)
+  totalAgents      : 3
+
+=== Active pools ===
+┌─────────┬─────────┬────────────────┬──────────────┬─────────────┬─────────────┬─────────────┬─────────────────────┐
+│ (index) │ agentId │ totalLiquidity │ availableLiq │ totalLoaned │ totalEarned │ lenderCount │ Σpos_earnedInterest │
+├─────────┼─────────┼────────────────┼──────────────┼─────────────┼─────────────┼─────────────┼─────────────────────┤
+│ 0       │ '1'     │ '1.5'          │ '1.200002'   │ '0.3'       │ '0.000002'  │ 2           │ '0.0'               │
+└─────────┴─────────┴────────────────┴──────────────┴─────────────┴─────────────┴─────────────┴─────────────────────┘
+
+=== Aggregate ===
+  Σ availableLiquidity        : 1.200002 USDC
+  Σ totalLoaned               : 0.3 USDC
+  Σ position.earnedInterest   : 0.0 USDC
+  Σ pool.totalEarned (counter): 0.000002 USDC
+  accumulatedFees             : 0.0 USDC
+
+=== Invariant check ===
+  claimed (avail + loaned + Σpos.earnedInterest + fees): 1.500002 USDC
+  actual usdc balance                                  : 1.5 USDC
+  ⚠️  OVERSTATED by 0.000002 USDC
+     Pools claim more available + loaned than the marketplace actually holds.
+     This is the §S1 manifestation: claimInterest drained tokens but counters remain.
+
+=== claimInterest evidence ===
+  Σ pool.totalEarned       : 0.000002
+  Σ position.earnedInterest: 0.0
+  delta (claimed already?) : 0.000002
+  → 0.000002 USDC of interest has been claimed.
+    pool.totalEarned is a counter — not decremented on claim. That is by design.
+    The §S1 issue is whether availableLiquidity tracks claimed funds; see invariant above.

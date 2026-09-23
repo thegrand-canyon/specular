@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>SPECULAR_REPO</key>
+		<string>/Users/peterschroeder/Specular</string>
+		<key>V6_EXPECTED_OWNER</key>
+		<string>0x800e305A0caDdE6289dFDFEDF38218f45C06F72C</string>
+		<key>V6_MAX_BLOCK_AGE_SEC</key>
+		<string>1800</string>
+		<key>V6_MAX_RUNTIME_SEC</key>
+		<string>600</string>
+		<key>V6_MONITOR_MARKETPLACE</key>
+		<string>0x358c5E69f712A4b3558333090a45A054bAeEb282</string>
+	</dict>
+	<key>Label</key>
+	<string>com.specular.v6-invariants-arc-mainnet-legacy</string>
+	<key>LowPriorityIO</key>
+	<true/>
+	<key>ProcessType</key>
+	<string>Background</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/bin/bash</string>
+		<string>/Users/peterschroeder/Specular/forensics/monitor/run-with-alert.sh</string>
+		<string>arc-mainnet</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>StandardErrorPath</key>
+	<string>/Users/peterschroeder/Specular/forensics/monitor/v6-invariants-arc-mainnet-legacy-stderr.log</string>
+	<key>StandardOutPath</key>
+	<string>/Users/peterschroeder/Specular/forensics/monitor/v6-invariants-arc-mainnet-legacy-stdout.log</string>
+	<key>StartInterval</key>
+	<integer>1800</integer>
+	<key>WorkingDirectory</key>
+	<string>/Users/peterschroeder/Specular</string>
+</dict>
+</plist>

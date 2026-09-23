@@ -1,0 +1,48 @@
+Loans for borrower: 1,2,3,4
+
+=== Loan details ===
+  loan #1: amount=0.001 rate=1500bps duration=604800s state=2 agentId=1
+  loan #2: amount=0.1 rate=1500bps duration=604800s state=1 agentId=1
+  loan #3: amount=0.1 rate=1500bps duration=604800s state=1 agentId=1
+  loan #4: amount=0.1 rate=1500bps duration=604800s state=1 agentId=1
+
+=== Agent 1 pool state ===
+  agent             : 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+  totalLiquidity    : 1.5 USDC
+  availableLiquidity: 1.200002 USDC
+  totalLoaned       : 0.3 USDC
+  totalEarned       : 0.000002 USDC
+  utilizationRate   : 2000 bps
+  lenderCount       : 2
+
+=== Lender positions ===
+  lender 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C:
+    amount         : 1.5 USDC
+    earnedInterest : 0.0 USDC
+  lender 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C:
+    amount         : 1.5 USDC
+    earnedInterest : 0.0 USDC
+  Σ position.amount : 3.0 USDC
+  pool.totalLiquidity: 1.5 USDC
+  Σ vs total ratio  : 2
+
+=== Simulating repayLoan(2) math ===
+  platformFeeRate   : 100 bps
+  loan.amount       : 0.1
+  loan.interestRate : 1500 bps
+  interest          : 287 base units
+  platformFee       : 2
+  lenderInterest    : 285
+
+  Step: pool.totalLoaned -= loan.amount
+    totalLoaned   : 300000
+    loan.amount   : 100000
+    underflow?    : ✓ no
+
+  Step: _distributeInterest share-loop
+    lender 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C: share=285 (pos.amount=1500000, totalLiq=1500000)
+    lender 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C: share=285 (pos.amount=1500000, totalLiq=1500000)
+    distributed   : 570
+    lenderInterest: 285
+    dust = lenderInterest - distributed = -285
+    underflow?    : ⚠️ YES (PANIC source)

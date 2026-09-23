@@ -1,0 +1,7 @@
+Wallet: 0x656086A21073272533c8A3f56A94c1f3D8BCFcE2
+agentId: 43
+✅ supply  5218ms gas=69,418
+✅ borrow  5243ms gas=3,913,306 loanId=2122
+✅ repay   5241ms gas=144,476
+
+=== ARC CONTROL: PASS — repayLoan works on Arc ===

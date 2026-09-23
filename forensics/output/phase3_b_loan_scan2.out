@@ -1,0 +1,21 @@
+Using signer: 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+nextLoanId() = 5
+Max loan id discovered: 4
+  loan 1 REPAID     amount=0.001
+  loan 2 ACTIVE  ❌ bricked Panic     borrower=0x800e305A amount=0.1  collateral=0.1
+  loan 3 ACTIVE  ❌ bricked Panic     borrower=0x800e305A amount=0.1  collateral=0.1
+  loan 4 ACTIVE  ❌ bricked Panic     borrower=0x800e305A amount=0.1  collateral=0.1
+
+=== SUMMARY ===
+Total loans       : 4
+By state          : { REPAID: 1, ACTIVE: 3 }
+Active repayable  : 0
+Active bricked    : 3
+Active other      : 0
+
+Stuck collateral  : 0.300000 USDC
+Stuck principal   : 0.300000 USDC
+Distinct borrowers affected: 1
+  - 0x800e305a0cadde6289dfdfedf38218f45c06f72c
+
+→ /tmp/phase3_b_loan_scan.json

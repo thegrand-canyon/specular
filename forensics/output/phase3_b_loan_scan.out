@@ -1,0 +1,19 @@
+nextLoanId() = 5
+Max loan id discovered: 4
+  loan 1 REPAID     amount=0.001
+  loan 2 ACTIVE  ⚠️  other revert     borrower=0x800e305A  err: execution reverted: "Not the borrower"
+  loan 3 ACTIVE  ⚠️  other revert     borrower=0x800e305A  err: execution reverted: "Not the borrower"
+  loan 4 ACTIVE  ⚠️  other revert     borrower=0x800e305A  err: execution reverted: "Not the borrower"
+
+=== SUMMARY ===
+Total loans       : 4
+By state          : { REPAID: 1, ACTIVE: 3 }
+Active repayable  : 0
+Active bricked    : 0
+Active other      : 3
+
+Stuck collateral  : 0.000000 USDC
+Stuck principal   : 0.000000 USDC
+Distinct borrowers affected: 0
+
+→ /tmp/phase3_b_loan_scan.json

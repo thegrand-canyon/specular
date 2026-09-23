@@ -1,0 +1,19 @@
+Loans tested: [ 2, 3, 4 ]
+Functions tested: [ 'liquidateLoan', 'defaultLoan' ]
+
+--- loan 2 ---
+  start=1777921809, end=1778526609, now=1777925935, overdue=false (600674s remaining)
+  ❌ liquidateLoan(2) staticCall:  execution reverted (unknown custom error)
+  ❌ defaultLoan(2) staticCall:  missing revert data
+
+--- loan 3 ---
+  start=1777921815, end=1778526615, now=1777925935, overdue=false (600680s remaining)
+  ❌ liquidateLoan(3) staticCall:  execution reverted (unknown custom error)
+  ❌ defaultLoan(3) staticCall:  missing revert data
+
+--- loan 4 ---
+  start=1777921829, end=1778526629, now=1777925936, overdue=false (600693s remaining)
+  ❌ liquidateLoan(4) staticCall:  execution reverted (unknown custom error)
+  ❌ defaultLoan(4) staticCall:  missing revert data
+
+→ /tmp/phase3_c_liquidate.json

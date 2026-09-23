@@ -5,8 +5,11 @@
 AgentRegistryV2 and AgentCreditFaucet — the stack live on Arc mainnet.
 **Owner:** the holder of the secure wallet `0x800e305A0caDdE6289dFDFEDF38218f45C06F72C`.
 **Written:** 2026-09-20 · **Rewritten 2026-09-23** after the first end-to-end incident drill
-against V6.2 + V4. Every number, revert string and lever effect below was **executed**, not
-assumed. Evidence and method: `forensics/output/testing-2026-09-23/INCIDENT_DRILL_REPORT.md`.
+against V6.2 + V4 · **Re-verified and corrected 2026-09-24** (operational verification round:
+every lever below re-probed on the live contracts, every drill re-executed, every path in this
+file walked). Every number, revert string and lever effect below was **executed**, not
+assumed. Evidence and method: `forensics/output/testing-2026-09-23/INCIDENT_DRILL_REPORT.md`
+and `forensics/output/testing-2026-09-24/OPERATIONAL_VERIFICATION.md`.
 
 > ## Read this first
 >
@@ -17,11 +20,19 @@ assumed. Evidence and method: `forensics/output/testing-2026-09-23/INCIDENT_DRIL
 >
 > **2. Nothing pages you about an overdue loan.** The monitor has no overdue-ACTIVE-loan check.
 > A borrower a full day past `endTime` produces `exit 0, no findings`. **Liquidation is a polling
-> job, not an alert-driven one** — run `scripts/incident-drill/check-overdue-loans.js` daily (§7).
+> job, not an alert-driven one.** It IS polled: launchd `com.specular.overdue-loans-arc-mainnet`
+> runs `forensics/monitor/check-overdue-loans.js` hourly. Run it by hand whenever you want the
+> current picture (§7).
 >
 > **3. The monitor watches the MARKETPLACE owner and nothing else.** Registry, reputation-manager
 > and faucet ownership can change — including a permanent `renounceOwnership` that destroys
 > `deactivateAgent` for ever — and the monitor stays green (§4, §6).
+>
+> **4. Every alert channel is LOCAL to this Mac.** `SPECULAR_ALERT_WEBHOOK` is not set and
+> `forensics/monitor/monitor.env` does not exist, so an alert is a latch file, a file in `$HOME`,
+> a banner and a spoken line — all of which require somebody to be at this machine. If you want
+> to be told while you are away, set the webhook (`WEBHOOK_SETUP.md`). Verified 2026-09-24 by
+> forcing a real failure end to end.
 
 ---
 
@@ -31,7 +42,7 @@ assumed. Evidence and method: `forensics/output/testing-2026-09-23/INCIDENT_DRIL
 |---|---|---|
 | `SOLV` / `S1` / `POOL` (money doesn't add up) | **Do not pause. Do not run `resetPoolAccounting` yet.** Snapshot (§2.1), confirm on a second RPC. **Establish whether the USDC is missing or only the books are wrong** — the monitor cannot tell you. | §3.1 |
 | `OWN` / `OWN-PENDING` / `PAUS` (control plane moved) | **Assume key compromise.** Seconds matter. | §3.2 |
-| `CP-CHANGED` (WARN — credit policy drifted) | If you did not make that change, treat it as §3.2. It is the **only** signal a hostile key reliably produces. | §3.2 |
+| `CP-CHANGED` (WARN — credit policy drifted) | If you did not make that change, treat it as §3.2. It is the **only** signal a hostile key reliably produces — and it was **structurally dead on Arc mainnet** until 2026-09-24; see the box below §3.2. | §3.2 |
 | `B1` / `S5-*` / `ALI` / `PT` / `QUAL-*` / `LATE-*` | Snapshot, stop new inflow, no pause. | §3.3 |
 | `SS-UNLOCKED` / `SS-MISMATCH` / `SS-ORPHAN` (V6.2 self-stake) | The M2 first-loss tranche is not holding. Stop new borrowing on that agent. | §3.4 |
 | `FRESH` / `FRESH-STUCK` / `MONITOR-FAILED` / `[WATCHDOG]` / `MONITOR-DOWN` | You are **blind**, not necessarily broken. | §3.5 |
@@ -52,7 +63,12 @@ Every 30 minutes `launchd` runs `forensics/monitor/run-with-alert.sh <network>`,
 3. A macOS notification banner (plus a spoken alert for CRITICAL).
 4. `forensics/monitor/alerts.log` — append-only JSONL history.
 5. `SPECULAR_ALERT_WEBHOOK` — **only if you set it** in `forensics/monitor/monitor.env`
-   (gitignored). Nothing is hardcoded.
+   (gitignored). Nothing is hardcoded. **Checked 2026-09-24: not set** — channels 1–4 are all
+   there is, and all four need you to be at this Mac.
+
+The **overdue-loan** job (`run-overdue-check.sh`, hourly) alerts through the same `alert.js`,
+CRITICAL, with the full report — loan ids, principal, collateral, unsecured amount, days
+overdue — in the alert details.
 
 ```bash
 export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
@@ -84,10 +100,15 @@ V6_MONITOR_NETWORK=arc-mainnet V6_EXPECTED_OWNER=0x800e305A0caDdE6289dFDFEDF3821
 
 # EVERY owner lever on V6.2 + V4 + registry + faucet, read-only
 node scripts/incident-drill/read-live-levers.js
+
+# Prove the levers this runbook names STILL EXIST, with these signatures, on the deployed
+# bytecode — and that each is owner-gated. eth_call only; sends nothing, needs no key.
+# Exit 0 = every lever present and gated. Last run 2026-09-24: 52/52.
+node scripts/incident-drill/verify-runbook-levers.js
 ```
 
-> `scripts/incident-drill/read-live-levers.js` ships in
-> `forensics/output/testing-2026-09-23/incident-drill.patch` (`git apply` it once).
+> `read-live-levers.js` and `verify-runbook-levers.js` are committed under
+> `scripts/incident-drill/` — no patch to apply.
 > **Do not rely on the older `scripts/op-resilience/read-mainnet-levers.js`** — it loads the
 > ReputationManagerV3 ABI against the V4 address and the V6.1 ABI against V6.2, so it silently
 > omits the tier table, the ladder parameters, the default lockout, the late-penalty parameters,
@@ -113,8 +134,8 @@ From the snapshot: `usdcBalance`, `sumAvail`, `sumActiveCollateral`, ACTIVE loan
 lenders, and **`selfStake` per pool**. **If third-party lender principal is zero, almost nothing
 is urgent** — take the slow, reversible path.
 
-Live figures, read on-chain 2026-09-23 (block 22 287 733), canonical V6.2
-`0xCb23f2fb03Bfd4775Cc0e76E28f64c1e545071be`:
+Live figures, read on-chain 2026-09-23 (block 22 287 733) and **re-read unchanged 2026-09-24
+(block 22 416 766)**, canonical V6.2 `0xCb23f2fb03Bfd4775Cc0e76E28f64c1e545071be`:
 
 | | |
 |---|---|
@@ -201,6 +222,29 @@ Measured on a real 2 400 USDC default at the 0 %-collateral tier: creator's 1 20
 survivor could still withdraw or claim.
 
 ### 3.2 Control plane moved — `OWN`, `OWN-PENDING`, `PAUS`, `CP-CHANGED`
+
+> **⚠️ `CP-CHANGED` was dead on Arc mainnet from the V7 migration until 2026-09-24. Know why,
+> because the same shape will come back the next time a stack is superseded.**
+>
+> Two launchd jobs watch Arc mainnet — the canonical V6.2 stack and the superseded V6.1 one —
+> and both used `V6_MONITOR_NETWORK=arc-mainnet`, so both wrote
+> `forensics/monitor/state-arc-mainnet.json`. The legacy marketplace points at
+> ReputationManagerV**3**, which has no on-chain tier table, so its run recorded
+> `creditPolicy: null`. It ran ~30 s before the canonical job on **every** cycle (confirmed in
+> the log: 19:36:37/19:37:05, 20:06:39/20:07:09, …), so the canonical run always found a null
+> previous policy and skipped the comparison entirely. The one signal a hostile owner key
+> reliably produces could never fire. Proven by re-running the two jobs in that order and
+> watching the WARN disappear.
+>
+> **Fixed:** setting `V6_MONITOR_MARKETPLACE` now gives a run its own instance namespace
+> (`state-<net>-<addr8>.json`, its own log, its own heartbeat), so the two jobs cannot
+> overwrite each other, and `alert.js --status` shows a heartbeat per job instead of one for
+> both. Re-verified: with the fix, the tampered baseline survives the legacy run and
+> `CP-CHANGED` fires.
+>
+> **Whenever you add a monitor for a superseded stack, check afterwards that
+> `alert.js --status` gained a heartbeat and that `state-*.json` gained a file.** If it did
+> not, the new job is silently cannibalising the old one's memory.
 
 The only scenario measured in seconds. If the owner is not the secure wallet, a `pendingOwner` you
 did not set exists, the contract is paused and you did not pause it, **or the credit policy changed
@@ -306,11 +350,21 @@ non-zero and latches an alert.
 | `FRESH` | Chain head older than `V6_MAX_BLOCK_AGE_SEC` (1800 s) | exit **1**, CRITICAL, latched | Endpoint is serving stale data, or the chain stalled. Compare height against the explorer. |
 | `FRESH-STUCK` | Head identical to the previous run | exit **1**, **WARN**, latched | **The most dangerous mode and the quietest one.** Every state read still succeeds and looks self-consistent. **It only fires on the SECOND run** — the first run after an endpoint freezes reports a clean OK, so you are confidently wrong for up to 30 minutes. Switch endpoints. Arc mainnet advances 1 400–4 800 blocks per cycle, so this never fires on a healthy chain. |
 | `FRESH-REORG` | Head went backwards | — | Reorg, or the RPC is answering for a different chain. Verify `chainId == 5042`. |
-| `MONITOR-DOWN` | A *sibling* network's job has not stamped a heartbeat in 90 min | exit 1 | `launchctl list \| grep specular`; reload the plist. |
+| `MONITOR-DOWN` | A *sibling* job has not stamped a heartbeat in 90 min | exit 1 | `launchctl list \| grep specular`; reload the plist. |
 
 **Nothing detects all jobs being dead at once.** The jobs cross-check each other, but a sleeping or
 powered-off Mac silences everything. Do a weekly manual `node forensics/monitor/alert.js --status`
-and confirm both heartbeats are fresh (§6 gap 1).
+and confirm there is a **fresh heartbeat per invariant job** — as of 2026-09-24 that is
+`arc-mainnet`, `arc-mainnet-358c5e69` (the superseded V6.1 marketplace) and `arc-staging`
+(§6 gap 1). Two jobs that are **not** covered by the dead-man's switch at all, because they
+stamp no heartbeat: `com.specular.overdue-loans-arc-mainnet` and
+`com.specular.rpc-health-sample`. Check those with `launchctl list | grep specular` and by
+confirming `overdue-arc-mainnet.log` and `rpc-health.jsonl` have recent lines.
+
+**If you retire a job, delete its heartbeat file.** A leftover `heartbeat-<instance>.json`
+makes every surviving monitor raise `MONITOR_DOWN` twice an hour, for ever, about a job you
+removed on purpose. That happened to `heartbeat-arc-testnet.json` after the arc-testnet job
+was unloaded; it has since been deleted and the storm is gone (confirmed 2026-09-24).
 
 ### 3.6 `NFT-MOVED` (WARN)
 
@@ -483,7 +537,8 @@ freeze identity, credit policy or the control plane.**
    `authorizePool`, `revokePool`, `setValidationRegistry`, `setBindBorrowToPoolCreator`, and every
    fee / limit / scoring lever. **23 of 29 successful hostile owner calls produce no signal at all.**
 3. **No overdue-loan detector in the monitor.** A loan past `endTime` and unliquidated produces
-   `exit 0`. Liquidation is a polling job — `scripts/incident-drill/check-overdue-loans.js` (§7).
+   `exit 0`. Liquidation is a polling job — `forensics/monitor/check-overdue-loans.js`, run
+   hourly by `com.specular.overdue-loans-arc-mainnet` (§7).
 4. **The monitor cannot distinguish phantom liquidity from a real shortfall.** Same codes, opposite
    remedies (§3.1).
 5. **Single owner EOA, no timelock, no multisig.** Every lever in §4 is one key away, and §3.2 has
@@ -498,6 +553,17 @@ freeze identity, credit policy or the control plane.**
 10. **`NFT-MOVED` re-latches every cycle** for the life of the loan, so a legitimate agent sale is
     indistinguishable from an unhandled incident at a glance (§3.6).
 11. **The marketplace is one USDC pot.** A shortfall in one pool is paid out of every other pool.
+12. **No remote alert channel.** `SPECULAR_ALERT_WEBHOOK` is unset and `monitor.env` does not
+    exist, so every channel needs somebody at this Mac. Closing this is one line in
+    `monitor.env` (`WEBHOOK_SETUP.md`) and is the cheapest resilience win available.
+13. **Two monitor jobs on one network used to share one state file** and silently killed
+    `CP-CHANGED` (§3.2 box). Fixed 2026-09-24; re-check after every future supersession.
+14. **The superseded Arc-STAGING stacks have no monitor at all.** Three of them are live and
+    unpaused and hold 849 + 482 + 3 488 = **4 819 test USDC** between them
+    (`supersededDeployments` in `src/config/arc-testnet-v6-addresses.json`, read 2026-09-24).
+    Mainnet's one superseded marketplace does have a job; staging's three do not. Test money,
+    but it is the same checklist item that will matter on mainnet
+    (`V7_MAINNET_MIGRATION_RUNBOOK.md` §5b).
 
 ---
 
@@ -507,30 +573,45 @@ freeze identity, credit policy or the control plane.**
 export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
 cd ~/Specular
 
-# 1. OVERDUE LOANS — nothing alerts on these. Run at least daily.
+# 1. OVERDUE LOANS — the invariant monitor never reports these.
 #    Read-only. Exit 0 = nothing overdue, 1 = liquidation candidates, 2 = could not read.
-node scripts/incident-drill/check-overdue-loans.js            # NET=arc-staging|local to switch
+#    Already polled hourly by com.specular.overdue-loans-arc-mainnet; run it by hand for now.
+node forensics/monitor/check-overdue-loans.js                 # NET=arc-staging|local to switch
 
 # 2. ALL FOUR OWNERS — the monitor only checks the marketplace.
 node scripts/incident-drill/read-live-levers.js | grep -A1 '"owner"'
 
-# 3. HEARTBEATS — the only backstop against every job being dead.
+# 3. THE LEVERS THIS RUNBOOK NAMES still exist on the deployed bytecode, and are owner-gated.
+node scripts/incident-drill/verify-runbook-levers.js          # exit 0 = all present + gated
+
+# 4. HEARTBEATS — the only backstop against every job being dead.
+#    Expect one fresh heartbeat PER invariant job (arc-mainnet, arc-mainnet-358c5e69,
+#    arc-staging). The overdue and rpc-health jobs stamp none — check those with launchctl.
 node forensics/monitor/alert.js --status
+
+# 5. READ-ONLY SMOKE: is the live config still what we think it is? Sends nothing, no key.
+node scripts/smoke-test-arc-mainnet.js --read-only
+node scripts/smoke-test-arc-testnet-v6.js --read-only
 ```
 
 `check-overdue-loans.js` prints each overdue loan with its principal, collateral, **unsecured**
 amount, days overdue and what `repayLoan` would pull right now — so you can see whether
 liquidating actually recovers anything before you spend the gas. It also refuses to advise
 liquidation while the contract is paused, because `liquidateLoan` is blocked by pause (§5).
-Wire it into cron next to the invariant monitor; it is the piece the monitor does not have.
+All four behaviours (exit 0 / exit 1 with the full detail / exit 2 on a dead RPC / the paused
+advice) were executed on 2026-09-24.
 
 ---
 
 ## 8. After the incident
 
 1. `node forensics/monitor/alert.js --ack` — only once the underlying condition is gone.
-2. Confirm two consecutive clean runs (`exitCode: 0`) in
-   `forensics/monitor/v6-invariants-arc-mainnet.log`.
+   (`--ack` clears the latch **and** deletes `~/SPECULAR-ALERT.txt`.)
+2. Confirm two consecutive clean runs (`exitCode: 0`) in the log of the job that fired —
+   `forensics/monitor/v6-invariants-arc-mainnet.log` for the canonical stack,
+   `v6-invariants-arc-mainnet-358c5e69.log` for the superseded V6.1 one. Also check
+   `alert.js --status`: a heartbeat can still carry `lastExitCode: 2` from the incident until
+   that job's next scheduled run.
 3. Append a dated entry to this file: what fired, what was true, what you did, what it cost.
 4. If the monitor missed it or cried wolf, add a scenario to `scripts/op-resilience/scenarios.js`
    and re-run `run-detection-matrix.js` — that matrix is the regression suite for the monitor.
