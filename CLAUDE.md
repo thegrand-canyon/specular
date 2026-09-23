@@ -37,7 +37,7 @@ Website: specular.financial | GitHub: thegrand-canyon/specular | Deploy: specula
 | Base Mainnet | `0x0a4e3C745aB95aceb45B05C28D89fe4Db8815F9a` (CANONICAL 2026-05-17 — V6, post-WORLDCLASS audit) | (v4 archived: `0xd7b4dEE74C61844DFA75aEbe224e4635463b1C8f`, paused) | `0x800e305A...F72C` (secure) | **No** |
 | **Arc Mainnet** (chainId 5042) | — | **`0xCb23f2fb03Bfd4775Cc0e76E28f64c1e545071be` (V6.2 CANONICAL, V7 credit model, 2026-09-23)** with **ReputationManagerV4 `0x12953e732e5D1aFdA640554125367d1CEC2ac4FB`**; superseded: V6.1 `0x358c5E69…` (left running, monitored), V6.0 `0xb9996de0…` (retired) | `0x800e305A...F72C` (secure) | **No** |
 
-- **Arc Mainnet (deployed 2026-09-19)**: `src/config/arc-mainnet-addresses.json`. RegistryV2 `0x6F1EbF50290f6D4A9947E9EB77f98a683684fBF5`, ReputationV3 `0x1577Eb9985CcA859F25ED2EDaeD16A464ADFaE5e`, **Marketplace V6.1 `0x358c5E69f712A4b3558333090a45A054bAeEb282`** (redeployed same day after internal audit; original V6.0 `0xb9996de05fD514A0cB2B81fa25448EECD4559Aaa` retired: paused, revoked, 0 balance), Faucet `0xD854F80031A8d0CB166587AafA0969Da8C3757bF`. USDC = Arc native ERC-20 `0x3600000000000000000000000000000000000000` (6 dec; gas is the same USDC in its 18-dec native view). RPC `https://rpc.mainnet.arc.io`, explorer `https://explorer.arc.io`. Levers (tightened 2026-09-19 post-audit): M-1 on, M-2=86400s, **F-C minSupply=10 USDC, D1 rate-limit 5 pts/day**, 1% fee, faucet cohort 100, **claimAmount=1 USDC, faucet funded 20 USDC** (claim verified live; agent #1 = secure wallet already claimed). Smoke test: `scripts/smoke-test-arc-mainnet.js` (real USDC, tiny amounts). Deployed ahead of the runbook's Gate 1 external re-audit (owner decision 2026-09-19). **Internal audit 2026-09-19** (`forensics/output/audit-2026-09/INTERNAL_AUDIT_2026-09-19.md`) found F-01 HIGH (NFT transfer freezes loan) + F-04 HIGH (D1 economics) + 3 MEDIUM + 3 LOW; F-01/02/03/05/07 fixed in **V6.1** (source in repo, `VERSION()=="V6.1"`, pre-fix mainnet source at git tag `arc-mainnet-v6-deployed-2026-09-19`). **Mainnet redeployed to V6.1 on 2026-09-19** via `scripts/redeploy-marketplace-v6.1.js` (marketplace-only; old retired, migration finalized = F-08 closed). Sourcify exact_match; smoke 22/22; invariants OK. Still open: F-04 (D1 reputation economics — model change in ReputationManagerV3 pending owner direction), late-repay reputation penalty (needs RM redeploy), D1 lever tightening (owner call). Keep third-party lender exposure modest until F-04 is addressed.
+- **Arc Mainnet (deployed 2026-09-19, migrated to V7 2026-09-23)**: `src/config/arc-mainnet-addresses.json`. RegistryV2 `0x6F1EbF50290f6D4A9947E9EB77f98a683684fBF5`, **ReputationManagerV4 `0x12953e732e5D1aFdA640554125367d1CEC2ac4FB`**, **Marketplace V6.2 `0xCb23f2fb03Bfd4775Cc0e76E28f64c1e545071be`** (CANONICAL, V7 credit model). Superseded but deliberately still live, unpaused and separately monitored: ReputationV3 `0x1577Eb9985CcA859F25ED2EDaeD16A464ADFaE5e` + Marketplace V6.1 `0x358c5E69f712A4b3558333090a45A054bAeEb282` — verified 2026-09-23 as holding nothing beyond its own 0.000014 USDC `accumulatedFees`, zero lender positions, zero active loans, so it already meets the §6 retirement preconditions (do NOT retire it before the hosted API is redeployed off it). Fully retired: V6.0 `0xb9996de05fD514A0cB2B81fa25448EECD4559Aaa` (paused, revoked, 0 balance). Faucet `0xD854F80031A8d0CB166587AafA0969Da8C3757bF` — **unaffected by the V7 migration** (it references only the registry, which was reused); claim path re-verified live 2026-09-23 by state-override `eth_call`. USDC = Arc native ERC-20 `0x3600000000000000000000000000000000000000` (6 dec; gas is the same USDC in its 18-dec native view). RPC `https://rpc.mainnet.arc.io`, explorer `https://explorer.arc.io`. Levers (tightened 2026-09-19 post-audit): M-1 on, M-2=86400s, **F-C minSupply=10 USDC, D1 rate-limit 5 pts/day**, 1% fee, faucet cohort 100, **claimAmount=1 USDC, faucet funded 20 USDC** (claim verified live; agent #1 = secure wallet already claimed). Smoke test: `scripts/smoke-test-arc-mainnet.js` (real USDC, tiny amounts). Deployed ahead of the runbook's Gate 1 external re-audit (owner decision 2026-09-19). **Internal audit 2026-09-19** (`forensics/output/audit-2026-09/INTERNAL_AUDIT_2026-09-19.md`) found F-01 HIGH (NFT transfer freezes loan) + F-04 HIGH (D1 economics) + 3 MEDIUM + 3 LOW; F-01/02/03/05/07 fixed in **V6.1** (source in repo, `VERSION()=="V6.1"`, pre-fix mainnet source at git tag `arc-mainnet-v6-deployed-2026-09-19`). **Mainnet redeployed to V6.1 on 2026-09-19** via `scripts/redeploy-marketplace-v6.1.js` (marketplace-only; old retired, migration finalized = F-08 closed). Sourcify exact_match; smoke 22/22; invariants OK. **Superseded by the V7 stack on 2026-09-23**; all levers above were re-applied and re-verified on the V6.2/V4 contracts (2026-09-23): `platformFeeRate=100`, `minSupplyAmount=10 USDC`, `bindBorrowToPoolCreator=true`, `minHoldForReputationReward=86400`, `maxReputationGainPerWindow=5` / `reputationGainWindow=86400`, `migrationFinalized=true`. The late-repay reputation penalty **now exists** in V4 (`latePenaltyBase=10`, `perDay=5`, `max=100`) and F-04 was answered by the M1+M2 model change — but **F-04 is priced, not closed** (residual attacker EV ~24 %/yr), so keep third-party lender exposure modest.
 
 - Base stale marketplace: `0x77F8D49cdE6Ae7481BeA38C8a70b5A893bD4d9AF` (60.5 USDC residual, different owner — ignore)
 - Arc compromised wallet: `0x656086A21073272533c8A3f56A94c1f3D8BCFcE2` (key published; agentId 43, 777+ loans, USDC swept to secure wallet 2026-05-08)
@@ -46,7 +46,8 @@ Website: specular.financial | GitHub: thegrand-canyon/specular | Deploy: specula
 ### Hosted agent surface (mcp-server/) — LIVE 2026-09-19
 
 - **URL:** `https://specular-agent-api-production.up.railway.app` (Railway project `resplendent-determination`, service `specular-agent-api`, built from `mcp-server/Dockerfile` via `RAILWAY_DOCKERFILE_PATH`; the older `specular` service is the legacy Express API).
-- MCP Streamable HTTP at `/mcp`, REST under `/v1/{network}/…`, `/openapi.json`, `/health`. Networks enabled: `arc-mainnet` (real USDC) + `arc-staging`. No auth token set (open, per-IP rate-limited).
+- MCP Streamable HTTP at `/mcp`, REST under `/v1/{network}/…`, `/openapi.json`, `/health`. Networks enabled: `arc-mainnet` (real USDC) + `arc-staging`. **Requires a bearer token** since 2026-09-22 (`fe94781`) — `SPECULAR_MCP_TOKEN` in `.env`; `/health` and `/openapi.json` stay open without one, `/mcp` and `/v1/…` return 401. Per-IP rate-limited.
+- **⚠️ STALE DEPLOY as of 2026-09-23:** the running container still serves the **superseded** V6.1 stack on `arc-mainnet` (`marketplace: 0x358c5E69…`, `v62: false`, `creditTiers.source: "v3-constant"`, self-stake endpoints 400) and so overstates an agent's credit limit 10× (1,000 vs the chain's 100 USDC). The repo is correct — `networks.ts:253,257` already prefers `agentLiquidityMarketplace_v62`/`reputationManagerV4` — the image just predates `af2f5ae`. **Fix = redeploy from HEAD**, then confirm `/v1/arc-mainnet/status` reports `v62: true`, `reputationV4: true`, `creditTiers.source: "chain"`.
 - **Non-custodial:** reads run server-side; `prepare_*` return unsigned txs for the agent's own wallet; `broadcast_signed_transaction` relays only to Specular contracts. Server refuses to boot if `SPECULAR_PRIVATE_KEY` is set.
 - Deploy: `RAILWAY_TOKEN` (project token, in `.env`) then `railway up --service specular-agent-api --ci` from repo root. Docs: `docs/integrations/{REMOTE_MCP,GROK_BOT,MUSE_CONNECTOR}.md`.
 
@@ -111,8 +112,11 @@ two strategies rather than two models and was refuted on re-measurement).
   MarketplaceV6.2 `0xCb23f2fb03Bfd4775Cc0e76E28f64c1e545071be`. Both Sourcify `exact_match`; smoke 21/21.
 - **Arc staging (rehearsal, scale-fixed, 2026-09-22):** ReputationManagerV4 `0xD7906fDFBf69BA89a4c2FE148797e24f386fE3d2`,
   MarketplaceV6.2 `0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18`. E2E 237/237.
-  Canonical config keys now point at V7; the superseded V6.1 stack is under `*_legacy` keys,
-  still live and still holding test lender funds.
+  Canonical config keys now point at V7; on **staging** the superseded V6.1 stack is under
+  `*_legacy` keys, still live and still holding test lender funds. **On mainnet the convention
+  differs** — the superseded pair is at `agentLiquidityMarketplacePrevious` /
+  `reputationManagerPrevious` plus an appended `supersededDeployments[]` entry. There is no
+  `*_legacy` key in `src/config/arc-mainnet-addresses.json`.
 - **Deploy:** `scripts/deploy-v7.js --network <arc-staging|arc-mainnet>` (dry run by default).
 - **Migration plan:** `forensics/output/v7-model/V7_MAINNET_MIGRATION_RUNBOOK.md`.
 - **⚠️ Reputation does NOT migrate** — V4 ships no seed helper on purpose (that is the F-08
@@ -120,8 +124,21 @@ two strategies rather than two models and was refuted on re-measurement).
   0 third-party lenders today, so the migration is ~0.2 USDC and one test score. It only gets
   more expensive from here.
 - **⚠️ Monitoring:** repointing the canonical key makes the monitor follow V7 and **stop
-  watching the superseded marketplace**. Run a second job with
-  `V6_MONITOR_MARKETPLACE_KEY=agentLiquidityMarketplace_v61_legacy` until it is drained.
+  watching the superseded marketplace**. A second job must watch it **by address** — there is no
+  config key to resolve it by on mainnet, and `V6_MONITOR_MARKETPLACE_KEY=…_legacy` would resolve
+  to `undefined` and `exit(2)` every run (`v6-invariants.js:106-107`), i.e. a permanently
+  alerting job monitoring nothing:
+  ```
+  V6_MONITOR_NETWORK=arc-mainnet V6_MONITOR_MARKETPLACE=0x358c5E69f712A4b3558333090a45A054bAeEb282 \
+    node forensics/monitor/v6-invariants.js
+  ```
+  This is live as launchd `com.specular.v6-invariants-arc-mainnet-legacy` (verified 2026-09-23).
+  Both mainnet jobs currently share one log/state/heartbeat, so the legacy job's liveness is not
+  independently observable.
+- **⚠️ Alert storm (open):** `af2f5ae` unloaded the arc-testnet job but left
+  `forensics/monitor/heartbeat-arc-testnet.json` on disk, so every surviving monitor's
+  dead-man's switch (`v6-invariants.js:808-819`) raises 2 CRITICALs every 30 min about a monitor
+  retired on purpose. Invariants themselves pass (`findings: 0`). Fix: delete that heartbeat file.
 
 ## Testing round 2026-09-20/21 (6 tracks) — `forensics/output/testing-2026-09-20/`
 
@@ -219,7 +236,13 @@ A loan at a tier below 100% collateral also requires the agent's own **first-los
 On-time repayment scales by principal AND hold time; default costs up to 500 pts plus a capacity reset.
 See `forensics/output/v7-model/V7_DESIGN_AND_VALIDATION.md`.
 
-### V3 defaults (`ReputationManagerV3` — Base mainnet, Arc mainnet)
+### V3 defaults (`ReputationManagerV3` — **Base mainnet only**)
+
+> **Not Arc mainnet.** Arc mainnet has run `ReputationManagerV4` (the V7 model above) since
+> 2026-09-23; its live tier limits are `[1000, 5000, 10000, 10000, 2500, 5000]` USDC under an
+> immutable `MAX_TIER_LIMIT` of 10,000 — the 25k/50k figures below are **10× too high** for Arc
+> and must never be applied there. Read tiers from the contract. The 0 %-collateral tiers on Arc
+> are 2,500 (score ≥ 600) and 5,000 (score ≥ 800).
 
 Verified live on Arc V6 — 95-cycle progression mapped score 0 → 950 (see `forensics/output/regression-2026-05-07/64-reputation-tiers.json`):
 

@@ -1,0 +1,478 @@
+{
+  "scenario": "S5 — pause blast radius on V6.2 (+ the deactivateAgent comparison)",
+  "marketplaceVersion": "V6.2",
+  "reputationVersion": "V4",
+  "totals": {
+    "operationsProbed": 40,
+    "operationsAvailableUnpaused": 35,
+    "brokenByPause": 9,
+    "brokenByDeactivateAgent": 1,
+    "headline": "9 of 35 available operations are broken by pause()"
+  },
+  "brokenByPause": [
+    "LENDER: withdrawLiquidity (max the pool can honour)",
+    "LENDER: withdrawLiquidity (partial)",
+    "LENDER: claimInterest",
+    "LENDER: supplyLiquidity (new slot)",
+    "LENDER: supplyLiquidity (top-up existing)",
+    "BORROWER: repayLoan (clear the debt)",
+    "BORROWER: requestLoan (new credit)",
+    "AGENT: createAgentPool",
+    "OWNER-MP: liquidateLoan (the recovery tool)"
+  ],
+  "brokenByDeactivateAgent": [
+    "BORROWER: requestLoan (new credit)"
+  ],
+  "survivesPause": [
+    "OWNER-MP: withdrawFees",
+    "OWNER-MP: setPlatformFeeRate",
+    "OWNER-MP: setMinSupplyAmount",
+    "OWNER-MP: setMinHoldForReputationReward",
+    "OWNER-MP: setBindBorrowToPoolCreator",
+    "OWNER-MP: compactPoolLenders",
+    "OWNER-MP: resetPoolAccounting",
+    "OWNER-MP: transferOwnership",
+    "REGISTRY: register a new agent",
+    "REGISTRY: transfer agent NFT",
+    "REGISTRY: owner: deactivateAgent (the per-agent kill switch)",
+    "REGISTRY: owner: reactivateAgent (undo the kill switch)",
+    "REGISTRY: owner: pause registry",
+    "REGISTRY: owner: transferOwnership (ONE-STEP Ownable)",
+    "REGISTRY: owner: renounceOwnership (ONE-STEP Ownable)",
+    "REPUTATION: agent: initializeReputation",
+    "REPUTATION: owner: setTierLimits",
+    "REPUTATION: owner: setLadderParameters",
+    "REPUTATION: owner: setReputationRateLimit",
+    "REPUTATION: owner: setScoringParameters",
+    "REPUTATION: owner: setDefaultLockout",
+    "REPUTATION: owner: revokePool (marketplace)",
+    "REPUTATION: owner: authorizePool (arbitrary)",
+    "FAUCET: agent: claim",
+    "FAUCET: owner: drain",
+    "FAUCET: owner: setClaimAmount"
+  ],
+  "blockedEvenUnpaused": [
+    {
+      "operation": "withdrawLiquidity (FULL position, loans outstanding)",
+      "reason": "blocked: Insufficient pool liquidity"
+    },
+    {
+      "operation": "withdrawLiquidity of its own M2 self-stake",
+      "reason": "blocked: Self-stake locked while borrowing"
+    },
+    {
+      "operation": "unpause",
+      "reason": "blocked: ExpectedPause()"
+    },
+    {
+      "operation": "seedPool (migration finalized)",
+      "reason": "blocked: Migration finalized"
+    },
+    {
+      "operation": "setMigrationFinalized (again)",
+      "reason": "blocked: Migration finalized"
+    }
+  ],
+  "table": [
+    {
+      "group": "LENDER",
+      "operation": "withdrawLiquidity (FULL position, loans outstanding)",
+      "unpaused": "blocked: Insufficient pool liquidity",
+      "paused": "BLOCKED: EnforcedPause()",
+      "agentDeactivated": "BLOCKED: Insufficient pool liquidity",
+      "brokenByPause": false,
+      "brokenByDeactivate": false,
+      "unavailableAnyway": true
+    },
+    {
+      "group": "LENDER",
+      "operation": "withdrawLiquidity (max the pool can honour)",
+      "unpaused": "works",
+      "paused": "BLOCKED: EnforcedPause()",
+      "agentDeactivated": "works",
+      "brokenByPause": true,
+      "brokenByDeactivate": false,
+      "unavailableAnyway": false
+    },
+    {
+      "group": "LENDER",
+      "operation": "withdrawLiquidity (partial)",
+      "unpaused": "works",
+      "paused": "BLOCKED: EnforcedPause()",
+      "agentDeactivated": "works",
+      "brokenByPause": true,
+      "brokenByDeactivate": false,
+      "unavailableAnyway": false
+    },
+    {
+      "group": "AGENT-CREATOR",
+      "operation": "withdrawLiquidity of its own M2 self-stake",
+      "unpaused": "blocked: Self-stake locked while borrowing",
+      "paused": "BLOCKED: EnforcedPause()",
+      "agentDeactivated": "BLOCKED: Self-stake locked while borrowing",
+      "brokenByPause": false,
+      "brokenByDeactivate": false,
+      "unavailableAnyway": true
+    },
+    {
+      "group": "LENDER",
+      "operation": "claimInterest",
+      "unpaused": "works",
+      "paused": "BLOCKED: EnforcedPause()",
+      "agentDeactivated": "works",
+      "brokenByPause": true,
+      "brokenByDeactivate": false,
+      "unavailableAnyway": false
+    },
+    {
+      "group": "LENDER",
+      "operation": "supplyLiquidity (new slot)",
+      "unpaused": "works",
+      "paused": "BLOCKED: EnforcedPause()",
+      "agentDeactivated": "works",
+      "brokenByPause": true,
+      "brokenByDeactivate": false,
+      "unavailableAnyway": false
+    },
+    {
+      "group": "LENDER",
+      "operation": "supplyLiquidity (top-up existing)",
+      "unpaused": "works",
+      "paused": "BLOCKED: EnforcedPause()",
+      "agentDeactivated": "works",
+      "brokenByPause": true,
+      "brokenByDeactivate": false,
+      "unavailableAnyway": false
+    },
+    {
+      "group": "BORROWER",
+      "operation": "repayLoan (clear the debt)",
+      "unpaused": "works",
+      "paused": "BLOCKED: EnforcedPause()",
+      "agentDeactivated": "works",
+      "brokenByPause": true,
+      "brokenByDeactivate": false,
+      "unavailableAnyway": false
+    },
+    {
+      "group": "BORROWER",
+      "operation": "requestLoan (new credit)",
+      "unpaused": "works",
+      "paused": "BLOCKED: EnforcedPause()",
+      "agentDeactivated": "BLOCKED: Agent deactivated",
+      "brokenByPause": true,
+      "brokenByDeactivate": true,
+      "unavailableAnyway": false
+    },
+    {
+      "group": "AGENT",
+      "operation": "createAgentPool",
+      "unpaused": "works",
+      "paused": "BLOCKED: EnforcedPause()",
+      "agentDeactivated": "works",
+      "brokenByPause": true,
+      "brokenByDeactivate": false,
+      "unavailableAnyway": false
+    },
+    {
+      "group": "OWNER-MP",
+      "operation": "liquidateLoan (the recovery tool)",
+      "unpaused": "works",
+      "paused": "BLOCKED: EnforcedPause()",
+      "agentDeactivated": "works",
+      "brokenByPause": true,
+      "brokenByDeactivate": false,
+      "unavailableAnyway": false
+    },
+    {
+      "group": "OWNER-MP",
+      "operation": "withdrawFees",
+      "unpaused": "works",
+      "paused": "works",
+      "agentDeactivated": "works",
+      "brokenByPause": false,
+      "brokenByDeactivate": false,
+      "unavailableAnyway": false
+    },
+    {
+      "group": "OWNER-MP",
+      "operation": "setPlatformFeeRate",
+      "unpaused": "works",
+      "paused": "works",
+      "agentDeactivated": "works",
+      "brokenByPause": false,
+      "brokenByDeactivate": false,
+      "unavailableAnyway": false
+    },
+    {
+      "group": "OWNER-MP",
+      "operation": "setMinSupplyAmount",
+      "unpaused": "works",
+      "paused": "works",
+      "agentDeactivated": "works",
+      "brokenByPause": false,
+      "brokenByDeactivate": false,
+      "unavailableAnyway": false
+    },
+    {
+      "group": "OWNER-MP",
+      "operation": "setMinHoldForReputationReward",
+      "unpaused": "works",
+      "paused": "works",
+      "agentDeactivated": "works",
+      "brokenByPause": false,
+      "brokenByDeactivate": false,
+      "unavailableAnyway": false
+    },
+    {
+      "group": "OWNER-MP",
+      "operation": "setBindBorrowToPoolCreator",
+      "unpaused": "works",
+      "paused": "works",
+      "agentDeactivated": "works",
+      "brokenByPause": false,
+      "brokenByDeactivate": false,
+      "unavailableAnyway": false
+    },
+    {
+      "group": "OWNER-MP",
+      "operation": "compactPoolLenders",
+      "unpaused": "works",
+      "paused": "works",
+      "agentDeactivated": "works",
+      "brokenByPause": false,
+      "brokenByDeactivate": false,
+      "unavailableAnyway": false
+    },
+    {
+      "group": "OWNER-MP",
+      "operation": "resetPoolAccounting",
+      "unpaused": "works",
+      "paused": "works",
+      "agentDeactivated": "works",
+      "brokenByPause": false,
+      "brokenByDeactivate": false,
+      "unavailableAnyway": false
+    },
+    {
+      "group": "OWNER-MP",
+      "operation": "transferOwnership",
+      "unpaused": "works",
+      "paused": "works",
+      "agentDeactivated": "works",
+      "brokenByPause": false,
+      "brokenByDeactivate": false,
+      "unavailableAnyway": false
+    },
+    {
+      "group": "OWNER-MP",
+      "operation": "unpause",
+      "unpaused": "blocked: ExpectedPause()",
+      "paused": "works",
+      "agentDeactivated": "BLOCKED: ExpectedPause()",
+      "brokenByPause": false,
+      "brokenByDeactivate": false,
+      "unavailableAnyway": true
+    },
+    {
+      "group": "OWNER-MP",
+      "operation": "seedPool (migration finalized)",
+      "unpaused": "blocked: Migration finalized",
+      "paused": "BLOCKED: Migration finalized",
+      "agentDeactivated": "BLOCKED: Migration finalized",
+      "brokenByPause": false,
+      "brokenByDeactivate": false,
+      "unavailableAnyway": true
+    },
+    {
+      "group": "OWNER-MP",
+      "operation": "setMigrationFinalized (again)",
+      "unpaused": "blocked: Migration finalized",
+      "paused": "BLOCKED: Migration finalized",
+      "agentDeactivated": "BLOCKED: Migration finalized",
+      "brokenByPause": false,
+      "brokenByDeactivate": false,
+      "unavailableAnyway": true
+    },
+    {
+      "group": "REGISTRY",
+      "operation": "register a new agent",
+      "unpaused": "works",
+      "paused": "works",
+      "agentDeactivated": "works",
+      "brokenByPause": false,
+      "brokenByDeactivate": false,
+      "unavailableAnyway": false
+    },
+    {
+      "group": "REGISTRY",
+      "operation": "transfer agent NFT",
+      "unpaused": "works",
+      "paused": "works",
+      "agentDeactivated": "works",
+      "brokenByPause": false,
+      "brokenByDeactivate": false,
+      "unavailableAnyway": false
+    },
+    {
+      "group": "REGISTRY",
+      "operation": "owner: deactivateAgent (the per-agent kill switch)",
+      "unpaused": "works",
+      "paused": "works",
+      "agentDeactivated": "works",
+      "brokenByPause": false,
+      "brokenByDeactivate": false,
+      "unavailableAnyway": false
+    },
+    {
+      "group": "REGISTRY",
+      "operation": "owner: reactivateAgent (undo the kill switch)",
+      "unpaused": "works",
+      "paused": "works",
+      "agentDeactivated": "works",
+      "brokenByPause": false,
+      "brokenByDeactivate": false,
+      "unavailableAnyway": false
+    },
+    {
+      "group": "REGISTRY",
+      "operation": "owner: pause registry",
+      "unpaused": "works",
+      "paused": "works",
+      "agentDeactivated": "works",
+      "brokenByPause": false,
+      "brokenByDeactivate": false,
+      "unavailableAnyway": false
+    },
+    {
+      "group": "REGISTRY",
+      "operation": "owner: transferOwnership (ONE-STEP Ownable)",
+      "unpaused": "works",
+      "paused": "works",
+      "agentDeactivated": "works",
+      "brokenByPause": false,
+      "brokenByDeactivate": false,
+      "unavailableAnyway": false
+    },
+    {
+      "group": "REGISTRY",
+      "operation": "owner: renounceOwnership (ONE-STEP Ownable)",
+      "unpaused": "works",
+      "paused": "works",
+      "agentDeactivated": "works",
+      "brokenByPause": false,
+      "brokenByDeactivate": false,
+      "unavailableAnyway": false
+    },
+    {
+      "group": "REPUTATION",
+      "operation": "agent: initializeReputation",
+      "unpaused": "works",
+      "paused": "works",
+      "agentDeactivated": "works",
+      "brokenByPause": false,
+      "brokenByDeactivate": false,
+      "unavailableAnyway": false
+    },
+    {
+      "group": "REPUTATION",
+      "operation": "owner: setTierLimits",
+      "unpaused": "works",
+      "paused": "works",
+      "agentDeactivated": "works",
+      "brokenByPause": false,
+      "brokenByDeactivate": false,
+      "unavailableAnyway": false
+    },
+    {
+      "group": "REPUTATION",
+      "operation": "owner: setLadderParameters",
+      "unpaused": "works",
+      "paused": "works",
+      "agentDeactivated": "works",
+      "brokenByPause": false,
+      "brokenByDeactivate": false,
+      "unavailableAnyway": false
+    },
+    {
+      "group": "REPUTATION",
+      "operation": "owner: setReputationRateLimit",
+      "unpaused": "works",
+      "paused": "works",
+      "agentDeactivated": "works",
+      "brokenByPause": false,
+      "brokenByDeactivate": false,
+      "unavailableAnyway": false
+    },
+    {
+      "group": "REPUTATION",
+      "operation": "owner: setScoringParameters",
+      "unpaused": "works",
+      "paused": "works",
+      "agentDeactivated": "works",
+      "brokenByPause": false,
+      "brokenByDeactivate": false,
+      "unavailableAnyway": false
+    },
+    {
+      "group": "REPUTATION",
+      "operation": "owner: setDefaultLockout",
+      "unpaused": "works",
+      "paused": "works",
+      "agentDeactivated": "works",
+      "brokenByPause": false,
+      "brokenByDeactivate": false,
+      "unavailableAnyway": false
+    },
+    {
+      "group": "REPUTATION",
+      "operation": "owner: revokePool (marketplace)",
+      "unpaused": "works",
+      "paused": "works",
+      "agentDeactivated": "works",
+      "brokenByPause": false,
+      "brokenByDeactivate": false,
+      "unavailableAnyway": false
+    },
+    {
+      "group": "REPUTATION",
+      "operation": "owner: authorizePool (arbitrary)",
+      "unpaused": "works",
+      "paused": "works",
+      "agentDeactivated": "works",
+      "brokenByPause": false,
+      "brokenByDeactivate": false,
+      "unavailableAnyway": false
+    },
+    {
+      "group": "FAUCET",
+      "operation": "agent: claim",
+      "unpaused": "works",
+      "paused": "works",
+      "agentDeactivated": "works",
+      "brokenByPause": false,
+      "brokenByDeactivate": false,
+      "unavailableAnyway": false
+    },
+    {
+      "group": "FAUCET",
+      "operation": "owner: drain",
+      "unpaused": "works",
+      "paused": "works",
+      "agentDeactivated": "works",
+      "brokenByPause": false,
+      "brokenByDeactivate": false,
+      "unavailableAnyway": false
+    },
+    {
+      "group": "FAUCET",
+      "operation": "owner: setClaimAmount",
+      "unpaused": "works",
+      "paused": "works",
+      "agentDeactivated": "works",
+      "brokenByPause": false,
+      "brokenByDeactivate": false,
+      "unavailableAnyway": false
+    }
+  ]
+}

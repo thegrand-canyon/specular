@@ -1,0 +1,650 @@
+{
+  "scenario": "S4 — owner key hostile for one hour",
+  "stack": {
+    "marketplace": "V6.2",
+    "reputation": "V4",
+    "registryOwnership": "Ownable (ONE-STEP, renounceable)",
+    "faucetOwnership": "Ownable (ONE-STEP, renounceable)"
+  },
+  "ownerSurface": [
+    {
+      "contract": "MarketplaceV6.2",
+      "call": "pause()",
+      "bound": null,
+      "succeeded": true,
+      "revert": null,
+      "monitorExit": 1,
+      "monitorCodes": [
+        "PAUS(CRITICAL)"
+      ],
+      "detected": true,
+      "impact": "Freezes 9 of 35 operations including every lender exit, every repayment and liquidateLoan.",
+      "extra": null
+    },
+    {
+      "contract": "MarketplaceV6.2",
+      "call": "setPlatformFeeRate(500)",
+      "bound": "<= 500 bps",
+      "succeeded": true,
+      "revert": null,
+      "monitorExit": 0,
+      "monitorCodes": [],
+      "detected": false,
+      "impact": "Takes 5 % of ALL interest, retroactively — the fee is computed at repay, so live loans pay the new rate.",
+      "extra": null
+    },
+    {
+      "contract": "MarketplaceV6.2",
+      "call": "setMinSupplyAmount(100 USDC)",
+      "bound": "<= 100 USDC",
+      "succeeded": true,
+      "revert": null,
+      "monitorExit": 0,
+      "monitorCodes": [],
+      "detected": false,
+      "impact": "Locks small lenders out of new slots. Also raises the floor a PARTIAL withdrawal must leave.",
+      "extra": null
+    },
+    {
+      "contract": "MarketplaceV6.2",
+      "call": "setMinHoldForReputationReward(7d)",
+      "bound": "<= MIN_LOAN_DURATION (7d)",
+      "succeeded": true,
+      "revert": null,
+      "monitorExit": 0,
+      "monitorCodes": [],
+      "detected": false,
+      "impact": "Denies reputation to most repayments. Slows every honest agent; no direct money effect.",
+      "extra": null
+    },
+    {
+      "contract": "MarketplaceV6.2",
+      "call": "setBindBorrowToPoolCreator(false)",
+      "bound": "none",
+      "succeeded": true,
+      "revert": null,
+      "monitorExit": 0,
+      "monitorCodes": [],
+      "detected": false,
+      "impact": "Turns M-1 OFF. A bought/stolen agent NFT can then borrow against the SELLER's locked self-stake and the pool's lenders. This is the single most damaging silent flag flip.",
+      "extra": null
+    },
+    {
+      "contract": "MarketplaceV6.2",
+      "call": "withdrawFees(all)",
+      "bound": "<= accumulatedFees",
+      "succeeded": true,
+      "revert": null,
+      "monitorExit": 0,
+      "monitorCodes": [],
+      "detected": false,
+      "impact": "Moves accrued protocol fees to the owner. Bounded by accumulatedFees — cannot touch lender principal.",
+      "extra": {
+        "accumulatedFeesTaken": 0
+      }
+    },
+    {
+      "contract": "MarketplaceV6.2",
+      "call": "resetPoolAccounting(agentId)",
+      "bound": "none",
+      "succeeded": true,
+      "revert": null,
+      "monitorExit": 0,
+      "monitorCodes": [],
+      "detected": false,
+      "impact": "Rewrites totalLoaned/totalLiquidity/availableLiquidity from positions. On a healthy pool it is a no-op; on an under-recovered one it re-asserts liquidity that is not there.",
+      "extra": null
+    },
+    {
+      "contract": "MarketplaceV6.2",
+      "call": "compactPoolLenders(agentId)",
+      "bound": "none",
+      "succeeded": true,
+      "revert": null,
+      "monitorExit": 0,
+      "monitorCodes": [],
+      "detected": false,
+      "impact": "Dedups the lender array. Harmless.",
+      "extra": null
+    },
+    {
+      "contract": "MarketplaceV6.2",
+      "call": "transferOwnership(hostile) [step 1 of 2]",
+      "bound": "Ownable2Step",
+      "succeeded": true,
+      "revert": null,
+      "monitorExit": 1,
+      "monitorCodes": [
+        "OWN-PENDING(CRITICAL)"
+      ],
+      "detected": true,
+      "impact": "Sets pendingOwner. Control does NOT move until the recipient calls acceptOwnership.",
+      "extra": null
+    },
+    {
+      "contract": "MarketplaceV6.2",
+      "call": "transferOwnership + acceptOwnership [both steps]",
+      "bound": "Ownable2Step",
+      "succeeded": true,
+      "revert": null,
+      "monitorExit": 1,
+      "monitorCodes": [
+        "OWN(CRITICAL)"
+      ],
+      "detected": true,
+      "impact": "Control is gone. Irreversible without the new key.",
+      "extra": null
+    },
+    {
+      "contract": "MarketplaceV6.2",
+      "call": "renounceOwnership()",
+      "bound": "OVERRIDDEN — reverts",
+      "succeeded": false,
+      "revert": "Ownership cannot be renounced",
+      "monitorExit": null,
+      "monitorCodes": [],
+      "detected": false,
+      "impact": "Blocked by design (audit D5).",
+      "extra": null
+    },
+    {
+      "contract": "MarketplaceV6.2",
+      "call": "seedPool(...) [F-08]",
+      "bound": "migrationFinalized",
+      "succeeded": false,
+      "revert": "Migration finalized",
+      "monitorExit": null,
+      "monitorCodes": [],
+      "detected": false,
+      "impact": "The owner-drain shape. Provably dead on a finalized deployment.",
+      "extra": null
+    },
+    {
+      "contract": "MarketplaceV6.2",
+      "call": "seedPosition(...) [F-08]",
+      "bound": "migrationFinalized",
+      "succeeded": false,
+      "revert": "Migration finalized",
+      "monitorExit": null,
+      "monitorCodes": [],
+      "detected": false,
+      "impact": "Would mint a lender position from nothing. Provably dead.",
+      "extra": null
+    },
+    {
+      "contract": "ReputationManagerV4",
+      "call": "setTierLimits(all at MAX_TIER_LIMIT)",
+      "bound": "<= MAX_TIER_LIMIT (10,000 USDC), immutable",
+      "succeeded": true,
+      "revert": null,
+      "monitorExit": 1,
+      "monitorCodes": [
+        "CP-CHANGED(WARN)"
+      ],
+      "detected": true,
+      "impact": "Raises every tier to the hard ceiling. The ceiling itself is immutable, so the prize is bounded at 10,000 USDC of unsecured exposure per agent.",
+      "extra": null
+    },
+    {
+      "contract": "ReputationManagerV4",
+      "call": "setTierLimits(above MAX_TIER_LIMIT)",
+      "bound": "REVERTS",
+      "succeeded": false,
+      "revert": "Tier limit exceeds ceiling",
+      "monitorExit": null,
+      "monitorCodes": [],
+      "detected": false,
+      "impact": "The immutable ceiling holds.",
+      "extra": null
+    },
+    {
+      "contract": "ReputationManagerV4",
+      "call": "setLadderParameters(k=10, step=MAX, bootstrap=MAX, refDur=1s)",
+      "bound": "k <= 10, step/bootstrap <= MAX_TIER_LIMIT",
+      "succeeded": true,
+      "revert": null,
+      "monitorExit": 1,
+      "monitorCodes": [
+        "CP-CHANGED(WARN)"
+      ],
+      "detected": true,
+      "impact": "Hands every agent the full tier limit on day one AND shrinks the M2-c self-stake requirement to exposure/10. This is the lever that guts M2, and its only bound is k <= 10.",
+      "extra": null
+    },
+    {
+      "contract": "ReputationManagerV4",
+      "call": "setReputationRateLimit(0, 1)",
+      "bound": "window > 0 only",
+      "succeeded": true,
+      "revert": null,
+      "monitorExit": 0,
+      "monitorCodes": [],
+      "detected": false,
+      "impact": "Disables the D1 rate limit entirely — unbounded reputation gain per window.",
+      "extra": null
+    },
+    {
+      "contract": "ReputationManagerV4",
+      "call": "setScoringParameters(50, 0, 0, 1 wei)",
+      "bound": "bonus<=50, penalties<=200/300, threshold>0",
+      "succeeded": true,
+      "revert": null,
+      "monitorExit": 0,
+      "monitorCodes": [],
+      "detected": false,
+      "impact": "Maximum bonus, ZERO default penalty. Defaulting becomes free; a bust-out costs no reputation.",
+      "extra": null
+    },
+    {
+      "contract": "ReputationManagerV4",
+      "call": "setDefaultLockout(0)",
+      "bound": "<= 730 days",
+      "succeeded": true,
+      "revert": null,
+      "monitorExit": 1,
+      "monitorCodes": [
+        "CP-CHANGED(WARN)"
+      ],
+      "detected": true,
+      "impact": "Removes the 180-day post-default freeze. A defaulted agent can borrow again immediately.",
+      "extra": null
+    },
+    {
+      "contract": "ReputationManagerV4",
+      "call": "setLatePenaltyParameters(0,0,0)",
+      "bound": "max <= 300",
+      "succeeded": true,
+      "revert": null,
+      "monitorExit": 0,
+      "monitorCodes": [],
+      "detected": false,
+      "impact": "Removes the late-repayment penalty.",
+      "extra": null
+    },
+    {
+      "contract": "ReputationManagerV4",
+      "call": "setBonusReferenceAmount(1 wei)",
+      "bound": "> 0",
+      "succeeded": true,
+      "revert": null,
+      "monitorExit": 0,
+      "monitorCodes": [],
+      "detected": false,
+      "impact": "Every dust loan earns the full reputation bonus.",
+      "extra": null
+    },
+    {
+      "contract": "ReputationManagerV4",
+      "call": "authorizePool(ATTACKER EOA)",
+      "bound": "NONE — any address",
+      "succeeded": true,
+      "revert": null,
+      "monitorExit": 0,
+      "monitorCodes": [],
+      "detected": false,
+      "impact": "THE BIG ONE. An arbitrary address becomes able to call recordBorrow / recordLoanCompletion / recordDefault, i.e. to write reputation and credit capacity for ANY agent, directly.",
+      "extra": null
+    },
+    {
+      "contract": "ReputationManagerV4",
+      "call": "revokePool(the live marketplace)",
+      "bound": "none",
+      "succeeded": true,
+      "revert": null,
+      "monitorExit": 0,
+      "monitorCodes": [],
+      "detected": false,
+      "impact": "Bricks repayLoan AND liquidateLoan protocol-wide — both call into the manager — with NO pause flag to show for it.",
+      "extra": {
+        "repayBricked": true,
+        "repayRevert": "Only authorized pools",
+        "liquidateBricked": true,
+        "liquidateRevert": "Only authorized pools"
+      }
+    },
+    {
+      "contract": "ReputationManagerV4",
+      "call": "setValidationRegistry(hostile contract)",
+      "bound": "none",
+      "succeeded": true,
+      "revert": null,
+      "monitorExit": 0,
+      "monitorCodes": [],
+      "detected": false,
+      "impact": "creditLimitOf() calls into it. A reverting/hostile registry can brick EVERY credit-limit read, hence requestLoan, for every agent.",
+      "extra": {
+        "requestLoanBricked": true,
+        "revert": "Error: Transaction reverted without a reason string"
+      }
+    },
+    {
+      "contract": "ReputationManagerV4",
+      "call": "renounceOwnership()",
+      "bound": "OVERRIDDEN — reverts",
+      "succeeded": false,
+      "revert": "Ownership cannot be renounced",
+      "monitorExit": null,
+      "monitorCodes": [],
+      "detected": false,
+      "impact": "Blocked by design.",
+      "extra": null
+    },
+    {
+      "contract": "AgentRegistryV2",
+      "call": "deactivateAgent(agentId)",
+      "bound": "none",
+      "succeeded": true,
+      "revert": null,
+      "monitorExit": 0,
+      "monitorCodes": [],
+      "detected": false,
+      "impact": "Per-agent kill switch. Blocks createAgentPool/requestLoan for that agent; repayment stays open.",
+      "extra": null
+    },
+    {
+      "contract": "AgentRegistryV2",
+      "call": "pause()",
+      "bound": "none",
+      "succeeded": true,
+      "revert": null,
+      "monitorExit": 0,
+      "monitorCodes": [],
+      "detected": false,
+      "impact": "Blocks NEW registrations. Does NOT block NFT transfers or anything on the marketplace.",
+      "extra": null
+    },
+    {
+      "contract": "AgentRegistryV2",
+      "call": "transferOwnership(hostile) — ONE STEP",
+      "bound": "plain Ownable",
+      "succeeded": true,
+      "revert": null,
+      "monitorExit": 0,
+      "monitorCodes": [],
+      "detected": false,
+      "impact": "Registry control moves IMMEDIATELY, in one transaction, with no acceptance step and no way back.",
+      "extra": {
+        "newOwner": "0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199"
+      }
+    },
+    {
+      "contract": "AgentRegistryV2",
+      "call": "renounceOwnership()",
+      "bound": "NOT OVERRIDDEN",
+      "succeeded": true,
+      "revert": null,
+      "monitorExit": 0,
+      "monitorCodes": [],
+      "detected": false,
+      "impact": "PERMANENTLY orphans the registry. deactivateAgent — the runbook's recommended per-agent kill switch — and registry pause are gone for ever. Nothing can restore them.",
+      "extra": {
+        "ownerAfter": "0x0000000000000000000000000000000000000000",
+        "deactivateStillPossible": false
+      }
+    },
+    {
+      "contract": "AgentCreditFaucet",
+      "call": "drain(full balance)",
+      "bound": "<= faucet balance",
+      "succeeded": true,
+      "revert": null,
+      "monitorExit": 0,
+      "monitorCodes": [],
+      "detected": false,
+      "impact": "Empties the faucet to the owner. Bounded by the faucet balance (19 USDC on mainnet today).",
+      "extra": null
+    },
+    {
+      "contract": "AgentCreditFaucet",
+      "call": "setClaimAmount(100 USDC)",
+      "bound": "<= 100 USDC",
+      "succeeded": true,
+      "revert": null,
+      "monitorExit": 0,
+      "monitorCodes": [],
+      "detected": false,
+      "impact": "Drains the faucet faster through claims.",
+      "extra": null
+    },
+    {
+      "contract": "AgentCreditFaucet",
+      "call": "setMaxEligibleAgentId(max)",
+      "bound": "NONE",
+      "succeeded": true,
+      "revert": null,
+      "monitorExit": 0,
+      "monitorCodes": [],
+      "detected": false,
+      "impact": "Opens the faucet to every agent, present and future.",
+      "extra": null
+    },
+    {
+      "contract": "AgentCreditFaucet",
+      "call": "transferOwnership(hostile) — ONE STEP",
+      "bound": "plain Ownable",
+      "succeeded": true,
+      "revert": null,
+      "monitorExit": 0,
+      "monitorCodes": [],
+      "detected": false,
+      "impact": "Immediate, one transaction.",
+      "extra": null
+    },
+    {
+      "contract": "AgentCreditFaucet",
+      "call": "renounceOwnership()",
+      "bound": "NOT OVERRIDDEN",
+      "succeeded": true,
+      "revert": null,
+      "monitorExit": 0,
+      "monitorCodes": [],
+      "detected": false,
+      "impact": "Permanently strands whatever USDC the faucet holds.",
+      "extra": null
+    }
+  ],
+  "summary": {
+    "stateChangingOwnerCallsEnumerated": 34,
+    "succeeded": 29,
+    "blockedByDesign": 5,
+    "detectedByTheMonitor": 6,
+    "invisibleToTheMonitor": [
+      "MarketplaceV6.2: setPlatformFeeRate(500)",
+      "MarketplaceV6.2: setMinSupplyAmount(100 USDC)",
+      "MarketplaceV6.2: setMinHoldForReputationReward(7d)",
+      "MarketplaceV6.2: setBindBorrowToPoolCreator(false)",
+      "MarketplaceV6.2: withdrawFees(all)",
+      "MarketplaceV6.2: resetPoolAccounting(agentId)",
+      "MarketplaceV6.2: compactPoolLenders(agentId)",
+      "ReputationManagerV4: setReputationRateLimit(0, 1)",
+      "ReputationManagerV4: setScoringParameters(50, 0, 0, 1 wei)",
+      "ReputationManagerV4: setLatePenaltyParameters(0,0,0)",
+      "ReputationManagerV4: setBonusReferenceAmount(1 wei)",
+      "ReputationManagerV4: authorizePool(ATTACKER EOA)",
+      "ReputationManagerV4: revokePool(the live marketplace)",
+      "ReputationManagerV4: setValidationRegistry(hostile contract)",
+      "AgentRegistryV2: deactivateAgent(agentId)",
+      "AgentRegistryV2: pause()",
+      "AgentRegistryV2: transferOwnership(hostile) — ONE STEP",
+      "AgentRegistryV2: renounceOwnership()",
+      "AgentCreditFaucet: drain(full balance)",
+      "AgentCreditFaucet: setClaimAmount(100 USDC)",
+      "AgentCreditFaucet: setMaxEligibleAgentId(max)",
+      "AgentCreditFaucet: transferOwnership(hostile) — ONE STEP",
+      "AgentCreditFaucet: renounceOwnership()"
+    ]
+  },
+  "fullHostileChain": {
+    "transactionsFromTheOwnerKey": [
+      "rep.authorizePool(attacker)",
+      "rep.setReputationRateLimit(0,1)",
+      "rep.setScoringParameters(50,0,0,1)",
+      "rep.setBonusReferenceAmount(1 wei)",
+      "rep.setDefaultLockout(0)",
+      "rep.setTierLimits(all MAX)",
+      "rep.setLadderParameters(10, MAX, MAX, 1s)",
+      "rep.recordBorrow + rep.recordLoanCompletion x N (forged, from the authorized EOA)"
+    ],
+    "forged": {
+      "ownerTxCount": 35,
+      "forgedRecordCallPairs": 14,
+      "score": 800,
+      "maxRepaidPrincipal": 10000,
+      "creditLimit": 10000,
+      "collateralPct": 0,
+      "requiredSelfStake": 500
+    },
+    "drawAttempted": 5561,
+    "drawSucceeded": true,
+    "drawRevert": null,
+    "attackerCashOut": 5561,
+    "attackerOwnCapitalAtRisk": 561,
+    "victimLenderPrincipal": 5000,
+    "monitorAfterTheWholeChain": {
+      "exitCode": 1,
+      "codes": [
+        "CP-CHANGED(WARN)"
+      ]
+    },
+    "timeToDetect": "the next scheduled 30-minute monitor run, and only via CP-CHANGED (WARN) on the tier/ladder fields. authorizePool, the scoring parameters and the forged reputation writes are NOT checked at all."
+  },
+  "provablyCannot": [
+    {
+      "attempt": "raise a tier limit above the immutable MAX_TIER_LIMIT",
+      "blocked": true,
+      "revert": "Tier limit exceeds ceiling"
+    },
+    {
+      "attempt": "set creditMultiple above 10",
+      "blocked": true,
+      "revert": "creditMultiple too high"
+    },
+    {
+      "attempt": "set growthStep above MAX_TIER_LIMIT",
+      "blocked": true,
+      "revert": "growthStep exceeds ceiling"
+    },
+    {
+      "attempt": "set the platform fee above 5 %",
+      "blocked": true,
+      "revert": "Fee too high"
+    },
+    {
+      "attempt": "set minSupplyAmount above 100 USDC",
+      "blocked": true,
+      "revert": "Min supply too high (>100 USDC)"
+    },
+    {
+      "attempt": "set the default lockout beyond 2 years",
+      "blocked": true,
+      "revert": "Lockout too long"
+    },
+    {
+      "attempt": "re-open migration (setMigrationFinalized)",
+      "blocked": true,
+      "revert": "Migration finalized"
+    },
+    {
+      "attempt": "mint a lender position (seedPosition)",
+      "blocked": true,
+      "revert": "Migration finalized"
+    },
+    {
+      "attempt": "mint pool liquidity (seedPool)",
+      "blocked": true,
+      "revert": "Migration finalized"
+    },
+    {
+      "attempt": "withdraw more than accumulatedFees",
+      "blocked": true,
+      "revert": "Insufficient fees"
+    },
+    {
+      "attempt": "renounce marketplace ownership",
+      "blocked": true,
+      "revert": "Ownership cannot be renounced"
+    },
+    {
+      "attempt": "renounce reputation-manager ownership",
+      "blocked": true,
+      "revert": "Ownership cannot be renounced"
+    },
+    {
+      "attempt": "liquidate a loan that is not overdue",
+      "blocked": true,
+      "revert": "Loan not overdue"
+    },
+    {
+      "attempt": "liquidate while paused",
+      "blocked": true,
+      "revert": "EnforcedPause()"
+    },
+    {
+      "attempt": "transfer an agent NFT it does not hold",
+      "blocked": true,
+      "revert": "ERC721InsufficientApproval(\"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266\", 3)"
+    },
+    {
+      "attempt": "set a reputation score directly (no such function)",
+      "blocked": true,
+      "revert": "no such function on ReputationManagerV4"
+    }
+  ],
+  "containment": [
+    {
+      "option": "rotate every owner to a fresh cold wallet",
+      "transactionsRequired": 6,
+      "steps": [
+        {
+          "step": "marketplace.transferOwnership(cold)",
+          "ok": true,
+          "revert": null
+        },
+        {
+          "step": "marketplace.acceptOwnership() FROM COLD",
+          "ok": true,
+          "revert": null
+        },
+        {
+          "step": "reputation.transferOwnership(cold)",
+          "ok": true,
+          "revert": null
+        },
+        {
+          "step": "reputation.acceptOwnership() FROM COLD",
+          "ok": true,
+          "revert": null
+        },
+        {
+          "step": "registry.transferOwnership(cold) [ONE STEP]",
+          "ok": true,
+          "revert": null
+        },
+        {
+          "step": "faucet.transferOwnership(cold) [ONE STEP]",
+          "ok": true,
+          "revert": null
+        }
+      ],
+      "oldKeyNeutralisedImmediately": true,
+      "oldKeyProbes": [
+        {
+          "call": "marketplace.pause() from the OLD key",
+          "stillWorks": false,
+          "revert": "OwnableUnauthorizedAccount(\"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266\")"
+        },
+        {
+          "call": "reputation.authorizePool from the OLD key",
+          "stillWorks": false,
+          "revert": "OwnableUnauthorizedAccount(\"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266\")"
+        },
+        {
+          "call": "registry.deactivateAgent from the OLD key",
+          "stillWorks": false,
+          "revert": "OwnableUnauthorizedAccount(\"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266\")"
+        }
+      ],
+      "note": "Only possible while you STILL control the key. Six transactions, two of which must be signed by the new wallet (Ownable2Step). The registry and faucet move in one step each, so a typo there is unrecoverable."
+    }
+  ]
+}

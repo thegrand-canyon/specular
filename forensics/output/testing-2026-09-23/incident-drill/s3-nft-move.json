@@ -1,0 +1,92 @@
+{
+  "scenario": "S3 — agent NFT transferred mid-loan (F-01 class)",
+  "agentId": "3",
+  "loanId": 4,
+  "loan": {
+    "principal": 100,
+    "collateral": 100
+  },
+  "afterTransfer": {
+    "ownerOf": "0xFABB0ac9d68B0B445fB7357272Ff202C5651694a",
+    "addressToAgentId_seller": 0,
+    "addressToAgentId_buyer": 3,
+    "poolAgentAddress": "0xBcd4042DE499D14e55001CcbB24a551F3b954096",
+    "loanBorrower": "0xBcd4042DE499D14e55001CcbB24a551F3b954096",
+    "sellerStillHoldsLenderPosition": 0,
+    "requiredSelfStakeView": 0,
+    "transferGas": 82409
+  },
+  "detection": {
+    "exitCode": 1,
+    "codes": [
+      "NFT-MOVED(WARN)"
+    ],
+    "nftDetectorFired": true,
+    "severity": "WARN",
+    "alertLatched": true,
+    "monitorRuntimeMs": 232
+  },
+  "whoCanDoWhat": [
+    {
+      "label": "stranger repays the loan",
+      "ok": false,
+      "revert": "Not the borrower"
+    },
+    {
+      "label": "ORIGINAL borrower (seller) repays",
+      "ok": true,
+      "revert": null
+    },
+    {
+      "label": "CURRENT NFT holder (buyer) repays",
+      "ok": true,
+      "revert": null
+    },
+    {
+      "label": "buyer requests a NEW loan (M-1 lever ON)",
+      "ok": false,
+      "revert": "Borrow restricted to pool creator"
+    },
+    {
+      "label": "seller requests a new loan after selling the NFT",
+      "ok": false,
+      "revert": "Not a registered agent"
+    },
+    {
+      "label": "buyer creates a pool for the transferred agent",
+      "ok": false,
+      "revert": "Pool already exists"
+    }
+  ],
+  "branchA_buyerRepays": {
+    "repaidBy": "current NFT holder (buyer)",
+    "loanState": 2,
+    "collateralReturnedTo_seller": 100,
+    "buyerNetSpend": 100.287671,
+    "collateralAmount": 100,
+    "scoreBefore": 100,
+    "scoreAfter": 105,
+    "maxRepaidPrincipal": 100,
+    "gasUsed": 333821,
+    "monitorAfter": {
+      "exitCode": 0,
+      "codes": []
+    }
+  },
+  "branchB_sellerRepays": {
+    "repaidBy": "original borrower (seller), who no longer owns the agent",
+    "loanState": 2,
+    "sellerNetChange": -0.287671,
+    "scoreAfter": 105,
+    "note": "reputation still accrues to the agentId — i.e. to the BUYER, who now owns it"
+  },
+  "branchC_ownerLiquidates": {
+    "liquidationWorksAfterTransfer": true,
+    "revert": null,
+    "loanState": 3,
+    "defaultRecordedAgainstAgentId": 1,
+    "buyerLockedOut": true,
+    "sellerLenderPositionAfter": 0,
+    "collateralCoveredPrincipal": true
+  }
+}

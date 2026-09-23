@@ -71,9 +71,12 @@ Every tool requires `network`. There is no default, because two of the three mov
 
 | `network` | What | Money |
 |-----------|------|-------|
-| `arc-staging` | Arc testnet, V6-staging stack | test USDC (start here) |
-| `base` | Base mainnet | **real USDC** |
-| `arc-mainnet` | Arc mainnet | **real USDC** |
+| `arc-staging` | Arc testnet, V6.2 / V7 stack | test USDC (start here) |
+| `base` | Base mainnet, V6.1 / V3 stack | **real USDC** |
+| `arc-mainnet` | Arc mainnet, V6.2 / V7 stack (since 2026-09-23) | **real USDC** |
+
+Generations differ per network and the V7 networks expose tools the others do not. Never hardcode
+a generation: call `get_protocol_status` and branch on `capabilities.v62` / `capabilities.reputationV4`.
 
 Contract addresses are pinned server-side from the repo's `src/config/*.json`; a client cannot redirect a call to
 another contract.
@@ -84,6 +87,11 @@ Read: `list_networks`, `get_network_info`, `get_protocol_status`, `check_credit_
 `get_pool_details`, `get_loan_status`, `get_agent_loans`, `get_lending_positions`, `get_transaction`;
 V6.1-only (clear "not supported" error on older deployments): `preview_repayment` (exact amount `repayLoan` pulls now,
 incl. late interest — size the repay approval from this), `can_top_up`, `get_active_loan_ids`.
+**V6.2/V7-only** (same "not supported" error below V6.2 — it refuses rather than returning a misleading zero):
+`required_self_stake` (the first-loss stake the pool creator must hold to carry a given exposure) and
+`get_self_stake` (current stake and whether it is locked). On a V7 network these gate borrowing at any
+tier below 100 % collateral, so check them **before** building a `prepare_request_loan` — a loan that
+clears your credit limit can still revert on the self-stake requirement.
 
 Prepare (unsigned): `prepare_register_agent`, `prepare_create_pool`, `prepare_approve_usdc`, `prepare_supply_liquidity`,
 `prepare_withdraw_liquidity`, `prepare_request_loan`, `prepare_repay_loan`, `prepare_claim_interest`.
@@ -144,7 +152,7 @@ print(r.json()['result']['structuredContent'])
 - **Rate limits**: per-IP sliding window (default 120/min; broadcast 20/min). `429` carries `Retry-After`.
 - **Body limit**: 256 KB. **CORS**: configurable allow-list.
 - **Staleness**: every read includes `rpc.ageSeconds`/`rpc.stale` (latest block older than 5 minutes -> `stale: true` and a warning).
-- **Amount caps**: 100,000 USDC per prepared/relayed call (operator-configurable), loans capped at 50,000 USDC.
+- **Amount caps**: 100,000 USDC per prepared/relayed call (operator-configurable), loans capped at 50,000 USDC. These are **offline transport sanity bounds, not credit limits** — they only reject absurd inputs before they reach a node. Your actual limit is always on-chain and much lower: read `get_protocol_status` → `creditTiers` (plus `maxTierLimitUsdc`) and `check_credit_score` → `credit.creditLimitUsdc`. On Arc mainnet under V7 the immutable ceiling is 10,000 USDC and a fresh agent starts at 100.
 - **Errors**: tool errors (bad address, unknown loan, ...) come back as `isError: true` with `{error, field?}`; protocol errors (unknown tool, malformed `tools/call` params) are JSON-RPC `-32602`, unknown methods `-32601`. REST answers HTTP 400/401/429/502 with `{error}`; **503 + `Retry-After`** when the server is at its concurrency cap *or* when a network's upstream RPC endpoints are all cold (`{error, network, retryAfterSeconds}`); **504 + `Retry-After`** when a request exceeds the server's time budget. Retry on 503/504 after the hinted delay; they are always fast and never a hang.
 - **Upstream resilience**: each network is served from a list of RPC endpoints with health-aware failover, exponential backoff and automatic recovery, plus a per-network circuit breaker. Reads are cached (chain head ~2 s, `eth_call` ~4 s, a `REPAID`/`DEFAULTED` loan or a mined transaction ~5 min) and identical concurrent reads share one upstream call. A cached body is labelled `cached: true` with `cacheAgeMs`, and `rpc.ageSeconds`/`rpc.stale` are always recomputed for the moment you read them. Anything that must be live — a nonce, a relay, a `pending` tag, an unmined receipt — is never cached.
 - **Batches**: a JSON-RPC batch is answered with an array (even when only one member produces a response); an empty batch is `-32600`.

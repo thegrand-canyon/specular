@@ -1,0 +1,136 @@
+{
+  "scenario": "S1 — insolvency / phantom liquidity",
+  "slotMapVerified": 13,
+  "cases": {
+    "1A_phantom_liquidity": {
+      "engineered": "pool.availableLiquidity inflated by 500 USDC (books wrong, USDC intact)",
+      "usdcBalanceUnchanged": true,
+      "detection": {
+        "exitCode": 1,
+        "codes": [
+          "S1(CRITICAL)",
+          "SOLV(CRITICAL)",
+          "POOL-SLACK(WARN)"
+        ],
+        "criticals": [
+          "S1",
+          "SOLV"
+        ],
+        "monitorRuntimeMs": 232,
+        "alertLatched": true
+      },
+      "remedy_resetPoolAccounting": {
+        "worked": true,
+        "revert": null,
+        "availableLiquidityBefore": 1900,
+        "availableLiquidityAfter": 1900,
+        "restoredExactly": true,
+        "monitorAfter": {
+          "exitCode": 0,
+          "codes": []
+        },
+        "lenderCanStillExit": true
+      },
+      "verdict": "RECOVERABLE. The USDC never left; resetPoolAccounting rebuilds availableLiquidity from Σ positions + Σ unclaimed interest − totalLoaned and the monitor goes clean. Lenders lose nothing."
+    },
+    "1B_real_shortfall": {
+      "engineered": "11000.287671 USDC moved OUT of the marketplace; every storage figure left untouched",
+      "shortfall": {
+        "usdcBalanceBefore": 12000.287671,
+        "usdcBalanceAfter": 1000,
+        "lenderClaims": 2000,
+        "poolAvailable": 1900
+      },
+      "detection": {
+        "exitCode": 1,
+        "codes": [
+          "S1(CRITICAL)",
+          "SOLV(CRITICAL)"
+        ],
+        "criticals": [
+          "S1",
+          "SOLV"
+        ],
+        "monitorRuntimeMs": 228,
+        "alertLatched": true
+      },
+      "remedies": [
+        {
+          "lever": "resetPoolAccounting(agentId)",
+          "executed": true,
+          "revert": null,
+          "availableLiquidityAfter": 1900,
+          "usdcBalanceAfter": 1000,
+          "stillInsolvent": true,
+          "monitorAfter": {
+            "exitCode": 1,
+            "codes": [
+              "S1(CRITICAL)",
+              "SOLV(CRITICAL)"
+            ]
+          },
+          "verdict": "Does NOT help. It rebuilds the books from the lender POSITIONS — i.e. from the claims — so it re-asserts liquidity the contract does not hold. It repairs bookkeeping, never a shortfall."
+        },
+        {
+          "lever": "do nothing — let lenders withdraw",
+          "executed": true,
+          "race": [
+            {
+              "lender": "lenderP",
+              "requested": 1000,
+              "got": 1000,
+              "ok": true,
+              "revert": null
+            },
+            {
+              "lender": "lenderQ",
+              "requested": 900,
+              "got": 0,
+              "ok": false,
+              "revert": "ERC20InsufficientBalance(\"0xa82fF9aFd8f496c3d6ac40E2a0F282E47488CFc9\", 0, 900000000)"
+            }
+          ],
+          "verdict": "First-come-first-served. The early lender is paid in full out of the remaining USDC; the late one reverts on the ERC-20 transfer. The socialisation logic only runs on LIQUIDATION, not on a bare shortfall, so the loss is NOT shared."
+        },
+        {
+          "lever": "pause()",
+          "executed": true,
+          "lenderExitBlocked": true,
+          "lenderExitRevert": "EnforcedPause()",
+          "ownerCanStillTakeFees": true,
+          "monitorAfter": {
+            "exitCode": 1,
+            "codes": [
+              "S1(CRITICAL)",
+              "SOLV(CRITICAL)",
+              "PAUS(CRITICAL)"
+            ]
+          },
+          "verdict": "Stops the race by freezing EVERYONE, including repayment and your own liquidateLoan. It converts a race into a total freeze; it recovers nothing. Note the owner can still withdrawFees out of a pool that cannot pay its lenders."
+        },
+        {
+          "lever": "setMinSupplyAmount(max) + registry.deactivateAgent(agentId)",
+          "executed": true,
+          "newLenderBlocked": true,
+          "newLenderRevert": "Below minimum supply",
+          "newBorrowBlocked": true,
+          "newBorrowRevert": "Agent deactivated",
+          "existingLenderCanStillExit": true,
+          "borrowerCanStillRepay": true,
+          "verdict": "STOPS THE BLEEDING WITHOUT FREEZING ANYONE. New money is gated and the agent can take no more credit, while exits and repayments stay open. This is the correct first move; it still recovers nothing."
+        }
+      ],
+      "verdict": "NOT RECOVERABLE ON-CHAIN. V6.2 has no lever that puts USDC back: withdrawFees only moves money OUT, seedPool/seedPosition are dead (migration finalized), resetPoolAccounting rewrites the books rather than the balance, and socialisation only runs inside liquidateLoan on a specific defaulted loan. The only way to make lenders whole is an off-chain top-up: send USDC to the contract. The honest answer is \"you cannot repair it, you can only stop the bleeding and then decide who is paid\".",
+      "offChainTopUp": {
+        "lever": "send USDC to the marketplace address from treasury",
+        "amount": 11000.287671,
+        "monitorAfter": {
+          "exitCode": 0,
+          "codes": []
+        },
+        "lendersWholeAgain": true,
+        "verdict": "The ONLY path that makes lenders whole. It is a plain ERC-20 transfer to the contract; no contract function is involved. Note the monitor then reads the restored balance as normal, not as a surplus, because the shortfall is exactly cancelled."
+      }
+    }
+  }
+}

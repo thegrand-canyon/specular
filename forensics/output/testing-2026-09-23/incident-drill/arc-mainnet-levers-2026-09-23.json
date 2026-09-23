@@ -1,0 +1,83 @@
+{
+  "rpc": "https://rpc.mainnet.arc.io",
+  "chainId": 5042,
+  "block": 22289701,
+  "marketplace": {
+    "address": "0xCb23f2fb03Bfd4775Cc0e76E28f64c1e545071be",
+    "VERSION": "V6.2",
+    "owner": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+    "pendingOwner": "0x0000000000000000000000000000000000000000",
+    "paused": "false",
+    "platformFeeRate": "100",
+    "minSupplyAmount": "10000000",
+    "minHoldForReputationReward": "86400",
+    "bindBorrowToPoolCreator": "true",
+    "migrationFinalized": "true",
+    "accumulatedFees": "14",
+    "totalPools": "1",
+    "nextLoanId": "2",
+    "MAX_LENDERS_PER_POOL": "50",
+    "MAX_ACTIVE_LOANS_PER_AGENT": "10"
+  },
+  "reputation": {
+    "address": "0x12953e732e5D1aFdA640554125367d1CEC2ac4FB",
+    "VERSION": "V4",
+    "owner": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+    "pendingOwner": "0x0000000000000000000000000000000000000000",
+    "MAX_TIER_LIMIT": "10000000000",
+    "creditMultiple": "2",
+    "growthStep": "100000000",
+    "bootstrapLimit": "100000000",
+    "refDuration": "604800",
+    "defaultLockout": "15552000",
+    "maxReputationGainPerWindow": "5",
+    "reputationGainWindow": "86400",
+    "onTimeRepaymentBonus": "10",
+    "defaultPenaltyBase": "50",
+    "defaultPenaltyLarge": "100",
+    "largeLoanThreshold": "1000000000",
+    "bonusReferenceAmount": "100000000",
+    "latePenaltyBase": "10",
+    "latePenaltyPerDay": "5",
+    "latePenaltyMax": "100",
+    "tierLimits": [
+      "1000000000",
+      "5000000000",
+      "10000000000",
+      "10000000000",
+      "2500000000",
+      "5000000000"
+    ],
+    "tierCollateralPct": [
+      "100",
+      "100",
+      "100",
+      "75",
+      "0",
+      "0"
+    ],
+    "tierInterestBps": [
+      "1500",
+      "1500",
+      "1000",
+      "1000",
+      "700",
+      "500"
+    ],
+    "marketplaceAuthorized": "true",
+    "legacyMarketplaceAuthorized": "false"
+  },
+  "registry": {
+    "address": "0x6F1EbF50290f6D4A9947E9EB77f98a683684fBF5",
+    "owner": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+    "paused": "false",
+    "totalAgents": "1"
+  },
+  "faucet": {
+    "address": "0xD854F80031A8d0CB166587AafA0969Da8C3757bF",
+    "owner": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+    "claimAmount": "1000000",
+    "maxEligibleAgentId": "100",
+    "balance": "19000000"
+  }
+}
