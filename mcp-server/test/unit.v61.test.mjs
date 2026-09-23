@@ -86,6 +86,14 @@ function mock({ v61, loan, allowance = 0n, balance = 10_000_000_000n, canTopUp =
       if (!v61) throw noSelector();
       return activeIds;
     },
+    // [X-6] the V6 answer is computed by walking agentLoans[], as both SDKs do
+    agentLoans: async (_addr, i) => {
+      if (Number(i) < activeIds.length) return activeIds[Number(i)];
+      throw Object.assign(new Error('missing revert data'), {
+        code: 'CALL_EXCEPTION', data: null, reason: null,
+        info: { error: { code: 3, message: 'execution reverted' } },
+      });
+    },
   };
   const registry = { addressToAgentId: async () => 1n, ownerOf: async () => ownerOf };
   const usdc = { allowance: async () => allowance, balanceOf: async () => balance };
@@ -240,11 +248,21 @@ test('the three V6.1 read tools are registered, GET-bound and in the OpenAPI doc
     assert.equal(t.rest.method, 'GET');
     assert.equal(t.rest.path, path);
     assert.ok(buildOpenApi('http://x').paths[path]?.get, `${path} in openapi`);
-    assert.match(t.description, /V6.1 only/);
+    // [X-6] these are no longer "V6.1 only" — they answer on every generation
+    // and say which path produced the answer. The description must still tell
+    // the caller that the two generations differ.
+    assert.doesNotMatch(t.description, /V6\.1 only/);
+    assert.match(t.description, /V6/);
   }
 });
 
-test('preview_repayment on V6.1 returns the exact quote; on V6 a clear "not supported" 400', async () => {
+// [X-6 2026-09-23] These three read tools used to answer "not supported on this
+// deployment" on V6. Both SDKs answer all three correctly there (V6 charges the
+// nominal fixed-term interest; V6 has no tranche accounting so a top-up is never
+// refused; the active set is the agentLoans[] walk), so the hosted server was the
+// odd one out — three clients, three different answers to the same question.
+// They now answer on every generation and say which path produced the answer.
+test('preview_repayment: exact quote on V6.1, nominal fixed-term quote on V6', async () => {
   const loan = loanAt({ startedAgo: 17n * DAY });
   mock({ v61: true, loan });
   const r = await callTool('preview_repayment', { network: NET, loanId: LOAN_ID });
@@ -262,10 +280,14 @@ test('preview_repayment on V6.1 returns the exact quote; on V6 a clear "not supp
   assert.ok(r.rpc.blockNumber === 100);
 
   mock({ v61: false, loan });
-  await assert.rejects(
-    callTool('preview_repayment', { network: NET, loanId: LOAN_ID }),
-    (e) => e instanceof UnsupportedOnDeploymentError && e instanceof ValidationError && e.status === 400 && /preview_repayment is not supported on this deployment/.test(e.message) && /reports version V6/.test(e.message),
-  );
+  const v6 = await callTool('preview_repayment', { network: NET, loanId: LOAN_ID });
+  assert.equal(v6.marketplaceVersion, 'V6');
+  assert.equal(v6.source, 'calculateInterest');
+  assert.equal(v6.late, false, 'V6 charges the fixed term, so a loan is never "late" for pricing');
+  assert.equal(v6.totalRepaymentUsdc, ethers.formatUnits(P + interestForSeconds(P, RATE, DUR), 6));
+  assert.match(v6.note, /V6 deployment/);
+  // ...and it agrees with the SDKs' answer for the same loan
+  assert.equal(v6.totalRepaymentUsdc, (await callTool('get_loan_status', { network: NET, loanId: LOAN_ID })).repayment.totalRepaymentUsdc);
 });
 
 test('preview_repayment: non-existent or non-ACTIVE loan is a validation error, not a raw revert', async () => {
@@ -296,8 +318,13 @@ test('can_top_up on V6.1 (refused / allowed / no position); on V6 "not supported
 
   await assert.rejects(callTool('can_top_up', { network: NET, agentId: 1, lender: 'nope' }), /lender must be a 0x-prefixed/);
 
-  mock({ v61: false, loan });
-  await assert.rejects(callTool('can_top_up', { network: NET, agentId: 1, lender: HOLDER }), (e) => e instanceof UnsupportedOnDeploymentError && /can_top_up is not supported on this deployment/.test(e.message));
+  mock({ v61: false, loan, position: 5_000_000n });
+  r = await callTool('can_top_up', { network: NET, agentId: 1, lender: HOLDER });
+  assert.equal(r.canTopUp, true, 'V6 has no tranche accounting: a top-up can never forfeit in-flight interest');
+  assert.equal(r.marketplaceVersion, 'V6');
+  assert.equal(r.hasPosition, true);
+  assert.equal(r.suppliedUsdc, '5.0');
+  assert.match(r.note, /predates the pending-tranche accounting/);
 });
 
 test('get_active_loan_ids on V6.1 lists the active set with loan details; on V6 "not supported"', async () => {
@@ -310,8 +337,14 @@ test('get_active_loan_ids on V6.1 lists the active set with loan details; on V6 
   assert.equal(r.loans[0].state, 'ACTIVE');
   assert.equal(r.loans[0].principalUsdc, '1000.0');
 
-  mock({ v61: false, loan });
-  await assert.rejects(callTool('get_active_loan_ids', { network: NET, agentId: 1 }), (e) => e instanceof UnsupportedOnDeploymentError && /get_active_loan_ids is not supported/.test(e.message));
+  assert.equal(r.source, 'getActiveLoanIds');
+
+  mock({ v61: false, loan, activeIds: [26n] });
+  const v6 = await callTool('get_active_loan_ids', { network: NET, agentId: 1 });
+  assert.equal(v6.marketplaceVersion, 'V6');
+  assert.equal(v6.source, 'agentLoans-walk', 'the V6 answer is computed the way both SDKs compute it');
+  assert.deepEqual(v6.loanIds, [26]);
+  assert.equal(v6.loans[0].state, 'ACTIVE');
 });
 
 test('get_loan_status.repayment uses previewRepayment on V6.1 (late-aware) and calculateInterest on V6', async () => {

@@ -107,6 +107,51 @@ export function getContracts(cfg: NetworkConfig): Contracts {
 // the process (contracts are not proxied, so a version cannot change under us).
 // ---------------------------------------------------------------------------
 
+/**
+ * [X-1 2026-09-23] Did this failure mean "the deployed bytecode has no such
+ * function", or "the RPC failed while I asked"?
+ *
+ * Only the former may answer a capability question. ethers v6 collapses BOTH a
+ * JSON-RPC `-32005 rate limit exceeded` and a genuine data-less revert into the
+ * same `CALL_EXCEPTION: missing revert data`, so the error class alone cannot
+ * decide it — but the underlying JSON-RPC error code can, and ethers preserves
+ * it on `info.error.code`. Measured on the live Arc endpoints 2026-09-23:
+ *   missing selector / array out of bounds -> {code: 3,      "execution reverted"}
+ *   rate limit                             -> {code: -32005, "rate limit exceeded"}
+ * Anything transport-shaped (HTTP 5xx, timeout, socket reset, our own transport
+ * errors) is transient by construction.
+ */
+const TRANSIENT_RPC_CODES = new Set([-32005, -32016, -32002, -32029, -32603, 429]);
+
+export function isTransientRpcFailure(e: unknown): boolean {
+  if (!e) return false;
+  if (isUpstreamUnavailable(e) || e instanceof UpstreamFailedError || isRequestDeadlineError(e)) return true;
+  const any = e as any;
+  // a revert that carries a payload is a definite contract-level answer
+  if (any.code === 'CALL_EXCEPTION' && ((any.data && any.data !== '0x') || any.reason)) return false;
+  const rpcCode = any?.info?.error?.code ?? any?.error?.code ?? any?.cause?.info?.error?.code;
+  if (typeof rpcCode === 'number') {
+    if (TRANSIENT_RPC_CODES.has(rpcCode)) return true;
+    if (rpcCode === 3) return false; // "execution reverted" — a definite answer
+  }
+  const msg = `${any.message ?? ''} ${any.shortMessage ?? ''} ${any?.info?.error?.message ?? ''}`;
+  if (/rate limit|too many requests|throttl|capacity|overloaded|try again|timeout|timed out|socket hang up|ECONN|EAI_AGAIN|fetch failed|network error|\b(429|500|502|503|504)\b/i.test(msg)) return true;
+  return ['TIMEOUT', 'NETWORK_ERROR', 'SERVER_ERROR', 'UNKNOWN_ERROR'].includes(any.code);
+}
+
+/** Raised when the chain could not be asked what generation it is. Never cached. */
+export class CapabilityUnknownError extends Error {
+  readonly status = 503;
+  constructor(cfg: NetworkConfig, which: 'marketplace' | 'reputation', address: string, cause: unknown) {
+    super(
+      `Could not determine the ${which} generation of ${cfg.name} ${address}: the RPC failed while probing it ` +
+      `(${describeRpcError(cause)}). Refusing to guess — guessing the older generation would publish a stale, ` +
+      'hardcoded credit-tier table and refuse the V7 views. Retry shortly.',
+    );
+    (this as any).cause = cause;
+  }
+}
+
 /** 'V6' -> 6, 'V6.1' -> 6.1, 'V6.2' -> 6.2. Unrecognised strings sort as 6 (most conservative). */
 export function versionOrdinal(v: string): number {
   const m = /^V(\d+)(?:\.(\d+))?$/.exec(String(v ?? '').trim());
@@ -144,7 +189,11 @@ export async function marketplaceCapabilities(cfg: NetworkConfig): Promise<Marke
   let version = 'V6';
   try {
     version = String(await c.marketplace.VERSION());
-  } catch {
+  } catch (e) {
+    // [X-1] Only a DEFINITE "no such selector" may answer this. A transient RPC
+    // failure is surfaced and NOT cached; caching it downgraded a V6.2/V4
+    // deployment to V6/V3 for the life of the process.
+    if (isTransientRpcFailure(e)) throw new CapabilityUnknownError(cfg, 'marketplace', cfg.addresses.marketplace, e);
     version = 'V6'; // selector absent -> pre-V6.1 deployment (empty revert / BAD_DATA)
   }
   const ordinal = versionOrdinal(version);
@@ -156,7 +205,8 @@ export async function marketplaceCapabilities(cfg: NetworkConfig): Promise<Marke
     // the pre-checks that exist to stop an "Insufficient self-stake" revert.
     try {
       await c.marketplace.requiredSelfStake(0, 0);
-    } catch {
+    } catch (e) {
+      if (isTransientRpcFailure(e)) throw new CapabilityUnknownError(cfg, 'marketplace', cfg.addresses.marketplace, e);
       v62 = false;
     }
   }
@@ -181,7 +231,11 @@ export async function reputationCapabilities(cfg: NetworkConfig): Promise<Reputa
   let version = 'V3';
   try {
     version = String(await c.reputation.VERSION());
-  } catch {
+  } catch (e) {
+    // [X-1] see marketplaceCapabilities: a transient failure here would publish
+    // the v3-constant tier table (25,000 / 50,000 USDC) for a V4 deployment
+    // whose real on-chain limits are 2,500 / 5,000.
+    if (isTransientRpcFailure(e)) throw new CapabilityUnknownError(cfg, 'reputation', cfg.addresses.reputation, e);
     version = 'V3'; // selector absent -> pre-V7 reputation manager
   }
   const caps = { version, v4: version !== 'V3' };

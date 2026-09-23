@@ -9,7 +9,7 @@
  * Approvals are always EXACT (never MaxUint256) and always to the marketplace.
  */
 import { ethers } from 'ethers';
-import { getContracts, marketplaceCapabilities, reputationCapabilities } from './chain.js';
+import { getContracts, isTransientRpcFailure, marketplaceCapabilities, reputationCapabilities } from './chain.js';
 import { IFACE, NetworkConfig } from './networks.js';
 import { activeLoanStartTimes, correctedCanTopUp, formatQuote, interestForSeconds, LOAN_STATES, repaymentQuote, TOP_UP_RACE_WARNING, TOP_UP_VIEW_BUG_WARNING } from './reads.js';
 import {
@@ -25,6 +25,27 @@ import {
   validateShortString,
   ValidationError,
 } from './validate.js';
+
+/**
+ * [X-8 2026-09-23] A pre-flight view the OLDEST deployed generation may not have.
+ *
+ * Base mainnet's V6 (2026-05) has no `minSupplyAmount`, `bindBorrowToPoolCreator`,
+ * `activeLoanCount` or `outstandingPrincipal`. Those calls sat unguarded inside
+ * `Promise.all` in the supply_liquidity and request_loan builders, so BOTH
+ * returned a raw 502 on Base — i.e. no agent could lend or borrow through the
+ * hosted server on the one network that moves real money through the oldest code.
+ *
+ * `null` means "this deployment does not expose that". A transient RPC failure is
+ * rethrown, so `null` never silently stands in for "the RPC failed".
+ */
+async function optionalView<T>(p: Promise<T>): Promise<T | null> {
+  try {
+    return await p;
+  } catch (e) {
+    if (isTransientRpcFailure(e)) throw e;
+    return null;
+  }
+}
 
 export const WRITE_ACTIONS = [
   'register_agent',
@@ -115,10 +136,30 @@ export interface PreparedTx {
 }
 
 const SIGNING_INSTRUCTIONS =
-  'Sign {chainId,to,data,value:0} with YOUR OWN wallet (set nonce/gas from your provider; gasEstimate is a hint), then broadcast it yourself or pass the raw signed hex to broadcast_signed_transaction. If `prerequisite` is present, send and confirm it first. This server never sees your private key.';
+  'Sign {chainId,to,data,value:0} with YOUR OWN wallet (set nonce/gas from your provider; gasEstimate is a hint), then broadcast it yourself or pass the raw signed hex to broadcast_signed_transaction. If `prerequisite` is present, send and confirm it first. ' +
+  // [X-12 2026-09-23] The exact-approval model's resting state is ZERO. Both SDKs
+  // revoke automatically when the main transaction fails (_withApprovalCleanup);
+  // this surface cannot, because you hold the key — so it has to say so. Measured
+  // in the 2026-09-23 write-parity round: 5 dangling allowances (1, 10, 200 and
+  // 50.616438 USDC) left standing after ordinary failed operations.
+  'IF THE MAIN TRANSACTION THEN FAILS OR YOU ABANDON IT, send prepare_approve_usdc with amount "0" and broadcast that too: the prerequisite approval is still standing until you do, and the exact-approval model\'s resting state is zero. ' +
+  'This server never sees your private key.';
 
-function realMoneyWarning(cfg: NetworkConfig): string[] {
-  return cfg.realMoney ? [`${cfg.name} is a REAL-MONEY network: this transaction moves real USDC.`] : [];
+/**
+ * [X-12] Actions whose prepared transaction moves USDC. `register_agent` and
+ * `create_pool` do not, and warning that they do contradicted their own
+ * humanReadableSummary ("No USDC moves.").
+ */
+const MOVES_USDC: ReadonlySet<WriteAction> = new Set<WriteAction>([
+  'approve_usdc', 'supply_liquidity', 'withdraw_liquidity', 'claim_interest', 'request_loan', 'repay_loan',
+]);
+
+function realMoneyWarning(cfg: NetworkConfig, action?: WriteAction): string[] {
+  if (!cfg.realMoney) return [];
+  if (action && !MOVES_USDC.has(action)) {
+    return [`${cfg.name} is a REAL-MONEY network. This particular transaction moves no USDC, but it is a real on-chain write and costs real gas.`];
+  }
+  return [`${cfg.name} is a REAL-MONEY network: this transaction moves real USDC.`];
 }
 
 /**
@@ -129,7 +170,7 @@ function realMoneyWarning(cfg: NetworkConfig): string[] {
 export function encodeAction(cfg: NetworkConfig, action: WriteAction, rawArgs: unknown, from: string): EncodedAction {
   const a = requireObject(rawArgs ?? {});
   const mp = cfg.addresses.marketplace;
-  const base = { warnings: realMoneyWarning(cfg), defaultGas: DEFAULT_GAS[action] };
+  const base = { warnings: realMoneyWarning(cfg, action), defaultGas: DEFAULT_GAS[action] };
 
   switch (action) {
     case 'register_agent': {
@@ -305,6 +346,14 @@ const REASON_MAP: Array<[RegExp, string]> = [
   [/Exceeds credit limit/i, 'Outstanding principal plus this amount exceeds your reputation-based credit limit. Repay existing loans or borrow less. On the V7 credit model the limit is min(tier limit, credit ladder) — and it is exactly 0 while an agent is LOCKED OUT after a default, so check check_credit_score.credit.model.lockedOut before assuming this is about the amount.'],
   [/Too many active loans/i, 'You already hold the maximum number of concurrent active loans. Repay one first.'],
   [/Pool not active/i, 'That pool is not active (wrong agentId?).'],
+  // [X-10 2026-09-23] MUST precede the /Below minimum supply/ entry: the V6.2
+  // WITHDRAW-side revert is "Remaining below minimum supply", which that pattern
+  // also matches — and it then answered a failed withdrawal with supply-side
+  // advice ("the pool CREATOR is exempt"), which is the opposite of the remedy.
+  [/Remaining below minimum supply/i, 'A PARTIAL withdrawal may not leave your position below the pool\'s minimum supply (see get_protocol_status.parameters.minSupplyUsdc). Either withdraw your position in FULL, or withdraw less so that at least the minimum remains.'],
+  // [X-10] The V6.2 reserved lender slot. AgentLiquidityMarketplaceV62 asks
+  // clients to surface this as a distinct refusal, not a generic capacity error.
+  [/Last slot reserved for agent self-stake/i, 'This pool\'s final lender slot is reserved for the agent\'s OWN first-loss self-stake, so a third-party lender cannot take it. This is not the same as the pool being full: the agent itself can still supply. Choose another pool.'],
   [/Below minimum supply/i, 'Amount is below the pool\'s minimum supply (see get_protocol_status.parameters.minSupplyUsdc). On a V6.2 deployment the pool CREATOR supplying into its own pool is exempt from this minimum, because that position is locked first-loss capital rather than a lender-slot squat.'],
   // [V7 / M2-c] The first-loss self-stake gate on AgentLiquidityMarketplaceV62.
   [/Insufficient self-stake/i, 'This deployment runs the V7 credit model: any exposure your collateral does not cover must already be backed by YOUR OWN first-loss capital supplied into YOUR OWN pool, at creditMultiple leverage. Call required_self_stake (or read prepare_request_loan\'s requiredSelfStakeUsdc) to get the figure, supply the shortfall into your own pool with prepare_supply_liquidity, then request the loan. That capital is locked until every loan is repaid and is seized before any third-party lender on a default.'],
@@ -323,6 +372,8 @@ const REASON_MAP: Array<[RegExp, string]> = [
   [/ERC20InsufficientAllowance|insufficient allowance|exceeds allowance/i, 'The marketplace is not approved to pull enough USDC from your wallet. Send the exact-amount approve_usdc transaction (see `prerequisite`) first.'],
   [/ERC20InsufficientBalance|exceeds balance|insufficient balance for transfer/i, 'Your wallet does not hold enough USDC for this transaction.'],
   [/Ownable|OwnableUnauthorizedAccount|caller is not the owner/i, 'This function is owner-only.'],
+  // [X-11] see CUSTOM_ERRORS below.
+  [/ERC721InvalidReceiver/i, 'This wallet cannot receive the agent NFT, so register_agent reverts. The usual cause is an EIP-7702 delegation designator on the EOA (or a contract wallet) whose delegate does not implement onERC721Received. Register from a plain EOA with no delegation code.'],
 ];
 
 const CUSTOM_ERRORS = new ethers.Interface([
@@ -332,6 +383,13 @@ const CUSTOM_ERRORS = new ethers.Interface([
   'error ReentrancyGuardReentrantCall()',
   'error OwnableUnauthorizedAccount(address account)',
   'error SafeERC20FailedOperation(address token)',
+  // [X-11 2026-09-23] AgentRegistryV2.register() _safeMints the agent NFT. An
+  // EOA carrying an EIP-7702 delegation designator has non-empty code, so OZ
+  // calls onERC721Received on the delegate, which reverts with this. Without the
+  // entry every client reported only "(unknown custom error) 0x64a0ae92".
+  'error ERC721InvalidReceiver(address receiver)',
+  'error ERC721InvalidSender(address sender)',
+  'error ERC721NonexistentToken(uint256 tokenId)',
 ]);
 
 export function explainRevert(e: unknown): { reason: string; plain: string } {
@@ -478,7 +536,8 @@ export async function prepareTx(cfg: NetworkConfig, action: WriteAction, rawArgs
         c.marketplace.agentPools(agentId),
         c.usdc.allowance(from, mp) as Promise<bigint>,
         c.usdc.balanceOf(from) as Promise<bigint>,
-        c.marketplace.minSupplyAmount() as Promise<bigint>,
+        // [X-8] absent on Base's 2026-05 V6 — null, not a 502
+        optionalView(c.marketplace.minSupplyAmount() as Promise<bigint>),
       ]);
       if (!pool.isActive) warnings.push(`Agent #${agentId} has no active pool; the transaction will revert.`);
       // [V7 / M2] On V6.2 the pool CREATOR supplying into its own pool is EXEMPT
@@ -487,7 +546,7 @@ export async function prepareTx(cfg: NetworkConfig, action: WriteAction, rawArgs
       // gate can legitimately require less than the minimum (a 50 USDC loan at the
       // 75%-collateral tier needs 6.25 USDC at k=2). Warning here would be wrong.
       let creatorExempt = false;
-      if (amt < minSupply && pool.isActive && String(pool.agentAddress).toLowerCase() === from.toLowerCase()) {
+      if (minSupply !== null && amt < minSupply && pool.isActive && String(pool.agentAddress).toLowerCase() === from.toLowerCase()) {
         const caps = await marketplaceCapabilities(cfg).catch(() => null);
         creatorExempt = Boolean(caps?.v62);
         if (creatorExempt) {
@@ -496,7 +555,7 @@ export async function prepareTx(cfg: NetworkConfig, action: WriteAction, rawArgs
           );
         }
       }
-      if (amt < minSupply && !creatorExempt) warnings.push(`Amount is below the minimum supply of ${formatUsdc(minSupply)} USDC.`);
+      if (minSupply !== null && amt < minSupply && !creatorExempt) warnings.push(`Amount is below the minimum supply of ${formatUsdc(minSupply)} USDC.`);
       if (amt > bal) warnings.push(`Wallet holds ${formatUsdc(bal)} USDC, less than the ${formatUsdc(amt)} USDC being supplied.`);
       // Top-up (an existing position) can be refused by the contract. The DEPLOYED canTopUp()
       // view is off by one block and can say "yes" to a top-up the tx then rejects, so mirror the
@@ -595,12 +654,13 @@ export async function prepareTx(cfg: NetworkConfig, action: WriteAction, rawArgs
       const [pool, limit, outstanding, collateralPct, rateBps, active, maxActive, bind, allowance, bal, paused] = await Promise.all([
         c.marketplace.agentPools(id),
         c.reputation.calculateCreditLimit(from) as Promise<bigint>,
-        c.marketplace.outstandingPrincipal(id) as Promise<bigint>,
+        // [X-8] the three below are absent on Base's 2026-05 V6 — null, not a 502
+        optionalView(c.marketplace.outstandingPrincipal(id) as Promise<bigint>),
         c.reputation.calculateCollateralRequirement(from) as Promise<bigint>,
         c.reputation.calculateInterestRate(from) as Promise<bigint>,
-        c.marketplace.activeLoanCount(id) as Promise<bigint>,
-        c.marketplace.MAX_ACTIVE_LOANS_PER_AGENT() as Promise<bigint>,
-        c.marketplace.bindBorrowToPoolCreator() as Promise<boolean>,
+        optionalView(c.marketplace.activeLoanCount(id) as Promise<bigint>),
+        optionalView(c.marketplace.MAX_ACTIVE_LOANS_PER_AGENT() as Promise<bigint>),
+        optionalView(c.marketplace.bindBorrowToPoolCreator() as Promise<boolean>),
         c.usdc.allowance(from, mp) as Promise<bigint>,
         c.usdc.balanceOf(from) as Promise<bigint>,
         c.marketplace.paused() as Promise<boolean>,
@@ -609,8 +669,9 @@ export async function prepareTx(cfg: NetworkConfig, action: WriteAction, rawArgs
       if (!pool.isActive) warnings.push(`Agent #${id} has no pool; send create_pool first.`);
       else if ((pool.availableLiquidity as bigint) < amt) warnings.push(`Pool #${id} has only ${formatUsdc(pool.availableLiquidity)} USDC available; the request for ${formatUsdc(amt)} USDC will revert.`);
       if (bind && pool.isActive && String(pool.agentAddress).toLowerCase() !== from.toLowerCase()) warnings.push('Borrowing is restricted to the pool creator on this network.');
-      if (outstanding + amt > limit) warnings.push(`Outstanding ${formatUsdc(outstanding)} + ${formatUsdc(amt)} exceeds credit limit ${formatUsdc(limit)} USDC.`);
-      if (active >= maxActive) warnings.push(`Already at the maximum of ${maxActive} active loans.`);
+      if (outstanding !== null && outstanding + amt > limit) warnings.push(`Outstanding ${formatUsdc(outstanding)} + ${formatUsdc(amt)} exceeds credit limit ${formatUsdc(limit)} USDC.`);
+      else if (outstanding === null && amt > limit) warnings.push(`${formatUsdc(amt)} exceeds the credit limit of ${formatUsdc(limit)} USDC. (This deployment does not expose outstandingPrincipal, so any principal already outstanding is NOT included in this check.)`);
+      if (active !== null && maxActive !== null && active >= maxActive) warnings.push(`Already at the maximum of ${maxActive} active loans.`);
       const collateral = (amt * collateralPct) / 100n;
       const durationDays = Number(enc.args.durationDays);
       const interest = (await c.marketplace.calculateInterest(amt, rateBps, BigInt(durationDays) * 86400n)) as bigint;

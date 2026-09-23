@@ -155,6 +155,13 @@ class UnsupportedOnDeployment(RuntimeError):
     """A V6.2-only feature was requested on a V6 / V6.1 deployment."""
 
 
+class LoanEnumerationFailed(RuntimeError):
+    """[X-4] The ``agentLoans[]`` walk hit a transient RPC failure.
+
+    Raised instead of returning a silently truncated loan list, which reads as
+    "this agent has no outstanding debt"."""
+
+
 class InsufficientSelfStake(RuntimeError):
     """[V6.2 / M2-c] The borrow would revert "Insufficient self-stake".
 
@@ -294,11 +301,80 @@ class SpecularClient:
         The string test alone only matches legacy reverts like Base USDC's
         "ERC20: transfer amount exceeds allowance"; OpenZeppelin v5 tokens raise
         the custom error `ERC20InsufficientAllowance` (selector 0xfb8f41b2),
-        whose message carries no words at all."""
+        whose message carries no words at all.
+
+        [X-9 parity] Marketplace reverts that contain "exceeds" but are not about
+        an allowance are excluded first: `Exceeds credit limit` used to be read as
+        an allowance shortfall, so the borrow path re-approved
+        `collateral + principal` — a transient 2x over-approval for a borrow that
+        could never succeed, plus two wasted transactions."""
         msg = str(e)
+        if re.search(r"(?i)exceeds (credit limit|pool liquidity|available liquidity|maximum|max )", msg):
+            return False
         if re.search(r"(?i)allowance|exceeds|transfer amount", msg):
             return True
         return SpecularClient.ERC20_INSUFFICIENT_ALLOWANCE in msg.lower()
+
+    #: [X-4 parity] JSON-RPC error codes that mean "ask again later", not "the
+    #: contract answered". web3 surfaces the upstream code on
+    #: ``Web3RPCError.rpc_response``; ethers/web3 both turn a rate limit AND a
+    #: data-less revert into an indistinguishable "call failed", and the code is
+    #: the only discriminator. Measured on the live Arc endpoints 2026-09-23:
+    #: rate limit -> -32005, genuine revert -> 3.
+    TRANSIENT_RPC_CODES = frozenset({-32005, -32016, -32002, -32029, -32603, 429})
+
+    @staticmethod
+    def _rpc_error_code(e: BaseException) -> int | None:
+        for attr in ("rpc_response", "response"):
+            resp = getattr(e, attr, None)
+            if isinstance(resp, dict):
+                code = (resp.get("error") or {}).get("code")
+                if isinstance(code, int):
+                    return code
+        args = getattr(e, "args", ())
+        for a in args:
+            if isinstance(a, dict) and isinstance(a.get("code"), int):
+                return a["code"]
+        m = re.search(r"'code':\s*(-?\d+)", str(e))
+        return int(m.group(1)) if m else None
+
+    @staticmethod
+    def _is_transient_rpc_failure(e: BaseException) -> bool:
+        """[X-4 parity] The failure was transport/capacity shaped, so the chain
+        never actually answered. Such an error must NEVER be read as "the
+        agentLoans array ends here" or "this deployment is an older one"."""
+        if e is None:
+            return False
+        # a revert that carries a reason string is a definite contract answer
+        if re.search(r"(?i)execution reverted:\s*\S", str(e)):
+            return False
+        code = SpecularClient._rpc_error_code(e)
+        if code is not None:
+            if code in SpecularClient.TRANSIENT_RPC_CODES:
+                return True
+            if code == 3:
+                return False  # "execution reverted" — definite
+        if re.search(r"(?i)rate limit|too many requests|throttl|capacity|overloaded|try again|timed? ?out|"
+                     r"connection|ECONN|EAI_AGAIN|network|\b(429|500|502|503|504)\b", str(e)):
+            return True
+        return isinstance(e, (TimeoutError, ConnectionError, OSError))
+
+    def _loan_id_at(self, address: str, index: int, ctx: str) -> int | None:
+        """[X-4 parity] One step of the ``agentLoans[]`` walk.
+
+        ``None`` at the genuine end of the array; raises on anything else. The
+        walk used to be ``except Exception: break``, which cannot tell "past the
+        end" from "the RPC failed while I asked" — and a truncated (often empty)
+        loan list is a wrong answer about outstanding debt."""
+        try:
+            return int(self.marketplace.functions.agentLoans(address, index).call())
+        except BaseException as e:  # noqa: BLE001
+            if not SpecularClient._is_transient_rpc_failure(e):
+                return None  # genuine end of array
+            raise LoanEnumerationFailed(
+                f"{ctx}: the RPC failed at index {index} of the agentLoans walk for {address} ({e}). "
+                "Refusing to report a truncated loan list as complete — an empty or short list here "
+                "reads as \"no outstanding debt\". Retry against a healthy RPC.") from e
 
     @property
     def _write_lock(self) -> threading.RLock:
@@ -386,7 +462,29 @@ class SpecularClient:
                     f"SpecularClient: no contract code at {which} {addr} "
                     "(wrong address, wrong network, or an RPC serving an empty view).")
             setattr(self, attr, code)
-        return SpecularClient._selector(signature) in code
+        return SpecularClient._code_contains_selector(code, SpecularClient._selector(signature))
+
+    @staticmethod
+    def _code_contains_selector(code: bytes, selector: bytes) -> bool:
+        """[X-5 parity] Does `code` dispatch `selector`?
+
+        A plain substring scan misses ~1 function in 256: solc emits the
+        dispatcher constant with the minimum number of PUSH bytes, so a selector
+        whose first byte is 0x00 appears as a PUSH3 of its low three bytes
+        (``PUSH4 0x004d9045`` == ``PUSH3 0x4d9045`` numerically) and the four
+        bytes never occur contiguously. Verified on the live Arc mainnet V6.2 at
+        0xCb23f2fb03Bfd4775Cc0e76E28f64c1e545071be, whose
+        ``minHoldForReputationReward()`` (0x004d9045) returns 86400 while the
+        bytes 004d9045 are absent from its code. A false negative here makes the
+        client declare a deployed function missing and silently fall back."""
+        s = selector
+        if s in code:
+            return True
+        while len(s) > 1 and s[0] == 0:
+            s = s[1:]
+            if s in code:
+                return True
+        return False
 
     _LOAN_STATES = ["REQUESTED", "ACTIVE", "REPAID", "DEFAULTED"]
 
@@ -1010,7 +1108,12 @@ class SpecularClient:
         try:
             return bool(self.marketplace.functions.canTopUp(
                 agent_id, Web3.to_checksum_address(lender or self.account.address)).call())
-        except Exception:
+        except BaseException as e:  # noqa: BLE001
+            # [X-4] True is the PERMISSIVE answer — it lets supply() go ahead and
+            # forfeit in-flight interest. Only a deployment that genuinely lacks
+            # the selector may be answered that way.
+            if SpecularClient._is_transient_rpc_failure(e):
+                raise
             return True
 
     def active_loan_ids(self, agent_id: int) -> list[int]:
@@ -1027,9 +1130,8 @@ class SpecularClient:
             return []
         out: list[int] = []
         for idx in range(200):
-            try:
-                lid = self.marketplace.functions.agentLoans(addr, idx).call()
-            except Exception:
+            lid = self._loan_id_at(addr, idx, "SpecularClient.active_loan_ids")
+            if lid is None:
                 break
             if self.marketplace.functions.loans(lid).call()[9] == 1:
                 out.append(int(lid))
@@ -1076,9 +1178,10 @@ class SpecularClient:
         out = []
         idx = 0
         while True:
-            try:
-                lid = self.marketplace.functions.agentLoans(self.account.address, idx).call()
-            except Exception:
+            # [X-4] ends the walk ONLY at a genuine out-of-bounds revert; a
+            # transient RPC failure raises rather than truncating the list.
+            lid = self._loan_id_at(self.account.address, idx, "SpecularClient.loans")
+            if lid is None:
                 break
             loan = self.marketplace.functions.loans(lid).call()
             # loan tuple: (loanId, borrower, agentId, amount, collateralAmount, interestRate, startTime, endTime, duration, state)

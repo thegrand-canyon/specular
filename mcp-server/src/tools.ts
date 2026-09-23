@@ -190,7 +190,7 @@ const BASE_TOOLS: ToolDef[] = [
     name: 'preview_repayment',
     kind: 'read',
     description:
-      'V6.1 only: the EXACT USDC amount repayLoan(loanId) would pull right now (principal + interest on max(duration, elapsed), capped at duration + 30 days). Use this, not principal + nominal interest, to size the repay approval; a late loan owes more and the figure grows per second until it caps. On a V6 deployment this returns a "not supported" error (get_loan_status.repayment still works there).',
+      'The EXACT USDC amount repayLoan(loanId) would pull right now. On V6.1+ that is principal + interest on max(duration, elapsed), capped at duration + 30 days, so a late loan owes more and the figure grows per second until it caps. On a V6 deployment it is the nominal fixed-term figure, which is what V6 actually charges — `source` says which. Use this, not your own arithmetic, to size the repay approval.',
     inputSchema: schema({ network: NETWORK_PROP, loanId: ID_PROP('Loan ID (must be ACTIVE)') }, ['network', 'loanId']),
     rest: { method: 'GET', path: '/v1/{network}/loans/{loanId}/repayment', pathParams: ['network', 'loanId'] },
     handler: async (args) => readRepaymentPreview(net(args), validateId(args.loanId, 'loanId')),
@@ -199,7 +199,7 @@ const BASE_TOOLS: ToolDef[] = [
     name: 'can_top_up',
     kind: 'read',
     description:
-      'V6.1 only: whether `lender` can add to an EXISTING position in agent pool `agentId` right now without supplyLiquidity reverting "Top-up would forfeit in-flight interest". ADVISORY, not a guarantee: the deployed canTopUp() view is off by one block, so this server also computes the corrected predicate server-side and returns the conservative answer (`onChainView` and `correctedPredicate` show both, `viewDisagrees` flags a mismatch); a loan can also start between this check and your transaction. Always read `warnings` and simulate immediately before signing. A first supply is never refused. Returns a "not supported" error on V6 deployments (which never refuse top-ups).',
+      'Whether `lender` can add to an EXISTING position in agent pool `agentId` right now without supplyLiquidity reverting "Top-up would forfeit in-flight interest". ADVISORY, not a guarantee: the deployed canTopUp() view is off by one block, so this server also computes the corrected predicate server-side and returns the conservative answer (`onChainView` and `correctedPredicate` show both, `viewDisagrees` flags a mismatch); a loan can also start between this check and your transaction. Always read `warnings` and simulate immediately before signing. A first supply is never refused. On a V6 deployment the answer is unconditionally true: that generation has no pending-tranche accounting, so supplyLiquidity never refuses a top-up on those grounds.',
     inputSchema: schema({ network: NETWORK_PROP, agentId: ID_PROP('Agent ID of the pool'), lender: ADDRESS_PROP('Lender wallet address (the one that would send supplyLiquidity)') }, ['network', 'agentId', 'lender']),
     rest: { method: 'GET', path: '/v1/{network}/pools/{agentId}/can-top-up/{lender}', pathParams: ['network', 'agentId', 'lender'] },
     handler: async (args) => readCanTopUp(net(args), validateId(args.agentId, 'agentId'), validateAddress(args.lender, 'lender')),
@@ -207,7 +207,7 @@ const BASE_TOOLS: ToolDef[] = [
   {
     name: 'get_active_loan_ids',
     kind: 'read',
-    description: 'V6.1 only: IDs (and status) of an agent\'s currently ACTIVE loans, straight from the contract\'s bounded active set (at most MAX_ACTIVE_LOANS_PER_AGENT). Returns a "not supported" error on V6 deployments; use get_agent_loans there.',
+    description: 'IDs (and status) of an agent\'s currently ACTIVE loans. On V6.1+ this comes straight from the contract\'s bounded active set (at most MAX_ACTIVE_LOANS_PER_AGENT); on a V6 deployment it is computed by walking the pool creator\'s agentLoans[] and keeping the ACTIVE ones. `source` says which.',
     inputSchema: schema({ network: NETWORK_PROP, agentId: ID_PROP('Agent ID') }, ['network', 'agentId']),
     rest: { method: 'GET', path: '/v1/{network}/agents/{agentId}/active-loans', pathParams: ['network', 'agentId'] },
     handler: async (args) => readActiveLoanIds(net(args), validateId(args.agentId, 'agentId')),

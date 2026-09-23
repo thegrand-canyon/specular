@@ -306,12 +306,41 @@ class SpecularQuickstart {
         }
     }
 
+    /**
+     * [ROBUSTNESS X-4] One step of an `agentLoans[]` walk.
+     *
+     * Returns `null` at the genuine end of the array and THROWS on anything
+     * else. The walk used to be `catch { break }`, which cannot tell "past the
+     * end" from "the RPC failed while I asked" — ethers v6 collapses a
+     * rate-limited `eth_call` and a data-less revert into the same
+     * `CALL_EXCEPTION: missing revert data`. A truncated (often empty) loan list
+     * is a wrong answer about outstanding debt, and it is also `_loanCount()`'s
+     * baseline for reconciling an inconclusive borrow, where an under-count
+     * makes the reconciler adopt an OLD loan id as the new one.
+     */
+    async _loanIdAt(address, index, ctx) {
+        try {
+            return await SpecularQuickstart._retryTransient(
+                () => this.marketplace.agentLoans(address, index));
+        } catch (e) {
+            if (!SpecularQuickstart._isTransientRpcFailure(e)) return null; // genuine end of array
+            const err = new Error(
+                `${ctx}: the RPC failed at index ${index} of the agentLoans walk for ${address} ` +
+                `(${e.shortMessage || e.message}). Refusing to report a truncated loan list as complete — ` +
+                'an empty or short list here reads as "no outstanding debt". Retry against a healthy RPC.');
+            err.code = 'SPECULAR_LOAN_ENUMERATION_FAILED';
+            err.cause = e;
+            throw err;
+        }
+    }
+
     /** Number of loan ids recorded for this wallet (the `agentLoans[]` array length). */
     async _loanCount() {
         let i = 0;
         // eslint-disable-next-line no-constant-condition
         while (true) {
-            try { await this.marketplace.agentLoans(this.wallet.address, i); } catch (_) { return i; }
+            const lid = await this._loanIdAt(this.wallet.address, i, 'SpecularQuickstart._loanCount');
+            if (lid === null) return i;
             i++;
             if (i > 10000) return i;
         }
@@ -638,6 +667,40 @@ class SpecularQuickstart {
         return !!(e && e.code === 'CALL_EXCEPTION' && ((e.data && e.data !== '0x') || e.reason));
     }
 
+    /**
+     * [ROBUSTNESS X-4] JSON-RPC error codes that mean "ask again later", not
+     * "the contract answered". ethers preserves the upstream code on
+     * `info.error.code`, which is the ONLY thing separating a rate limit from a
+     * data-less revert once ethers has turned both into
+     * `CALL_EXCEPTION: missing revert data`. Measured on the live Arc endpoints
+     * 2026-09-23: rate limit -> -32005, genuine revert -> 3.
+     */
+    static TRANSIENT_RPC_CODES = new Set([-32005, -32016, -32002, -32029, -32603, 429]);
+
+    static _rpcErrorCode(e) {
+        for (const c of [e && e.info && e.info.error && e.info.error.code,
+            e && e.error && e.error.code,
+            e && e.cause && e.cause.info && e.cause.info.error && e.cause.info.error.code]) {
+            if (typeof c === 'number') return c;
+        }
+        return null;
+    }
+
+    /** True when the failure is transport/capacity shaped, so no answer was actually given. */
+    static _isTransientRpcFailure(e) {
+        if (!e) return false;
+        if (SpecularQuickstart._isRealRevert(e)) return false;
+        const code = SpecularQuickstart._rpcErrorCode(e);
+        if (typeof code === 'number') {
+            if (SpecularQuickstart.TRANSIENT_RPC_CODES.has(code)) return true;
+            if (code === 3) return false; // "execution reverted" — a definite contract answer
+        }
+        const msg = `${e.message || ''} ${e.shortMessage || ''} ` +
+            `${(e.info && e.info.error && e.info.error.message) || ''}`;
+        if (/rate limit|too many requests|throttl|capacity|overloaded|try again|timeout|timed out|socket hang up|ECONN|EAI_AGAIN|fetch failed|network error|\b(429|500|502|503|504)\b/i.test(msg)) return true;
+        return ['TIMEOUT', 'NETWORK_ERROR', 'SERVER_ERROR', 'UNKNOWN_ERROR'].includes(e.code);
+    }
+
     /** Retry `fn` while the failure could be transient; surface real reverts / ABI errors at once. */
     static async _retryTransient(fn, { attempts = 3, delayMs = 400 } = {}) {
         let last;
@@ -681,7 +744,32 @@ class SpecularQuickstart {
             }
             this[cacheKey] = code.toLowerCase();
         }
-        return this[cacheKey].includes(frag.selector.slice(2).toLowerCase());
+        return SpecularQuickstart._codeContainsSelector(this[cacheKey], frag.selector);
+    }
+
+    /**
+     * [ROBUSTNESS X-5] Does `code` (lowercase hex, 0x-prefixed) dispatch `selector`?
+     *
+     * A plain substring scan misses ~1 function in 256: solc emits the
+     * dispatcher constant with the minimum number of PUSH bytes, so a selector
+     * whose first byte is 0x00 appears as a PUSH3 of its low three bytes
+     * (`PUSH4 0x004d9045` === `PUSH3 0x4d9045` numerically) and the four bytes
+     * never occur contiguously. Verified on the live Arc mainnet V6.2 at
+     * 0xCb23f2fb03Bfd4775Cc0e76E28f64c1e545071be, whose
+     * `minHoldForReputationReward()` (0x004d9045) returns 86400 while the bytes
+     * `004d9045` are absent from its code. A false negative here makes the SDK
+     * declare a deployed function missing and silently fall back.
+     */
+    static _codeContainsSelector(code, selector) {
+        const hex = String(code || '').toLowerCase();
+        let s = String(selector || '').toLowerCase().replace(/^0x/, '');
+        if (hex.includes(s)) return true;
+        // strip leading zero bytes and look for the truncated PUSH constant
+        while (s.length > 2 && s.startsWith('00')) {
+            s = s.slice(2);
+            if (hex.includes(s)) return true;
+        }
+        return false;
     }
 
     /**
@@ -823,9 +911,23 @@ class SpecularQuickstart {
      * silently dead on those tokens: the repay/borrow just failed.
      */
     static ERC20_INSUFFICIENT_ALLOWANCE = '0xfb8f41b2';
+
+    /**
+     * [ROBUSTNESS X-9] Marketplace reverts that contain the word "exceeds" but
+     * have nothing to do with an allowance. The bare `/exceeds/i` test matched
+     * these, so a credit-limit refusal was mistaken for an allowance shortfall
+     * and `_borrowInner` re-approved `collateral + principal` — measured as a
+     * transient 2x over-approval (1200 then 2400 USDC for a borrow that could
+     * never succeed) plus two wasted transactions. Bounded and always revoked,
+     * but the exact-approval model should not widen an approval because a
+     * DIFFERENT rule refused the borrow.
+     */
+    static NOT_ALLOWANCE_REVERTS = /exceeds (?:credit limit|pool liquidity|available liquidity|maximum|max )/i;
+
     static isAllowanceShortfall(e) {
         if (!e) return false;
         const msg = `${e.message || ''} ${e.shortMessage || ''} ${e.reason || ''}`;
+        if (SpecularQuickstart.NOT_ALLOWANCE_REVERTS.test(msg)) return false;
         if (/allowance|exceeds|transfer amount/i.test(msg)) return true;
         const candidates = [
             e.data,
@@ -1013,8 +1115,14 @@ class SpecularQuickstart {
     async canTopUp(agentId, lender = this.wallet.address) {
         if (!(await this._hasV61Views())) return true;
         try {
-            return Boolean(await this.marketplace.canTopUp(agentId, lender));
+            return Boolean(await SpecularQuickstart._retryTransient(
+                () => this.marketplace.canTopUp(agentId, lender)));
         } catch (e) {
+            // [X-4] `true` is the PERMISSIVE answer: it lets supply() go ahead and
+            // forfeit in-flight interest. Only a deployment that genuinely lacks
+            // the selector may be answered that way; a transient RPC failure must
+            // surface instead of being turned into a green light.
+            if (SpecularQuickstart._isTransientRpcFailure(e)) throw e;
             return true;
         }
     }
@@ -1035,8 +1143,8 @@ class SpecularQuickstart {
         if (!addr || addr === ethers.ZeroAddress) return [];
         const out = [];
         for (let i = 0; i < 200; i++) {
-            let lid;
-            try { lid = await this.marketplace.agentLoans(addr, i); } catch (e) { break; }
+            const lid = await this._loanIdAt(addr, i, 'SpecularQuickstart.activeLoanIds');
+            if (lid === null) break;
             const l = await this.marketplace.loans(lid);
             if (Number(l.state) === 1) out.push(Number(lid));
         }
@@ -1314,11 +1422,18 @@ class SpecularQuickstart {
      */
     async creditInfo() {
         const addr = this.wallet.address;
+        // [ROBUSTNESS X-7] Retry each read. Public endpoints rate-limit a burst
+        // (Arc mainnet answers -32005, which ethers reports as
+        // `CALL_EXCEPTION: missing revert data`), and creditInfo() is commonly
+        // called right after tierTable()'s 31-call fan-out — reproducibly
+        // failing the SDK's headline read on the live network while the Python
+        // client, which is strictly sequential, sailed through.
+        const R = SpecularQuickstart._retryTransient;
         const [score, creditLimit, collPct, rateBps] = await Promise.all([
-            this.reputation['getReputationScore(address)'](addr),
-            this.reputation.calculateCreditLimit(addr),
-            this.reputation.calculateCollateralRequirement(addr),
-            this.reputation.calculateInterestRate(addr)
+            R(() => this.reputation['getReputationScore(address)'](addr)),
+            R(() => this.reputation.calculateCreditLimit(addr)),
+            R(() => this.reputation.calculateCollateralRequirement(addr)),
+            R(() => this.reputation.calculateInterestRate(addr))
         ]);
         const out = {
             score: Number(score),
@@ -1340,13 +1455,13 @@ class SpecularQuickstart {
         if (caps.reputationV4) {
             const agentId = await this._agentId();
             const [tier, tierLimit, ladder, maxRepaid, lockedOut, lockedUntil, maxTierLimit] = await Promise.all([
-                this.reputation.tierOf(score),
-                this.reputation.tierLimit(score),
-                this.reputation.ladderLimit(agentId),
-                this.reputation.maxRepaidPrincipal(agentId),
-                this.reputation.isLockedOut(agentId),
-                this.reputation.lockedUntil(agentId),
-                this.reputation.MAX_TIER_LIMIT()
+                R(() => this.reputation.tierOf(score)),
+                R(() => this.reputation.tierLimit(score)),
+                R(() => this.reputation.ladderLimit(agentId)),
+                R(() => this.reputation.maxRepaidPrincipal(agentId)),
+                R(() => this.reputation.isLockedOut(agentId)),
+                R(() => this.reputation.lockedUntil(agentId)),
+                R(() => this.reputation.MAX_TIER_LIMIT())
             ]);
             out.agentId = agentId;
             out.tier = Number(tier);
@@ -1380,21 +1495,24 @@ class SpecularQuickstart {
     async loans() {
         const addr = this.wallet.address;
         const out = [];
+        const states = ['REQUESTED', 'ACTIVE', 'REPAID', 'DEFAULTED'];
         let i = 0;
+        // eslint-disable-next-line no-constant-condition
         while (true) {
-            try {
-                const lid = await this.marketplace.agentLoans(addr, i);
-                const l = await this.marketplace.loans(lid);
-                const states = ['REQUESTED', 'ACTIVE', 'REPAID', 'DEFAULTED'];
-                out.push({
-                    id: Number(lid),
-                    amount: ethers.formatUnits(l.amount, this.cfg.decimals),
-                    interestRate: Number(l.interestRate),
-                    state: states[Number(l.state)],
-                    endTime: Number(l.endTime)
-                });
-                i++;
-            } catch (e) { break; }
+            // [X-4] `_loanIdAt` ends the walk ONLY at a genuine out-of-bounds
+            // revert; a transient RPC failure throws rather than truncating.
+            const lid = await this._loanIdAt(addr, i, 'SpecularQuickstart.loans');
+            if (lid === null) break;
+            const l = await SpecularQuickstart._retryTransient(() => this.marketplace.loans(lid));
+            out.push({
+                id: Number(lid),
+                amount: ethers.formatUnits(l.amount, this.cfg.decimals),
+                interestRate: Number(l.interestRate),
+                state: states[Number(l.state)],
+                endTime: Number(l.endTime)
+            });
+            i++;
+            if (i > 10000) break;
         }
         return out;
     }

@@ -3,11 +3,36 @@
  * network. Every result carries `rpc` (block number / age / stale flag).
  */
 import { ethers } from 'ethers';
-import { getContracts, marketplaceCapabilities, reputationCapabilities, rpcStatus, RpcStatus, unsupportedMessage } from './chain.js';
+import { describeRpcError, getContracts, isTransientRpcFailure, marketplaceCapabilities, reputationCapabilities, rpcStatus, RpcStatus, unsupportedMessage } from './chain.js';
 import { NetworkConfig, publicNetworkInfo } from './networks.js';
 import { formatUsdc, UnsupportedOnDeploymentError, ValidationError } from './validate.js';
 
 export const LOAN_STATES = ['REQUESTED', 'ACTIVE', 'REPAID', 'DEFAULTED'] as const;
+
+/**
+ * [X-2 2026-09-23] A view that the OLDEST deployed generation may not have.
+ *
+ * Base mainnet runs a V6 build from 2026-05 that predates the 2026-08 launch
+ * levers (`minSupplyAmount`, `bindBorrowToPoolCreator`,
+ * `minHoldForReputationReward`) and the §S5 counters (`activeLoanCount`,
+ * `outstandingPrincipal`). Those calls sat unguarded inside `Promise.all`, so
+ * five read routes returned a raw 502 "missing revert data" on Base.
+ *
+ * `null` means "this deployment does not expose that" — it is NEVER used to
+ * paper over a transient RPC failure, which is rethrown so the caller sees 503
+ * rather than a fabricated answer.
+ */
+async function optionalView<T>(p: Promise<T>): Promise<T | null> {
+  try {
+    return await p;
+  } catch (e) {
+    if (isTransientRpcFailure(e)) throw e;
+    return null;
+  }
+}
+
+const numOrNull = (x: bigint | null): number | null => (x === null ? null : Number(x));
+const usdcOrNull = (x: bigint | null): string | null => (x === null ? null : formatUsdc(x));
 
 // ---------------------------------------------------------------------------
 // Repayment quote (V6.1 previewRepayment with V6 fallback)
@@ -265,6 +290,19 @@ const MAX_LIST = 200;
  */
 const paginatedActiveAgents = new Map<string, boolean>();
 
+/** Test/ops hook: forget which deployments were found to have the paginated overload. */
+export function _clearActiveAgentsProbeCache(): void {
+  paginatedActiveAgents.clear();
+}
+
+/**
+ * Some deployments cannot enumerate their pools at all: the 2026-05 Base build
+ * still carries the reverting `getActiveAgents()` stub ("Use front-end to query
+ * specific agents"). That is a property of the deployment, not an outage, so the
+ * routes that enumerate report an explained empty list instead of a 502.
+ */
+export class PoolEnumerationUnavailable extends Error {}
+
 async function activeAgentIds(
   c: ReturnType<typeof getContracts>,
   cfg: NetworkConfig,
@@ -274,17 +312,75 @@ async function activeAgentIds(
   // revision than the one first deployed to Arc staging, so `caps.v62` does NOT imply it
   // — assuming it did made every read on that deployment fail with a 502. Try the
   // paginated overload once per network and remember the answer.
+  //
+  // [X-3 2026-09-23] Only a DEFINITE "no such method" may be remembered. One
+  // transient RPC error used to pin `false` for the life of the process, which
+  // silently re-armed the unbounded call this pagination exists to avoid
+  // (uncallable past ~5,472 pools) and dropped the honest `truncated` report.
   if (paginatedActiveAgents.get(cfg.name) !== false) {
     try {
       const [ids, total] = (await c.marketplace['getActiveAgents(uint256,uint256)'](0, limit)) as [bigint[], bigint];
       paginatedActiveAgents.set(cfg.name, true);
       return { ids, total: Number(total), truncated: Number(total) > ids.length };
-    } catch {
+    } catch (e) {
+      if (isTransientRpcFailure(e)) throw e;
       paginatedActiveAgents.set(cfg.name, false);
     }
   }
-  const all = (await c.marketplace['getActiveAgents()']()) as bigint[];
-  return { ids: all.slice(0, limit), total: all.length, truncated: all.length > limit };
+  try {
+    const all = (await c.marketplace['getActiveAgents()']()) as bigint[];
+    return { ids: all.slice(0, limit), total: all.length, truncated: all.length > limit };
+  } catch (e) {
+    if (isTransientRpcFailure(e)) throw e;
+    // [X-2] The 2026-05 Base build still carries the reverting stub
+    // ("Use front-end to query specific agents") that D12 replaced in 2026-08.
+    // Pools are keyed by agentId, so walk the registry instead — bounded by
+    // MAX_LIST and honest about truncation. An empty list would read as
+    // "this protocol has no pools", which is a wrong answer about TVL.
+    return registryScanActiveAgents(c, cfg, limit);
+  }
+}
+
+/**
+ * Enumerate pools by scanning agentIds 1..totalAgents. The fallback for a
+ * deployment whose `getActiveAgents()` does not answer. Bounded, and reported as
+ * truncated when the registry is larger than the scan window.
+ */
+async function registryScanActiveAgents(
+  c: ReturnType<typeof getContracts>,
+  cfg: NetworkConfig,
+  limit: number,
+): Promise<{ ids: bigint[]; total: number; truncated: boolean }> {
+  let totalAgents: number;
+  try {
+    totalAgents = Number((await c.registry.totalAgents()) as bigint);
+  } catch (e) {
+    if (isTransientRpcFailure(e)) throw e;
+    throw new PoolEnumerationUnavailable(
+      `The ${cfg.name} marketplace ${cfg.addresses.marketplace} cannot enumerate its pools: getActiveAgents() ` +
+      'does not answer on this deployment and the registry could not be walked either. Query a specific ' +
+      'agentId instead — get_pool_details works.',
+    );
+  }
+  const scan = Math.min(totalAgents, MAX_LIST);
+  const ids: bigint[] = [];
+  const pools = await Promise.all(
+    Array.from({ length: scan }, (_, k) => c.marketplace.agentPools(BigInt(k + 1))),
+  );
+  pools.forEach((p, k) => {
+    if (p.isActive) ids.push(BigInt(k + 1));
+  });
+  return { ids: ids.slice(0, limit), total: ids.length, truncated: totalAgents > scan || ids.length > limit };
+}
+
+/** Empty-but-explained result for a deployment that cannot enumerate pools. */
+async function noEnumeration<T extends Record<string, unknown>>(
+  cfg: NetworkConfig,
+  e: unknown,
+  rest: T,
+): Promise<T & { note: string; rpc: RpcStatus }> {
+  if (!(e instanceof PoolEnumerationUnavailable)) throw e;
+  return { ...rest, note: e.message, rpc: await rpcStatus(cfg) };
 }
 
 export async function readNetworkInfo(cfg: NetworkConfig) {
@@ -299,18 +395,24 @@ export async function readProtocolStatus(cfg: NetworkConfig) {
     reputationCapabilities(cfg).catch(() => null),
     creditTierTable(cfg).catch(() => null),
   ]);
+  // [X-2] The levers and the §S5 counters arrived in 2026-08, AFTER the Base
+  // deploy. `optionalView` reports them as null on a deployment that predates
+  // them instead of failing the whole route with "missing revert data".
   const [rpc, paused, totalPools, nextLoanId, totalAgents, minSupply, bind, minHold, feeRate, maxActive, activeAgents] = await Promise.all([
     rpcStatus(cfg),
     c.marketplace.paused() as Promise<boolean>,
     c.marketplace.totalPools() as Promise<bigint>,
     c.marketplace.nextLoanId() as Promise<bigint>,
     c.registry.totalAgents() as Promise<bigint>,
-    c.marketplace.minSupplyAmount() as Promise<bigint>,
-    c.marketplace.bindBorrowToPoolCreator() as Promise<boolean>,
-    c.marketplace.minHoldForReputationReward() as Promise<bigint>,
-    c.marketplace.platformFeeRate() as Promise<bigint>,
-    c.marketplace.MAX_ACTIVE_LOANS_PER_AGENT() as Promise<bigint>,
-    activeAgentIds(c, cfg),
+    optionalView(c.marketplace.minSupplyAmount() as Promise<bigint>),
+    optionalView(c.marketplace.bindBorrowToPoolCreator() as Promise<boolean>),
+    optionalView(c.marketplace.minHoldForReputationReward() as Promise<bigint>),
+    optionalView(c.marketplace.platformFeeRate() as Promise<bigint>),
+    optionalView(c.marketplace.MAX_ACTIVE_LOANS_PER_AGENT() as Promise<bigint>),
+    activeAgentIds(c, cfg).catch((e) => {
+      if (e instanceof PoolEnumerationUnavailable) return { ids: [] as bigint[], total: 0, truncated: false, note: e.message };
+      throw e;
+    }),
   ]);
 
   // TVL = sum of pool totalLiquidity across active pools (bounded walk).
@@ -324,6 +426,7 @@ export async function readProtocolStatus(cfg: NetworkConfig) {
     available += p.availableLiquidity as bigint;
     loaned += p.totalLoaned as bigint;
   }
+  const enumerationNote = (activeAgents as { note?: string }).note;
   return {
     network: cfg.name,
     label: cfg.label,
@@ -351,12 +454,13 @@ export async function readProtocolStatus(cfg: NetworkConfig) {
         }
       : null,
     parameters: {
-      minSupplyUsdc: formatUsdc(minSupply),
-      minSupplyAppliesToPoolCreator: mcaps ? !mcaps.v62 : true,
+      // null == "this deployment predates that lever", never "the RPC failed".
+      minSupplyUsdc: usdcOrNull(minSupply),
+      minSupplyAppliesToPoolCreator: minSupply === null ? null : mcaps ? !mcaps.v62 : true,
       borrowRestrictedToPoolCreator: bind,
-      minHoldForReputationRewardSeconds: Number(minHold),
-      platformFeeBps: Number(feeRate),
-      maxActiveLoansPerAgent: Number(maxActive),
+      minHoldForReputationRewardSeconds: numOrNull(minHold),
+      platformFeeBps: numOrNull(feeRate),
+      maxActiveLoansPerAgent: numOrNull(maxActive),
       loanDurationDays: { min: 7, max: 365 },
     },
     /**
@@ -366,6 +470,7 @@ export async function readProtocolStatus(cfg: NetworkConfig) {
      */
     creditTiers: tierTable,
     truncated: activeAgents.truncated ? `TVL computed over the first ${ids.length} of ${activeAgents.total} pools` : undefined,
+    note: enumerationNote ? `${enumerationNote} TVL/availableLiquidity/totalLoaned above are therefore 0 — they are not a claim that the pools are empty.` : undefined,
     rpc,
   };
 }
@@ -400,12 +505,13 @@ export async function readCredit(cfg: NetworkConfig, address: string) {
     c.reputation.calculateCollateralRequirement(address) as Promise<bigint>,
     c.reputation.calculateInterestRate(address) as Promise<bigint>,
     c.marketplace.agentPools(agentId),
-    c.marketplace.activeLoanCount(agentId) as Promise<bigint>,
-    c.marketplace.outstandingPrincipal(agentId) as Promise<bigint>,
-    c.marketplace.MAX_ACTIVE_LOANS_PER_AGENT() as Promise<bigint>,
+    // [X-2] absent on the 2026-05 Base build (§S5 counters landed 2026-08)
+    optionalView(c.marketplace.activeLoanCount(agentId) as Promise<bigint>),
+    optionalView(c.marketplace.outstandingPrincipal(agentId) as Promise<bigint>),
+    optionalView(c.marketplace.MAX_ACTIVE_LOANS_PER_AGENT() as Promise<bigint>),
   ]);
   const s = Number(score);
-  const remaining = (limit as bigint) - (outstanding as bigint);
+  const remaining = (limit as bigint) - (outstanding ?? 0n);
 
   // [V7] Everything below the tier NAME is chain data. On ReputationManagerV4 the
   // ladder / lockout state explains WHY the limit is what it is (a post-default
@@ -478,14 +584,18 @@ export async function readCredit(cfg: NetworkConfig, address: string) {
     reputation: { score: s, tier: tierNameFor(s), max: 1000 },
     credit: {
       creditLimitUsdc: formatUsdc(limit),
-      outstandingPrincipalUsdc: formatUsdc(outstanding),
-      remainingCreditUsdc: formatUsdc(remaining < 0n ? 0n : remaining),
+      // null on a deployment without the O(1) counters (Base's 2026-05 V6):
+      // "not reported here", not "zero".
+      outstandingPrincipalUsdc: usdcOrNull(outstanding),
+      remainingCreditUsdc: outstanding === null ? null : formatUsdc(remaining < 0n ? 0n : remaining),
       collateralPercent: Number(collateralPct),
       interestRateBps: Number(rateBps),
       interestRateAprPercent: Number(rateBps) / 100,
-      activeLoans: Number(activeLoans),
-      maxActiveLoans: Number(maxActive),
-      canBorrow: Number(activeLoans) < Number(maxActive) && remaining > 0n,
+      activeLoans: numOrNull(activeLoans),
+      maxActiveLoans: numOrNull(maxActive),
+      canBorrow: activeLoans === null || maxActive === null || outstanding === null
+        ? null
+        : Number(activeLoans) < Number(maxActive) && remaining > 0n,
       /** V7 only (ReputationManagerV4): why the limit is what it is. null on V3. */
       model: creditModel,
     },
@@ -532,7 +642,14 @@ async function poolSummary(c: ReturnType<typeof getContracts>, agentId: number):
 
 export async function readPools(cfg: NetworkConfig, opts: { minAvailableUsdc?: number; limit?: number } = {}) {
   const c = getContracts(cfg);
-  const [rpc, active] = await Promise.all([rpcStatus(cfg), activeAgentIds(c, cfg)]);
+  let rpc: RpcStatus;
+  let active: { ids: bigint[]; total: number; truncated: boolean };
+  try {
+    [rpc, active] = await Promise.all([rpcStatus(cfg), activeAgentIds(c, cfg)]);
+  } catch (e) {
+    // [X-2] the 2026-05 Base build cannot enumerate: say so, don't 502.
+    return noEnumeration(cfg, e, { network: cfg.name, totalActivePools: 0, returned: 0, pools: [] as PoolSummary[] });
+  }
   const ids = active.ids;
   const limit = Math.min(opts.limit ?? 50, MAX_LIST);
   const minBase = opts.minAvailableUsdc !== undefined ? ethers.parseUnits(opts.minAvailableUsdc.toString(), 6) : 0n;
@@ -550,10 +667,11 @@ export async function readPoolDetails(cfg: NetworkConfig, agentId: number) {
     rpcStatus(cfg),
     poolSummary(c, agentId),
     c.marketplace.agentPools(agentId),
-    c.marketplace.activeLoanCount(agentId) as Promise<bigint>,
-    c.marketplace.outstandingPrincipal(agentId) as Promise<bigint>,
-    c.marketplace.minSupplyAmount() as Promise<bigint>,
-    c.marketplace.MAX_LENDERS_PER_POOL() as Promise<bigint>,
+    // [X-2] absent on the 2026-05 Base build
+    optionalView(c.marketplace.activeLoanCount(agentId) as Promise<bigint>),
+    optionalView(c.marketplace.outstandingPrincipal(agentId) as Promise<bigint>),
+    optionalView(c.marketplace.minSupplyAmount() as Promise<bigint>),
+    optionalView(c.marketplace.MAX_LENDERS_PER_POOL() as Promise<bigint>),
   ]);
   if (!summary || !raw.isActive) {
     throw new ValidationError(`No active pool for agentId ${agentId} on ${cfg.name}`, 'agentId');
@@ -568,16 +686,16 @@ export async function readPoolDetails(cfg: NetworkConfig, agentId: number) {
     network: cfg.name,
     ...summary,
     isActive: raw.isActive,
-    activeLoans: Number(activeLoans),
-    outstandingPrincipalUsdc: formatUsdc(outstanding),
+    activeLoans: numOrNull(activeLoans),
+    outstandingPrincipalUsdc: usdcOrNull(outstanding),
     borrower: {
       reputationScore: s,
       tier: tierNameFor(s),
       interestRateAprPercent: Number(rateBps) / 100,
       collateralPercent: Number(collateralPct),
     },
-    lenderCapacity: { lenders: summary.lenderCount, max: Number(lenderCap), full: summary.lenderCount >= Number(lenderCap) },
-    minSupplyUsdc: formatUsdc(minSupply),
+    lenderCapacity: { lenders: summary.lenderCount, max: numOrNull(lenderCap), full: lenderCap === null ? null : summary.lenderCount >= Number(lenderCap) },
+    minSupplyUsdc: usdcOrNull(minSupply),
     rpc,
   };
 }
@@ -723,7 +841,11 @@ export async function readSelfStake(cfg: NetworkConfig, agentId: number) {
 /** previewRepayment(loanId): exact amount repayLoan would pull now. */
 export async function readRepaymentPreview(cfg: NetworkConfig, loanId: number) {
   const c = getContracts(cfg);
-  const caps = await requireV61(cfg, 'preview_repayment');
+  // [X-6] `repaymentQuote` ALREADY answers on V6 (the nominal fixed-term figure
+  // from calculateInterest, which is exactly what V6 charges) and both SDKs
+  // return it. Gating the route on V6.1 made that fallback dead code and made
+  // the hosted server refuse a question the SDKs answer correctly.
+  const caps = await marketplaceCapabilities(cfg);
   const [rpc, l, nextId] = await Promise.all([rpcStatus(cfg), c.marketplace.loans(loanId), c.marketplace.nextLoanId() as Promise<bigint>]);
   if (loanId >= Number(nextId) || l.borrower === ethers.ZeroAddress) {
     throw new ValidationError(`Loan ${loanId} does not exist on ${cfg.name} (highest loanId is ${Number(nextId) - 1})`, 'loanId');
@@ -780,6 +902,23 @@ export function correctedCanTopUp(input: {
 }
 
 /** Warning every top-up carries: the check and the tx are in different blocks. */
+/**
+ * [2026-09-23] The V6 hazard `canTopUp: true` does NOT cover.
+ *
+ * "Will it revert?" and "is it safe?" are different questions, and on V6 they have
+ * different answers. V6's `supplyLiquidity` sets `position.depositTimestamp =
+ * block.timestamp` on EVERY supply, and `_distributeInterest` only pays lenders whose
+ * `depositTimestamp <= loanStartTime` (verified in the bytecode-matching source at tag
+ * arc-mainnet-v6-deployed-2026-09-19, lines 249 and 559/584). So a top-up while a loan is
+ * open silently forfeits the WHOLE position's accrued interest on that loan — the F-02
+ * finding, fixed in V6.1 by pending tranches and still live on Base.
+ *
+ * Answering "yes, you can top up" without this would be technically true and cost a
+ * lender real money.
+ */
+const V6_TOP_UP_FORFEITS_INTEREST =
+  'This deployment predates the V6.1 pending-tranche fix. A top-up here resets your position\'s deposit timestamp, so you FORFEIT the interest already accrued on every loan currently open in this pool (finding F-02). The transaction will succeed and the loss is silent. If the pool has open loans, wait for them to close before topping up, or supply from a different address.';
+
 export const TOP_UP_RACE_WARNING =
   'can_top_up is a point-in-time check: a new loan can start in the pool between this read and your supply transaction, which would make the top-up revert "Top-up would forfeit in-flight interest". Treat a true answer as "likely to succeed", not a guarantee, and simulate immediately before sending.';
 
@@ -790,16 +929,45 @@ export const TOP_UP_VIEW_BUG_WARNING =
 /** canTopUp(agentId, lender): whether supplyLiquidity by an existing lender would be refused right now. */
 export async function readCanTopUp(cfg: NetworkConfig, agentId: number, lender: string) {
   const c = getContracts(cfg);
-  const caps = await requireV61(cfg, 'can_top_up');
-  const [rpc, pool, ok, pos, pending, activeStarts] = await Promise.all([
+  const caps = await marketplaceCapabilities(cfg);
+  // [X-6] V6 has no pending-tranche accounting at all, so a top-up can never
+  // forfeit in-flight interest: the answer is unconditionally `true`, which is
+  // what both SDKs return. Refusing the question here made one deployment give
+  // three different answers to the same question.
+  if (!caps.v61) {
+    const [rpc, pool, pos] = await Promise.all([
+      rpcStatus(cfg),
+      c.marketplace.agentPools(agentId),
+      c.marketplace.getLenderPosition(agentId, lender),
+    ]);
+    if (!pool.isActive) throw new ValidationError(`No active pool for agentId ${agentId} on ${cfg.name}`, 'agentId');
+    return {
+      network: cfg.name,
+      marketplaceVersion: caps.version,
+      agentId,
+      lender,
+      canTopUp: true,
+      onChainView: null,
+      correctedPredicate: true,
+      viewDisagrees: false,
+      hasPosition: (pos.amount as bigint) > 0n,
+      suppliedUsdc: formatUsdc(pos.amount),
+      pendingTrancheUsdc: null,
+      activeLoansInPool: null,
+      warnings: [TOP_UP_RACE_WARNING, V6_TOP_UP_FORFEITS_INTEREST],
+      note: 'This deployment predates the pending-tranche accounting (V6.1), so supplyLiquidity never REFUSES a top-up on those grounds — the answer is unconditionally true, as it is in the JS and Python SDKs. It does not follow that topping up is safe here: see the forfeiture warning.',
+      rpc,
+    };
+  }
+  const [rpc, pool, ok, pos, pending] = await Promise.all([
     rpcStatus(cfg),
     c.marketplace.agentPools(agentId),
     c.marketplace.canTopUp(agentId, lender) as Promise<boolean>,
     c.marketplace.getLenderPosition(agentId, lender),
     c.marketplace.pendingTranche(agentId, lender),
-    activeLoanStartTimes(cfg, agentId),
   ]);
   if (!pool.isActive) throw new ValidationError(`No active pool for agentId ${agentId} on ${cfg.name}`, 'agentId');
+  const activeStarts = await activeLoanStartTimes(cfg, agentId, pool.agentAddress as string);
   const hasPosition = (pos.amount as bigint) > 0n;
   const corrected = correctedCanTopUp({
     positionAmount: pos.amount as bigint,
@@ -837,10 +1005,38 @@ export async function readCanTopUp(cfg: NetworkConfig, agentId: number, lender: 
   };
 }
 
-/** Start timestamps of every ACTIVE loan in an agent's pool (<= MAX_ACTIVE_LOANS_PER_AGENT entries). */
-export async function activeLoanStartTimes(cfg: NetworkConfig, agentId: number): Promise<bigint[]> {
+/**
+ * [X-6 2026-09-23] The agent's ACTIVE loan ids on ANY generation.
+ *
+ * V6.1+ has `getActiveLoanIds`. V6 does not, so the answer is computed the way
+ * both SDKs compute it: walk the pool creator's `agentLoans[]` and keep state
+ * ACTIVE. Refusing the question on V6 (which the server used to do) made the
+ * same question return different answers from the three clients.
+ */
+async function activeLoanIdsFor(cfg: NetworkConfig, agentId: number, poolCreator: string): Promise<bigint[]> {
   const c = getContracts(cfg);
-  const ids = (await c.marketplace.getActiveLoanIds(agentId)) as bigint[];
+  const caps = await marketplaceCapabilities(cfg);
+  if (caps.v61) return (await c.marketplace.getActiveLoanIds(agentId)) as bigint[];
+  if (!poolCreator || poolCreator === ethers.ZeroAddress) return [];
+  const out: bigint[] = [];
+  for (let i = 0; i < MAX_LIST; i++) {
+    let lid: bigint;
+    try {
+      lid = (await c.marketplace.agentLoans(poolCreator, i)) as bigint;
+    } catch (e) {
+      if (!isTransientRpcFailure(e)) break; // [X-4] end of array only
+      throw e;
+    }
+    const l = await c.marketplace.loans(lid);
+    if (Number(l.state) === 1) out.push(lid);
+  }
+  return out;
+}
+
+/** Start timestamps of every ACTIVE loan in an agent's pool (<= MAX_ACTIVE_LOANS_PER_AGENT entries). */
+export async function activeLoanStartTimes(cfg: NetworkConfig, agentId: number, poolCreator = ''): Promise<bigint[]> {
+  const c = getContracts(cfg);
+  const ids = await activeLoanIdsFor(cfg, agentId, poolCreator);
   const loans = await Promise.all(ids.map((id) => c.marketplace.loans(id)));
   return loans.map((l) => l.startTime as bigint);
 }
@@ -848,12 +1044,21 @@ export async function activeLoanStartTimes(cfg: NetworkConfig, agentId: number):
 /** getActiveLoanIds(agentId): the agent's ACTIVE loans (<= MAX_ACTIVE_LOANS_PER_AGENT). */
 export async function readActiveLoanIds(cfg: NetworkConfig, agentId: number) {
   const c = getContracts(cfg);
-  const caps = await requireV61(cfg, 'get_active_loan_ids');
-  const [rpc, pool, idsRaw] = await Promise.all([rpcStatus(cfg), c.marketplace.agentPools(agentId), c.marketplace.getActiveLoanIds(agentId) as Promise<bigint[]>]);
+  const [rpc, caps, pool] = await Promise.all([rpcStatus(cfg), marketplaceCapabilities(cfg), c.marketplace.agentPools(agentId)]);
   if (!pool.isActive) throw new ValidationError(`No active pool for agentId ${agentId} on ${cfg.name}`, 'agentId');
-  const ids = idsRaw.map(Number);
+  const ids = (await activeLoanIdsFor(cfg, agentId, pool.agentAddress as string)).map(Number);
   const loans = await Promise.all(ids.map(async (id) => formatLoan(await c.marketplace.loans(id), id)));
-  return { network: cfg.name, marketplaceVersion: caps.version, agentId, activeLoans: ids.length, loanIds: ids, loans, rpc };
+  return {
+    network: cfg.name,
+    marketplaceVersion: caps.version,
+    agentId,
+    activeLoans: ids.length,
+    loanIds: ids,
+    loans,
+    source: caps.v61 ? 'getActiveLoanIds' : 'agentLoans-walk',
+    ...(caps.v61 ? {} : { note: 'This deployment predates getActiveLoanIds(); the list was computed by walking the pool creator\'s agentLoans[] and keeping the ACTIVE ones — the same way the JS and Python SDKs answer it.' }),
+    rpc,
+  };
 }
 
 
@@ -863,11 +1068,23 @@ export async function readAgentLoans(cfg: NetworkConfig, address: string, opts: 
   const limit = Math.min(opts.limit ?? 50, MAX_LIST);
   const ids: number[] = [];
   // agentLoans(address, i) reverts past the end; walk until revert (bounded).
+  //
+  // [X-4 2026-09-23] Only a DEFINITE revert ends the walk. Treating ANY error as
+  // "end of array" meant one rate-limited eth_call silently truncated the list —
+  // and an empty result reads as "this agent has no loans", which is a wrong
+  // answer about outstanding debt.
   for (let i = 0; i < MAX_LIST; i++) {
     try {
       ids.push(Number(await c.marketplace.agentLoans(address, i)));
-    } catch {
-      break;
+    } catch (e) {
+      if (!isTransientRpcFailure(e)) break;
+      throw Object.assign(
+        new Error(
+          `Could not enumerate ${address}'s loans on ${cfg.name}: the RPC failed at index ${i} of the agentLoans ` +
+          `walk (${describeRpcError(e)}). Refusing to report a truncated loan list as complete — retry shortly.`,
+        ),
+        { cause: e },
+      );
     }
   }
   const recent = ids.slice(-limit).reverse();
@@ -877,7 +1094,19 @@ export async function readAgentLoans(cfg: NetworkConfig, address: string, opts: 
 
 export async function readPositions(cfg: NetworkConfig, address: string) {
   const c = getContracts(cfg);
-  const [rpc, active] = await Promise.all([rpcStatus(cfg), activeAgentIds(c, cfg)]);
+  let rpc: RpcStatus;
+  let active: { ids: bigint[]; total: number; truncated: boolean };
+  try {
+    [rpc, active] = await Promise.all([rpcStatus(cfg), activeAgentIds(c, cfg)]);
+  } catch (e) {
+    // [X-2] the 2026-05 Base build cannot enumerate pools, so positions cannot
+    // be discovered by scanning. Say that — an empty list would read as "you
+    // have no positions", which is a wrong answer about money.
+    return noEnumeration(cfg, e, {
+      network: cfg.name, address, totalSuppliedUsdc: null, totalClaimableInterestUsdc: null,
+      positions: [] as Array<Record<string, unknown>>,
+    });
+  }
   const ids = active.ids;
   const positions: Array<Record<string, unknown>> = [];
   let totalSupplied = 0n;
