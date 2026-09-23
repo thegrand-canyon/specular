@@ -1,0 +1,1183 @@
+{
+  "generatedAt": "2026-09-21T23:25:16.991Z",
+  "runs": {
+    "NEW": {
+      "levers": {
+        "name": "NEW (Arc mainnet post-audit)",
+        "maxGainPerWindow": 5,
+        "gainWindow": 86400,
+        "minSupply": 10,
+        "platformFeeRate": 100,
+        "minHold": 86400,
+        "bindM1": true,
+        "bonusRef": 100,
+        "onTimeBonus": 10,
+        "penaltyBase": 50,
+        "penaltyLarge": 100,
+        "largeThreshold": 10000
+      },
+      "plan": {
+        "loansPerCycle": 1,
+        "perLoanUsdc": 50,
+        "principalPerCycleUsdc": 50
+      },
+      "milestones": {
+        "200": {
+          "cycle": 20,
+          "day": 20.0005,
+          "score": 200,
+          "creditLimitUsdc": 5000,
+          "collateralPct": 100,
+          "cumFeesUsdc": 0.02876,
+          "lockedUsdc": 52.8767,
+          "cumGas": "14715756"
+        },
+        "400": {
+          "cycle": 60,
+          "day": 60.0014,
+          "score": 400,
+          "creditLimitUsdc": 10000,
+          "collateralPct": 100,
+          "cumFeesUsdc": 0.08628,
+          "lockedUsdc": 58.6301,
+          "cumGas": "42054276"
+        },
+        "500": {
+          "cycle": 80,
+          "day": 80.0019,
+          "score": 500,
+          "creditLimitUsdc": 10000,
+          "collateralPct": 25,
+          "cumFeesUsdc": 0.10544,
+          "lockedUsdc": 60.5479,
+          "cumGas": "55723196"
+        },
+        "600": {
+          "cycle": 100,
+          "day": 100.0023,
+          "score": 600,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.1246,
+          "lockedUsdc": 62.4657,
+          "cumGas": "69504136"
+        },
+        "700": {
+          "cycle": 120,
+          "day": 120.0028,
+          "score": 700,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.13802,
+          "lockedUsdc": 63.80816,
+          "cumGas": "82699856"
+        },
+        "800": {
+          "cycle": 140,
+          "day": 140.0032,
+          "score": 800,
+          "creditLimitUsdc": 50000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.15144,
+          "lockedUsdc": 65.15062,
+          "cumGas": "95895576"
+        }
+      },
+      "at600": {
+        "days": 100.0023,
+        "cycles": 100,
+        "feesUsdc": 0.1246,
+        "lockedUsdc": 62.4657,
+        "gas": "69504136"
+      },
+      "at800": {
+        "days": 140.0032,
+        "cycles": 140,
+        "feesUsdc": 0.15144,
+        "lockedUsdc": 65.15062,
+        "gas": "95895576"
+      },
+      "bust600": {
+        "label": "bust@600",
+        "scoreAtBustOut": 600,
+        "creditLimitUsdc": 25000,
+        "collateralPct": 0,
+        "honestSuppliedUsdc": 25000,
+        "ownSeedWithdrawnUsdc": 50,
+        "drawnUsdc": 25000,
+        "attackerGainUsdc": 25000,
+        "lenderEscapeBeforeLiquidation": "BLOCKED: VM Exception while processing transaction: reverted with reason string 'Insuffic",
+        "lenderLosses": [
+          {
+            "lender": "bust@600-L0",
+            "suppliedUsdc": 5000,
+            "remainingUsdc": 0,
+            "lossUsdc": 5000
+          },
+          {
+            "lender": "bust@600-L1",
+            "suppliedUsdc": 5000,
+            "remainingUsdc": 0,
+            "lossUsdc": 5000
+          },
+          {
+            "lender": "bust@600-L2",
+            "suppliedUsdc": 5000,
+            "remainingUsdc": 0,
+            "lossUsdc": 5000
+          },
+          {
+            "lender": "bust@600-L3",
+            "suppliedUsdc": 5000,
+            "remainingUsdc": 0,
+            "lossUsdc": 5000
+          },
+          {
+            "lender": "bust@600-L4",
+            "suppliedUsdc": 5000,
+            "remainingUsdc": 0,
+            "lossUsdc": 5000
+          }
+        ],
+        "totalLenderLossUsdc": 25000,
+        "scoreAfterDefault": 500,
+        "penaltyPoints": 100,
+        "defaultCount": 1
+      },
+      "bust800": {
+        "label": "bust@800",
+        "scoreAtBustOut": 800,
+        "creditLimitUsdc": 50000,
+        "collateralPct": 0,
+        "honestSuppliedUsdc": 50000,
+        "ownSeedWithdrawnUsdc": 50,
+        "drawnUsdc": 50000,
+        "attackerGainUsdc": 50000,
+        "lenderEscapeBeforeLiquidation": "BLOCKED: VM Exception while processing transaction: reverted with reason string 'Insuffic",
+        "lenderLosses": [
+          {
+            "lender": "bust@800-L0",
+            "suppliedUsdc": 10000,
+            "remainingUsdc": 0,
+            "lossUsdc": 10000
+          },
+          {
+            "lender": "bust@800-L1",
+            "suppliedUsdc": 10000,
+            "remainingUsdc": 0,
+            "lossUsdc": 10000
+          },
+          {
+            "lender": "bust@800-L2",
+            "suppliedUsdc": 10000,
+            "remainingUsdc": 0,
+            "lossUsdc": 10000
+          },
+          {
+            "lender": "bust@800-L3",
+            "suppliedUsdc": 10000,
+            "remainingUsdc": 0,
+            "lossUsdc": 10000
+          },
+          {
+            "lender": "bust@800-L4",
+            "suppliedUsdc": 10000,
+            "remainingUsdc": 0,
+            "lossUsdc": 10000
+          }
+        ],
+        "totalLenderLossUsdc": 50000,
+        "scoreAfterDefault": 700,
+        "penaltyPoints": 100,
+        "defaultCount": 1
+      },
+      "refarm": {
+        "fromScore": 500,
+        "daysBackTo600": 20.0005,
+        "feesUsdc": 0.01916,
+        "cycles": 20
+      },
+      "trajectory": [
+        {
+          "cycle": 1,
+          "day": 1,
+          "score": 105,
+          "creditLimitUsdc": 1000,
+          "collateralPct": 100,
+          "cumFeesUsdc": 0.001438,
+          "lockedUsdc": 50.143835,
+          "cumGas": "1729940"
+        },
+        {
+          "cycle": 6,
+          "day": 6.0001,
+          "score": 130,
+          "creditLimitUsdc": 1000,
+          "collateralPct": 100,
+          "cumFeesUsdc": 0.008628,
+          "lockedUsdc": 50.86301,
+          "cumGas": "5147260"
+        },
+        {
+          "cycle": 11,
+          "day": 11.0003,
+          "score": 155,
+          "creditLimitUsdc": 1000,
+          "collateralPct": 100,
+          "cumFeesUsdc": 0.015818,
+          "lockedUsdc": 51.582185,
+          "cumGas": "8564580"
+        },
+        {
+          "cycle": 16,
+          "day": 16.0004,
+          "score": 180,
+          "creditLimitUsdc": 1000,
+          "collateralPct": 100,
+          "cumFeesUsdc": 0.023008,
+          "lockedUsdc": 52.30136,
+          "cumGas": "11981900"
+        },
+        {
+          "cycle": 21,
+          "day": 21.0005,
+          "score": 205,
+          "creditLimitUsdc": 5000,
+          "collateralPct": 100,
+          "cumFeesUsdc": 0.030198,
+          "lockedUsdc": 53.020535,
+          "cumGas": "15399219"
+        },
+        {
+          "cycle": 26,
+          "day": 26.0006,
+          "score": 230,
+          "creditLimitUsdc": 5000,
+          "collateralPct": 100,
+          "cumFeesUsdc": 0.037388,
+          "lockedUsdc": 53.73971,
+          "cumGas": "18816534"
+        },
+        {
+          "cycle": 31,
+          "day": 31.0007,
+          "score": 255,
+          "creditLimitUsdc": 5000,
+          "collateralPct": 100,
+          "cumFeesUsdc": 0.044578,
+          "lockedUsdc": 54.458885,
+          "cumGas": "22233849"
+        },
+        {
+          "cycle": 36,
+          "day": 36.0008,
+          "score": 280,
+          "creditLimitUsdc": 5000,
+          "collateralPct": 100,
+          "cumFeesUsdc": 0.051768,
+          "lockedUsdc": 55.17806,
+          "cumGas": "25651164"
+        },
+        {
+          "cycle": 41,
+          "day": 41.0009,
+          "score": 305,
+          "creditLimitUsdc": 5000,
+          "collateralPct": 100,
+          "cumFeesUsdc": 0.058958,
+          "lockedUsdc": 55.897235,
+          "cumGas": "29068479"
+        },
+        {
+          "cycle": 46,
+          "day": 46.0011,
+          "score": 330,
+          "creditLimitUsdc": 5000,
+          "collateralPct": 100,
+          "cumFeesUsdc": 0.066148,
+          "lockedUsdc": 56.61641,
+          "cumGas": "32485794"
+        },
+        {
+          "cycle": 51,
+          "day": 51.0012,
+          "score": 355,
+          "creditLimitUsdc": 5000,
+          "collateralPct": 100,
+          "cumFeesUsdc": 0.073338,
+          "lockedUsdc": 57.335585,
+          "cumGas": "35903109"
+        },
+        {
+          "cycle": 56,
+          "day": 56.0013,
+          "score": 380,
+          "creditLimitUsdc": 5000,
+          "collateralPct": 100,
+          "cumFeesUsdc": 0.080528,
+          "lockedUsdc": 58.05476,
+          "cumGas": "39320424"
+        },
+        {
+          "cycle": 61,
+          "day": 61.0014,
+          "score": 405,
+          "creditLimitUsdc": 10000,
+          "collateralPct": 100,
+          "cumFeesUsdc": 0.087238,
+          "lockedUsdc": 58.72599,
+          "cumGas": "42737722"
+        },
+        {
+          "cycle": 66,
+          "day": 66.0015,
+          "score": 430,
+          "creditLimitUsdc": 10000,
+          "collateralPct": 100,
+          "cumFeesUsdc": 0.092028,
+          "lockedUsdc": 59.20544,
+          "cumGas": "46154952"
+        },
+        {
+          "cycle": 71,
+          "day": 71.0016,
+          "score": 455,
+          "creditLimitUsdc": 10000,
+          "collateralPct": 100,
+          "cumFeesUsdc": 0.096818,
+          "lockedUsdc": 59.68489,
+          "cumGas": "49572182"
+        },
+        {
+          "cycle": 76,
+          "day": 76.0018,
+          "score": 480,
+          "creditLimitUsdc": 10000,
+          "collateralPct": 100,
+          "cumFeesUsdc": 0.101608,
+          "lockedUsdc": 60.16434,
+          "cumGas": "52989412"
+        },
+        {
+          "cycle": 81,
+          "day": 81.0019,
+          "score": 505,
+          "creditLimitUsdc": 10000,
+          "collateralPct": 25,
+          "cumFeesUsdc": 0.106398,
+          "lockedUsdc": 60.64379,
+          "cumGas": "56412243"
+        },
+        {
+          "cycle": 86,
+          "day": 86.002,
+          "score": 530,
+          "creditLimitUsdc": 10000,
+          "collateralPct": 25,
+          "cumFeesUsdc": 0.111188,
+          "lockedUsdc": 61.12324,
+          "cumGas": "59857478"
+        },
+        {
+          "cycle": 91,
+          "day": 91.0021,
+          "score": 555,
+          "creditLimitUsdc": 10000,
+          "collateralPct": 25,
+          "cumFeesUsdc": 0.115978,
+          "lockedUsdc": 61.60269,
+          "cumGas": "63302713"
+        },
+        {
+          "cycle": 96,
+          "day": 96.0022,
+          "score": 580,
+          "creditLimitUsdc": 10000,
+          "collateralPct": 25,
+          "cumFeesUsdc": 0.120768,
+          "lockedUsdc": 62.08214,
+          "cumGas": "66747948"
+        },
+        {
+          "cycle": 99,
+          "day": 99.0023,
+          "score": 595,
+          "creditLimitUsdc": 10000,
+          "collateralPct": 25,
+          "cumFeesUsdc": 0.123642,
+          "lockedUsdc": 62.36981,
+          "cumGas": "68815089"
+        },
+        {
+          "cycle": 100,
+          "day": 100.0023,
+          "score": 600,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.1246,
+          "lockedUsdc": 62.4657,
+          "cumGas": "69504136"
+        },
+        {
+          "cycle": 101,
+          "day": 101.0023,
+          "score": 605,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.125271,
+          "lockedUsdc": 62.532823,
+          "cumGas": "70163922"
+        },
+        {
+          "cycle": 102,
+          "day": 102.0024,
+          "score": 610,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.125942,
+          "lockedUsdc": 62.599946,
+          "cumGas": "70823708"
+        },
+        {
+          "cycle": 103,
+          "day": 103.0024,
+          "score": 615,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.126613,
+          "lockedUsdc": 62.667069,
+          "cumGas": "71483494"
+        },
+        {
+          "cycle": 104,
+          "day": 104.0024,
+          "score": 620,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.127284,
+          "lockedUsdc": 62.734192,
+          "cumGas": "72143280"
+        },
+        {
+          "cycle": 105,
+          "day": 105.0024,
+          "score": 625,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.127955,
+          "lockedUsdc": 62.801315,
+          "cumGas": "72803066"
+        },
+        {
+          "cycle": 106,
+          "day": 106.0025,
+          "score": 630,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.128626,
+          "lockedUsdc": 62.868438,
+          "cumGas": "73462852"
+        },
+        {
+          "cycle": 107,
+          "day": 107.0025,
+          "score": 635,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.129297,
+          "lockedUsdc": 62.935561,
+          "cumGas": "74122638"
+        },
+        {
+          "cycle": 108,
+          "day": 108.0025,
+          "score": 640,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.129968,
+          "lockedUsdc": 63.002684,
+          "cumGas": "74782424"
+        },
+        {
+          "cycle": 109,
+          "day": 109.0025,
+          "score": 645,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.130639,
+          "lockedUsdc": 63.069807,
+          "cumGas": "75442210"
+        },
+        {
+          "cycle": 110,
+          "day": 110.0025,
+          "score": 650,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.13131,
+          "lockedUsdc": 63.13693,
+          "cumGas": "76101996"
+        },
+        {
+          "cycle": 111,
+          "day": 111.0026,
+          "score": 655,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.131981,
+          "lockedUsdc": 63.204053,
+          "cumGas": "76761782"
+        },
+        {
+          "cycle": 112,
+          "day": 112.0026,
+          "score": 660,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.132652,
+          "lockedUsdc": 63.271176,
+          "cumGas": "77421568"
+        },
+        {
+          "cycle": 113,
+          "day": 113.0026,
+          "score": 665,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.133323,
+          "lockedUsdc": 63.338299,
+          "cumGas": "78081354"
+        },
+        {
+          "cycle": 114,
+          "day": 114.0026,
+          "score": 670,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.133994,
+          "lockedUsdc": 63.405422,
+          "cumGas": "78741140"
+        },
+        {
+          "cycle": 115,
+          "day": 115.0027,
+          "score": 675,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.134665,
+          "lockedUsdc": 63.472545,
+          "cumGas": "79400926"
+        },
+        {
+          "cycle": 116,
+          "day": 116.0027,
+          "score": 680,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.135336,
+          "lockedUsdc": 63.539668,
+          "cumGas": "80060712"
+        },
+        {
+          "cycle": 117,
+          "day": 117.0027,
+          "score": 685,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.136007,
+          "lockedUsdc": 63.606791,
+          "cumGas": "80720498"
+        },
+        {
+          "cycle": 118,
+          "day": 118.0027,
+          "score": 690,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.136678,
+          "lockedUsdc": 63.673914,
+          "cumGas": "81380284"
+        },
+        {
+          "cycle": 119,
+          "day": 119.0028,
+          "score": 695,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.137349,
+          "lockedUsdc": 63.741037,
+          "cumGas": "82040070"
+        },
+        {
+          "cycle": 120,
+          "day": 120.0028,
+          "score": 700,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.13802,
+          "lockedUsdc": 63.80816,
+          "cumGas": "82699856"
+        },
+        {
+          "cycle": 121,
+          "day": 121.0028,
+          "score": 705,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.138691,
+          "lockedUsdc": 63.875283,
+          "cumGas": "83359642"
+        },
+        {
+          "cycle": 122,
+          "day": 122.0028,
+          "score": 710,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.139362,
+          "lockedUsdc": 63.942406,
+          "cumGas": "84019428"
+        },
+        {
+          "cycle": 123,
+          "day": 123.0028,
+          "score": 715,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.140033,
+          "lockedUsdc": 64.009529,
+          "cumGas": "84679214"
+        },
+        {
+          "cycle": 124,
+          "day": 124.0029,
+          "score": 720,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.140704,
+          "lockedUsdc": 64.076652,
+          "cumGas": "85339000"
+        },
+        {
+          "cycle": 125,
+          "day": 125.0029,
+          "score": 725,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.141375,
+          "lockedUsdc": 64.143775,
+          "cumGas": "85998786"
+        },
+        {
+          "cycle": 126,
+          "day": 126.0029,
+          "score": 730,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.142046,
+          "lockedUsdc": 64.210898,
+          "cumGas": "86658572"
+        },
+        {
+          "cycle": 127,
+          "day": 127.0029,
+          "score": 735,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.142717,
+          "lockedUsdc": 64.278021,
+          "cumGas": "87318358"
+        },
+        {
+          "cycle": 128,
+          "day": 128.003,
+          "score": 740,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.143388,
+          "lockedUsdc": 64.345144,
+          "cumGas": "87978144"
+        },
+        {
+          "cycle": 129,
+          "day": 129.003,
+          "score": 745,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.144059,
+          "lockedUsdc": 64.412267,
+          "cumGas": "88637930"
+        },
+        {
+          "cycle": 130,
+          "day": 130.003,
+          "score": 750,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.14473,
+          "lockedUsdc": 64.47939,
+          "cumGas": "89297716"
+        },
+        {
+          "cycle": 131,
+          "day": 131.003,
+          "score": 755,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.145401,
+          "lockedUsdc": 64.546513,
+          "cumGas": "89957502"
+        },
+        {
+          "cycle": 132,
+          "day": 132.0031,
+          "score": 760,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.146072,
+          "lockedUsdc": 64.613636,
+          "cumGas": "90617288"
+        },
+        {
+          "cycle": 133,
+          "day": 133.0031,
+          "score": 765,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.146743,
+          "lockedUsdc": 64.680759,
+          "cumGas": "91277074"
+        },
+        {
+          "cycle": 134,
+          "day": 134.0031,
+          "score": 770,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.147414,
+          "lockedUsdc": 64.747882,
+          "cumGas": "91936860"
+        },
+        {
+          "cycle": 135,
+          "day": 135.0031,
+          "score": 775,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.148085,
+          "lockedUsdc": 64.815005,
+          "cumGas": "92596646"
+        },
+        {
+          "cycle": 136,
+          "day": 136.0031,
+          "score": 780,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.148756,
+          "lockedUsdc": 64.882128,
+          "cumGas": "93256432"
+        },
+        {
+          "cycle": 137,
+          "day": 137.0032,
+          "score": 785,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.149427,
+          "lockedUsdc": 64.949251,
+          "cumGas": "93916218"
+        },
+        {
+          "cycle": 138,
+          "day": 138.0032,
+          "score": 790,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.150098,
+          "lockedUsdc": 65.016374,
+          "cumGas": "94576004"
+        },
+        {
+          "cycle": 139,
+          "day": 139.0032,
+          "score": 795,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.150769,
+          "lockedUsdc": 65.083497,
+          "cumGas": "95235790"
+        },
+        {
+          "cycle": 140,
+          "day": 140.0032,
+          "score": 800,
+          "creditLimitUsdc": 50000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.15144,
+          "lockedUsdc": 65.15062,
+          "cumGas": "95895576"
+        }
+      ]
+    },
+    "OLD": {
+      "levers": {
+        "name": "OLD (pre-tightening)",
+        "maxGainPerWindow": 20,
+        "gainWindow": 86400,
+        "minSupply": 1,
+        "platformFeeRate": 100,
+        "minHold": 86400,
+        "bindM1": true,
+        "bonusRef": 100,
+        "onTimeBonus": 10,
+        "penaltyBase": 50,
+        "penaltyLarge": 100,
+        "largeThreshold": 10000
+      },
+      "plan": {
+        "loansPerCycle": 2,
+        "perLoanUsdc": 100,
+        "principalPerCycleUsdc": 200
+      },
+      "milestones": {
+        "200": {
+          "cycle": 5,
+          "day": 5.0002,
+          "score": 200,
+          "creditLimitUsdc": 5000,
+          "collateralPct": 100,
+          "cumFeesUsdc": 0.02876,
+          "lockedUsdc": 202.87671,
+          "cumGas": "7578766"
+        },
+        "400": {
+          "cycle": 15,
+          "day": 15.0007,
+          "score": 400,
+          "creditLimitUsdc": 10000,
+          "collateralPct": 100,
+          "cumFeesUsdc": 0.08628,
+          "lockedUsdc": 208.63013,
+          "cumGas": "20827626"
+        },
+        "500": {
+          "cycle": 20,
+          "day": 20.0009,
+          "score": 500,
+          "creditLimitUsdc": 10000,
+          "collateralPct": 25,
+          "cumFeesUsdc": 0.10545,
+          "lockedUsdc": 210.54793,
+          "cumGas": "27451886"
+        },
+        "600": {
+          "cycle": 25,
+          "day": 25.0012,
+          "score": 600,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.12462,
+          "lockedUsdc": 212.46573,
+          "cumGas": "34132156"
+        },
+        "700": {
+          "cycle": 30,
+          "day": 30.0014,
+          "score": 700,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.13804,
+          "lockedUsdc": 213.80819,
+          "cumGas": "40519816"
+        },
+        "800": {
+          "cycle": 35,
+          "day": 35.0016,
+          "score": 800,
+          "creditLimitUsdc": 50000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.15146,
+          "lockedUsdc": 215.15065,
+          "cumGas": "46907476"
+        }
+      },
+      "at600": {
+        "days": 25.0012,
+        "cycles": 25,
+        "feesUsdc": 0.12462,
+        "lockedUsdc": 212.46573,
+        "gas": "34132156"
+      },
+      "at800": {
+        "days": 35.0016,
+        "cycles": 35,
+        "feesUsdc": 0.15146,
+        "lockedUsdc": 215.15065,
+        "gas": "46907476"
+      },
+      "bust600": {
+        "label": "bust@600",
+        "scoreAtBustOut": 600,
+        "creditLimitUsdc": 25000,
+        "collateralPct": 0,
+        "honestSuppliedUsdc": 25000,
+        "ownSeedWithdrawnUsdc": 200,
+        "drawnUsdc": 25000,
+        "attackerGainUsdc": 25000,
+        "lenderEscapeBeforeLiquidation": "BLOCKED: VM Exception while processing transaction: reverted with reason string 'Insuffic",
+        "lenderLosses": [
+          {
+            "lender": "bust@600-L0",
+            "suppliedUsdc": 5000,
+            "remainingUsdc": 0,
+            "lossUsdc": 5000
+          },
+          {
+            "lender": "bust@600-L1",
+            "suppliedUsdc": 5000,
+            "remainingUsdc": 0,
+            "lossUsdc": 5000
+          },
+          {
+            "lender": "bust@600-L2",
+            "suppliedUsdc": 5000,
+            "remainingUsdc": 0,
+            "lossUsdc": 5000
+          },
+          {
+            "lender": "bust@600-L3",
+            "suppliedUsdc": 5000,
+            "remainingUsdc": 0,
+            "lossUsdc": 5000
+          },
+          {
+            "lender": "bust@600-L4",
+            "suppliedUsdc": 5000,
+            "remainingUsdc": 0,
+            "lossUsdc": 5000
+          }
+        ],
+        "totalLenderLossUsdc": 25000,
+        "scoreAfterDefault": 500,
+        "penaltyPoints": 100,
+        "defaultCount": 1
+      },
+      "bust800": {
+        "label": "bust@800",
+        "scoreAtBustOut": 800,
+        "creditLimitUsdc": 50000,
+        "collateralPct": 0,
+        "honestSuppliedUsdc": 50000,
+        "ownSeedWithdrawnUsdc": 200,
+        "drawnUsdc": 50000,
+        "attackerGainUsdc": 50000,
+        "lenderEscapeBeforeLiquidation": "BLOCKED: VM Exception while processing transaction: reverted with reason string 'Insuffic",
+        "lenderLosses": [
+          {
+            "lender": "bust@800-L0",
+            "suppliedUsdc": 10000,
+            "remainingUsdc": 0,
+            "lossUsdc": 10000
+          },
+          {
+            "lender": "bust@800-L1",
+            "suppliedUsdc": 10000,
+            "remainingUsdc": 0,
+            "lossUsdc": 10000
+          },
+          {
+            "lender": "bust@800-L2",
+            "suppliedUsdc": 10000,
+            "remainingUsdc": 0,
+            "lossUsdc": 10000
+          },
+          {
+            "lender": "bust@800-L3",
+            "suppliedUsdc": 10000,
+            "remainingUsdc": 0,
+            "lossUsdc": 10000
+          },
+          {
+            "lender": "bust@800-L4",
+            "suppliedUsdc": 10000,
+            "remainingUsdc": 0,
+            "lossUsdc": 10000
+          }
+        ],
+        "totalLenderLossUsdc": 50000,
+        "scoreAfterDefault": 700,
+        "penaltyPoints": 100,
+        "defaultCount": 1
+      },
+      "refarm": {
+        "fromScore": 500,
+        "daysBackTo600": 5.0002,
+        "feesUsdc": 0.01917,
+        "cycles": 5
+      },
+      "trajectory": [
+        {
+          "cycle": 1,
+          "day": 1,
+          "score": 120,
+          "creditLimitUsdc": 1000,
+          "collateralPct": 100,
+          "cumFeesUsdc": 0.005752,
+          "lockedUsdc": 200.575342,
+          "cumGas": "2279214"
+        },
+        {
+          "cycle": 6,
+          "day": 6.0003,
+          "score": 220,
+          "creditLimitUsdc": 5000,
+          "collateralPct": 100,
+          "cumFeesUsdc": 0.034512,
+          "lockedUsdc": 203.452052,
+          "cumGas": "8903652"
+        },
+        {
+          "cycle": 11,
+          "day": 11.0005,
+          "score": 320,
+          "creditLimitUsdc": 5000,
+          "collateralPct": 100,
+          "cumFeesUsdc": 0.063272,
+          "lockedUsdc": 206.328762,
+          "cumGas": "15528082"
+        },
+        {
+          "cycle": 16,
+          "day": 16.0007,
+          "score": 420,
+          "creditLimitUsdc": 10000,
+          "collateralPct": 100,
+          "cumFeesUsdc": 0.090114,
+          "lockedUsdc": 209.01369,
+          "cumGas": "22152478"
+        },
+        {
+          "cycle": 21,
+          "day": 21.001,
+          "score": 520,
+          "creditLimitUsdc": 10000,
+          "collateralPct": 25,
+          "cumFeesUsdc": 0.109284,
+          "lockedUsdc": 210.93149,
+          "cumGas": "28787940"
+        },
+        {
+          "cycle": 25,
+          "day": 25.0012,
+          "score": 600,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.12462,
+          "lockedUsdc": 212.46573,
+          "cumGas": "34132156"
+        },
+        {
+          "cycle": 26,
+          "day": 26.0012,
+          "score": 620,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.127304,
+          "lockedUsdc": 212.734222,
+          "cumGas": "35409688"
+        },
+        {
+          "cycle": 27,
+          "day": 27.0012,
+          "score": 640,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.129988,
+          "lockedUsdc": 213.002714,
+          "cumGas": "36687220"
+        },
+        {
+          "cycle": 28,
+          "day": 28.0013,
+          "score": 660,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.132672,
+          "lockedUsdc": 213.271206,
+          "cumGas": "37964752"
+        },
+        {
+          "cycle": 29,
+          "day": 29.0013,
+          "score": 680,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.135356,
+          "lockedUsdc": 213.539698,
+          "cumGas": "39242284"
+        },
+        {
+          "cycle": 30,
+          "day": 30.0014,
+          "score": 700,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.13804,
+          "lockedUsdc": 213.80819,
+          "cumGas": "40519816"
+        },
+        {
+          "cycle": 31,
+          "day": 31.0014,
+          "score": 720,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.140724,
+          "lockedUsdc": 214.076682,
+          "cumGas": "41797348"
+        },
+        {
+          "cycle": 32,
+          "day": 32.0015,
+          "score": 740,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.143408,
+          "lockedUsdc": 214.345174,
+          "cumGas": "43074880"
+        },
+        {
+          "cycle": 33,
+          "day": 33.0015,
+          "score": 760,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.146092,
+          "lockedUsdc": 214.613666,
+          "cumGas": "44352412"
+        },
+        {
+          "cycle": 34,
+          "day": 34.0016,
+          "score": 780,
+          "creditLimitUsdc": 25000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.148776,
+          "lockedUsdc": 214.882158,
+          "cumGas": "45629944"
+        },
+        {
+          "cycle": 35,
+          "day": 35.0016,
+          "score": 800,
+          "creditLimitUsdc": 50000,
+          "collateralPct": 0,
+          "cumFeesUsdc": 0.15146,
+          "lockedUsdc": 215.15065,
+          "cumGas": "46907476"
+        }
+      ]
+    }
+  }
+}

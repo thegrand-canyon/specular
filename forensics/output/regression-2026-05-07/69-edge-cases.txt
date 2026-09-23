@@ -1,0 +1,35 @@
+=== V6 EDGE CASE BOMBARDMENT (live) ===
+borrower aid=157
+
+[1] Loan amount edge cases
+  ✓ requestLoan(amount=0): REVERT "execution reverted: "Amount must be > 0"" (expected: Amount must be > 0)
+  ✓ requestLoan(amount=1 wei): SUCCESS
+  ✓ requestLoan(amount=creditLimit=1000): SUCCESS
+  ✓ requestLoan(amount=creditLimit+1=1000.000001): REVERT "execution reverted: "Exceeds credit limit"" (expected: Exceeds credit limit)
+
+[2] Duration edge cases
+  ✓ requestLoan(duration=7=MIN): SUCCESS
+  ✓ requestLoan(duration=6=MIN-1): REVERT "execution reverted: "Invalid duration"" (expected: Invalid duration)
+  ✓ requestLoan(duration=365=MAX): SUCCESS
+  ✓ requestLoan(duration=366=MAX+1): REVERT "execution reverted: "Invalid duration"" (expected: Invalid duration)
+
+[3] Withdraw edge cases
+  ✓ withdrawLiquidity(amount=0): REVERT "execution reverted: "Amount must be > 0"" (expected: Amount must be > 0)
+  ✓ withdrawLiquidity(amount=position+1): REVERT "execution reverted: "Insufficient balance"" (expected: Insufficient balance)
+
+[4] Liquidation edge cases
+  ✓ liquidateLoan(active, not overdue): REVERT "execution reverted: "Loan not overdue"" (expected: Loan not overdue)
+
+[5] Claim edge cases
+  ✗ claimInterest(no interest): SUCCESS (expected REVERT!)
+
+[6] Permission edges
+  ? non-owner pause: REVERT "execution reverted (unknown custom error)" (expected: OwnableUnauthorizedAccount)
+  ? non-owner liquidateLoan: REVERT "execution reverted (unknown custom error)" (expected: Loan not active)
+  ? non-owner setMigrationFinalized: REVERT "execution reverted (unknown custom error)" (expected: OwnableUnauthorizedAccount)
+
+[7] Migration helper edges (seedPool requires registry match — fix 1)
+  ✓ seedPool with random agentAddress: REVERT "execution reverted: "agentAddress/agentId mismatch"" (expected: agentAddress/agentId mismatch)
+  ✓ seedPool with agentId=0: REVERT "execution reverted: "Invalid agentId"" (expected: Invalid agentId)
+
+=== 13/17 edge cases behave as expected ===

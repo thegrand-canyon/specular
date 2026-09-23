@@ -1,0 +1,87 @@
+
+=== x402 concurrent load test ===
+Parallel buyers:   50
+Price per call:    0.05 USDC
+Expected revenue:  2.5 USDC
+Auto-flush at:     1 USDC
+Pool 49 totalLiquidity (before): 22.4 USDC
+
+Server listening on :4500
+
+[FIRE] Launching 50 concurrent x402-paying buyers...
+
+[RESULT] 50/50 succeeded, 0 failed in 44ms
+         Throughput: 1136.36 req/sec
+
+Waiting 15s for auto-flush tx(s) to settle on Arc...
+[SpecularX402Server] Flushed 2.5 USDC into pool 49: 0xed80bc409805fc1c9cf6f0ee33de956fd5219d0c05a2494853acbc60e138c133
+
+[STATS] {
+  "mode": "stub",
+  "network": "arc",
+  "sellerWallet": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+  "payTo": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+  "poolAgentId": 49,
+  "requestCount": 50,
+  "pendingUsdc": "0.0",
+  "totalFlushedUsdc": "2.5",
+  "lastFlushAt": "2026-05-26T01:46:41.686Z",
+  "autoFlushThresholdUsdc": 1
+}
+
+Pool 49 totalLiquidity (after):  24.9 USDC
+Delta:               2.5 USDC
+
+Expected revenue:   2.5 USDC
+Supplied on-chain:  2.5 USDC
+Still pending:      0.0 USDC
+Accounted:          2.5 USDC
+
+✅ x402 concurrent load PASS
+   50 parallel buyers, all settled exact, no race conditions
+
+
+=================================
+  HIGH-PARALLELISM RUN (N=200)
+=================================
+
+=== x402 concurrent load test ===
+Parallel buyers:   200
+Price per call:    0.05 USDC
+Expected revenue:  10 USDC
+Auto-flush at:     1 USDC
+Pool 49 totalLiquidity (before): 24.9 USDC
+
+Server listening on :4500
+
+[FIRE] Launching 200 concurrent x402-paying buyers...
+
+[RESULT] 200/200 succeeded, 0 failed in 93ms
+         Throughput: 2150.54 req/sec
+
+Waiting 15s for auto-flush tx(s) to settle on Arc...
+[SpecularX402Server] Flushed 10 USDC into pool 49: 0x228de5a28e9515024eb1e4a776eb0a670582bd769cff278adf04fe9b2d3fed12
+
+[STATS] {
+  "mode": "stub",
+  "network": "arc",
+  "sellerWallet": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+  "payTo": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+  "poolAgentId": 49,
+  "requestCount": 200,
+  "pendingUsdc": "0.0",
+  "totalFlushedUsdc": "10.0",
+  "lastFlushAt": "2026-05-26T01:47:36.397Z",
+  "autoFlushThresholdUsdc": 1
+}
+
+Pool 49 totalLiquidity (after):  34.9 USDC
+Delta:               10.0 USDC
+
+Expected revenue:   10.0 USDC
+Supplied on-chain:  10.0 USDC
+Still pending:      0.0 USDC
+Accounted:          10.0 USDC
+
+✅ x402 concurrent load PASS
+   200 parallel buyers, all settled exact, no race conditions

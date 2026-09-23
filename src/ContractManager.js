@@ -85,39 +85,76 @@ class ContractManager {
     async callContract(contract, methodName, params = [], options = {}) {
         const maxRetries = options.retries || 3;
         const retryDelay = options.retryDelay || 1000;
+        const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+        const fail = (error) => {
+            throw new ContractInteractionError(
+                `Failed to call ${methodName}: ${error.message}`,
+                contract.target,
+                methodName
+            );
+        };
 
+        // Determine read vs write from the ABI. A read (view/pure) can be retried
+        // wholesale on transient RPC errors. A WRITE must never be re-sent after
+        // it has been broadcast: if result.wait() fails on a transient RPC error
+        // (timeout/500 — common on public RPCs), re-issuing the call would
+        // broadcast a SECOND transaction (duplicate loan/approval/etc.). We treat
+        // anything we can't classify as a write, i.e. the safe (no-resend) path.
+        let isRead = false;
+        try {
+            const frag = contract.interface.getFunction(methodName);
+            isRead = frag && (frag.stateMutability === 'view' || frag.stateMutability === 'pure');
+        } catch (_) { isRead = false; }
+
+        if (isRead) {
+            for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                try {
+                    return await contract[methodName](...params, options);
+                } catch (error) {
+                    if (error.message.includes('reverted') || error.message.includes('invalid') || attempt === maxRetries) {
+                        fail(error);
+                    }
+                    await sleep(retryDelay * attempt);
+                }
+            }
+        }
+
+        // WRITE path — send exactly once.
+        let result;
+        try {
+            if (options.estimateGas) {
+                const gasEstimate = await contract[methodName].estimateGas(...params);
+                options.gasLimit = gasEstimate * 120n / 100n; // Add 20% buffer
+            }
+            result = await contract[methodName](...params, options);
+        } catch (error) {
+            fail(error); // a send failure means nothing was broadcast — safe to surface
+        }
+
+        // Some ABIs mark a method nonpayable but ethers returns a plain value
+        // (no .wait) — treat as a completed read-like result.
+        if (!(result && typeof result.wait === 'function')) {
+            return result;
+        }
+
+        // Confirmation: the tx IS broadcast. Never re-send. On a transient
+        // wait() failure, poll for the receipt by hash instead.
+        const provider = contract.runner?.provider || result.provider;
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
             try {
-                // Estimate gas if it's a transaction
-                if (options.estimateGas) {
-                    const gasEstimate = await contract[methodName].estimateGas(...params);
-                    options.gasLimit = gasEstimate * 120n / 100n; // Add 20% buffer
-                }
-
-                // Call the method
-                const result = await contract[methodName](...params, options);
-
-                // If it's a transaction, wait for confirmation
-                if (result && typeof result.wait === 'function') {
-                    const receipt = await result.wait();
-                    return { transaction: result, receipt };
-                }
-
-                return result;
+                const receipt = await result.wait();
+                return { transaction: result, receipt };
             } catch (error) {
-                // Don't retry on validation errors
-                if (error.message.includes('reverted') ||
-                    error.message.includes('invalid') ||
-                    attempt === maxRetries) {
-                    throw new ContractInteractionError(
-                        `Failed to call ${methodName}: ${error.message}`,
-                        contract.target,
-                        methodName
-                    );
+                // A real on-chain revert is terminal — do not keep polling.
+                if (error.message.includes('reverted') || attempt === maxRetries) {
+                    fail(error);
                 }
-
-                // Wait before retrying
-                await new Promise(resolve => setTimeout(resolve, retryDelay * attempt));
+                // Transient: maybe the receipt is actually available — poll it.
+                try {
+                    const receipt = provider && await provider.getTransactionReceipt(result.hash);
+                    if (receipt) return { transaction: result, receipt };
+                } catch (_) { /* keep waiting */ }
+                await sleep(retryDelay * attempt);
             }
         }
     }

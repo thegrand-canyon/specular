@@ -1,0 +1,6 @@
+SpecularCreditTool-original.js
+example-usage.js
+node_modules/
+.env
+*.log
+.DS_Store

@@ -89,6 +89,10 @@ const DEFAULT_CONFIG = {
     feeRecipient:  process.env.FEE_RECIPIENT  || '',   // must be set in .env
     feeAmount:     process.env.CREDIT_CHECK_FEE || '1000000', // 1 USDC (6 decimals)
     maxTimeoutSec: 300,
+    // This service's own underwriting appetite, in USDC. It is NOT the protocol's
+    // credit ceiling: on ReputationManagerV4 the tier table is on-chain and
+    // owner-settable, and an agent's limit is always calculateCreditLimit().
+    autoApproveMaxUsdc: Number(process.env.CREDIT_AUTO_APPROVE_MAX_USDC || 50000),
 };
 
 class CreditAssessmentServer {
@@ -379,7 +383,13 @@ class CreditAssessmentServer {
             loanTerms: {
                 minDurationDays: 7,
                 maxDurationDays: 365,
-                autoApproveEligible: score >= 100 && limit <= 50000,
+                // [V7] `limit` is the agent's OWN on-chain credit limit
+                // (calculateCreditLimit), so the ceiling below is this SERVICE's
+                // own underwriting appetite, not a copy of the protocol's tier
+                // table. The tier table is on-chain and owner-settable on
+                // ReputationManagerV4 — never hardcode it. Override per operator.
+                autoApproveEligible: score >= 100 && limit <= this.cfg.autoApproveMaxUsdc,
+                autoApproveMaxUsdc: this.cfg.autoApproveMaxUsdc,
             },
             assessedAt:  new Date().toISOString(),
             protocol:    'Specular Protocol v3',

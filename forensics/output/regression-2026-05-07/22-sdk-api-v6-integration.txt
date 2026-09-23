@@ -1,0 +1,39 @@
+Spawning API on port 3098
+API ready.
+Wallet: 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+V6: 0xCeF77E14dB17aE0272510ddbDa97075e7Eb6EbF3
+PRE: wallet 19.996958 USDC, pool avail 0.00285
+
+[setup] approve V6 for 5 USDC
+  approved
+
+[1] SDK→API: /tx/supply-liquidity { agentId:49, amount:2 USDC }
+  to: 0x048363A325A5B188b7FF157d725C5e329f0171D3 (v4) — overriding to V6: 0xCeF77E14dB17aE0272510ddbDa97075e7Eb6EbF3
+  calldata length: 68 bytes
+  tx: 0xf641b781b918b7c00a50cdbe38954f69077c26d75ac5e755689c0d1057663e0f (via API method: supplyLiquidity)
+  mined block 41063492 gas 105867
+
+[2] SDK→API: /tx/request-loan { amount:1 USDC, durationDays:7 }
+  tx: 0xb756bbcbb06c603d44f0456a50b775bb8c77b8e3fbe463cb3abd065a9d8ae6a2 (via API method: requestLoan)
+  mined block 41063503 gas 399505
+  loanId: 12
+
+[3] SDK→API: /tx/repay-loan { loanId }
+  tx: 0x3078e9b69d3b14dfab943673991d5ae77ff5314b64f8ecb4ca976c07489d2236 (via API method: repayLoan)
+  mined block 41063506 gas 141029
+
+[4] SDK→API: /tx/claim-interest { agentId:49 }
+  tx: 0x34665e8728de936145c87fe2a6802e8b99560dd7b83aaae5bc52b5ce7ae36c8f (via API method: claimInterest)
+  mined block 41063510 gas 51052
+
+[5] SDK→API: /tx/withdraw-liquidity { agentId:49, amount }
+  tx: 0xec05db9901b58532326b4e86974f2055370a0df05b59f8e3f87e9380215e6978 (via API method: withdrawLiquidity)
+  mined block 41063521 gas 51552
+
+POST: wallet 19.99978 USDC, pool avail 0
+net wallet change: 0.002822 USDC
+
+final lenderCount: 1, unique: 1 ✅ no duplicates
+
+Saved.
+API stopped.

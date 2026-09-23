@@ -1,0 +1,30 @@
+
+=== Real-world x402 e2e ===
+Target:        https://api.x402node.dev/dev/uuid
+Price:         2200 base units (0.0022 USDC)
+Network:       base
+Asset:         0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+Pay to:        0x4466d4A84b7c49a6A094ec6eef4a0712D6dd125e
+Buyer (ephemeral): 0x523ad79eE40E35e44837D065D9937e769Cf6f52d
+Key saved:    /tmp/x402-buyer-realworld-1779752225620.json
+
+[FUND] Transferring 0.01 USDC to buyer...
+  tx: https://basescan.org/tx/0x96fb6711f1dc83bdc820aee4c8e73ccd0c92f572eee52f8ed233322f7b741d24
+  Buyer USDC: 0.01
+  Seller onchain (before): 29.103344 USDC
+
+[CALL] Buyer → https://api.x402node.dev/dev/uuid
+[CALL] ← HTTP 200 in 1690ms
+Body: {"version":4,"count":1,"uuid":"14fd22ba-4d16-41ca-b887-34410552b97c","meta":{"source":"x402node.com","generator":"Node.js crypto"}}
+
+Waiting 6s for settlement to propagate...
+
+[AFTER]
+  Buyer USDC:  0.0078 (delta -0.0022)
+  Seller USDC: 29.105544 (delta +0.0022)
+
+✅ Real-world x402 call SUCCEEDED end-to-end
+   Settled 0.0022 USDC on Base mainnet to a third-party seller
+
+[CLEANUP] Sweeping buyer remainder...
+  sweep: https://basescan.org/tx/0x52947abce1675b13bb586cda8da647af00c0f86c185585bdd9f8d742f222465b

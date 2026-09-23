@@ -1,0 +1,104 @@
+{
+  "pre": {
+    "label": "pre-resume",
+    "ts": "2026-05-07T18:17:45.337Z",
+    "wallet_usdc": 15,
+    "mp_usdc": 36749.766003,
+    "supply_pool_47": {
+      "totalLiq": 10010,
+      "avail": 9997.120009,
+      "lenderCount": 3
+    },
+    "own_pool_49": {
+      "totalLiq": 0,
+      "avail": 0,
+      "lenderCount": 0
+    },
+    "my_position_pool_47": {
+      "supplied": 5,
+      "earnedInterest": 0
+    }
+  },
+  "afterLoan": {
+    "label": "after_loan",
+    "ts": "2026-05-07T18:17:52.133Z",
+    "wallet_usdc": 15,
+    "mp_usdc": 36749.766003,
+    "supply_pool_47": {
+      "totalLiq": 10010,
+      "avail": 9997.120009,
+      "lenderCount": 3
+    },
+    "own_pool_49": {
+      "totalLiq": 0,
+      "avail": 0,
+      "lenderCount": 0
+    },
+    "my_position_pool_47": {
+      "supplied": 5,
+      "earnedInterest": 0
+    }
+  },
+  "afterRepay": {
+    "label": "after_repay",
+    "ts": "2026-05-07T18:17:52.825Z",
+    "wallet_usdc": 15,
+    "mp_usdc": 36749.766003,
+    "supply_pool_47": {
+      "totalLiq": 10010,
+      "avail": 9997.120009,
+      "lenderCount": 3
+    },
+    "own_pool_49": {
+      "totalLiq": 0,
+      "avail": 0,
+      "lenderCount": 0
+    },
+    "my_position_pool_47": {
+      "supplied": 5,
+      "earnedInterest": 0
+    }
+  },
+  "post": {
+    "label": "post",
+    "ts": "2026-05-07T18:17:59.213Z",
+    "wallet_usdc": 20,
+    "mp_usdc": 36744.766003,
+    "supply_pool_47": {
+      "totalLiq": 10005,
+      "avail": 9992.120009,
+      "lenderCount": 3
+    },
+    "own_pool_49": {
+      "totalLiq": 0,
+      "avail": 0,
+      "lenderCount": 0
+    },
+    "my_position_pool_47": {
+      "supplied": 0,
+      "earnedInterest": 0
+    }
+  },
+  "events": [
+    "Wallet: 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+    "PRE-RESUME state:",
+    "{\n  \"label\": \"pre-resume\",\n  \"ts\": \"2026-05-07T18:17:45.337Z\",\n  \"wallet_usdc\": 15,\n  \"mp_usdc\": 36749.766003,\n  \"supply_pool_47\": {\n    \"totalLiq\": 10010,\n    \"avail\": 9997.120009,\n    \"lenderCount\": 3\n  },\n  \"own_pool_49\": {\n    \"totalLiq\": 0,\n    \"avail\": 0,\n    \"lenderCount\": 0\n  },\n  \"my_position_pool_47\": {\n    \"supplied\": 5,\n    \"earnedInterest\": 0\n  }\n}",
+    "current USDC allowance to MP: 6",
+    "approving 10 USDC",
+    "  approve tx: 0xc65fe4858898e175b0e196328c7fce486ae6fedee2849c2d8207c4859a7695af",
+    "\n[1] requestLoan(3 USDC, 7 days)",
+    "  ❌ requestLoan failed: execution reverted: \"Insufficient pool liquidity\"",
+    "after_loan wallet USDC: 15",
+    "after_repay wallet USDC: 15",
+    "\n[3] withdrawLiquidity from pool 47",
+    "  withdrawing 5 USDC",
+    "  tx: 0x8c175d74763b17757a10ef86423c8c47b802ddfd1f75c42ff336e3e3f4492333",
+    "\n--- POST-STATE ---",
+    "{\n  \"label\": \"post\",\n  \"ts\": \"2026-05-07T18:17:59.213Z\",\n  \"wallet_usdc\": 20,\n  \"mp_usdc\": 36744.766003,\n  \"supply_pool_47\": {\n    \"totalLiq\": 10005,\n    \"avail\": 9992.120009,\n    \"lenderCount\": 3\n  },\n  \"own_pool_49\": {\n    \"totalLiq\": 0,\n    \"avail\": 0,\n    \"lenderCount\": 0\n  },\n  \"my_position_pool_47\": {\n    \"supplied\": 0,\n    \"earnedInterest\": 0\n  }\n}",
+    "\n--- DIFF (pre-resume → post) ---",
+    "wallet USDC: 15 → 20    Δ 5.000000",
+    "MP USDC:     36749.766003 → 36744.766003    Δ -5.000000",
+    "pool 47 lenderCount: 3 → 3",
+    "my pos pool 47: 5 → 0 supplied, earnedInt 0 → 0"
+  ]
+}

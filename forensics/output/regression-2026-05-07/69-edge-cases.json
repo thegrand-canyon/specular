@@ -1,0 +1,110 @@
+{
+  "timestamp": "2026-05-15T13:33:42.346Z",
+  "agentId": 157,
+  "results": [
+    {
+      "name": "requestLoan(amount=0)",
+      "passed": true,
+      "result": "REVERT",
+      "detail": "execution reverted: \"Amount must be > 0\""
+    },
+    {
+      "name": "requestLoan(amount=1 wei)",
+      "passed": true,
+      "result": "SUCCESS",
+      "detail": "443169"
+    },
+    {
+      "name": "requestLoan(amount=creditLimit=1000)",
+      "passed": true,
+      "result": "SUCCESS",
+      "detail": "391893"
+    },
+    {
+      "name": "requestLoan(amount=creditLimit+1=1000.000001)",
+      "passed": true,
+      "result": "REVERT",
+      "detail": "execution reverted: \"Exceeds credit limit\""
+    },
+    {
+      "name": "requestLoan(duration=7=MIN)",
+      "passed": true,
+      "result": "SUCCESS",
+      "detail": "391893"
+    },
+    {
+      "name": "requestLoan(duration=6=MIN-1)",
+      "passed": true,
+      "result": "REVERT",
+      "detail": "execution reverted: \"Invalid duration\""
+    },
+    {
+      "name": "requestLoan(duration=365=MAX)",
+      "passed": true,
+      "result": "SUCCESS",
+      "detail": "391905"
+    },
+    {
+      "name": "requestLoan(duration=366=MAX+1)",
+      "passed": true,
+      "result": "REVERT",
+      "detail": "execution reverted: \"Invalid duration\""
+    },
+    {
+      "name": "withdrawLiquidity(amount=0)",
+      "passed": true,
+      "result": "REVERT",
+      "detail": "execution reverted: \"Amount must be > 0\""
+    },
+    {
+      "name": "withdrawLiquidity(amount=position+1)",
+      "passed": true,
+      "result": "REVERT",
+      "detail": "execution reverted: \"Insufficient balance\""
+    },
+    {
+      "name": "liquidateLoan(active, not overdue)",
+      "passed": true,
+      "result": "REVERT",
+      "detail": "execution reverted: \"Loan not overdue\""
+    },
+    {
+      "name": "claimInterest(no interest)",
+      "passed": false,
+      "result": "SUCCESS",
+      "detail": "[object Object]"
+    },
+    {
+      "name": "non-owner pause",
+      "passed": false,
+      "result": "REVERT",
+      "detail": "execution reverted (unknown custom error)"
+    },
+    {
+      "name": "non-owner liquidateLoan",
+      "passed": false,
+      "result": "REVERT",
+      "detail": "execution reverted (unknown custom error)"
+    },
+    {
+      "name": "non-owner setMigrationFinalized",
+      "passed": false,
+      "result": "REVERT",
+      "detail": "execution reverted (unknown custom error)"
+    },
+    {
+      "name": "seedPool with random agentAddress",
+      "passed": true,
+      "result": "REVERT",
+      "detail": "execution reverted: \"agentAddress/agentId mismatch\""
+    },
+    {
+      "name": "seedPool with agentId=0",
+      "passed": true,
+      "result": "REVERT",
+      "detail": "execution reverted: \"Invalid agentId\""
+    }
+  ],
+  "passed": 13,
+  "total": 17
+}

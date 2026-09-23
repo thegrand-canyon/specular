@@ -9,4 +9,4 @@ async function main() {
     const vr = await rm3.validationRegistry();
     console.log('Current validationRegistry:', vr);
 }
-main().catch(console.error);
+main().catch((e) => { console.error(e); process.exit(1); });

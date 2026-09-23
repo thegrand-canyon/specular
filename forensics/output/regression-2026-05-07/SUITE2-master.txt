@@ -1,0 +1,220 @@
+======================================================================
+  TEST SUITE 2 — Arc + Base comprehensive (May 14)
+======================================================================
+
+### TEST A: Arc v4 deep state ###
+============================================================
+   ARC V4 DEEP STATE PROBE — 2026-05-14T17:44:51.196Z
+============================================================
+Marketplace: 0x048363A325A5B188b7FF157d725C5e329f0171D3
+Block: 42201954
+
+[1] Top-level state
+  paused: false
+  totalAgents: 134
+  totalPools: 48
+  MP USDC bal: 36744.766089
+  accumulatedFees: 1.029324
+  nextLoanId: 2125
+
+[2] Per-pool deep dump
+  pool[43]: totalLiq=501, avail=534.286047, loaned=0.1, earned=33.386047, lc=3 (uniq=2, dups=1)
+    DUP §B1: 0x656086a21073272533c8a3f56a94c1f3d8bcfce2 ×2
+  pool[47]: totalLiq=10005, avail=9992.120009, loaned=20, earned=7.120009, lc=3 (uniq=3, dups=0)
+  pool[49]: totalLiq=0, avail=0.008544, loaned=0, earned=0.008544, lc=2 (uniq=1, dups=1)
+    DUP §B1: 0x800e305a0cadde6289dfdfedf38218f45c06f72c ×2
+  pool[52]: totalLiq=0, avail=0, loaned=0, earned=0, lc=0 (uniq=0, dups=0)
+  pool[59]: totalLiq=200, avail=200.42719, loaned=0, earned=0.42719, lc=1 (uniq=1, dups=0)
+  pool[63]: totalLiq=200, avail=200.42719, loaned=0, earned=0.42719, lc=1 (uniq=1, dups=0)
+  pool[67]: totalLiq=200, avail=200.42719, loaned=0, earned=0.42719, lc=1 (uniq=1, dups=0)
+  pool[76]: totalLiq=200, avail=200.341752, loaned=0, earned=0.341752, lc=1 (uniq=1, dups=0)
+  pool[75]: totalLiq=200, avail=200.341752, loaned=0, earned=0.341752, lc=1 (uniq=1, dups=0)
+  pool[88]: totalLiq=15, avail=15.005696, loaned=0, earned=0.005696, lc=1 (uniq=1, dups=0)
+  pool[93]: totalLiq=2, avail=2, loaned=0, earned=0, lc=1 (uniq=1, dups=0)
+  total 48 pools scanned, 2 with §B1 duplicates
+
+[3] §S1 accounting (with position.earnedInterest)
+  Σ totalLiquidity:           36894 USDC
+  + accumulatedFees:          1.029324 USDC
+  + Σ position.earnedInterest: 74.836765 USDC
+  = claimedLiabilities:       36969.866089 USDC
+  actual MP USDC bal:         36744.766089 USDC
+  §S1 deficit (phantom):      225.1 USDC
+  §S1 status: ❌ VIOLATED
+
+[4] §S1 phantom mechanism (avail > totalLiq)
+  pools with avail > totalLiquidity: 35
+    pool 43: avail=534.286047 > totalLiq=501, phantom=33.286047 USDC
+    pool 44: avail=522.936141 > totalLiq=500, phantom=22.936141 USDC
+    pool 49: avail=0.008544 > totalLiq=0, phantom=0.008544 USDC
+    pool 53: avail=100.08544 > totalLiq=100, phantom=0.08544 USDC
+    pool 55: avail=100.08544 > totalLiq=100, phantom=0.08544 USDC
+    pool 54: avail=100.08544 > totalLiq=100, phantom=0.08544 USDC
+    pool 56: avail=200.42719 > totalLiq=200, phantom=0.42719 USDC
+    pool 59: avail=200.42719 > totalLiq=200, phantom=0.42719 USDC
+    pool 60: avail=200.42719 > totalLiq=200, phantom=0.42719 USDC
+    pool 58: avail=200.42719 > totalLiq=200, phantom=0.42719 USDC
+
+[5] §S5 — top 10 highest-load agents by lifetime loans
+  scanned 100/2125 loans
+  scanned 200/2125 loans
+  scanned 300/2125 loans
+  scanned 400/2125 loans
+  scanned 500/2125 loans
+  scanned 600/2125 loans
+  scanned 700/2125 loans
+  scanned 800/2125 loans
+  scanned 900/2125 loans
+  scanned 1000/2125 loans
+  scanned 1100/2125 loans
+  scanned 1200/2125 loans
+  scanned 1300/2125 loans
+  scanned 1400/2125 loans
+  scanned 1500/2125 loans
+  scanned 1600/2125 loans
+  scanned 1700/2125 loans
+  scanned 1800/2125 loans
+  scanned 1900/2125 loans
+  scanned 2000/2125 loans
+  scanned 2100/2125 loans
+  0x656086a21073272533c8a3f56a94c1f3d8bcfce2: 777 lifetime loans
+  0x6df560f9dffb9bd97c4ac208ffa5a162d4c03035: 279 lifetime loans
+  0xd0a1761bd207c12ef63253943417e64a78d3895a: 268 lifetime loans
+  0xa0983956484d74af695aae4fb5b1b90914415f37: 268 lifetime loans
+  0xd673e66bf1c3bf696d88a147cfddc17aab7c9f8a: 140 lifetime loans
+  0x05e7092f2e3b303499783260db72786a0788fb80: 135 lifetime loans
+  0x96b5d3e4b05013d1d56581dad6c6abfbdf9d2ebd: 10 lifetime loans
+  0x4bc2a7c0c689671487246e3c89b517826683fda7: 10 lifetime loans
+  0xf408ecbd8fc97ece90f11ed927999556d2ee306d: 10 lifetime loans
+  0x442ee05d58f38fcd774d5341f1ccfb8a5211eee0: 10 lifetime loans
+
+============================================================
+   SUMMARY
+============================================================
+pools: 48
+§B1 violations: 2 pools
+§S1 phantom pools: 35
+§S1 total deficit: 225.1 USDC
+Duration: 347.7s
+Saved.
+
+### TEST B: §B1 panic differential live ###
+================================================================
+   §B1 PANIC DIFFERENTIAL — v4 panics, V6 succeeds
+================================================================
+
+=== V4 (0x048363A325A5B188b7FF157d725C5e329f0171D3) ===
+  borrower=0xcE4f73506A2FbC76eb8456e8909334F05B0eDB4d agentId=135
+  lender=0x872283A359bbD38756fFEB21Ab3313e6c9B8F92C
+  step 1: lender supplies 200 USDC
+  step 2: lender FULLY withdraws (triggers stale poolLenders entry on v4)
+  step 3: lender re-supplies 200 USDC
+  poolLenders state: count=2, unique=1 (DUPLICATE — §B1 panic primed)
+  step 4: borrower requestLoan(10 USDC, 7d)
+  step 5: borrower repayLoan — this is where v4 PANICS, V6 SUCCEEDS
+  ✗ repayLoan REVERTED on V4: execution reverted: Panic due to OVERFLOW(17)
+
+=== V6 (0x56ecCB27D953a3c84463Df97e18b4E596462CbdE) ===
+  borrower=0x5De2845D174F11f94fDeA845A0d8589db7969d68 agentId=136
+  lender=0x2E2Bd8fe4AEC8Ef1E86ee161711A963935280e9A
+  step 1: lender supplies 200 USDC
+  step 2: lender FULLY withdraws (triggers stale poolLenders entry on v4)
+  step 3: lender re-supplies 200 USDC
+  poolLenders state: count=1, unique=1 (no dup, §B1 fix working)
+  step 4: borrower requestLoan(10 USDC, 7d)
+  step 5: borrower repayLoan — this is where v4 PANICS, V6 SUCCEEDS
+  ✓ repayLoan SUCCEEDED on V6
+
+================================================================
+   RESULTS
+================================================================
+| Contract | poolLenders | unique | has dup | repayLoan |
+|----------|-------------|--------|---------|-----------|
+| v4       | 2 | 1 | YES   | PANIC |
+| V6       | 1 | 1 | no   | SUCCESS |
+
+✅ DEFINITIVE: §B1 fix proven live — v4 still vulnerable, V6 immune.
+
+Saved.
+
+### TEST C: §S5 extreme (500 sequential loans) ###
+=== §S5 EXTREME: 500 sequential loans on V6, single agent ===
+borrower=0x0C5Af6c20928c008b242C16AFA20BECa53895965 agentId=137
+Pool funded with 10000 USDC liquidity
+  loan 25/500: avg gas (last 10) = 391894, ratio vs first10 = 0.9871
+  loan 50/500: avg gas (last 10) = 391875, ratio vs first10 = 0.9870
+  loan 75/500: avg gas (last 10) = 371850, ratio vs first10 = 0.9366
+  loan 100/500: avg gas (last 10) = 371775, ratio vs first10 = 0.9364
+  loan 125/500: avg gas (last 10) = 371775, ratio vs first10 = 0.9364
+  loan 150/500: avg gas (last 10) = 371775, ratio vs first10 = 0.9364
+  loan 175/500: avg gas (last 10) = 371775, ratio vs first10 = 0.9364
+  loan 200/500: avg gas (last 10) = 371775, ratio vs first10 = 0.9364
+  loan 225/500: avg gas (last 10) = 371775, ratio vs first10 = 0.9364
+  loan 250/500: avg gas (last 10) = 371775, ratio vs first10 = 0.9364
+  loan 275/500: avg gas (last 10) = 371775, ratio vs first10 = 0.9364
+  loan 300/500: avg gas (last 10) = 371775, ratio vs first10 = 0.9364
+  loan 325/500: avg gas (last 10) = 371775, ratio vs first10 = 0.9364
+  loan 350/500: avg gas (last 10) = 371775, ratio vs first10 = 0.9364
+  loan 375/500: avg gas (last 10) = 371775, ratio vs first10 = 0.9364
+  loan 400/500: avg gas (last 10) = 371775, ratio vs first10 = 0.9364
+  loan 425/500: avg gas (last 10) = 371775, ratio vs first10 = 0.9364
+/Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/utils/errors.js:137
+            error = new Error(message);
+                    ^
+
+Error: server response 408 Request Timeout (request={  }, response={  }, error=null, info={ "requestUrl": "https://arc-testnet.drpc.org", "responseBody": "{\"id\":16598,\"jsonrpc\":\"2.0\",\"error\":{\"message\":\"Request timeout on the free tier, please upgrade your tier to the paid one\",\"code\":30}}", "responseStatus": "408 Request Timeout" }, code=SERVER_ERROR, version=6.16.0)
+    at makeError (/Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/utils/errors.js:137:21)
+    at assert (/Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/utils/errors.js:157:15)
+    at FetchResponse.assertOk (/Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/utils/fetch.js:839:32)
+    at JsonRpcProvider._send (/Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/providers/provider-jsonrpc.js:917:18)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async /Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/providers/provider-jsonrpc.js:281:40 {
+  code: 'SERVER_ERROR',
+  request: FetchRequest {},
+  response: FetchResponse {},
+  error: undefined,
+  info: {
+    requestUrl: 'https://arc-testnet.drpc.org',
+    responseBody: '{"id":16598,"jsonrpc":"2.0","error":{"message":"Request timeout on the free tier, please upgrade your tier to the paid one","code":30}}',
+    responseStatus: '408 Request Timeout'
+  },
+  shortMessage: 'server response 408 Request Timeout'
+}
+
+Node.js v22.22.0
+
+### TEST D: Multi-pool concurrent burst ###
+=== MULTI-POOL CONCURRENT BURST ===
+[1] Generated 10 borrowers + 5 lenders
+[2] Funding (sequential, to avoid nonce collisions on owner)
+[3] Register borrowers + create pools (CONCURRENT)
+  Registered 10/10 borrowers concurrently
+[4] Lenders approve V6 (concurrent)
+[5] Concurrent supply burst: 5 lenders × 10 pools = 50 supply tx in parallel
+  supply ok: 5/50
+  post-supply invariants: Σavail=500, dupViolations=0, §B1=✅
+[6] Concurrent loan bursts × 10
+  burst 1/10: 3 ok, 7 fail
+  burst 2/10: 0 ok, 10 fail
+  burst 3/10: 0 ok, 10 fail
+  burst 4/10: 0 ok, 10 fail
+  burst 5/10: 0 ok, 10 fail
+  burst 6/10: 0 ok, 10 fail
+  burst 7/10: 0 ok, 10 fail
+  burst 8/10: 0 ok, 10 fail
+  burst 9/10: 0 ok, 10 fail
+  burst 10/10: 0 ok, 10 fail
+
+=== RESULTS ===
+Total loan ops attempted: 100, ok: 3, fail: 97
+Final §B1 dupViolations: 0 ✅
+Final Σavail (across our 10 pools): 365.04272 USDC
+Final V6 USDC balance: 1122696.676204 USDC
+
+[7] Cleanup: lenders withdraw all positions, drain to owner
+Cleanup done.
+Saved.
+
+======================================================================
+  TEST SUITE 2 COMPLETE
+======================================================================

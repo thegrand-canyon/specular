@@ -8,7 +8,7 @@ const { ethers } = require('ethers');
 const fs = require('fs');
 
 const RPC_URL = 'https://sepolia.base.org';
-const AGENT_KEY = process.env.PRIVATE_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000';
+const AGENT_KEY = process.env.PRIVATE_KEY;
 const LOAN_AMOUNT = '100'; // 100 USDC
 const DURATION_DAYS = 7;
 
@@ -161,4 +161,4 @@ async function main() {
     }
 }
 
-main().catch(console.error);
+main().catch((e) => { console.error(e); process.exit(1); });

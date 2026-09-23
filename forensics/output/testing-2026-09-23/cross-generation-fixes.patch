@@ -1,0 +1,2084 @@
+diff --git a/mcp-server/openapi.json b/mcp-server/openapi.json
+index cc835b9..e274ce8 100644
+--- a/mcp-server/openapi.json
++++ b/mcp-server/openapi.json
+@@ -1256,7 +1256,7 @@
+       "get": {
+         "operationId": "preview_repayment",
+         "summary": "preview_repayment",
+-        "description": "V6.1 only: the EXACT USDC amount repayLoan(loanId) would pull right now (principal + interest on max(duration, elapsed), capped at duration + 30 days). Use this, not principal + nominal interest, to size the repay approval; a late loan owes more and the figure grows per second until it caps. On a V6 deployment this returns a \"not supported\" error (get_loan_status.repayment still works there).",
++        "description": "The EXACT USDC amount repayLoan(loanId) would pull right now. On V6.1+ that is principal + interest on max(duration, elapsed), capped at duration + 30 days, so a late loan owes more and the figure grows per second until it caps. On a V6 deployment it is the nominal fixed-term figure, which is what V6 actually charges — `source` says which. Use this, not your own arithmetic, to size the repay approval.",
+         "tags": [
+           "read"
+         ],
+@@ -1364,7 +1364,7 @@
+       "get": {
+         "operationId": "can_top_up",
+         "summary": "can_top_up",
+-        "description": "V6.1 only: whether `lender` can add to an EXISTING position in agent pool `agentId` right now without supplyLiquidity reverting \"Top-up would forfeit in-flight interest\". ADVISORY, not a guarantee: the deployed canTopUp() view is off by one block, so this server also computes the corrected predicate server-side and returns the conservative answer (`onChainView` and `correctedPredicate` show both, `viewDisagrees` flags a mismatch); a loan can also start between this check and your transaction. Always read `warnings` and simulate immediately before signing. A first supply is never refused. Returns a \"not supported\" error on V6 deployments (which never refuse top-ups).",
++        "description": "Whether `lender` can add to an EXISTING position in agent pool `agentId` right now without supplyLiquidity reverting \"Top-up would forfeit in-flight interest\". ADVISORY, not a guarantee: the deployed canTopUp() view is off by one block, so this server also computes the corrected predicate server-side and returns the conservative answer (`onChainView` and `correctedPredicate` show both, `viewDisagrees` flags a mismatch); a loan can also start between this check and your transaction. Always read `warnings` and simulate immediately before signing. A first supply is never refused. On a V6 deployment the answer is unconditionally true: that generation has no pending-tranche accounting, so supplyLiquidity never refuses a top-up on those grounds.",
+         "tags": [
+           "read"
+         ],
+@@ -1482,7 +1482,7 @@
+       "get": {
+         "operationId": "get_active_loan_ids",
+         "summary": "get_active_loan_ids",
+-        "description": "V6.1 only: IDs (and status) of an agent's currently ACTIVE loans, straight from the contract's bounded active set (at most MAX_ACTIVE_LOANS_PER_AGENT). Returns a \"not supported\" error on V6 deployments; use get_agent_loans there.",
++        "description": "IDs (and status) of an agent's currently ACTIVE loans. On V6.1+ this comes straight from the contract's bounded active set (at most MAX_ACTIVE_LOANS_PER_AGENT); on a V6 deployment it is computed by walking the pool creator's agentLoans[] and keeping the ACTIVE ones. `source` says which.",
+         "tags": [
+           "read"
+         ],
+diff --git a/mcp-server/src/chain.ts b/mcp-server/src/chain.ts
+index 43835d0..f6486ec 100644
+--- a/mcp-server/src/chain.ts
++++ b/mcp-server/src/chain.ts
+@@ -107,6 +107,51 @@ export function getContracts(cfg: NetworkConfig): Contracts {
+ // the process (contracts are not proxied, so a version cannot change under us).
+ // ---------------------------------------------------------------------------
+ 
++/**
++ * [X-1 2026-09-23] Did this failure mean "the deployed bytecode has no such
++ * function", or "the RPC failed while I asked"?
++ *
++ * Only the former may answer a capability question. ethers v6 collapses BOTH a
++ * JSON-RPC `-32005 rate limit exceeded` and a genuine data-less revert into the
++ * same `CALL_EXCEPTION: missing revert data`, so the error class alone cannot
++ * decide it — but the underlying JSON-RPC error code can, and ethers preserves
++ * it on `info.error.code`. Measured on the live Arc endpoints 2026-09-23:
++ *   missing selector / array out of bounds -> {code: 3,      "execution reverted"}
++ *   rate limit                             -> {code: -32005, "rate limit exceeded"}
++ * Anything transport-shaped (HTTP 5xx, timeout, socket reset, our own transport
++ * errors) is transient by construction.
++ */
++const TRANSIENT_RPC_CODES = new Set([-32005, -32016, -32002, -32029, -32603, 429]);
++
++export function isTransientRpcFailure(e: unknown): boolean {
++  if (!e) return false;
++  if (isUpstreamUnavailable(e) || e instanceof UpstreamFailedError || isRequestDeadlineError(e)) return true;
++  const any = e as any;
++  // a revert that carries a payload is a definite contract-level answer
++  if (any.code === 'CALL_EXCEPTION' && ((any.data && any.data !== '0x') || any.reason)) return false;
++  const rpcCode = any?.info?.error?.code ?? any?.error?.code ?? any?.cause?.info?.error?.code;
++  if (typeof rpcCode === 'number') {
++    if (TRANSIENT_RPC_CODES.has(rpcCode)) return true;
++    if (rpcCode === 3) return false; // "execution reverted" — a definite answer
++  }
++  const msg = `${any.message ?? ''} ${any.shortMessage ?? ''} ${any?.info?.error?.message ?? ''}`;
++  if (/rate limit|too many requests|throttl|capacity|overloaded|try again|timeout|timed out|socket hang up|ECONN|EAI_AGAIN|fetch failed|network error|\b(429|500|502|503|504)\b/i.test(msg)) return true;
++  return ['TIMEOUT', 'NETWORK_ERROR', 'SERVER_ERROR', 'UNKNOWN_ERROR'].includes(any.code);
++}
++
++/** Raised when the chain could not be asked what generation it is. Never cached. */
++export class CapabilityUnknownError extends Error {
++  readonly status = 503;
++  constructor(cfg: NetworkConfig, which: 'marketplace' | 'reputation', address: string, cause: unknown) {
++    super(
++      `Could not determine the ${which} generation of ${cfg.name} ${address}: the RPC failed while probing it ` +
++      `(${describeRpcError(cause)}). Refusing to guess — guessing the older generation would publish a stale, ` +
++      'hardcoded credit-tier table and refuse the V7 views. Retry shortly.',
++    );
++    (this as any).cause = cause;
++  }
++}
++
+ /** 'V6' -> 6, 'V6.1' -> 6.1, 'V6.2' -> 6.2. Unrecognised strings sort as 6 (most conservative). */
+ export function versionOrdinal(v: string): number {
+   const m = /^V(\d+)(?:\.(\d+))?$/.exec(String(v ?? '').trim());
+@@ -144,7 +189,11 @@ export async function marketplaceCapabilities(cfg: NetworkConfig): Promise<Marke
+   let version = 'V6';
+   try {
+     version = String(await c.marketplace.VERSION());
+-  } catch {
++  } catch (e) {
++    // [X-1] Only a DEFINITE "no such selector" may answer this. A transient RPC
++    // failure is surfaced and NOT cached; caching it downgraded a V6.2/V4
++    // deployment to V6/V3 for the life of the process.
++    if (isTransientRpcFailure(e)) throw new CapabilityUnknownError(cfg, 'marketplace', cfg.addresses.marketplace, e);
+     version = 'V6'; // selector absent -> pre-V6.1 deployment (empty revert / BAD_DATA)
+   }
+   const ordinal = versionOrdinal(version);
+@@ -156,7 +205,8 @@ export async function marketplaceCapabilities(cfg: NetworkConfig): Promise<Marke
+     // the pre-checks that exist to stop an "Insufficient self-stake" revert.
+     try {
+       await c.marketplace.requiredSelfStake(0, 0);
+-    } catch {
++    } catch (e) {
++      if (isTransientRpcFailure(e)) throw new CapabilityUnknownError(cfg, 'marketplace', cfg.addresses.marketplace, e);
+       v62 = false;
+     }
+   }
+@@ -181,7 +231,11 @@ export async function reputationCapabilities(cfg: NetworkConfig): Promise<Reputa
+   let version = 'V3';
+   try {
+     version = String(await c.reputation.VERSION());
+-  } catch {
++  } catch (e) {
++    // [X-1] see marketplaceCapabilities: a transient failure here would publish
++    // the v3-constant tier table (25,000 / 50,000 USDC) for a V4 deployment
++    // whose real on-chain limits are 2,500 / 5,000.
++    if (isTransientRpcFailure(e)) throw new CapabilityUnknownError(cfg, 'reputation', cfg.addresses.reputation, e);
+     version = 'V3'; // selector absent -> pre-V7 reputation manager
+   }
+   const caps = { version, v4: version !== 'V3' };
+diff --git a/mcp-server/src/mcp.ts b/mcp-server/src/mcp.ts
+index 523f51f..9b6fa5b 100644
+--- a/mcp-server/src/mcp.ts
++++ b/mcp-server/src/mcp.ts
+@@ -26,7 +26,7 @@ export type Mode = 'local' | 'remote';
+ const INSTRUCTIONS = `Specular Protocol: on-chain credit for AI agents (borrow USDC against reputation, or lend into agent pools).
+ This server is NON-CUSTODIAL. Read tools query the chain. "prepare_*" tools return UNSIGNED transactions that you sign with your own wallet; "broadcast_signed_transaction" relays bytes you signed. Every tool needs an explicit "network": use "arc-staging" (testnet) to experiment; "base" and "arc-mainnet" move real USDC.
+ Typical borrower flow: check_credit_score -> (prepare_register_agent, prepare_create_pool once) -> prepare_request_loan (simulate:true) -> sign+send prerequisite approve if present -> sign+send loan tx -> get_transaction -> prepare_repay_loan before the due date.
+-V6.1 deployments charge a LATE loan interest for the elapsed time (capped at duration + 30 days): size the repay approval from preview_repayment / prepare_repay_loan's prerequisite, never from principal + nominal interest. Lenders with an existing position: call can_top_up before prepare_supply_liquidity, but treat it as ADVISORY - the deployed canTopUp() view is off by one block, so the server returns the conservative answer plus warnings, and a loan can start between the check and your tx; simulate the supply immediately before signing. preview_repayment, can_top_up and get_active_loan_ids return a "not supported" error on pre-V6.1 deployments.
++V6.1 deployments charge a LATE loan interest for the elapsed time (capped at duration + 30 days): size the repay approval from preview_repayment / prepare_repay_loan's prerequisite, never from principal + nominal interest. Lenders with an existing position: call can_top_up before prepare_supply_liquidity, but treat it as ADVISORY - the deployed canTopUp() view is off by one block, so the server returns the conservative answer plus warnings, and a loan can start between the check and your tx; simulate the supply immediately before signing. preview_repayment, can_top_up and get_active_loan_ids answer on EVERY generation and report which path produced the answer: on a V6 deployment preview_repayment returns the nominal fixed-term figure (source "calculateInterest", which is what V6 actually charges), can_top_up is unconditionally true (V6 has no pending-tranche accounting) and get_active_loan_ids is computed from the agentLoans[] walk (source "agentLoans-walk"). Only required_self_stake and get_self_stake refuse on an older deployment.
+ Deployments come in three generations - check get_protocol_status.capabilities: V6 (baseline), V6.1 (preview_repayment/can_top_up/get_active_loan_ids), V6.2 = the V7 credit model. On V6.2 an agent must also hold its OWN first-loss SELF-STAKE in its OWN pool for any exposure its collateral does not cover: call required_self_stake, supply the shortfall into your own pool with prepare_supply_liquidity (the pool creator is exempt from the minimum supply there), then request the loan - otherwise requestLoan reverts "Insufficient self-stake". That stake is LOCKED while any principal is outstanding (get_self_stake; withdrawLiquidity would revert "Self-stake locked while borrowing") and is seized before any third-party lender on a default. required_self_stake and get_self_stake return a "not supported" error on V6/V6.1.
+ NEVER hardcode credit limits or tier thresholds. On the V7 reputation manager the tier table is on-chain, owner-settable state - read get_protocol_status.creditTiers, and read an agent's actual limit from check_credit_score. A V7 credit limit is min(tier limit, credit ladder) and is exactly 0 while an agent is locked out after a default (check_credit_score.credit.model.lockedOut). Reputation does NOT carry across a V7 redeploy: on a fresh V7 deployment every agent starts with no score and no ladder, so do not assume a prior score exists.`;
+ 
+diff --git a/mcp-server/src/prepare.ts b/mcp-server/src/prepare.ts
+index 98577af..e2920ff 100644
+--- a/mcp-server/src/prepare.ts
++++ b/mcp-server/src/prepare.ts
+@@ -9,7 +9,7 @@
+  * Approvals are always EXACT (never MaxUint256) and always to the marketplace.
+  */
+ import { ethers } from 'ethers';
+-import { getContracts, marketplaceCapabilities, reputationCapabilities } from './chain.js';
++import { getContracts, isTransientRpcFailure, marketplaceCapabilities, reputationCapabilities } from './chain.js';
+ import { IFACE, NetworkConfig } from './networks.js';
+ import { activeLoanStartTimes, correctedCanTopUp, formatQuote, interestForSeconds, LOAN_STATES, repaymentQuote, TOP_UP_RACE_WARNING, TOP_UP_VIEW_BUG_WARNING } from './reads.js';
+ import {
+@@ -26,6 +26,27 @@ import {
+   ValidationError,
+ } from './validate.js';
+ 
++/**
++ * [X-8 2026-09-23] A pre-flight view the OLDEST deployed generation may not have.
++ *
++ * Base mainnet's V6 (2026-05) has no `minSupplyAmount`, `bindBorrowToPoolCreator`,
++ * `activeLoanCount` or `outstandingPrincipal`. Those calls sat unguarded inside
++ * `Promise.all` in the supply_liquidity and request_loan builders, so BOTH
++ * returned a raw 502 on Base — i.e. no agent could lend or borrow through the
++ * hosted server on the one network that moves real money through the oldest code.
++ *
++ * `null` means "this deployment does not expose that". A transient RPC failure is
++ * rethrown, so `null` never silently stands in for "the RPC failed".
++ */
++async function optionalView<T>(p: Promise<T>): Promise<T | null> {
++  try {
++    return await p;
++  } catch (e) {
++    if (isTransientRpcFailure(e)) throw e;
++    return null;
++  }
++}
++
+ export const WRITE_ACTIONS = [
+   'register_agent',
+   'create_pool',
+@@ -115,10 +136,30 @@ export interface PreparedTx {
+ }
+ 
+ const SIGNING_INSTRUCTIONS =
+-  'Sign {chainId,to,data,value:0} with YOUR OWN wallet (set nonce/gas from your provider; gasEstimate is a hint), then broadcast it yourself or pass the raw signed hex to broadcast_signed_transaction. If `prerequisite` is present, send and confirm it first. This server never sees your private key.';
++  'Sign {chainId,to,data,value:0} with YOUR OWN wallet (set nonce/gas from your provider; gasEstimate is a hint), then broadcast it yourself or pass the raw signed hex to broadcast_signed_transaction. If `prerequisite` is present, send and confirm it first. ' +
++  // [X-12 2026-09-23] The exact-approval model's resting state is ZERO. Both SDKs
++  // revoke automatically when the main transaction fails (_withApprovalCleanup);
++  // this surface cannot, because you hold the key — so it has to say so. Measured
++  // in the 2026-09-23 write-parity round: 5 dangling allowances (1, 10, 200 and
++  // 50.616438 USDC) left standing after ordinary failed operations.
++  'IF THE MAIN TRANSACTION THEN FAILS OR YOU ABANDON IT, send prepare_approve_usdc with amount "0" and broadcast that too: the prerequisite approval is still standing until you do, and the exact-approval model\'s resting state is zero. ' +
++  'This server never sees your private key.';
+ 
+-function realMoneyWarning(cfg: NetworkConfig): string[] {
+-  return cfg.realMoney ? [`${cfg.name} is a REAL-MONEY network: this transaction moves real USDC.`] : [];
++/**
++ * [X-12] Actions whose prepared transaction moves USDC. `register_agent` and
++ * `create_pool` do not, and warning that they do contradicted their own
++ * humanReadableSummary ("No USDC moves.").
++ */
++const MOVES_USDC: ReadonlySet<WriteAction> = new Set<WriteAction>([
++  'approve_usdc', 'supply_liquidity', 'withdraw_liquidity', 'claim_interest', 'request_loan', 'repay_loan',
++]);
++
++function realMoneyWarning(cfg: NetworkConfig, action?: WriteAction): string[] {
++  if (!cfg.realMoney) return [];
++  if (action && !MOVES_USDC.has(action)) {
++    return [`${cfg.name} is a REAL-MONEY network. This particular transaction moves no USDC, but it is a real on-chain write and costs real gas.`];
++  }
++  return [`${cfg.name} is a REAL-MONEY network: this transaction moves real USDC.`];
+ }
+ 
+ /**
+@@ -129,7 +170,7 @@ function realMoneyWarning(cfg: NetworkConfig): string[] {
+ export function encodeAction(cfg: NetworkConfig, action: WriteAction, rawArgs: unknown, from: string): EncodedAction {
+   const a = requireObject(rawArgs ?? {});
+   const mp = cfg.addresses.marketplace;
+-  const base = { warnings: realMoneyWarning(cfg), defaultGas: DEFAULT_GAS[action] };
++  const base = { warnings: realMoneyWarning(cfg, action), defaultGas: DEFAULT_GAS[action] };
+ 
+   switch (action) {
+     case 'register_agent': {
+@@ -305,6 +346,14 @@ const REASON_MAP: Array<[RegExp, string]> = [
+   [/Exceeds credit limit/i, 'Outstanding principal plus this amount exceeds your reputation-based credit limit. Repay existing loans or borrow less. On the V7 credit model the limit is min(tier limit, credit ladder) — and it is exactly 0 while an agent is LOCKED OUT after a default, so check check_credit_score.credit.model.lockedOut before assuming this is about the amount.'],
+   [/Too many active loans/i, 'You already hold the maximum number of concurrent active loans. Repay one first.'],
+   [/Pool not active/i, 'That pool is not active (wrong agentId?).'],
++  // [X-10 2026-09-23] MUST precede the /Below minimum supply/ entry: the V6.2
++  // WITHDRAW-side revert is "Remaining below minimum supply", which that pattern
++  // also matches — and it then answered a failed withdrawal with supply-side
++  // advice ("the pool CREATOR is exempt"), which is the opposite of the remedy.
++  [/Remaining below minimum supply/i, 'A PARTIAL withdrawal may not leave your position below the pool\'s minimum supply (see get_protocol_status.parameters.minSupplyUsdc). Either withdraw your position in FULL, or withdraw less so that at least the minimum remains.'],
++  // [X-10] The V6.2 reserved lender slot. AgentLiquidityMarketplaceV62 asks
++  // clients to surface this as a distinct refusal, not a generic capacity error.
++  [/Last slot reserved for agent self-stake/i, 'This pool\'s final lender slot is reserved for the agent\'s OWN first-loss self-stake, so a third-party lender cannot take it. This is not the same as the pool being full: the agent itself can still supply. Choose another pool.'],
+   [/Below minimum supply/i, 'Amount is below the pool\'s minimum supply (see get_protocol_status.parameters.minSupplyUsdc). On a V6.2 deployment the pool CREATOR supplying into its own pool is exempt from this minimum, because that position is locked first-loss capital rather than a lender-slot squat.'],
+   // [V7 / M2-c] The first-loss self-stake gate on AgentLiquidityMarketplaceV62.
+   [/Insufficient self-stake/i, 'This deployment runs the V7 credit model: any exposure your collateral does not cover must already be backed by YOUR OWN first-loss capital supplied into YOUR OWN pool, at creditMultiple leverage. Call required_self_stake (or read prepare_request_loan\'s requiredSelfStakeUsdc) to get the figure, supply the shortfall into your own pool with prepare_supply_liquidity, then request the loan. That capital is locked until every loan is repaid and is seized before any third-party lender on a default.'],
+@@ -323,6 +372,8 @@ const REASON_MAP: Array<[RegExp, string]> = [
+   [/ERC20InsufficientAllowance|insufficient allowance|exceeds allowance/i, 'The marketplace is not approved to pull enough USDC from your wallet. Send the exact-amount approve_usdc transaction (see `prerequisite`) first.'],
+   [/ERC20InsufficientBalance|exceeds balance|insufficient balance for transfer/i, 'Your wallet does not hold enough USDC for this transaction.'],
+   [/Ownable|OwnableUnauthorizedAccount|caller is not the owner/i, 'This function is owner-only.'],
++  // [X-11] see CUSTOM_ERRORS below.
++  [/ERC721InvalidReceiver/i, 'This wallet cannot receive the agent NFT, so register_agent reverts. The usual cause is an EIP-7702 delegation designator on the EOA (or a contract wallet) whose delegate does not implement onERC721Received. Register from a plain EOA with no delegation code.'],
+ ];
+ 
+ const CUSTOM_ERRORS = new ethers.Interface([
+@@ -332,6 +383,13 @@ const CUSTOM_ERRORS = new ethers.Interface([
+   'error ReentrancyGuardReentrantCall()',
+   'error OwnableUnauthorizedAccount(address account)',
+   'error SafeERC20FailedOperation(address token)',
++  // [X-11 2026-09-23] AgentRegistryV2.register() _safeMints the agent NFT. An
++  // EOA carrying an EIP-7702 delegation designator has non-empty code, so OZ
++  // calls onERC721Received on the delegate, which reverts with this. Without the
++  // entry every client reported only "(unknown custom error) 0x64a0ae92".
++  'error ERC721InvalidReceiver(address receiver)',
++  'error ERC721InvalidSender(address sender)',
++  'error ERC721NonexistentToken(uint256 tokenId)',
+ ]);
+ 
+ export function explainRevert(e: unknown): { reason: string; plain: string } {
+@@ -478,7 +536,8 @@ export async function prepareTx(cfg: NetworkConfig, action: WriteAction, rawArgs
+         c.marketplace.agentPools(agentId),
+         c.usdc.allowance(from, mp) as Promise<bigint>,
+         c.usdc.balanceOf(from) as Promise<bigint>,
+-        c.marketplace.minSupplyAmount() as Promise<bigint>,
++        // [X-8] absent on Base's 2026-05 V6 — null, not a 502
++        optionalView(c.marketplace.minSupplyAmount() as Promise<bigint>),
+       ]);
+       if (!pool.isActive) warnings.push(`Agent #${agentId} has no active pool; the transaction will revert.`);
+       // [V7 / M2] On V6.2 the pool CREATOR supplying into its own pool is EXEMPT
+@@ -487,7 +546,7 @@ export async function prepareTx(cfg: NetworkConfig, action: WriteAction, rawArgs
+       // gate can legitimately require less than the minimum (a 50 USDC loan at the
+       // 75%-collateral tier needs 6.25 USDC at k=2). Warning here would be wrong.
+       let creatorExempt = false;
+-      if (amt < minSupply && pool.isActive && String(pool.agentAddress).toLowerCase() === from.toLowerCase()) {
++      if (minSupply !== null && amt < minSupply && pool.isActive && String(pool.agentAddress).toLowerCase() === from.toLowerCase()) {
+         const caps = await marketplaceCapabilities(cfg).catch(() => null);
+         creatorExempt = Boolean(caps?.v62);
+         if (creatorExempt) {
+@@ -496,7 +555,7 @@ export async function prepareTx(cfg: NetworkConfig, action: WriteAction, rawArgs
+           );
+         }
+       }
+-      if (amt < minSupply && !creatorExempt) warnings.push(`Amount is below the minimum supply of ${formatUsdc(minSupply)} USDC.`);
++      if (minSupply !== null && amt < minSupply && !creatorExempt) warnings.push(`Amount is below the minimum supply of ${formatUsdc(minSupply)} USDC.`);
+       if (amt > bal) warnings.push(`Wallet holds ${formatUsdc(bal)} USDC, less than the ${formatUsdc(amt)} USDC being supplied.`);
+       // Top-up (an existing position) can be refused by the contract. The DEPLOYED canTopUp()
+       // view is off by one block and can say "yes" to a top-up the tx then rejects, so mirror the
+@@ -595,12 +654,13 @@ export async function prepareTx(cfg: NetworkConfig, action: WriteAction, rawArgs
+       const [pool, limit, outstanding, collateralPct, rateBps, active, maxActive, bind, allowance, bal, paused] = await Promise.all([
+         c.marketplace.agentPools(id),
+         c.reputation.calculateCreditLimit(from) as Promise<bigint>,
+-        c.marketplace.outstandingPrincipal(id) as Promise<bigint>,
++        // [X-8] the three below are absent on Base's 2026-05 V6 — null, not a 502
++        optionalView(c.marketplace.outstandingPrincipal(id) as Promise<bigint>),
+         c.reputation.calculateCollateralRequirement(from) as Promise<bigint>,
+         c.reputation.calculateInterestRate(from) as Promise<bigint>,
+-        c.marketplace.activeLoanCount(id) as Promise<bigint>,
+-        c.marketplace.MAX_ACTIVE_LOANS_PER_AGENT() as Promise<bigint>,
+-        c.marketplace.bindBorrowToPoolCreator() as Promise<boolean>,
++        optionalView(c.marketplace.activeLoanCount(id) as Promise<bigint>),
++        optionalView(c.marketplace.MAX_ACTIVE_LOANS_PER_AGENT() as Promise<bigint>),
++        optionalView(c.marketplace.bindBorrowToPoolCreator() as Promise<boolean>),
+         c.usdc.allowance(from, mp) as Promise<bigint>,
+         c.usdc.balanceOf(from) as Promise<bigint>,
+         c.marketplace.paused() as Promise<boolean>,
+@@ -609,8 +669,9 @@ export async function prepareTx(cfg: NetworkConfig, action: WriteAction, rawArgs
+       if (!pool.isActive) warnings.push(`Agent #${id} has no pool; send create_pool first.`);
+       else if ((pool.availableLiquidity as bigint) < amt) warnings.push(`Pool #${id} has only ${formatUsdc(pool.availableLiquidity)} USDC available; the request for ${formatUsdc(amt)} USDC will revert.`);
+       if (bind && pool.isActive && String(pool.agentAddress).toLowerCase() !== from.toLowerCase()) warnings.push('Borrowing is restricted to the pool creator on this network.');
+-      if (outstanding + amt > limit) warnings.push(`Outstanding ${formatUsdc(outstanding)} + ${formatUsdc(amt)} exceeds credit limit ${formatUsdc(limit)} USDC.`);
+-      if (active >= maxActive) warnings.push(`Already at the maximum of ${maxActive} active loans.`);
++      if (outstanding !== null && outstanding + amt > limit) warnings.push(`Outstanding ${formatUsdc(outstanding)} + ${formatUsdc(amt)} exceeds credit limit ${formatUsdc(limit)} USDC.`);
++      else if (outstanding === null && amt > limit) warnings.push(`${formatUsdc(amt)} exceeds the credit limit of ${formatUsdc(limit)} USDC. (This deployment does not expose outstandingPrincipal, so any principal already outstanding is NOT included in this check.)`);
++      if (active !== null && maxActive !== null && active >= maxActive) warnings.push(`Already at the maximum of ${maxActive} active loans.`);
+       const collateral = (amt * collateralPct) / 100n;
+       const durationDays = Number(enc.args.durationDays);
+       const interest = (await c.marketplace.calculateInterest(amt, rateBps, BigInt(durationDays) * 86400n)) as bigint;
+diff --git a/mcp-server/src/reads.ts b/mcp-server/src/reads.ts
+index 752fca1..4e52dcc 100644
+--- a/mcp-server/src/reads.ts
++++ b/mcp-server/src/reads.ts
+@@ -3,12 +3,37 @@
+  * network. Every result carries `rpc` (block number / age / stale flag).
+  */
+ import { ethers } from 'ethers';
+-import { getContracts, marketplaceCapabilities, reputationCapabilities, rpcStatus, RpcStatus, unsupportedMessage } from './chain.js';
++import { describeRpcError, getContracts, isTransientRpcFailure, marketplaceCapabilities, reputationCapabilities, rpcStatus, RpcStatus, unsupportedMessage } from './chain.js';
+ import { NetworkConfig, publicNetworkInfo } from './networks.js';
+ import { formatUsdc, UnsupportedOnDeploymentError, ValidationError } from './validate.js';
+ 
+ export const LOAN_STATES = ['REQUESTED', 'ACTIVE', 'REPAID', 'DEFAULTED'] as const;
+ 
++/**
++ * [X-2 2026-09-23] A view that the OLDEST deployed generation may not have.
++ *
++ * Base mainnet runs a V6 build from 2026-05 that predates the 2026-08 launch
++ * levers (`minSupplyAmount`, `bindBorrowToPoolCreator`,
++ * `minHoldForReputationReward`) and the §S5 counters (`activeLoanCount`,
++ * `outstandingPrincipal`). Those calls sat unguarded inside `Promise.all`, so
++ * five read routes returned a raw 502 "missing revert data" on Base.
++ *
++ * `null` means "this deployment does not expose that" — it is NEVER used to
++ * paper over a transient RPC failure, which is rethrown so the caller sees 503
++ * rather than a fabricated answer.
++ */
++async function optionalView<T>(p: Promise<T>): Promise<T | null> {
++  try {
++    return await p;
++  } catch (e) {
++    if (isTransientRpcFailure(e)) throw e;
++    return null;
++  }
++}
++
++const numOrNull = (x: bigint | null): number | null => (x === null ? null : Number(x));
++const usdcOrNull = (x: bigint | null): string | null => (x === null ? null : formatUsdc(x));
++
+ // ---------------------------------------------------------------------------
+ // Repayment quote (V6.1 previewRepayment with V6 fallback)
+ // ---------------------------------------------------------------------------
+@@ -265,6 +290,19 @@ const MAX_LIST = 200;
+  */
+ const paginatedActiveAgents = new Map<string, boolean>();
+ 
++/** Test/ops hook: forget which deployments were found to have the paginated overload. */
++export function _clearActiveAgentsProbeCache(): void {
++  paginatedActiveAgents.clear();
++}
++
++/**
++ * Some deployments cannot enumerate their pools at all: the 2026-05 Base build
++ * still carries the reverting `getActiveAgents()` stub ("Use front-end to query
++ * specific agents"). That is a property of the deployment, not an outage, so the
++ * routes that enumerate report an explained empty list instead of a 502.
++ */
++export class PoolEnumerationUnavailable extends Error {}
++
+ async function activeAgentIds(
+   c: ReturnType<typeof getContracts>,
+   cfg: NetworkConfig,
+@@ -274,17 +312,75 @@ async function activeAgentIds(
+   // revision than the one first deployed to Arc staging, so `caps.v62` does NOT imply it
+   // — assuming it did made every read on that deployment fail with a 502. Try the
+   // paginated overload once per network and remember the answer.
++  //
++  // [X-3 2026-09-23] Only a DEFINITE "no such method" may be remembered. One
++  // transient RPC error used to pin `false` for the life of the process, which
++  // silently re-armed the unbounded call this pagination exists to avoid
++  // (uncallable past ~5,472 pools) and dropped the honest `truncated` report.
+   if (paginatedActiveAgents.get(cfg.name) !== false) {
+     try {
+       const [ids, total] = (await c.marketplace['getActiveAgents(uint256,uint256)'](0, limit)) as [bigint[], bigint];
+       paginatedActiveAgents.set(cfg.name, true);
+       return { ids, total: Number(total), truncated: Number(total) > ids.length };
+-    } catch {
++    } catch (e) {
++      if (isTransientRpcFailure(e)) throw e;
+       paginatedActiveAgents.set(cfg.name, false);
+     }
+   }
+-  const all = (await c.marketplace['getActiveAgents()']()) as bigint[];
+-  return { ids: all.slice(0, limit), total: all.length, truncated: all.length > limit };
++  try {
++    const all = (await c.marketplace['getActiveAgents()']()) as bigint[];
++    return { ids: all.slice(0, limit), total: all.length, truncated: all.length > limit };
++  } catch (e) {
++    if (isTransientRpcFailure(e)) throw e;
++    // [X-2] The 2026-05 Base build still carries the reverting stub
++    // ("Use front-end to query specific agents") that D12 replaced in 2026-08.
++    // Pools are keyed by agentId, so walk the registry instead — bounded by
++    // MAX_LIST and honest about truncation. An empty list would read as
++    // "this protocol has no pools", which is a wrong answer about TVL.
++    return registryScanActiveAgents(c, cfg, limit);
++  }
++}
++
++/**
++ * Enumerate pools by scanning agentIds 1..totalAgents. The fallback for a
++ * deployment whose `getActiveAgents()` does not answer. Bounded, and reported as
++ * truncated when the registry is larger than the scan window.
++ */
++async function registryScanActiveAgents(
++  c: ReturnType<typeof getContracts>,
++  cfg: NetworkConfig,
++  limit: number,
++): Promise<{ ids: bigint[]; total: number; truncated: boolean }> {
++  let totalAgents: number;
++  try {
++    totalAgents = Number((await c.registry.totalAgents()) as bigint);
++  } catch (e) {
++    if (isTransientRpcFailure(e)) throw e;
++    throw new PoolEnumerationUnavailable(
++      `The ${cfg.name} marketplace ${cfg.addresses.marketplace} cannot enumerate its pools: getActiveAgents() ` +
++      'does not answer on this deployment and the registry could not be walked either. Query a specific ' +
++      'agentId instead — get_pool_details works.',
++    );
++  }
++  const scan = Math.min(totalAgents, MAX_LIST);
++  const ids: bigint[] = [];
++  const pools = await Promise.all(
++    Array.from({ length: scan }, (_, k) => c.marketplace.agentPools(BigInt(k + 1))),
++  );
++  pools.forEach((p, k) => {
++    if (p.isActive) ids.push(BigInt(k + 1));
++  });
++  return { ids: ids.slice(0, limit), total: ids.length, truncated: totalAgents > scan || ids.length > limit };
++}
++
++/** Empty-but-explained result for a deployment that cannot enumerate pools. */
++async function noEnumeration<T extends Record<string, unknown>>(
++  cfg: NetworkConfig,
++  e: unknown,
++  rest: T,
++): Promise<T & { note: string; rpc: RpcStatus }> {
++  if (!(e instanceof PoolEnumerationUnavailable)) throw e;
++  return { ...rest, note: e.message, rpc: await rpcStatus(cfg) };
+ }
+ 
+ export async function readNetworkInfo(cfg: NetworkConfig) {
+@@ -299,18 +395,24 @@ export async function readProtocolStatus(cfg: NetworkConfig) {
+     reputationCapabilities(cfg).catch(() => null),
+     creditTierTable(cfg).catch(() => null),
+   ]);
++  // [X-2] The levers and the §S5 counters arrived in 2026-08, AFTER the Base
++  // deploy. `optionalView` reports them as null on a deployment that predates
++  // them instead of failing the whole route with "missing revert data".
+   const [rpc, paused, totalPools, nextLoanId, totalAgents, minSupply, bind, minHold, feeRate, maxActive, activeAgents] = await Promise.all([
+     rpcStatus(cfg),
+     c.marketplace.paused() as Promise<boolean>,
+     c.marketplace.totalPools() as Promise<bigint>,
+     c.marketplace.nextLoanId() as Promise<bigint>,
+     c.registry.totalAgents() as Promise<bigint>,
+-    c.marketplace.minSupplyAmount() as Promise<bigint>,
+-    c.marketplace.bindBorrowToPoolCreator() as Promise<boolean>,
+-    c.marketplace.minHoldForReputationReward() as Promise<bigint>,
+-    c.marketplace.platformFeeRate() as Promise<bigint>,
+-    c.marketplace.MAX_ACTIVE_LOANS_PER_AGENT() as Promise<bigint>,
+-    activeAgentIds(c, cfg),
++    optionalView(c.marketplace.minSupplyAmount() as Promise<bigint>),
++    optionalView(c.marketplace.bindBorrowToPoolCreator() as Promise<boolean>),
++    optionalView(c.marketplace.minHoldForReputationReward() as Promise<bigint>),
++    optionalView(c.marketplace.platformFeeRate() as Promise<bigint>),
++    optionalView(c.marketplace.MAX_ACTIVE_LOANS_PER_AGENT() as Promise<bigint>),
++    activeAgentIds(c, cfg).catch((e) => {
++      if (e instanceof PoolEnumerationUnavailable) return { ids: [] as bigint[], total: 0, truncated: false, note: e.message };
++      throw e;
++    }),
+   ]);
+ 
+   // TVL = sum of pool totalLiquidity across active pools (bounded walk).
+@@ -324,6 +426,7 @@ export async function readProtocolStatus(cfg: NetworkConfig) {
+     available += p.availableLiquidity as bigint;
+     loaned += p.totalLoaned as bigint;
+   }
++  const enumerationNote = (activeAgents as { note?: string }).note;
+   return {
+     network: cfg.name,
+     label: cfg.label,
+@@ -351,12 +454,13 @@ export async function readProtocolStatus(cfg: NetworkConfig) {
+         }
+       : null,
+     parameters: {
+-      minSupplyUsdc: formatUsdc(minSupply),
+-      minSupplyAppliesToPoolCreator: mcaps ? !mcaps.v62 : true,
++      // null == "this deployment predates that lever", never "the RPC failed".
++      minSupplyUsdc: usdcOrNull(minSupply),
++      minSupplyAppliesToPoolCreator: minSupply === null ? null : mcaps ? !mcaps.v62 : true,
+       borrowRestrictedToPoolCreator: bind,
+-      minHoldForReputationRewardSeconds: Number(minHold),
+-      platformFeeBps: Number(feeRate),
+-      maxActiveLoansPerAgent: Number(maxActive),
++      minHoldForReputationRewardSeconds: numOrNull(minHold),
++      platformFeeBps: numOrNull(feeRate),
++      maxActiveLoansPerAgent: numOrNull(maxActive),
+       loanDurationDays: { min: 7, max: 365 },
+     },
+     /**
+@@ -366,6 +470,7 @@ export async function readProtocolStatus(cfg: NetworkConfig) {
+      */
+     creditTiers: tierTable,
+     truncated: activeAgents.truncated ? `TVL computed over the first ${ids.length} of ${activeAgents.total} pools` : undefined,
++    note: enumerationNote ? `${enumerationNote} TVL/availableLiquidity/totalLoaned above are therefore 0 — they are not a claim that the pools are empty.` : undefined,
+     rpc,
+   };
+ }
+@@ -400,12 +505,13 @@ export async function readCredit(cfg: NetworkConfig, address: string) {
+     c.reputation.calculateCollateralRequirement(address) as Promise<bigint>,
+     c.reputation.calculateInterestRate(address) as Promise<bigint>,
+     c.marketplace.agentPools(agentId),
+-    c.marketplace.activeLoanCount(agentId) as Promise<bigint>,
+-    c.marketplace.outstandingPrincipal(agentId) as Promise<bigint>,
+-    c.marketplace.MAX_ACTIVE_LOANS_PER_AGENT() as Promise<bigint>,
++    // [X-2] absent on the 2026-05 Base build (§S5 counters landed 2026-08)
++    optionalView(c.marketplace.activeLoanCount(agentId) as Promise<bigint>),
++    optionalView(c.marketplace.outstandingPrincipal(agentId) as Promise<bigint>),
++    optionalView(c.marketplace.MAX_ACTIVE_LOANS_PER_AGENT() as Promise<bigint>),
+   ]);
+   const s = Number(score);
+-  const remaining = (limit as bigint) - (outstanding as bigint);
++  const remaining = (limit as bigint) - (outstanding ?? 0n);
+ 
+   // [V7] Everything below the tier NAME is chain data. On ReputationManagerV4 the
+   // ladder / lockout state explains WHY the limit is what it is (a post-default
+@@ -478,14 +584,18 @@ export async function readCredit(cfg: NetworkConfig, address: string) {
+     reputation: { score: s, tier: tierNameFor(s), max: 1000 },
+     credit: {
+       creditLimitUsdc: formatUsdc(limit),
+-      outstandingPrincipalUsdc: formatUsdc(outstanding),
+-      remainingCreditUsdc: formatUsdc(remaining < 0n ? 0n : remaining),
++      // null on a deployment without the O(1) counters (Base's 2026-05 V6):
++      // "not reported here", not "zero".
++      outstandingPrincipalUsdc: usdcOrNull(outstanding),
++      remainingCreditUsdc: outstanding === null ? null : formatUsdc(remaining < 0n ? 0n : remaining),
+       collateralPercent: Number(collateralPct),
+       interestRateBps: Number(rateBps),
+       interestRateAprPercent: Number(rateBps) / 100,
+-      activeLoans: Number(activeLoans),
+-      maxActiveLoans: Number(maxActive),
+-      canBorrow: Number(activeLoans) < Number(maxActive) && remaining > 0n,
++      activeLoans: numOrNull(activeLoans),
++      maxActiveLoans: numOrNull(maxActive),
++      canBorrow: activeLoans === null || maxActive === null || outstanding === null
++        ? null
++        : Number(activeLoans) < Number(maxActive) && remaining > 0n,
+       /** V7 only (ReputationManagerV4): why the limit is what it is. null on V3. */
+       model: creditModel,
+     },
+@@ -532,7 +642,14 @@ async function poolSummary(c: ReturnType<typeof getContracts>, agentId: number):
+ 
+ export async function readPools(cfg: NetworkConfig, opts: { minAvailableUsdc?: number; limit?: number } = {}) {
+   const c = getContracts(cfg);
+-  const [rpc, active] = await Promise.all([rpcStatus(cfg), activeAgentIds(c, cfg)]);
++  let rpc: RpcStatus;
++  let active: { ids: bigint[]; total: number; truncated: boolean };
++  try {
++    [rpc, active] = await Promise.all([rpcStatus(cfg), activeAgentIds(c, cfg)]);
++  } catch (e) {
++    // [X-2] the 2026-05 Base build cannot enumerate: say so, don't 502.
++    return noEnumeration(cfg, e, { network: cfg.name, totalActivePools: 0, returned: 0, pools: [] as PoolSummary[] });
++  }
+   const ids = active.ids;
+   const limit = Math.min(opts.limit ?? 50, MAX_LIST);
+   const minBase = opts.minAvailableUsdc !== undefined ? ethers.parseUnits(opts.minAvailableUsdc.toString(), 6) : 0n;
+@@ -550,10 +667,11 @@ export async function readPoolDetails(cfg: NetworkConfig, agentId: number) {
+     rpcStatus(cfg),
+     poolSummary(c, agentId),
+     c.marketplace.agentPools(agentId),
+-    c.marketplace.activeLoanCount(agentId) as Promise<bigint>,
+-    c.marketplace.outstandingPrincipal(agentId) as Promise<bigint>,
+-    c.marketplace.minSupplyAmount() as Promise<bigint>,
+-    c.marketplace.MAX_LENDERS_PER_POOL() as Promise<bigint>,
++    // [X-2] absent on the 2026-05 Base build
++    optionalView(c.marketplace.activeLoanCount(agentId) as Promise<bigint>),
++    optionalView(c.marketplace.outstandingPrincipal(agentId) as Promise<bigint>),
++    optionalView(c.marketplace.minSupplyAmount() as Promise<bigint>),
++    optionalView(c.marketplace.MAX_LENDERS_PER_POOL() as Promise<bigint>),
+   ]);
+   if (!summary || !raw.isActive) {
+     throw new ValidationError(`No active pool for agentId ${agentId} on ${cfg.name}`, 'agentId');
+@@ -568,16 +686,16 @@ export async function readPoolDetails(cfg: NetworkConfig, agentId: number) {
+     network: cfg.name,
+     ...summary,
+     isActive: raw.isActive,
+-    activeLoans: Number(activeLoans),
+-    outstandingPrincipalUsdc: formatUsdc(outstanding),
++    activeLoans: numOrNull(activeLoans),
++    outstandingPrincipalUsdc: usdcOrNull(outstanding),
+     borrower: {
+       reputationScore: s,
+       tier: tierNameFor(s),
+       interestRateAprPercent: Number(rateBps) / 100,
+       collateralPercent: Number(collateralPct),
+     },
+-    lenderCapacity: { lenders: summary.lenderCount, max: Number(lenderCap), full: summary.lenderCount >= Number(lenderCap) },
+-    minSupplyUsdc: formatUsdc(minSupply),
++    lenderCapacity: { lenders: summary.lenderCount, max: numOrNull(lenderCap), full: lenderCap === null ? null : summary.lenderCount >= Number(lenderCap) },
++    minSupplyUsdc: usdcOrNull(minSupply),
+     rpc,
+   };
+ }
+@@ -723,7 +841,11 @@ export async function readSelfStake(cfg: NetworkConfig, agentId: number) {
+ /** previewRepayment(loanId): exact amount repayLoan would pull now. */
+ export async function readRepaymentPreview(cfg: NetworkConfig, loanId: number) {
+   const c = getContracts(cfg);
+-  const caps = await requireV61(cfg, 'preview_repayment');
++  // [X-6] `repaymentQuote` ALREADY answers on V6 (the nominal fixed-term figure
++  // from calculateInterest, which is exactly what V6 charges) and both SDKs
++  // return it. Gating the route on V6.1 made that fallback dead code and made
++  // the hosted server refuse a question the SDKs answer correctly.
++  const caps = await marketplaceCapabilities(cfg);
+   const [rpc, l, nextId] = await Promise.all([rpcStatus(cfg), c.marketplace.loans(loanId), c.marketplace.nextLoanId() as Promise<bigint>]);
+   if (loanId >= Number(nextId) || l.borrower === ethers.ZeroAddress) {
+     throw new ValidationError(`Loan ${loanId} does not exist on ${cfg.name} (highest loanId is ${Number(nextId) - 1})`, 'loanId');
+@@ -790,16 +912,45 @@ export const TOP_UP_VIEW_BUG_WARNING =
+ /** canTopUp(agentId, lender): whether supplyLiquidity by an existing lender would be refused right now. */
+ export async function readCanTopUp(cfg: NetworkConfig, agentId: number, lender: string) {
+   const c = getContracts(cfg);
+-  const caps = await requireV61(cfg, 'can_top_up');
+-  const [rpc, pool, ok, pos, pending, activeStarts] = await Promise.all([
++  const caps = await marketplaceCapabilities(cfg);
++  // [X-6] V6 has no pending-tranche accounting at all, so a top-up can never
++  // forfeit in-flight interest: the answer is unconditionally `true`, which is
++  // what both SDKs return. Refusing the question here made one deployment give
++  // three different answers to the same question.
++  if (!caps.v61) {
++    const [rpc, pool, pos] = await Promise.all([
++      rpcStatus(cfg),
++      c.marketplace.agentPools(agentId),
++      c.marketplace.getLenderPosition(agentId, lender),
++    ]);
++    if (!pool.isActive) throw new ValidationError(`No active pool for agentId ${agentId} on ${cfg.name}`, 'agentId');
++    return {
++      network: cfg.name,
++      marketplaceVersion: caps.version,
++      agentId,
++      lender,
++      canTopUp: true,
++      onChainView: null,
++      correctedPredicate: true,
++      viewDisagrees: false,
++      hasPosition: (pos.amount as bigint) > 0n,
++      suppliedUsdc: formatUsdc(pos.amount),
++      pendingTrancheUsdc: null,
++      activeLoansInPool: null,
++      warnings: [TOP_UP_RACE_WARNING],
++      note: 'This deployment predates the pending-tranche accounting (V6.1), so supplyLiquidity never refuses a top-up on those grounds — the answer is unconditionally true, as it is in the JS and Python SDKs.',
++      rpc,
++    };
++  }
++  const [rpc, pool, ok, pos, pending] = await Promise.all([
+     rpcStatus(cfg),
+     c.marketplace.agentPools(agentId),
+     c.marketplace.canTopUp(agentId, lender) as Promise<boolean>,
+     c.marketplace.getLenderPosition(agentId, lender),
+     c.marketplace.pendingTranche(agentId, lender),
+-    activeLoanStartTimes(cfg, agentId),
+   ]);
+   if (!pool.isActive) throw new ValidationError(`No active pool for agentId ${agentId} on ${cfg.name}`, 'agentId');
++  const activeStarts = await activeLoanStartTimes(cfg, agentId, pool.agentAddress as string);
+   const hasPosition = (pos.amount as bigint) > 0n;
+   const corrected = correctedCanTopUp({
+     positionAmount: pos.amount as bigint,
+@@ -837,10 +988,38 @@ export async function readCanTopUp(cfg: NetworkConfig, agentId: number, lender:
+   };
+ }
+ 
++/**
++ * [X-6 2026-09-23] The agent's ACTIVE loan ids on ANY generation.
++ *
++ * V6.1+ has `getActiveLoanIds`. V6 does not, so the answer is computed the way
++ * both SDKs compute it: walk the pool creator's `agentLoans[]` and keep state
++ * ACTIVE. Refusing the question on V6 (which the server used to do) made the
++ * same question return different answers from the three clients.
++ */
++async function activeLoanIdsFor(cfg: NetworkConfig, agentId: number, poolCreator: string): Promise<bigint[]> {
++  const c = getContracts(cfg);
++  const caps = await marketplaceCapabilities(cfg);
++  if (caps.v61) return (await c.marketplace.getActiveLoanIds(agentId)) as bigint[];
++  if (!poolCreator || poolCreator === ethers.ZeroAddress) return [];
++  const out: bigint[] = [];
++  for (let i = 0; i < MAX_LIST; i++) {
++    let lid: bigint;
++    try {
++      lid = (await c.marketplace.agentLoans(poolCreator, i)) as bigint;
++    } catch (e) {
++      if (!isTransientRpcFailure(e)) break; // [X-4] end of array only
++      throw e;
++    }
++    const l = await c.marketplace.loans(lid);
++    if (Number(l.state) === 1) out.push(lid);
++  }
++  return out;
++}
++
+ /** Start timestamps of every ACTIVE loan in an agent's pool (<= MAX_ACTIVE_LOANS_PER_AGENT entries). */
+-export async function activeLoanStartTimes(cfg: NetworkConfig, agentId: number): Promise<bigint[]> {
++export async function activeLoanStartTimes(cfg: NetworkConfig, agentId: number, poolCreator = ''): Promise<bigint[]> {
+   const c = getContracts(cfg);
+-  const ids = (await c.marketplace.getActiveLoanIds(agentId)) as bigint[];
++  const ids = await activeLoanIdsFor(cfg, agentId, poolCreator);
+   const loans = await Promise.all(ids.map((id) => c.marketplace.loans(id)));
+   return loans.map((l) => l.startTime as bigint);
+ }
+@@ -848,12 +1027,21 @@ export async function activeLoanStartTimes(cfg: NetworkConfig, agentId: number):
+ /** getActiveLoanIds(agentId): the agent's ACTIVE loans (<= MAX_ACTIVE_LOANS_PER_AGENT). */
+ export async function readActiveLoanIds(cfg: NetworkConfig, agentId: number) {
+   const c = getContracts(cfg);
+-  const caps = await requireV61(cfg, 'get_active_loan_ids');
+-  const [rpc, pool, idsRaw] = await Promise.all([rpcStatus(cfg), c.marketplace.agentPools(agentId), c.marketplace.getActiveLoanIds(agentId) as Promise<bigint[]>]);
++  const [rpc, caps, pool] = await Promise.all([rpcStatus(cfg), marketplaceCapabilities(cfg), c.marketplace.agentPools(agentId)]);
+   if (!pool.isActive) throw new ValidationError(`No active pool for agentId ${agentId} on ${cfg.name}`, 'agentId');
+-  const ids = idsRaw.map(Number);
++  const ids = (await activeLoanIdsFor(cfg, agentId, pool.agentAddress as string)).map(Number);
+   const loans = await Promise.all(ids.map(async (id) => formatLoan(await c.marketplace.loans(id), id)));
+-  return { network: cfg.name, marketplaceVersion: caps.version, agentId, activeLoans: ids.length, loanIds: ids, loans, rpc };
++  return {
++    network: cfg.name,
++    marketplaceVersion: caps.version,
++    agentId,
++    activeLoans: ids.length,
++    loanIds: ids,
++    loans,
++    source: caps.v61 ? 'getActiveLoanIds' : 'agentLoans-walk',
++    ...(caps.v61 ? {} : { note: 'This deployment predates getActiveLoanIds(); the list was computed by walking the pool creator\'s agentLoans[] and keeping the ACTIVE ones — the same way the JS and Python SDKs answer it.' }),
++    rpc,
++  };
+ }
+ 
+ 
+@@ -863,11 +1051,23 @@ export async function readAgentLoans(cfg: NetworkConfig, address: string, opts:
+   const limit = Math.min(opts.limit ?? 50, MAX_LIST);
+   const ids: number[] = [];
+   // agentLoans(address, i) reverts past the end; walk until revert (bounded).
++  //
++  // [X-4 2026-09-23] Only a DEFINITE revert ends the walk. Treating ANY error as
++  // "end of array" meant one rate-limited eth_call silently truncated the list —
++  // and an empty result reads as "this agent has no loans", which is a wrong
++  // answer about outstanding debt.
+   for (let i = 0; i < MAX_LIST; i++) {
+     try {
+       ids.push(Number(await c.marketplace.agentLoans(address, i)));
+-    } catch {
+-      break;
++    } catch (e) {
++      if (!isTransientRpcFailure(e)) break;
++      throw Object.assign(
++        new Error(
++          `Could not enumerate ${address}'s loans on ${cfg.name}: the RPC failed at index ${i} of the agentLoans ` +
++          `walk (${describeRpcError(e)}). Refusing to report a truncated loan list as complete — retry shortly.`,
++        ),
++        { cause: e },
++      );
+     }
+   }
+   const recent = ids.slice(-limit).reverse();
+@@ -877,7 +1077,19 @@ export async function readAgentLoans(cfg: NetworkConfig, address: string, opts:
+ 
+ export async function readPositions(cfg: NetworkConfig, address: string) {
+   const c = getContracts(cfg);
+-  const [rpc, active] = await Promise.all([rpcStatus(cfg), activeAgentIds(c, cfg)]);
++  let rpc: RpcStatus;
++  let active: { ids: bigint[]; total: number; truncated: boolean };
++  try {
++    [rpc, active] = await Promise.all([rpcStatus(cfg), activeAgentIds(c, cfg)]);
++  } catch (e) {
++    // [X-2] the 2026-05 Base build cannot enumerate pools, so positions cannot
++    // be discovered by scanning. Say that — an empty list would read as "you
++    // have no positions", which is a wrong answer about money.
++    return noEnumeration(cfg, e, {
++      network: cfg.name, address, totalSuppliedUsdc: null, totalClaimableInterestUsdc: null,
++      positions: [] as Array<Record<string, unknown>>,
++    });
++  }
+   const ids = active.ids;
+   const positions: Array<Record<string, unknown>> = [];
+   let totalSupplied = 0n;
+diff --git a/mcp-server/src/tools.ts b/mcp-server/src/tools.ts
+index 6fa21b6..e084ef5 100644
+--- a/mcp-server/src/tools.ts
++++ b/mcp-server/src/tools.ts
+@@ -190,7 +190,7 @@ const BASE_TOOLS: ToolDef[] = [
+     name: 'preview_repayment',
+     kind: 'read',
+     description:
+-      'V6.1 only: the EXACT USDC amount repayLoan(loanId) would pull right now (principal + interest on max(duration, elapsed), capped at duration + 30 days). Use this, not principal + nominal interest, to size the repay approval; a late loan owes more and the figure grows per second until it caps. On a V6 deployment this returns a "not supported" error (get_loan_status.repayment still works there).',
++      'The EXACT USDC amount repayLoan(loanId) would pull right now. On V6.1+ that is principal + interest on max(duration, elapsed), capped at duration + 30 days, so a late loan owes more and the figure grows per second until it caps. On a V6 deployment it is the nominal fixed-term figure, which is what V6 actually charges — `source` says which. Use this, not your own arithmetic, to size the repay approval.',
+     inputSchema: schema({ network: NETWORK_PROP, loanId: ID_PROP('Loan ID (must be ACTIVE)') }, ['network', 'loanId']),
+     rest: { method: 'GET', path: '/v1/{network}/loans/{loanId}/repayment', pathParams: ['network', 'loanId'] },
+     handler: async (args) => readRepaymentPreview(net(args), validateId(args.loanId, 'loanId')),
+@@ -199,7 +199,7 @@ const BASE_TOOLS: ToolDef[] = [
+     name: 'can_top_up',
+     kind: 'read',
+     description:
+-      'V6.1 only: whether `lender` can add to an EXISTING position in agent pool `agentId` right now without supplyLiquidity reverting "Top-up would forfeit in-flight interest". ADVISORY, not a guarantee: the deployed canTopUp() view is off by one block, so this server also computes the corrected predicate server-side and returns the conservative answer (`onChainView` and `correctedPredicate` show both, `viewDisagrees` flags a mismatch); a loan can also start between this check and your transaction. Always read `warnings` and simulate immediately before signing. A first supply is never refused. Returns a "not supported" error on V6 deployments (which never refuse top-ups).',
++      'Whether `lender` can add to an EXISTING position in agent pool `agentId` right now without supplyLiquidity reverting "Top-up would forfeit in-flight interest". ADVISORY, not a guarantee: the deployed canTopUp() view is off by one block, so this server also computes the corrected predicate server-side and returns the conservative answer (`onChainView` and `correctedPredicate` show both, `viewDisagrees` flags a mismatch); a loan can also start between this check and your transaction. Always read `warnings` and simulate immediately before signing. A first supply is never refused. On a V6 deployment the answer is unconditionally true: that generation has no pending-tranche accounting, so supplyLiquidity never refuses a top-up on those grounds.',
+     inputSchema: schema({ network: NETWORK_PROP, agentId: ID_PROP('Agent ID of the pool'), lender: ADDRESS_PROP('Lender wallet address (the one that would send supplyLiquidity)') }, ['network', 'agentId', 'lender']),
+     rest: { method: 'GET', path: '/v1/{network}/pools/{agentId}/can-top-up/{lender}', pathParams: ['network', 'agentId', 'lender'] },
+     handler: async (args) => readCanTopUp(net(args), validateId(args.agentId, 'agentId'), validateAddress(args.lender, 'lender')),
+@@ -207,7 +207,7 @@ const BASE_TOOLS: ToolDef[] = [
+   {
+     name: 'get_active_loan_ids',
+     kind: 'read',
+-    description: 'V6.1 only: IDs (and status) of an agent\'s currently ACTIVE loans, straight from the contract\'s bounded active set (at most MAX_ACTIVE_LOANS_PER_AGENT). Returns a "not supported" error on V6 deployments; use get_agent_loans there.',
++    description: 'IDs (and status) of an agent\'s currently ACTIVE loans. On V6.1+ this comes straight from the contract\'s bounded active set (at most MAX_ACTIVE_LOANS_PER_AGENT); on a V6 deployment it is computed by walking the pool creator\'s agentLoans[] and keeping the ACTIVE ones. `source` says which.',
+     inputSchema: schema({ network: NETWORK_PROP, agentId: ID_PROP('Agent ID') }, ['network', 'agentId']),
+     rest: { method: 'GET', path: '/v1/{network}/agents/{agentId}/active-loans', pathParams: ['network', 'agentId'] },
+     handler: async (args) => readActiveLoanIds(net(args), validateId(args.agentId, 'agentId')),
+diff --git a/mcp-server/test/unit.v61.test.mjs b/mcp-server/test/unit.v61.test.mjs
+index aaa950b..ad473e9 100644
+--- a/mcp-server/test/unit.v61.test.mjs
++++ b/mcp-server/test/unit.v61.test.mjs
+@@ -86,6 +86,14 @@ function mock({ v61, loan, allowance = 0n, balance = 10_000_000_000n, canTopUp =
+       if (!v61) throw noSelector();
+       return activeIds;
+     },
++    // [X-6] the V6 answer is computed by walking agentLoans[], as both SDKs do
++    agentLoans: async (_addr, i) => {
++      if (Number(i) < activeIds.length) return activeIds[Number(i)];
++      throw Object.assign(new Error('missing revert data'), {
++        code: 'CALL_EXCEPTION', data: null, reason: null,
++        info: { error: { code: 3, message: 'execution reverted' } },
++      });
++    },
+   };
+   const registry = { addressToAgentId: async () => 1n, ownerOf: async () => ownerOf };
+   const usdc = { allowance: async () => allowance, balanceOf: async () => balance };
+@@ -240,11 +248,21 @@ test('the three V6.1 read tools are registered, GET-bound and in the OpenAPI doc
+     assert.equal(t.rest.method, 'GET');
+     assert.equal(t.rest.path, path);
+     assert.ok(buildOpenApi('http://x').paths[path]?.get, `${path} in openapi`);
+-    assert.match(t.description, /V6.1 only/);
++    // [X-6] these are no longer "V6.1 only" — they answer on every generation
++    // and say which path produced the answer. The description must still tell
++    // the caller that the two generations differ.
++    assert.doesNotMatch(t.description, /V6\.1 only/);
++    assert.match(t.description, /V6/);
+   }
+ });
+ 
+-test('preview_repayment on V6.1 returns the exact quote; on V6 a clear "not supported" 400', async () => {
++// [X-6 2026-09-23] These three read tools used to answer "not supported on this
++// deployment" on V6. Both SDKs answer all three correctly there (V6 charges the
++// nominal fixed-term interest; V6 has no tranche accounting so a top-up is never
++// refused; the active set is the agentLoans[] walk), so the hosted server was the
++// odd one out — three clients, three different answers to the same question.
++// They now answer on every generation and say which path produced the answer.
++test('preview_repayment: exact quote on V6.1, nominal fixed-term quote on V6', async () => {
+   const loan = loanAt({ startedAgo: 17n * DAY });
+   mock({ v61: true, loan });
+   const r = await callTool('preview_repayment', { network: NET, loanId: LOAN_ID });
+@@ -262,10 +280,14 @@ test('preview_repayment on V6.1 returns the exact quote; on V6 a clear "not supp
+   assert.ok(r.rpc.blockNumber === 100);
+ 
+   mock({ v61: false, loan });
+-  await assert.rejects(
+-    callTool('preview_repayment', { network: NET, loanId: LOAN_ID }),
+-    (e) => e instanceof UnsupportedOnDeploymentError && e instanceof ValidationError && e.status === 400 && /preview_repayment is not supported on this deployment/.test(e.message) && /reports version V6/.test(e.message),
+-  );
++  const v6 = await callTool('preview_repayment', { network: NET, loanId: LOAN_ID });
++  assert.equal(v6.marketplaceVersion, 'V6');
++  assert.equal(v6.source, 'calculateInterest');
++  assert.equal(v6.late, false, 'V6 charges the fixed term, so a loan is never "late" for pricing');
++  assert.equal(v6.totalRepaymentUsdc, ethers.formatUnits(P + interestForSeconds(P, RATE, DUR), 6));
++  assert.match(v6.note, /V6 deployment/);
++  // ...and it agrees with the SDKs' answer for the same loan
++  assert.equal(v6.totalRepaymentUsdc, (await callTool('get_loan_status', { network: NET, loanId: LOAN_ID })).repayment.totalRepaymentUsdc);
+ });
+ 
+ test('preview_repayment: non-existent or non-ACTIVE loan is a validation error, not a raw revert', async () => {
+@@ -296,8 +318,13 @@ test('can_top_up on V6.1 (refused / allowed / no position); on V6 "not supported
+ 
+   await assert.rejects(callTool('can_top_up', { network: NET, agentId: 1, lender: 'nope' }), /lender must be a 0x-prefixed/);
+ 
+-  mock({ v61: false, loan });
+-  await assert.rejects(callTool('can_top_up', { network: NET, agentId: 1, lender: HOLDER }), (e) => e instanceof UnsupportedOnDeploymentError && /can_top_up is not supported on this deployment/.test(e.message));
++  mock({ v61: false, loan, position: 5_000_000n });
++  r = await callTool('can_top_up', { network: NET, agentId: 1, lender: HOLDER });
++  assert.equal(r.canTopUp, true, 'V6 has no tranche accounting: a top-up can never forfeit in-flight interest');
++  assert.equal(r.marketplaceVersion, 'V6');
++  assert.equal(r.hasPosition, true);
++  assert.equal(r.suppliedUsdc, '5.0');
++  assert.match(r.note, /predates the pending-tranche accounting/);
+ });
+ 
+ test('get_active_loan_ids on V6.1 lists the active set with loan details; on V6 "not supported"', async () => {
+@@ -310,8 +337,14 @@ test('get_active_loan_ids on V6.1 lists the active set with loan details; on V6
+   assert.equal(r.loans[0].state, 'ACTIVE');
+   assert.equal(r.loans[0].principalUsdc, '1000.0');
+ 
+-  mock({ v61: false, loan });
+-  await assert.rejects(callTool('get_active_loan_ids', { network: NET, agentId: 1 }), (e) => e instanceof UnsupportedOnDeploymentError && /get_active_loan_ids is not supported/.test(e.message));
++  assert.equal(r.source, 'getActiveLoanIds');
++
++  mock({ v61: false, loan, activeIds: [26n] });
++  const v6 = await callTool('get_active_loan_ids', { network: NET, agentId: 1 });
++  assert.equal(v6.marketplaceVersion, 'V6');
++  assert.equal(v6.source, 'agentLoans-walk', 'the V6 answer is computed the way both SDKs compute it');
++  assert.deepEqual(v6.loanIds, [26]);
++  assert.equal(v6.loans[0].state, 'ACTIVE');
+ });
+ 
+ test('get_loan_status.repayment uses previewRepayment on V6.1 (late-aware) and calculateInterest on V6', async () => {
+diff --git a/python/specular/client.py b/python/specular/client.py
+index 1d30fca..f9b7846 100644
+--- a/python/specular/client.py
++++ b/python/specular/client.py
+@@ -155,6 +155,13 @@ class UnsupportedOnDeployment(RuntimeError):
+     """A V6.2-only feature was requested on a V6 / V6.1 deployment."""
+ 
+ 
++class LoanEnumerationFailed(RuntimeError):
++    """[X-4] The ``agentLoans[]`` walk hit a transient RPC failure.
++
++    Raised instead of returning a silently truncated loan list, which reads as
++    "this agent has no outstanding debt"."""
++
++
+ class InsufficientSelfStake(RuntimeError):
+     """[V6.2 / M2-c] The borrow would revert "Insufficient self-stake".
+ 
+@@ -294,12 +301,81 @@ class SpecularClient:
+         The string test alone only matches legacy reverts like Base USDC's
+         "ERC20: transfer amount exceeds allowance"; OpenZeppelin v5 tokens raise
+         the custom error `ERC20InsufficientAllowance` (selector 0xfb8f41b2),
+-        whose message carries no words at all."""
++        whose message carries no words at all.
++
++        [X-9 parity] Marketplace reverts that contain "exceeds" but are not about
++        an allowance are excluded first: `Exceeds credit limit` used to be read as
++        an allowance shortfall, so the borrow path re-approved
++        `collateral + principal` — a transient 2x over-approval for a borrow that
++        could never succeed, plus two wasted transactions."""
+         msg = str(e)
++        if re.search(r"(?i)exceeds (credit limit|pool liquidity|available liquidity|maximum|max )", msg):
++            return False
+         if re.search(r"(?i)allowance|exceeds|transfer amount", msg):
+             return True
+         return SpecularClient.ERC20_INSUFFICIENT_ALLOWANCE in msg.lower()
+ 
++    #: [X-4 parity] JSON-RPC error codes that mean "ask again later", not "the
++    #: contract answered". web3 surfaces the upstream code on
++    #: ``Web3RPCError.rpc_response``; ethers/web3 both turn a rate limit AND a
++    #: data-less revert into an indistinguishable "call failed", and the code is
++    #: the only discriminator. Measured on the live Arc endpoints 2026-09-23:
++    #: rate limit -> -32005, genuine revert -> 3.
++    TRANSIENT_RPC_CODES = frozenset({-32005, -32016, -32002, -32029, -32603, 429})
++
++    @staticmethod
++    def _rpc_error_code(e: BaseException) -> int | None:
++        for attr in ("rpc_response", "response"):
++            resp = getattr(e, attr, None)
++            if isinstance(resp, dict):
++                code = (resp.get("error") or {}).get("code")
++                if isinstance(code, int):
++                    return code
++        args = getattr(e, "args", ())
++        for a in args:
++            if isinstance(a, dict) and isinstance(a.get("code"), int):
++                return a["code"]
++        m = re.search(r"'code':\s*(-?\d+)", str(e))
++        return int(m.group(1)) if m else None
++
++    @staticmethod
++    def _is_transient_rpc_failure(e: BaseException) -> bool:
++        """[X-4 parity] The failure was transport/capacity shaped, so the chain
++        never actually answered. Such an error must NEVER be read as "the
++        agentLoans array ends here" or "this deployment is an older one"."""
++        if e is None:
++            return False
++        # a revert that carries a reason string is a definite contract answer
++        if re.search(r"(?i)execution reverted:\s*\S", str(e)):
++            return False
++        code = SpecularClient._rpc_error_code(e)
++        if code is not None:
++            if code in SpecularClient.TRANSIENT_RPC_CODES:
++                return True
++            if code == 3:
++                return False  # "execution reverted" — definite
++        if re.search(r"(?i)rate limit|too many requests|throttl|capacity|overloaded|try again|timed? ?out|"
++                     r"connection|ECONN|EAI_AGAIN|network|\b(429|500|502|503|504)\b", str(e)):
++            return True
++        return isinstance(e, (TimeoutError, ConnectionError, OSError))
++
++    def _loan_id_at(self, address: str, index: int, ctx: str) -> int | None:
++        """[X-4 parity] One step of the ``agentLoans[]`` walk.
++
++        ``None`` at the genuine end of the array; raises on anything else. The
++        walk used to be ``except Exception: break``, which cannot tell "past the
++        end" from "the RPC failed while I asked" — and a truncated (often empty)
++        loan list is a wrong answer about outstanding debt."""
++        try:
++            return int(self.marketplace.functions.agentLoans(address, index).call())
++        except BaseException as e:  # noqa: BLE001
++            if not SpecularClient._is_transient_rpc_failure(e):
++                return None  # genuine end of array
++            raise LoanEnumerationFailed(
++                f"{ctx}: the RPC failed at index {index} of the agentLoans walk for {address} ({e}). "
++                "Refusing to report a truncated loan list as complete — an empty or short list here "
++                "reads as \"no outstanding debt\". Retry against a healthy RPC.") from e
++
+     @property
+     def _write_lock(self) -> threading.RLock:
+         """[F-R10 parity] Serialize this key's writes. Every op is multi-tx
+@@ -386,7 +462,29 @@ class SpecularClient:
+                     f"SpecularClient: no contract code at {which} {addr} "
+                     "(wrong address, wrong network, or an RPC serving an empty view).")
+             setattr(self, attr, code)
+-        return SpecularClient._selector(signature) in code
++        return SpecularClient._code_contains_selector(code, SpecularClient._selector(signature))
++
++    @staticmethod
++    def _code_contains_selector(code: bytes, selector: bytes) -> bool:
++        """[X-5 parity] Does `code` dispatch `selector`?
++
++        A plain substring scan misses ~1 function in 256: solc emits the
++        dispatcher constant with the minimum number of PUSH bytes, so a selector
++        whose first byte is 0x00 appears as a PUSH3 of its low three bytes
++        (``PUSH4 0x004d9045`` == ``PUSH3 0x4d9045`` numerically) and the four
++        bytes never occur contiguously. Verified on the live Arc mainnet V6.2 at
++        0xCb23f2fb03Bfd4775Cc0e76E28f64c1e545071be, whose
++        ``minHoldForReputationReward()`` (0x004d9045) returns 86400 while the
++        bytes 004d9045 are absent from its code. A false negative here makes the
++        client declare a deployed function missing and silently fall back."""
++        s = selector
++        if s in code:
++            return True
++        while len(s) > 1 and s[0] == 0:
++            s = s[1:]
++            if s in code:
++                return True
++        return False
+ 
+     _LOAN_STATES = ["REQUESTED", "ACTIVE", "REPAID", "DEFAULTED"]
+ 
+@@ -1010,7 +1108,12 @@ class SpecularClient:
+         try:
+             return bool(self.marketplace.functions.canTopUp(
+                 agent_id, Web3.to_checksum_address(lender or self.account.address)).call())
+-        except Exception:
++        except BaseException as e:  # noqa: BLE001
++            # [X-4] True is the PERMISSIVE answer — it lets supply() go ahead and
++            # forfeit in-flight interest. Only a deployment that genuinely lacks
++            # the selector may be answered that way.
++            if SpecularClient._is_transient_rpc_failure(e):
++                raise
+             return True
+ 
+     def active_loan_ids(self, agent_id: int) -> list[int]:
+@@ -1027,9 +1130,8 @@ class SpecularClient:
+             return []
+         out: list[int] = []
+         for idx in range(200):
+-            try:
+-                lid = self.marketplace.functions.agentLoans(addr, idx).call()
+-            except Exception:
++            lid = self._loan_id_at(addr, idx, "SpecularClient.active_loan_ids")
++            if lid is None:
+                 break
+             if self.marketplace.functions.loans(lid).call()[9] == 1:
+                 out.append(int(lid))
+@@ -1076,9 +1178,10 @@ class SpecularClient:
+         out = []
+         idx = 0
+         while True:
+-            try:
+-                lid = self.marketplace.functions.agentLoans(self.account.address, idx).call()
+-            except Exception:
++            # [X-4] ends the walk ONLY at a genuine out-of-bounds revert; a
++            # transient RPC failure raises rather than truncating the list.
++            lid = self._loan_id_at(self.account.address, idx, "SpecularClient.loans")
++            if lid is None:
+                 break
+             loan = self.marketplace.functions.loans(lid).call()
+             # loan tuple: (loanId, borrower, agentId, amount, collateralAmount, interestRate, startTime, endTime, duration, state)
+diff --git a/src/sdk/SpecularQuickstart.js b/src/sdk/SpecularQuickstart.js
+index 12d04c9..bd9491d 100644
+--- a/src/sdk/SpecularQuickstart.js
++++ b/src/sdk/SpecularQuickstart.js
+@@ -306,12 +306,41 @@ class SpecularQuickstart {
+         }
+     }
+ 
++    /**
++     * [ROBUSTNESS X-4] One step of an `agentLoans[]` walk.
++     *
++     * Returns `null` at the genuine end of the array and THROWS on anything
++     * else. The walk used to be `catch { break }`, which cannot tell "past the
++     * end" from "the RPC failed while I asked" — ethers v6 collapses a
++     * rate-limited `eth_call` and a data-less revert into the same
++     * `CALL_EXCEPTION: missing revert data`. A truncated (often empty) loan list
++     * is a wrong answer about outstanding debt, and it is also `_loanCount()`'s
++     * baseline for reconciling an inconclusive borrow, where an under-count
++     * makes the reconciler adopt an OLD loan id as the new one.
++     */
++    async _loanIdAt(address, index, ctx) {
++        try {
++            return await SpecularQuickstart._retryTransient(
++                () => this.marketplace.agentLoans(address, index));
++        } catch (e) {
++            if (!SpecularQuickstart._isTransientRpcFailure(e)) return null; // genuine end of array
++            const err = new Error(
++                `${ctx}: the RPC failed at index ${index} of the agentLoans walk for ${address} ` +
++                `(${e.shortMessage || e.message}). Refusing to report a truncated loan list as complete — ` +
++                'an empty or short list here reads as "no outstanding debt". Retry against a healthy RPC.');
++            err.code = 'SPECULAR_LOAN_ENUMERATION_FAILED';
++            err.cause = e;
++            throw err;
++        }
++    }
++
+     /** Number of loan ids recorded for this wallet (the `agentLoans[]` array length). */
+     async _loanCount() {
+         let i = 0;
+         // eslint-disable-next-line no-constant-condition
+         while (true) {
+-            try { await this.marketplace.agentLoans(this.wallet.address, i); } catch (_) { return i; }
++            const lid = await this._loanIdAt(this.wallet.address, i, 'SpecularQuickstart._loanCount');
++            if (lid === null) return i;
+             i++;
+             if (i > 10000) return i;
+         }
+@@ -638,6 +667,40 @@ class SpecularQuickstart {
+         return !!(e && e.code === 'CALL_EXCEPTION' && ((e.data && e.data !== '0x') || e.reason));
+     }
+ 
++    /**
++     * [ROBUSTNESS X-4] JSON-RPC error codes that mean "ask again later", not
++     * "the contract answered". ethers preserves the upstream code on
++     * `info.error.code`, which is the ONLY thing separating a rate limit from a
++     * data-less revert once ethers has turned both into
++     * `CALL_EXCEPTION: missing revert data`. Measured on the live Arc endpoints
++     * 2026-09-23: rate limit -> -32005, genuine revert -> 3.
++     */
++    static TRANSIENT_RPC_CODES = new Set([-32005, -32016, -32002, -32029, -32603, 429]);
++
++    static _rpcErrorCode(e) {
++        for (const c of [e && e.info && e.info.error && e.info.error.code,
++            e && e.error && e.error.code,
++            e && e.cause && e.cause.info && e.cause.info.error && e.cause.info.error.code]) {
++            if (typeof c === 'number') return c;
++        }
++        return null;
++    }
++
++    /** True when the failure is transport/capacity shaped, so no answer was actually given. */
++    static _isTransientRpcFailure(e) {
++        if (!e) return false;
++        if (SpecularQuickstart._isRealRevert(e)) return false;
++        const code = SpecularQuickstart._rpcErrorCode(e);
++        if (typeof code === 'number') {
++            if (SpecularQuickstart.TRANSIENT_RPC_CODES.has(code)) return true;
++            if (code === 3) return false; // "execution reverted" — a definite contract answer
++        }
++        const msg = `${e.message || ''} ${e.shortMessage || ''} ` +
++            `${(e.info && e.info.error && e.info.error.message) || ''}`;
++        if (/rate limit|too many requests|throttl|capacity|overloaded|try again|timeout|timed out|socket hang up|ECONN|EAI_AGAIN|fetch failed|network error|\b(429|500|502|503|504)\b/i.test(msg)) return true;
++        return ['TIMEOUT', 'NETWORK_ERROR', 'SERVER_ERROR', 'UNKNOWN_ERROR'].includes(e.code);
++    }
++
+     /** Retry `fn` while the failure could be transient; surface real reverts / ABI errors at once. */
+     static async _retryTransient(fn, { attempts = 3, delayMs = 400 } = {}) {
+         let last;
+@@ -681,7 +744,32 @@ class SpecularQuickstart {
+             }
+             this[cacheKey] = code.toLowerCase();
+         }
+-        return this[cacheKey].includes(frag.selector.slice(2).toLowerCase());
++        return SpecularQuickstart._codeContainsSelector(this[cacheKey], frag.selector);
++    }
++
++    /**
++     * [ROBUSTNESS X-5] Does `code` (lowercase hex, 0x-prefixed) dispatch `selector`?
++     *
++     * A plain substring scan misses ~1 function in 256: solc emits the
++     * dispatcher constant with the minimum number of PUSH bytes, so a selector
++     * whose first byte is 0x00 appears as a PUSH3 of its low three bytes
++     * (`PUSH4 0x004d9045` === `PUSH3 0x4d9045` numerically) and the four bytes
++     * never occur contiguously. Verified on the live Arc mainnet V6.2 at
++     * 0xCb23f2fb03Bfd4775Cc0e76E28f64c1e545071be, whose
++     * `minHoldForReputationReward()` (0x004d9045) returns 86400 while the bytes
++     * `004d9045` are absent from its code. A false negative here makes the SDK
++     * declare a deployed function missing and silently fall back.
++     */
++    static _codeContainsSelector(code, selector) {
++        const hex = String(code || '').toLowerCase();
++        let s = String(selector || '').toLowerCase().replace(/^0x/, '');
++        if (hex.includes(s)) return true;
++        // strip leading zero bytes and look for the truncated PUSH constant
++        while (s.length > 2 && s.startsWith('00')) {
++            s = s.slice(2);
++            if (hex.includes(s)) return true;
++        }
++        return false;
+     }
+ 
+     /**
+@@ -823,9 +911,23 @@ class SpecularQuickstart {
+      * silently dead on those tokens: the repay/borrow just failed.
+      */
+     static ERC20_INSUFFICIENT_ALLOWANCE = '0xfb8f41b2';
++
++    /**
++     * [ROBUSTNESS X-9] Marketplace reverts that contain the word "exceeds" but
++     * have nothing to do with an allowance. The bare `/exceeds/i` test matched
++     * these, so a credit-limit refusal was mistaken for an allowance shortfall
++     * and `_borrowInner` re-approved `collateral + principal` — measured as a
++     * transient 2x over-approval (1200 then 2400 USDC for a borrow that could
++     * never succeed) plus two wasted transactions. Bounded and always revoked,
++     * but the exact-approval model should not widen an approval because a
++     * DIFFERENT rule refused the borrow.
++     */
++    static NOT_ALLOWANCE_REVERTS = /exceeds (?:credit limit|pool liquidity|available liquidity|maximum|max )/i;
++
+     static isAllowanceShortfall(e) {
+         if (!e) return false;
+         const msg = `${e.message || ''} ${e.shortMessage || ''} ${e.reason || ''}`;
++        if (SpecularQuickstart.NOT_ALLOWANCE_REVERTS.test(msg)) return false;
+         if (/allowance|exceeds|transfer amount/i.test(msg)) return true;
+         const candidates = [
+             e.data,
+@@ -1013,8 +1115,14 @@ class SpecularQuickstart {
+     async canTopUp(agentId, lender = this.wallet.address) {
+         if (!(await this._hasV61Views())) return true;
+         try {
+-            return Boolean(await this.marketplace.canTopUp(agentId, lender));
++            return Boolean(await SpecularQuickstart._retryTransient(
++                () => this.marketplace.canTopUp(agentId, lender)));
+         } catch (e) {
++            // [X-4] `true` is the PERMISSIVE answer: it lets supply() go ahead and
++            // forfeit in-flight interest. Only a deployment that genuinely lacks
++            // the selector may be answered that way; a transient RPC failure must
++            // surface instead of being turned into a green light.
++            if (SpecularQuickstart._isTransientRpcFailure(e)) throw e;
+             return true;
+         }
+     }
+@@ -1035,8 +1143,8 @@ class SpecularQuickstart {
+         if (!addr || addr === ethers.ZeroAddress) return [];
+         const out = [];
+         for (let i = 0; i < 200; i++) {
+-            let lid;
+-            try { lid = await this.marketplace.agentLoans(addr, i); } catch (e) { break; }
++            const lid = await this._loanIdAt(addr, i, 'SpecularQuickstart.activeLoanIds');
++            if (lid === null) break;
+             const l = await this.marketplace.loans(lid);
+             if (Number(l.state) === 1) out.push(Number(lid));
+         }
+@@ -1314,11 +1422,18 @@ class SpecularQuickstart {
+      */
+     async creditInfo() {
+         const addr = this.wallet.address;
++        // [ROBUSTNESS X-7] Retry each read. Public endpoints rate-limit a burst
++        // (Arc mainnet answers -32005, which ethers reports as
++        // `CALL_EXCEPTION: missing revert data`), and creditInfo() is commonly
++        // called right after tierTable()'s 31-call fan-out — reproducibly
++        // failing the SDK's headline read on the live network while the Python
++        // client, which is strictly sequential, sailed through.
++        const R = SpecularQuickstart._retryTransient;
+         const [score, creditLimit, collPct, rateBps] = await Promise.all([
+-            this.reputation['getReputationScore(address)'](addr),
+-            this.reputation.calculateCreditLimit(addr),
+-            this.reputation.calculateCollateralRequirement(addr),
+-            this.reputation.calculateInterestRate(addr)
++            R(() => this.reputation['getReputationScore(address)'](addr)),
++            R(() => this.reputation.calculateCreditLimit(addr)),
++            R(() => this.reputation.calculateCollateralRequirement(addr)),
++            R(() => this.reputation.calculateInterestRate(addr))
+         ]);
+         const out = {
+             score: Number(score),
+@@ -1340,13 +1455,13 @@ class SpecularQuickstart {
+         if (caps.reputationV4) {
+             const agentId = await this._agentId();
+             const [tier, tierLimit, ladder, maxRepaid, lockedOut, lockedUntil, maxTierLimit] = await Promise.all([
+-                this.reputation.tierOf(score),
+-                this.reputation.tierLimit(score),
+-                this.reputation.ladderLimit(agentId),
+-                this.reputation.maxRepaidPrincipal(agentId),
+-                this.reputation.isLockedOut(agentId),
+-                this.reputation.lockedUntil(agentId),
+-                this.reputation.MAX_TIER_LIMIT()
++                R(() => this.reputation.tierOf(score)),
++                R(() => this.reputation.tierLimit(score)),
++                R(() => this.reputation.ladderLimit(agentId)),
++                R(() => this.reputation.maxRepaidPrincipal(agentId)),
++                R(() => this.reputation.isLockedOut(agentId)),
++                R(() => this.reputation.lockedUntil(agentId)),
++                R(() => this.reputation.MAX_TIER_LIMIT())
+             ]);
+             out.agentId = agentId;
+             out.tier = Number(tier);
+@@ -1380,21 +1495,24 @@ class SpecularQuickstart {
+     async loans() {
+         const addr = this.wallet.address;
+         const out = [];
++        const states = ['REQUESTED', 'ACTIVE', 'REPAID', 'DEFAULTED'];
+         let i = 0;
++        // eslint-disable-next-line no-constant-condition
+         while (true) {
+-            try {
+-                const lid = await this.marketplace.agentLoans(addr, i);
+-                const l = await this.marketplace.loans(lid);
+-                const states = ['REQUESTED', 'ACTIVE', 'REPAID', 'DEFAULTED'];
+-                out.push({
+-                    id: Number(lid),
+-                    amount: ethers.formatUnits(l.amount, this.cfg.decimals),
+-                    interestRate: Number(l.interestRate),
+-                    state: states[Number(l.state)],
+-                    endTime: Number(l.endTime)
+-                });
+-                i++;
+-            } catch (e) { break; }
++            // [X-4] `_loanIdAt` ends the walk ONLY at a genuine out-of-bounds
++            // revert; a transient RPC failure throws rather than truncating.
++            const lid = await this._loanIdAt(addr, i, 'SpecularQuickstart.loans');
++            if (lid === null) break;
++            const l = await SpecularQuickstart._retryTransient(() => this.marketplace.loans(lid));
++            out.push({
++                id: Number(lid),
++                amount: ethers.formatUnits(l.amount, this.cfg.decimals),
++                interestRate: Number(l.interestRate),
++                state: states[Number(l.state)],
++                endTime: Number(l.endTime)
++            });
++            i++;
++            if (i > 10000) break;
+         }
+         return out;
+     }
+diff --git a/mcp-server/test/unit.crossgen.test.mjs b/mcp-server/test/unit.crossgen.test.mjs
+new file mode 100644
+index 0000000..72e8de2
+--- /dev/null
++++ b/mcp-server/test/unit.crossgen.test.mjs
+@@ -0,0 +1,380 @@
++// Cross-generation regressions (2026-09-23 cross-generation regression round).
++//
++// The hosted server must behave correctly against ALL THREE deployment
++// generations it can be pointed at, and must never turn a transient RPC failure
++// into a durable capability answer. Two failure families are covered here:
++//
++//  X-1  CAPABILITY POISONING (the F-R1 shape, fixed in both SDKs, still open in
++//       the server). `marketplaceCapabilities` / `reputationCapabilities` used a
++//       bare `try { VERSION() } catch { 'V6' }`. ethers v6 collapses a JSON-RPC
++//       `-32005 rate limit exceeded` (and an HTTP 500) on `eth_call` into the
++//       SAME `CALL_EXCEPTION: missing revert data` it produces for a selector the
++//       contract does not implement, so ONE blip permanently downgraded a V6.2/V4
++//       deployment to "V6/V3" for the life of the process — publishing the
++//       v3-constant tier table (25,000 / 50,000 USDC) in place of the live
++//       on-chain one (2,500 / 5,000) and refusing every self-stake view.
++//
++//  X-2  OLDEST-GENERATION READS. Base mainnet runs a V6 build that predates the
++//       2026-08 levers and the §S5 counter: `minSupplyAmount`,
++//       `bindBorrowToPoolCreator`, `minHoldForReputationReward`,
++//       `activeLoanCount` and `outstandingPrincipal` are absent from its
++//       bytecode, and `getActiveAgents()` is the reverting stub. Those calls sat
++//       unguarded inside Promise.all, so get_protocol_status, check_credit_score,
++//       get_pool_details, get_available_liquidity and get_lending_positions all
++//       returned a raw 502 on Base.
++//
++//  X-3  LATER-ADDED METHOD PROBE. `getActiveAgents(uint256,uint256)` arrived in a
++//       later V6.2 revision than the one first deployed, so the probe is correct
++//       — but one transient failure used to disable it permanently, re-arming the
++//       unbounded call the pagination exists to avoid.
++import { test, afterEach } from 'node:test';
++import assert from 'node:assert/strict';
++import { ethers } from 'ethers';
++import { _setContractsForTest, marketplaceCapabilities, reputationCapabilities } from '../dist/chain.js';
++import {
++  readProtocolStatus, readCredit, readPoolDetails, readPools, readPositions, readAgentLoans,
++  creditTierTable, _clearTierTableCache, _clearActiveAgentsProbeCache,
++} from '../dist/reads.js';
++import { getNetwork } from '../dist/networks.js';
++import { explainRevert, prepareTx } from '../dist/prepare.js';
++
++const NET = 'arc-staging';
++const cfg = getNetwork(NET);
++const AGENT = '0x800e305A0caDdE6289dFDFEDF38218f45C06F72C';
++const USDC = (n) => ethers.parseUnits(String(n), 6);
++const DAY = 86400n;
++
++/** What ethers v6 throws when the deployed bytecode has no such selector. */
++const noSelector = (name = 'VERSION') =>
++  Object.assign(new Error(`could not decode result data (value="0x", info={ "method": "${name}" }, code=BAD_DATA)`), { code: 'BAD_DATA' });
++
++/**
++ * What ethers v6 throws when the RPC answered `eth_call` with a JSON-RPC error.
++ * Verified on the live Arc endpoints 2026-09-23: a rate limit arrives as
++ * `{code:-32005}` and a genuine revert as `{code:3}`, and BOTH surface as
++ * `CALL_EXCEPTION` with `data: null` and `reason: null`. Only `info.error.code`
++ * tells them apart.
++ */
++const rpcCallError = (code, message) =>
++  Object.assign(new Error('missing revert data'), {
++    code: 'CALL_EXCEPTION', action: 'call', data: null, reason: null, invocation: null, revert: null,
++    shortMessage: 'missing revert data',
++    info: { error: { code, message }, payload: { method: 'eth_call', params: [] } },
++  });
++const rateLimited = () => rpcCallError(-32005, 'rate limit exceeded');
++const revertedNoData = () => rpcCallError(3, 'execution reverted');
++
++/** The stub AgentLiquidityMarketplace the 2026-05 Base deploy actually is. */
++function baseEraMarketplace(extra = {}) {
++  const absent = (n) => async () => { throw noSelector(n); };
++  return {
++    VERSION: absent('VERSION'),
++    LATE_INTEREST_CAP: absent('LATE_INTEREST_CAP'),
++    // levers added 2026-08, after the Base deploy
++    minSupplyAmount: absent('minSupplyAmount'),
++    bindBorrowToPoolCreator: absent('bindBorrowToPoolCreator'),
++    minHoldForReputationReward: absent('minHoldForReputationReward'),
++    // §S5 counter + V6.1 views, also later
++    activeLoanCount: absent('activeLoanCount'),
++    outstandingPrincipal: absent('outstandingPrincipal'),
++    requiredSelfStake: absent('requiredSelfStake'),
++    selfStake: absent('selfStake'),
++    // the reverting stub this build still carries
++    'getActiveAgents()': async () => { throw Object.assign(new Error('execution reverted: "Use front-end to query specific agents"'), { code: 'CALL_EXCEPTION', reason: 'Use front-end to query specific agents', data: '0x08c379a0' }); },
++    'getActiveAgents(uint256,uint256)': absent('getActiveAgents'),
++    paused: async () => false,
++    totalPools: async () => 4n,
++    nextLoanId: async () => 15n,
++    platformFeeRate: async () => 100n,
++    MAX_ACTIVE_LOANS_PER_AGENT: async () => 10n,
++    MAX_LENDERS_PER_POOL: async () => 50n,
++    // only agentId 1 has a pool; the registry has 7 agents (as Base really does)
++    agentPools: async (id) => (Number(id) === 1
++      ? { agentId: 1n, agentAddress: AGENT, totalLiquidity: USDC('1.5'), availableLiquidity: USDC('1.501705'), totalLoaned: 0n, totalEarned: USDC('0.001705'), isActive: true }
++      : { agentId: BigInt(id), agentAddress: ethers.ZeroAddress, totalLiquidity: 0n, availableLiquidity: 0n, totalLoaned: 0n, totalEarned: 0n, isActive: false }),
++    getAgentPool: async (id) => (Number(id) === 1
++      ? { agentAddress: AGENT, totalLiquidity: USDC('1.5'), availableLiquidity: USDC('1.501705'), totalLoaned: 0n, totalEarned: USDC('0.001705'), utilizationRate: 0n, lenderCount: 1n }
++      : { agentAddress: ethers.ZeroAddress, totalLiquidity: 0n, availableLiquidity: 0n, totalLoaned: 0n, totalEarned: 0n, utilizationRate: 0n, lenderCount: 0n }),
++    getLenderPosition: async (id) => (Number(id) === 1
++      ? { amount: USDC('1.5'), earnedInterest: 0n, depositTimestamp: 0n, shareOfPool: 10000n }
++      : { amount: 0n, earnedInterest: 0n, depositTimestamp: 0n, shareOfPool: 0n }),
++    agentLoans: async (_a, i) => { if (Number(i) > 0) throw revertedNoData(); return 1n; },
++    loans: async () => ({ loanId: 1n, borrower: AGENT, agentId: 1n, amount: USDC('0.1'), collateralAmount: USDC('0.1'), interestRate: 1500n, startTime: 1779290441n, endTime: 1779895241n, duration: 7n * DAY, state: 2n }),
++    calculateInterest: async (p, r, d) => ((p * r) / 10000n * d) / (365n * DAY),
++    ...extra,
++  };
++}
++
++function v3Reputation() {
++  return {
++    VERSION: async () => { throw noSelector(); },
++    'getReputationScore(address)': async () => 110n,
++    calculateCreditLimit: async () => USDC(1000),
++    calculateCollateralRequirement: async () => 100n,
++    calculateInterestRate: async () => 1500n,
++  };
++}
++
++function registryStub() {
++  return {
++    totalAgents: async () => 7n,
++    addressToAgentId: async () => 1n,
++    getAgentInfo: async () => ({ owner: AGENT, agentWallet: AGENT, agentURI: 'ipfs://agent', isActive: true, registrationTime: 1779000000n }),
++  };
++}
++
++function install({ marketplace, reputation, registry = registryStub() }) {
++  _setContractsForTest(NET, {
++    provider: { getBlock: async () => ({ number: 1, timestamp: Math.floor(Date.now() / 1000) }) },
++    marketplace, reputation, registry,
++    usdc: { balanceOf: async () => USDC(10), allowance: async () => 0n },
++  });
++  _clearTierTableCache();
++  _clearActiveAgentsProbeCache();
++}
++
++afterEach(() => {
++  _setContractsForTest(NET, null);
++  _clearTierTableCache();
++  _clearActiveAgentsProbeCache();
++});
++
++// ---------------------------------------------------------------- X-1
++test('X-1 a transient RPC failure during VERSION() is never cached as a capability answer', async () => {
++  let attempts = 0;
++  install({
++    marketplace: {
++      ...baseEraMarketplace(),
++      VERSION: async () => { attempts += 1; if (attempts === 1) throw rateLimited(); return 'V6.2'; },
++      requiredSelfStake: async () => 0n,
++    },
++    reputation: v3Reputation(),
++  });
++
++  await assert.rejects(
++    () => marketplaceCapabilities(cfg),
++    (e) => /unavailable|rate limit|could not determine|temporarily/i.test(e.message),
++    'a rate-limited VERSION() must surface, not be answered as "V6"',
++  );
++  // and the failure must NOT have been memoised: the next call sees the truth
++  const caps = await marketplaceCapabilities(cfg);
++  assert.equal(caps.version, 'V6.2');
++  assert.equal(caps.v62, true);
++});
++
++test('X-1 a transient failure on the reputation VERSION() probe never yields the v3-constant table', async () => {
++  let attempts = 0;
++  const V4_LIMITS = [USDC(1000), USDC(5000), USDC(10000), USDC(10000), USDC(2500), USDC(5000)];
++  install({
++    marketplace: { ...baseEraMarketplace(), VERSION: async () => 'V6.2', requiredSelfStake: async () => 0n },
++    reputation: {
++      ...v3Reputation(),
++      VERSION: async () => { attempts += 1; if (attempts === 1) throw rateLimited(); return 'V4'; },
++      MAX_TIER_LIMIT: async () => USDC(10000),
++      tierMinScore: async (i) => [0n, 200n, 400n, 500n, 600n, 800n][Number(i)],
++      tierLimits: async (i) => V4_LIMITS[Number(i)],
++      tierCollateralPct: async (i) => [100n, 100n, 100n, 75n, 0n, 0n][Number(i)],
++      tierInterestBps: async (i) => [1500n, 1500n, 1000n, 1000n, 700n, 500n][Number(i)],
++      unsecuredTierExposure: async (i) => [0n, 0n, 0n, USDC(2500), USDC(2500), USDC(5000)][Number(i)],
++    },
++  });
++
++  await assert.rejects(() => reputationCapabilities(cfg), /unavailable|rate limit|could not determine|temporarily/i);
++  _clearTierTableCache();
++  const table = await creditTierTable(cfg);
++  assert.equal(table.source, 'chain', 'must read the live table once the RPC answers');
++  assert.equal(table.tiers[5].creditLimitUsdc, '5000.0', 'the v3-constant fallback would have said 50000.0');
++});
++
++test('X-1 a genuinely absent VERSION() still resolves to the older generation', async () => {
++  install({ marketplace: baseEraMarketplace(), reputation: v3Reputation() });
++  const caps = await marketplaceCapabilities(cfg);
++  assert.equal(caps.version, 'V6');
++  assert.equal(caps.v61, false);
++  assert.equal(caps.v62, false);
++  const rcaps = await reputationCapabilities(cfg);
++  assert.equal(rcaps.version, 'V3');
++  assert.equal(rcaps.v4, false);
++});
++
++// ---------------------------------------------------------------- X-2
++test('X-2 get_protocol_status works on the Base-era V6 (no levers, reverting getActiveAgents)', async () => {
++  install({ marketplace: baseEraMarketplace(), reputation: v3Reputation() });
++  const s = await readProtocolStatus(cfg);
++  assert.equal(s.paused, false);
++  assert.equal(s.totalPools, 4);
++  assert.equal(s.totalLoans, 14);
++  assert.equal(s.capabilities.marketplaceVersion, 'V6');
++  // the levers this build predates must be reported as absent, not crash the route
++  assert.equal(s.parameters.minSupplyUsdc, null);
++  assert.equal(s.parameters.borrowRestrictedToPoolCreator, null);
++  assert.equal(s.parameters.minHoldForReputationRewardSeconds, null);
++  assert.equal(s.parameters.platformFeeBps, 100);
++});
++
++test('X-2 check_credit_score works on the Base-era V6 (no activeLoanCount / outstandingPrincipal)', async () => {
++  install({ marketplace: baseEraMarketplace(), reputation: v3Reputation() });
++  const c = await readCredit(cfg, AGENT);
++  assert.equal(c.registered, true);
++  assert.equal(c.reputation.score, 110);
++  assert.equal(c.credit.creditLimitUsdc, '1000.0');
++  assert.equal(c.credit.outstandingPrincipalUsdc, null);
++  assert.equal(c.credit.activeLoans, null);
++});
++
++test('X-2 get_pool_details works on the Base-era V6', async () => {
++  install({ marketplace: baseEraMarketplace(), reputation: v3Reputation() });
++  const p = await readPoolDetails(cfg, 1);
++  assert.equal(p.agentId, 1);
++  assert.equal(p.totalLiquidityUsdc, '1.5');
++  assert.equal(p.outstandingPrincipalUsdc, null);
++  assert.equal(p.minSupplyUsdc, null);
++});
++
++test('X-2 pool + position enumeration falls back to a registry scan when getActiveAgents() is the reverting stub', async () => {
++  install({ marketplace: baseEraMarketplace(), reputation: v3Reputation() });
++  const pools = await readPools(cfg);
++  // an empty list would read as "this protocol has no pools" — a wrong answer about TVL
++  assert.equal(pools.pools.length, 1, 'the registry scan must still find the active pool');
++  assert.equal(pools.pools[0].agentId, 1);
++  assert.equal(pools.pools[0].totalLiquidityUsdc, '1.5');
++  const pos = await readPositions(cfg, AGENT);
++  assert.equal(pos.positions.length, 1);
++  assert.equal(pos.positions[0].suppliedUsdc, '1.5');
++});
++
++test('X-2 enumeration says so, rather than answering "no pools", when even the registry cannot be walked', async () => {
++  install({
++    marketplace: baseEraMarketplace(),
++    reputation: v3Reputation(),
++    registry: { ...registryStub(), totalAgents: async () => { throw noSelector('totalAgents'); } },
++  });
++  const pools = await readPools(cfg);
++  assert.equal(pools.pools.length, 0);
++  assert.match(String(pools.note ?? ''), /cannot enumerate/i, 'must explain the empty list rather than 502 or imply zero pools');
++});
++
++// ---------------------------------------------------------------- X-3
++test('X-3 a transient failure on the paginated getActiveAgents probe is not cached as "absent"', async () => {
++  let paged = 0;
++  let legacy = 0;
++  install({
++    marketplace: {
++      ...baseEraMarketplace(),
++      VERSION: async () => 'V6.2',
++      requiredSelfStake: async () => 0n,
++      minSupplyAmount: async () => USDC(10),
++      bindBorrowToPoolCreator: async () => true,
++      minHoldForReputationReward: async () => DAY,
++      activeLoanCount: async () => 0n,
++      outstandingPrincipal: async () => 0n,
++      'getActiveAgents(uint256,uint256)': async () => { paged += 1; if (paged === 1) throw rateLimited(); return [[1n], 1n]; },
++      'getActiveAgents()': async () => { legacy += 1; return [1n]; },
++    },
++    reputation: v3Reputation(),
++  });
++
++  await readPools(cfg).catch(() => {});
++  await readPools(cfg);
++  assert.ok(paged >= 2, `the paginated overload must be retried after a transient failure (tried ${paged}x)`);
++});
++
++test('X-3 a genuinely absent paginated overload falls back once and stays fallen back', async () => {
++  let paged = 0;
++  let legacy = 0;
++  install({
++    marketplace: {
++      ...baseEraMarketplace(),
++      VERSION: async () => 'V6.2',
++      requiredSelfStake: async () => 0n,
++      minSupplyAmount: async () => USDC(10),
++      bindBorrowToPoolCreator: async () => true,
++      minHoldForReputationReward: async () => DAY,
++      activeLoanCount: async () => 0n,
++      outstandingPrincipal: async () => 0n,
++      'getActiveAgents(uint256,uint256)': async () => { paged += 1; throw noSelector('getActiveAgents'); },
++      'getActiveAgents()': async () => { legacy += 1; return [1n]; },
++    },
++    reputation: v3Reputation(),
++  });
++  await readPools(cfg);
++  await readPools(cfg);
++  assert.equal(paged, 1, 'a definite "no such method" answer is remembered');
++  assert.equal(legacy, 2);
++});
++
++// ---------------------------------------------------------------- X-8
++//
++// The same "absent selector inside an unguarded Promise.all" as X-2, but in the
++// WRITE builders: prepare_supply_liquidity and prepare_request_loan both
++// returned a raw 502 on Base, i.e. no agent could lend OR borrow through the
++// hosted server on the oldest real-money deployment.
++test('X-8 prepare_supply_liquidity works on the Base-era V6 (no minSupplyAmount)', async () => {
++  install({ marketplace: baseEraMarketplace(), reputation: v3Reputation() });
++  const tx = await prepareTx(cfg, 'supply_liquidity', { from: AGENT, agentId: 1, amount: '100' });
++  assert.equal(tx.action, 'supply_liquidity');
++  assert.ok(tx.prerequisite, 'the exact-amount approve must still be produced');
++  assert.equal(tx.prerequisite.call.args.amount, USDC(100).toString());
++  assert.notEqual(tx.prerequisite.call.args.amount, ethers.MaxUint256.toString());
++  assert.ok(!tx.warnings.some((w) => /minimum supply/i.test(w)), 'no minimum exists on this build, so it must not be claimed');
++});
++
++test('X-8 prepare_request_loan works on the Base-era V6 (no bind / activeLoanCount / outstandingPrincipal)', async () => {
++  install({ marketplace: baseEraMarketplace(), reputation: v3Reputation() });
++  const tx = await prepareTx(cfg, 'request_loan', { from: AGENT, amount: '50', durationDays: 30 });
++  assert.equal(tx.action, 'request_loan');
++  // collateral is still priced from the chain: 50 USDC at the 100 % tier
++  assert.equal(tx.call.args.collateralRequired, USDC(50).toString());
++  assert.equal(tx.call.args.collateralPercent, '100');
++  assert.equal(tx.prerequisite.call.args.amount, USDC(50).toString());
++  assert.notEqual(tx.prerequisite.call.args.amount, ethers.MaxUint256.toString());
++  // over the limit is still caught, with an honest caveat about what is missing
++  const over = await prepareTx(cfg, 'request_loan', { from: AGENT, amount: '5000', durationDays: 30 });
++  assert.ok(over.warnings.some((w) => /exceeds the credit limit/i.test(w)));
++  assert.ok(over.warnings.some((w) => /does not expose outstandingPrincipal/i.test(w)));
++});
++
++// ---------------------------------------------------------------- X-10/X-11
++test('X-10 the V6.2 withdraw-side minimum is not explained with supply-side advice', () => {
++  const withdrawSide = explainRevert(Object.assign(new Error('execution reverted: "Remaining below minimum supply"'), { reason: 'Remaining below minimum supply' }));
++  assert.match(withdrawSide.plain, /withdraw your position in FULL|at least the minimum remains/i);
++  assert.doesNotMatch(withdrawSide.plain, /CREATOR supplying into its own pool is exempt/i);
++
++  const supplySide = explainRevert(Object.assign(new Error('execution reverted: "Below minimum supply"'), { reason: 'Below minimum supply' }));
++  assert.match(supplySide.plain, /minimum supply/i);
++  assert.match(supplySide.plain, /CREATOR/i);
++});
++
++test('X-10 the reserved last lender slot is a distinct refusal, not a generic capacity error', () => {
++  const r = explainRevert(Object.assign(new Error('execution reverted: "Last slot reserved for agent self-stake"'), { reason: 'Last slot reserved for agent self-stake' }));
++  assert.match(r.plain, /reserved for the agent's OWN first-loss self-stake/i);
++  assert.doesNotMatch(r.plain, /maximum number of lenders/i);
++});
++
++test('X-11 an ERC-721 receiver rejection during register_agent is explained', () => {
++  // AgentRegistryV2.register() _safeMints; an EIP-7702-delegated EOA reverts here.
++  const data = new ethers.Interface(['error ERC721InvalidReceiver(address receiver)'])
++    .encodeErrorResult('ERC721InvalidReceiver', [AGENT]);
++  const r = explainRevert(Object.assign(new Error('execution reverted (unknown custom error)'), { code: 'CALL_EXCEPTION', data }));
++  assert.match(r.reason, /ERC721InvalidReceiver/);
++  assert.match(r.plain, /delegation|plain EOA/i);
++});
++
++// ---------------------------------------------------------------- X-4
++test('X-4 the agentLoans walk stops at the end of the array but never on a rate limit', async () => {
++  // genuine end of array -> a complete list
++  install({ marketplace: baseEraMarketplace(), reputation: v3Reputation() });
++  const ok = await readAgentLoans(cfg, AGENT);
++  assert.equal(ok.totalLoans, 1);
++
++  // transient failure at index 1 -> must NOT be reported as "one loan"
++  install({
++    marketplace: {
++      ...baseEraMarketplace(),
++      agentLoans: async (_a, i) => { if (Number(i) === 1) throw rateLimited(); if (Number(i) > 1) throw revertedNoData(); return BigInt(Number(i) + 1); },
++    },
++    reputation: v3Reputation(),
++  });
++  await assert.rejects(() => readAgentLoans(cfg, AGENT), /rate limit|unavailable|enumerat|temporarily/i,
++    'a truncated loan list must never be presented as complete');
++});
+diff --git a/python/tests/test_loan_enumeration.py b/python/tests/test_loan_enumeration.py
+new file mode 100644
+index 0000000..0ff570d
+--- /dev/null
++++ b/python/tests/test_loan_enumeration.py
+@@ -0,0 +1,152 @@
++"""[X-4/X-5, 2026-09-23 cross-generation regression round] — Python parity.
++
++Mirrors test/sdk/quickstart-loan-enumeration.test.js:
++
++  X-4  the ``agentLoans[]`` walk must end only at a genuine out-of-bounds revert.
++       ``except Exception: break`` could not tell "past the end" from "the RPC
++       failed while I asked", so a rate limit silently truncated the loan list —
++       and an empty list reads as "this agent has no outstanding debt".
++  X-5  ``_code_has_selector`` missed any selector whose first byte is 0x00,
++       because solc emits the dispatcher constant as a PUSH3.
++
++Pure unit tests: no chain, no network.
++"""
++import sys
++import types
++import unittest
++from pathlib import Path
++
++sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
++
++from specular.client import LoanEnumerationFailed, SpecularClient  # noqa: E402
++
++ADDR = "0x1111111111111111111111111111111111111111"
++
++
++class Web3RPCErrorStub(Exception):
++    """Shaped like web3's Web3RPCError: carries the upstream JSON-RPC response."""
++
++    def __init__(self, code, message):
++        super().__init__({"code": code, "message": message})
++        self.rpc_response = {"error": {"code": code, "message": message}}
++
++
++def rate_limited():
++    return Web3RPCErrorStub(-32005, "rate limit exceeded")
++
++
++def reverted_no_data():
++    return Web3RPCErrorStub(3, "execution reverted")
++
++
++def client_with_loans(loan_ids, fail_at=None, fail_with=rate_limited):
++    c = object.__new__(SpecularClient)
++    c.account = types.SimpleNamespace(address=ADDR)
++    c.network = "test"
++    c._mp_version = "V6"
++
++    def agent_loans(_addr, idx):
++        if fail_at is not None and idx == fail_at:
++            raise fail_with()
++        if idx >= len(loan_ids):
++            raise reverted_no_data()
++        return types.SimpleNamespace(call=lambda: loan_ids[idx])
++
++    def loans(_lid):
++        # (loanId, borrower, agentId, amount, collateral, rate, start, end, duration, state)
++        return types.SimpleNamespace(call=lambda: (0, ADDR, 1, 1_000000, 0, 1500, 0, 0, 0, 1))
++
++    def can_top_up(_a, _l):
++        return types.SimpleNamespace(call=lambda: (_ for _ in ()).throw(fail_with()))
++
++    def agent_pools(_a):
++        return types.SimpleNamespace(call=lambda: (1, ADDR, 0, 0, 0, 0, True))
++
++    c.marketplace = types.SimpleNamespace(functions=types.SimpleNamespace(
++        agentLoans=lambda a, i: agent_loans(a, i),
++        loans=loans,
++        canTopUp=can_top_up,
++        agentPools=agent_pools,
++    ))
++    return c
++
++
++class TestTransientClassification(unittest.TestCase):
++    def test_rate_limit_is_transient(self):
++        self.assertTrue(SpecularClient._is_transient_rpc_failure(rate_limited()))
++
++    def test_plain_revert_is_not_transient(self):
++        self.assertFalse(SpecularClient._is_transient_rpc_failure(reverted_no_data()))
++
++    def test_revert_with_a_reason_is_not_transient(self):
++        self.assertFalse(SpecularClient._is_transient_rpc_failure(
++            Exception('execution reverted: Loan not active')))
++
++
++class TestLoanEnumeration(unittest.TestCase):
++    def test_control_complete_list(self):
++        c = client_with_loans([7, 8, 9])
++        self.assertEqual([l.loan_id for l in c.loans()], [7, 8, 9])
++        self.assertEqual(c.active_loan_ids(1), [7, 8, 9])
++
++    def test_loans_raises_on_rate_limit(self):
++        c = client_with_loans([7, 8, 9], fail_at=1)
++        with self.assertRaises(LoanEnumerationFailed):
++            c.loans()
++
++    def test_active_loan_ids_raises_on_rate_limit(self):
++        c = client_with_loans([7, 8, 9], fail_at=2)
++        with self.assertRaises(LoanEnumerationFailed):
++            c.active_loan_ids(1)
++
++    def test_can_top_up_does_not_answer_true_on_a_rate_limit(self):
++        c = client_with_loans([], fail_with=rate_limited)
++        c._mp_version = "V6.1"
++        with self.assertRaises(Exception):
++            c.can_top_up(1)
++
++    def test_can_top_up_still_degrades_to_true_when_absent(self):
++        c = client_with_loans([], fail_with=reverted_no_data)
++        c._mp_version = "V6.1"
++        self.assertTrue(c.can_top_up(1))
++
++
++class TestAllowanceShortfall(unittest.TestCase):
++    """[X-9] "exceeds" in a revert string does not mean "allowance".
++
++    `Exceeds credit limit` used to be read as an allowance shortfall, so the
++    borrow path re-approved collateral + principal — a transient 2x
++    over-approval for a borrow that could never succeed."""
++
++    def test_credit_limit_is_not_an_allowance_shortfall(self):
++        self.assertFalse(SpecularClient._is_allowance_shortfall(
++            Exception('execution reverted: Exceeds credit limit')))
++
++    def test_pool_liquidity_is_not_an_allowance_shortfall(self):
++        self.assertFalse(SpecularClient._is_allowance_shortfall(
++            Exception('execution reverted: Exceeds pool liquidity')))
++
++    def test_legacy_allowance_revert_still_recognised(self):
++        self.assertTrue(SpecularClient._is_allowance_shortfall(
++            Exception('ERC20: transfer amount exceeds allowance')))
++
++    def test_openzeppelin_v5_custom_error_still_recognised(self):
++        self.assertTrue(SpecularClient._is_allowance_shortfall(
++            Exception('execution reverted 0xfb8f41b2' + '00' * 96)))
++
++
++class TestSelectorScan(unittest.TestCase):
++    def test_leading_zero_selector_found_as_push3(self):
++        sel = SpecularClient._selector("minHoldForReputationReward()")
++        self.assertEqual(sel.hex(), "004d9045")
++        code = bytes.fromhex("6080604052") + b"\x62" + sel[1:] + bytes.fromhex("8114610020")
++        self.assertTrue(SpecularClient._code_contains_selector(code, sel))
++
++    def test_absent_selector_still_absent(self):
++        sel = SpecularClient._selector("minHoldForReputationReward()")
++        code = bytes.fromhex("608060405263123456788114610020806387654321146100305780")
++        self.assertFalse(SpecularClient._code_contains_selector(code, sel))
++
++
++if __name__ == "__main__":
++    unittest.main()
+diff --git a/test/sdk/quickstart-loan-enumeration.test.js b/test/sdk/quickstart-loan-enumeration.test.js
+new file mode 100644
+index 0000000..f2ab81e
+--- /dev/null
++++ b/test/sdk/quickstart-loan-enumeration.test.js
+@@ -0,0 +1,186 @@
++// [X-4, 2026-09-23 cross-generation regression round]
++//
++// The SDK discovers how many loans a wallet has by walking `agentLoans(addr, i)`
++// until the call reverts (a Solidity array read past the end). Every such walk
++// used `catch { break }` — so ANY failure ended the walk, and a transient RPC
++// error was silently reported as "the array ends here".
++//
++// Measured on the live Arc endpoints on 2026-09-23: a rate-limited eth_call
++// comes back as JSON-RPC `{code: -32005, "rate limit exceeded"}` and a genuine
++// out-of-bounds read as `{code: 3, "execution reverted"}` — and ethers v6
++// collapses BOTH into `CALL_EXCEPTION: missing revert data` with `data: null`
++// and `reason: null`. Only `info.error.code` separates them, and nothing looked.
++//
++// Consequences, all silent:
++//   * `loans()` reports a truncated (often EMPTY) loan list — an agent reads
++//     "no outstanding debt" while a loan is live.
++//   * `_loanCount()` under-counts, and it is the `countBefore` that
++//     `_reconcileNewLoan()` compares against after an inconclusive borrow: an
++//     under-count makes the reconciler "adopt" an OLD loan id as the new loan.
++//   * `activeLoanIds()`'s V6 fallback truncates the same way.
++//   * `canTopUp()` answered `true` (the permissive answer) on any failure.
++//
++// A genuine end-of-array must still terminate the walk — that is the control.
++
++const { expect } = require("chai");
++const { ethers } = require("hardhat");
++const { SpecularQuickstart } = require("../../src/sdk/SpecularQuickstart.js");
++
++const USDC = (n) => ethers.parseUnits(n.toString(), 6);
++const DAY = 86400;
++
++/** What ethers v6 produces when the RPC answers eth_call with a JSON-RPC error. */
++function rpcCallError(code, message) {
++    return Object.assign(new Error("missing revert data"), {
++        code: "CALL_EXCEPTION", action: "call", data: null, reason: null,
++        invocation: null, revert: null, shortMessage: "missing revert data",
++        info: { error: { code, message }, payload: { method: "eth_call", params: [] } },
++    });
++}
++const rateLimited = () => rpcCallError(-32005, "rate limit exceeded");
++const revertedNoData = () => rpcCallError(3, "execution reverted");
++
++/** A SpecularQuickstart whose marketplace reads are driven by `loanIds`. */
++function sdkWithLoans({ loanIds, failAt, failWith }) {
++    const wallet = { address: "0x1111111111111111111111111111111111111111", provider: { getBlockNumber: async () => 1 } };
++    const sdk = Object.create(SpecularQuickstart.prototype);
++    sdk.wallet = wallet;
++    sdk.network = "test";
++    sdk.cfg = { decimals: 6, explorer: "" };
++    sdk.stalenessCheck = false;
++    sdk.maxBlockLagSeconds = 0;
++    sdk.addresses = { marketplace: "0x2222222222222222222222222222222222222222" };
++    sdk._mpVersion = "V6"; // V6 generation: activeLoanIds() must take the walking fallback
++    const calls = { agentLoans: 0, canTopUp: 0 };
++    sdk.marketplace = {
++        agentLoans: async (_addr, i) => {
++            calls.agentLoans += 1;
++            const idx = Number(i);
++            if (failAt !== undefined && idx === failAt) throw failWith();
++            if (idx >= loanIds.length) throw revertedNoData();
++            return BigInt(loanIds[idx]);
++        },
++        loans: async (id) => ({ amount: USDC(1), interestRate: 1500n, state: 1n, endTime: 0n, id }),
++        agentPools: async () => ({ agentAddress: wallet.address }),
++        canTopUp: async () => { calls.canTopUp += 1; throw failWith ? failWith() : revertedNoData(); },
++    };
++    return { sdk, calls };
++}
++
++describe("SpecularQuickstart loan enumeration — a transient RPC error is not 'end of array'", function () {
++    it("control: a genuine out-of-bounds revert ends the walk and the list is complete", async function () {
++        const { sdk } = sdkWithLoans({ loanIds: [7, 8, 9] });
++        const loans = await sdk.loans();
++        expect(loans.map((l) => l.id)).to.deep.equal([7, 8, 9]);
++        expect(await sdk._loanCount()).to.equal(3);
++        expect(await sdk.activeLoanIds(1)).to.deep.equal([7, 8, 9]);
++    });
++
++    it("loans() must THROW on a rate limit, never return a truncated list", async function () {
++        const { sdk } = sdkWithLoans({ loanIds: [7, 8, 9], failAt: 1, failWith: rateLimited });
++        let err = null;
++        let out = null;
++        try { out = await sdk.loans(); } catch (e) { err = e; }
++        expect(err, `loans() returned ${JSON.stringify(out)} instead of throwing`).to.not.equal(null);
++        expect(err.code).to.equal("SPECULAR_LOAN_ENUMERATION_FAILED");
++        expect(err.message).to.match(/truncated|rate limit|enumerat/i);
++    });
++
++    it("_loanCount() must THROW rather than under-count (it is borrow's reconciliation baseline)", async function () {
++        const { sdk } = sdkWithLoans({ loanIds: [7, 8, 9], failAt: 1, failWith: rateLimited });
++        let err = null;
++        let n = null;
++        try { n = await sdk._loanCount(); } catch (e) { err = e; }
++        expect(err, `_loanCount() returned ${n} instead of throwing`).to.not.equal(null);
++        expect(err.code).to.equal("SPECULAR_LOAN_ENUMERATION_FAILED");
++    });
++
++    it("activeLoanIds() V6 fallback must THROW rather than silently drop loans", async function () {
++        const { sdk } = sdkWithLoans({ loanIds: [7, 8, 9], failAt: 2, failWith: rateLimited });
++        let err = null;
++        let out = null;
++        try { out = await sdk.activeLoanIds(1); } catch (e) { err = e; }
++        expect(err, `activeLoanIds() returned ${JSON.stringify(out)} instead of throwing`).to.not.equal(null);
++        expect(err.code).to.equal("SPECULAR_LOAN_ENUMERATION_FAILED");
++    });
++
++    it("canTopUp() must not answer the permissive 'true' when the RPC failed", async function () {
++        const { sdk } = sdkWithLoans({ loanIds: [], failWith: rateLimited });
++        sdk._mpVersion = "V6.1"; // canTopUp only exists from V6.1
++        let err = null;
++        let ans = null;
++        try { ans = await sdk.canTopUp(1); } catch (e) { err = e; }
++        expect(err, `canTopUp() answered ${ans} instead of throwing`).to.not.equal(null);
++    });
++
++    it("canTopUp() still degrades to true when the selector is genuinely absent", async function () {
++        const { sdk } = sdkWithLoans({ loanIds: [], failWith: revertedNoData });
++        sdk._mpVersion = "V6.1";
++        expect(await sdk.canTopUp(1)).to.equal(true);
++    });
++});
++
++describe("SpecularQuickstart.isAllowanceShortfall — 'exceeds' is not always an allowance", function () {
++    // [X-9] The bare /exceeds/i test matched "Exceeds credit limit", so the borrow
++    // path treated a credit-limit refusal as an allowance shortfall and re-approved
++    // collateral + principal. Measured in the 2026-09-23 write-parity round: a
++    // borrow that could never succeed approved 1200 USDC, then 2400 USDC, then 0.
++    const revert = (reason) => Object.assign(new Error(`execution reverted: "${reason}"`), {
++        code: "CALL_EXCEPTION", reason, data: "0x08c379a0",
++    });
++
++    it("does NOT treat a credit-limit refusal as an allowance shortfall", function () {
++        expect(SpecularQuickstart.isAllowanceShortfall(revert("Exceeds credit limit"))).to.equal(false);
++    });
++
++    it("does NOT treat a liquidity refusal as an allowance shortfall", function () {
++        expect(SpecularQuickstart.isAllowanceShortfall(revert("Exceeds pool liquidity"))).to.equal(false);
++    });
++
++    it("still recognises a genuine allowance shortfall (legacy string revert)", function () {
++        expect(SpecularQuickstart.isAllowanceShortfall(revert("ERC20: transfer amount exceeds allowance"))).to.equal(true);
++    });
++
++    it("still recognises the OpenZeppelin v5 custom error", function () {
++        const e = Object.assign(new Error("execution reverted (unknown custom error)"), {
++            code: "CALL_EXCEPTION", data: SpecularQuickstart.ERC20_INSUFFICIENT_ALLOWANCE + "00".repeat(96),
++        });
++        expect(SpecularQuickstart.isAllowanceShortfall(e)).to.equal(true);
++    });
++});
++
++describe("SpecularQuickstart._codeHasSelector — selectors with a leading zero byte", function () {
++    // solc emits the dispatcher constant as PUSH3 when the 4-byte selector
++    // starts with 0x00 (PUSH4 0x004d9045 === PUSH3 0x4d9045 numerically), so a
++    // substring scan of the deployed bytecode reports the function ABSENT even
++    // though it is implemented and answers. Verified on the live Arc mainnet
++    // V6.2 at 0xCb23f2fb03Bfd4775Cc0e76E28f64c1e545071be, where
++    // `minHoldForReputationReward()` (selector 0x004d9045) returns 86400 while
++    // the bytes 004d9045 never appear in its code. ~1 in 256 functions.
++    it("finds a function whose selector begins with 0x00", async function () {
++        const iface = new ethers.Interface(["function minHoldForReputationReward() view returns (uint256)"]);
++        expect(iface.getFunction("minHoldForReputationReward").selector).to.equal("0x004d9045");
++
++        const sdk = Object.create(SpecularQuickstart.prototype);
++        sdk.addresses = { marketplace: "0x2222222222222222222222222222222222222222" };
++        sdk.marketplace = { interface: iface };
++        sdk.wallet = {
++            address: "0x1111111111111111111111111111111111111111",
++            // dispatcher as solc actually emits it: PUSH3 (0x62) + the low 3 bytes
++            provider: { getCode: async () => "0x6080604052624d904581146100205780..." },
++        };
++        expect(await sdk._codeHasSelector("minHoldForReputationReward")).to.equal(true);
++    });
++
++    it("still reports a genuinely absent selector as absent", async function () {
++        const iface = new ethers.Interface(["function minHoldForReputationReward() view returns (uint256)"]);
++        const sdk = Object.create(SpecularQuickstart.prototype);
++        sdk.addresses = { marketplace: "0x2222222222222222222222222222222222222222" };
++        sdk.marketplace = { interface: iface };
++        sdk.wallet = {
++            address: "0x1111111111111111111111111111111111111111",
++            provider: { getCode: async () => "0x60806040526312345678811461002057806387654321146100305780" },
++        };
++        expect(await sdk._codeHasSelector("minHoldForReputationReward")).to.equal(false);
++    });
++});

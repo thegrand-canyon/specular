@@ -1,0 +1,66 @@
+{
+  "scenario": "S6",
+  "startedAt": "2026-09-20T17:53:54.791Z",
+  "finishedAt": "2026-09-20T17:54:48.110Z",
+  "passed": 10,
+  "failed": 0,
+  "blocked": 0,
+  "checks": [
+    {
+      "label": "M-1 lever bindBorrowToPoolCreator == true",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "M-2 lever minHoldForReputationReward == 86400",
+      "ok": true,
+      "detail": "86400"
+    },
+    {
+      "label": "unregistered wallet X cannot borrow: \"Not a registered agent\"",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "pool.agentAddress still A (creator) while A2 holds the NFT",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "M-1: A2 requestLoan reverts \"Borrow restricted to pool creator\"",
+      "ok": true,
+      "detail": "Borrow restricted to pool creator | execution reverted: \"Borrow restricted to pool creator"
+    },
+    {
+      "label": "A holds NFT again",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "M-2: held 9s < minHold 86400s → score unchanged (0 → 0)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "M-2: gainedInWindow unchanged",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "LoanCompleted emitted with onTime=false (bonus gated), no ReputationUpdated",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "loan was on time and paid interest (so ONLY minHold blocked the bonus)",
+      "ok": true,
+      "detail": "interest 0.287671"
+    }
+  ],
+  "spent": {
+    "nativeFromDeployer": "1.078854306828058153",
+    "usdcMinted": "0.0"
+  },
+  "agentId": 46,
+  "loanId": 12
+}

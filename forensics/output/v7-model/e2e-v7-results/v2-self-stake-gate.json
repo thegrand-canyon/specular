@@ -1,0 +1,144 @@
+{
+  "scenario": "v2-self-stake-gate",
+  "title": "M2-c self-stake requirement gates the unsecured tiers (on-chain)",
+  "chainId": 5042002,
+  "marketplace": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+  "reputation": "0xD7906fDFBf69BA89a4c2FE148797e24f386fE3d2",
+  "startedAt": "2026-09-23T00:29:01.936Z",
+  "finishedAt": "2026-09-23T00:29:37.017Z",
+  "passed": 15,
+  "failed": 0,
+  "blocked": 0,
+  "checks": [
+    {
+      "label": "agent B",
+      "ok": null,
+      "detail": "#52 score 1000 collateral 0% ladder 2100.0 creditLimit 2100.0 selfStake 0.0"
+    },
+    {
+      "label": "precondition: B is at a sub-100 % collateral tier and has no outstanding principal",
+      "ok": true,
+      "detail": "coll 0%"
+    },
+    {
+      "label": "precondition: creditLimit >= 500",
+      "ok": true,
+      "detail": "2100.0"
+    },
+    {
+      "label": "requiredSelfStake(B, 400) == (outstanding+amount)·(100−collPct)/100 / k EXACTLY",
+      "ok": true,
+      "detail": "chain 200.0 == computed 200.0 (k=2, collPct=0)"
+    },
+    {
+      "label": "control: requiredSelfStake == 0 for a 100 %-collateral agent (agent A)",
+      "ok": true,
+      "detail": "A coll 100%"
+    },
+    {
+      "label": "creator stake is exactly requiredSelfStake − 1 base unit",
+      "ok": true,
+      "detail": "199999999 vs required 200000000"
+    },
+    {
+      "label": "requestLoan(400) REVERTS \"Insufficient self-stake\" at required − 1",
+      "ok": true,
+      "detail": "Insufficient self-stake | execution reverted: \"Insufficient self-stake\" | execution reverted: \"Insufficient self-stake\" (action=\"estimateGas\", data=\"0"
+    },
+    {
+      "label": "the refused loan created no state: nextLoanId and outstanding unchanged",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "creator stake is now exactly requiredSelfStake",
+      "ok": true,
+      "detail": "200.0"
+    },
+    {
+      "label": "requestLoan(400) SUCCEEDS at exactly the required stake",
+      "ok": true,
+      "detail": "outstanding 400.0"
+    },
+    {
+      "label": "requiredSelfStake(B, +100) is computed on AGGREGATE exposure (outstanding 400 + 100)",
+      "ok": true,
+      "detail": "250.0 (was 200.0)"
+    },
+    {
+      "label": "a SECOND loan of 100 REVERTS at the stake that sufficed for the first",
+      "ok": true,
+      "detail": "Insufficient self-stake | execution reverted: \"Insufficient self-stake\" | execution reverted: \"Insufficient self-stake\" (action=\"estimateGas\", data=\"0"
+    },
+    {
+      "label": "creator stake now equals the aggregate requirement exactly",
+      "ok": true,
+      "detail": "250.0"
+    },
+    {
+      "label": "second loan SUCCEEDS once the aggregate stake is met",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "all principal repaid; self-stake unlocked",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "per-pool conservation exact at the end",
+      "ok": true,
+      "detail": "Σamt 1950.0 Σearned 27.890835"
+    }
+  ],
+  "txs": [
+    {
+      "label": "stake to required-1",
+      "hash": "0xb60ad6dcd5a5209460db070cf4bb65932536abdd25a9a82ca144df22d7e2bb22",
+      "gasUsed": "97132"
+    },
+    {
+      "label": "top up 1 unit",
+      "hash": "0xfc827a5754a24dd589ffbda1d29753cd25c963028137f90db7ea8b7953e8f25e",
+      "gasUsed": "82179"
+    },
+    {
+      "label": "requestLoan 400 -> loan #100",
+      "hash": "0x01bb055ad59a62c8c24eed2c67d4318c78f470b4fb5f7bf1583e2c8a7546f6ca",
+      "gasUsed": "497590"
+    },
+    {
+      "label": "top up to aggregate requirement",
+      "hash": "0x3bfca7f6a83946b7bbf0e3ca237e62014cd1246febda3703aa9a0c3a7211a8c8",
+      "gasUsed": "99490"
+    },
+    {
+      "label": "requestLoan 100 -> loan #101",
+      "hash": "0xcfe87a49a5bb88aff9d5761ea8b1fcf8c090ee6750a7f964086b826c8f244f12",
+      "gasUsed": "429190"
+    },
+    {
+      "label": "repay 100",
+      "hash": "0xa3dc451333d1d590357cc6d08117f2f8d67cd85cc0c9cef7bdd6595aaefb3fab",
+      "gasUsed": "261288"
+    },
+    {
+      "label": "repay 101",
+      "hash": "0x63457b99ce8f426836943cae792c5ac568dfb493600ad1c275da98f95877e5ca",
+      "gasUsed": "237354"
+    }
+  ],
+  "cumulativeSpend": {
+    "nativeFromDeployer": "17.5033632",
+    "usdcMinted": "32160.0"
+  },
+  "agentId": 52,
+  "loans": [
+    100,
+    101
+  ],
+  "requiredSelfStake": {
+    "forFirst": "200000000",
+    "aggregate": "250000000"
+  }
+}

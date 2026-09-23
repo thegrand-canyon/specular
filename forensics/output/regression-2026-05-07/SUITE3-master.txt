@@ -1,0 +1,186 @@
+====================================================================
+  TEST SUITE 3 — reputation, multi-borrower, pause, base events
+====================================================================
+
+### TEST E: Base v4 event history (read-only, fast) ###
+=== BASE V4 EVENT HISTORY (last 10k blocks) ===
+Block: 46012819 MP: 0xd7b4dEE74C61844DFA75aEbe224e4635463b1C8f
+Scanning 46002819 → 46012819
+Event types in ABI: 12
+
+Total active event types: 0
+Total events: 0
+Saved.
+
+### TEST C: Pause/unpause live (~5 min) ###
+=== PAUSE / UNPAUSE LIVE TEST ===
+Initial paused state: false
+Test borrower aid=148
+
+[1] Owner pauses V6
+  paused state now: true
+
+[2] Verify user functions revert when paused
+  ? supplyLiquidity: execution reverted (unknown custom error)
+  ? withdrawLiquidity: execution reverted (unknown custom error)
+  ? requestLoan: execution reverted (unknown custom error)
+  ? claimInterest: execution reverted (unknown custom error)
+
+[3] liquidateLoan should still work when paused (recovery path)
+  (skipping live liquidate — would need an overdue loan)
+
+[4] Owner unpauses
+  paused state now: false
+
+[5] Verify user functions resume working
+  ✗ supplyLiquidity broken after unpause: execution reverted (unknown custom error)
+
+[6] Cycle test: pause → unpause → pause → unpause
+  pause done. paused=true
+  unpause done. paused=false
+  pause done. paused=true
+  unpause done. paused=false
+
+Saved.
+
+### TEST A: Reputation tier transitions (~10 min) ###
+=== REPUTATION TIER TRANSITIONS ===
+borrower=0xCE1433CA129b75577858064b6da3c5363Ca5d9C8 agentId=149
+FATAL: TypeError: rep.getCollateralRate is not a function
+    at snapshot (/Users/peterschroeder/Specular/forensics/scripts/reputation_tier_transitions_2026_05_14.js:74:43)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async /Users/peterschroeder/Specular/forensics/scripts/reputation_tier_transitions_2026_05_14.js:81:20
+
+### TEST B: Multi-borrower cross-pool concurrent (~15 min) ###
+=== MULTI-BORROWER cross-pool concurrent stress ===
+NOTE: V6 design = 1 pool per borrower. This test = 5 borrowers + 1 lender across 5 pools, concurrent activity.
+[1] Funding
+[2] Register borrowers + create pools
+  borrower 1: agentId=150
+  borrower 2: agentId=151
+  borrower 3: agentId=152
+  borrower 4: agentId=153
+  borrower 5: agentId=154
+[3] Lender supplies 1k to each pool
+[4] Concurrent loan cycles
+  cycle 1/10: requested 5/5, repaid 5/5
+  cycle 2/10: requested 5/5, repaid 5/5
+  cycle 3/10: requested 5/5, repaid 5/5
+  cycle 4/10: requested 5/5, repaid 5/5
+  cycle 5/10: requested 5/5, repaid 5/5
+  cycle 6/10: requested 5/5, repaid 5/5
+  cycle 7/10: requested 5/5, repaid 5/5
+  cycle 8/10: requested 5/5, repaid 5/5
+  cycle 9/10: requested 5/5, repaid 5/5
+  cycle 10/10: requested 5/5, repaid 5/5
+
+=== RESULTS ===
+Total loan ops attempted: 50, ok: 50, fail: 0
+Final §B1 dup violations across 5 pools: 0 ✅
+Saved.
+
+### TEST D: Hardhat coverage report ###
+      ✔ Should reject request for non-existent agent
+    Validation Response
+      ✔ Should allow validator to submit response
+      ✔ Should mark as REJECTED for low scores
+      ✔ Should increment validator completion count
+      ✔ Should reject response from wrong validator
+      ✔ Should reject score > 100
+      ✔ Should prevent duplicate response
+    Validation Dispute
+      ✔ Should allow requester to dispute
+      ✔ Should allow agent owner to dispute
+      ✔ Should increment validator dispute count
+      ✔ Should reject dispute from unauthorized user
+      ✔ Should reject dispute for pending validation
+    Validation Summary
+      ✔ Should calculate summary for single validation
+      ✔ Should calculate summary for multiple validations
+      ✔ Should filter summary by validator
+      ✔ Should filter summary by tag
+      ✔ Should exclude disputed validations from summary
+    Query Functions
+      ✔ Should get agent validations
+      ✔ Should get validator validations
+
+  AgentLiquidityMarketplace - Concurrent Loan Limits [SECURITY-01]
+    MAX_ACTIVE_LOANS_PER_AGENT Constant
+      ✔ should have MAX_ACTIVE_LOANS_PER_AGENT set to 10
+    Concurrent Loan Enforcement
+      ✔ should allow up to 10 concurrent active loans (151ms)
+      ✔ should reject 11th loan when MAX_ACTIVE_LOANS_PER_AGENT reached (146ms)
+      ✔ should allow new loan after repaying old one (178ms)
+      ✔ should count only ACTIVE loans, not REPAID (233ms)
+    Credit Limit Bypass Prevention
+      ✔ should prevent credit limit bypass via loan fragmentation (177ms)
+      ✔ should prevent taking many tiny loans to exceed aggregate limit (148ms)
+    Edge Cases
+      ✔ should handle exactly 10 active loans correctly (173ms)
+      ✔ should allow different agents to each have 10 loans (300ms)
+    Gas Cost Analysis
+      ✔ should have reasonable gas cost for counting active loans (1847ms)
+
+  LendingPoolV3 - Auto-Approve
+    Auto-Approve Configuration
+      ✔ Should have correct default configuration
+      ✔ Should allow owner to update configuration
+      ✔ Should emit event when configuration updated
+    Auto-Approve Logic
+      ✔ Should auto-approve loan within limits
+      ✔ Should NOT auto-approve if disabled
+      - Should NOT auto-approve if amount exceeds max
+      ✔ Should NOT auto-approve if reputation too low
+      ✔ Should auto-approve instantly and transfer USDC
+    canAutoApprove View Function
+      ✔ Should correctly predict auto-approval
+      ✔ Should return false for amount exceeding limits
+    Flexible Loan Durations
+      ✔ Should accept 7 day loans
+      ✔ Should accept 365 day loans
+      ✔ Should reject loans < 7 days
+      ✔ Should reject loans > 365 days
+    Backwards Compatibility
+      ✔ Should still allow manual approval
+
+
+  378 passing (37s)
+  1 pending
+
+----------------------------------------|----------|----------|----------|----------|----------------|
+File                                    |  % Stmts | % Branch |  % Funcs |  % Lines |Uncovered Lines |
+----------------------------------------|----------|----------|----------|----------|----------------|
+ bridge/                                |        0 |        0 |        0 |        0 |                |
+  CCTPBridge.sol                        |        0 |        0 |        0 |        0 |... 197,205,214 |
+  DepositRouter.sol                     |        0 |        0 |        0 |        0 |... 228,237,246 |
+ core/                                  |    86.01 |    59.51 |    84.26 |    86.14 |                |
+  AgentLiquidityMarketplace.sol         |    91.53 |     62.5 |    90.48 |    90.26 |... 537,538,540 |
+  AgentLiquidityMarketplaceV6.sol       |    85.26 |    62.33 |    85.19 |    86.79 |... 778,779,783 |
+  AgentLiquidityMarketplaceV6_Patch.sol |    93.42 |    51.52 |    92.86 |    95.15 |... 264,265,266 |
+  AgentRegistry.sol                     |      100 |    84.38 |      100 |      100 |                |
+  AgentRegistryV2.sol                   |    84.78 |    67.39 |    93.75 |    86.21 |... 145,147,149 |
+  LendingPool.sol                       |      100 |    75.71 |      100 |      100 |                |
+  LendingPoolV2.sol                     |    68.18 |    34.72 |    57.14 |    68.67 |... 316,332,339 |
+  LendingPoolV3.sol                     |    54.65 |    35.23 |       50 |    53.85 |... 388,405,412 |
+  ReputationManager.sol                 |      100 |    75.86 |      100 |      100 |                |
+  ReputationManagerV2.sol               |    90.83 |    59.52 |    88.46 |    90.41 |... 522,524,526 |
+  ReputationManagerV3.sol               |    81.43 |    48.68 |    70.59 |     75.9 |... 236,237,238 |
+  ValidationRegistry.sol                |      100 |    80.65 |      100 |      100 |                |
+ test/                                  |    95.24 |    55.56 |      100 |      100 |                |
+  ReentrancyAttacker.sol                |    95.24 |    55.56 |      100 |      100 |                |
+ tokens/                                |       50 |       50 |       50 |       50 |                |
+  MockUSDC.sol                          |       50 |       50 |       50 |       50 |          22,39 |
+----------------------------------------|----------|----------|----------|----------|----------------|
+All files                               |    81.99 |     56.5 |    77.68 |    81.36 |                |
+----------------------------------------|----------|----------|----------|----------|----------------|
+
+> Istanbul reports written to ./coverage/ and ./coverage.json
+npm notice
+npm notice New major version of npm available! 10.9.4 -> 11.14.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.14.1
+npm notice To update run: npm install -g npm@11.14.1
+npm notice
+
+====================================================================
+  TEST SUITE 3 COMPLETE
+====================================================================

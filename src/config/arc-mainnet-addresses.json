@@ -1,0 +1,30 @@
+{
+  "network": "arc-mainnet",
+  "chainId": 5042,
+  "rpcUrl": "https://rpc.mainnet.arc.io",
+  "agentRegistryV2": "0x6F1EbF50290f6D4A9947E9EB77f98a683684fBF5",
+  "reputationManagerV3": "0x12953e732e5D1aFdA640554125367d1CEC2ac4FB",
+  "agentLiquidityMarketplace_v6": "0xCb23f2fb03Bfd4775Cc0e76E28f64c1e545071be",
+  "agentCreditFaucet": "0xD854F80031A8d0CB166587AafA0969Da8C3757bF",
+  "usdc": "0x3600000000000000000000000000000000000000",
+  "deployer": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+  "deployedAt": "2026-09-19T15:26:25.558Z",
+  "marketplaceVersion": "V6.2 + ReputationManagerV4 (V7 credit model: M1 ladder + M2 self-stake)",
+  "agentLiquidityMarketplace_v6_0_retired": "0xb9996de05fD514A0cB2B81fa25448EECD4559Aaa",
+  "marketplaceRedeployedAt": "2026-09-19T21:43:30.133Z",
+  "supersededDeployments": [
+    {
+      "supersededAt": "2026-09-23T01:13:04.232Z",
+      "marketplace": "0x358c5E69f712A4b3558333090a45A054bAeEb282",
+      "reputationManager": "0x1577Eb9985CcA859F25ED2EDaeD16A464ADFaE5e",
+      "version": "V6.1 (2026-09-19 audit fixes F-01/F-02/F-03/F-05/F-07; migration finalized at deploy)",
+      "note": "Left running and authorized on purpose: pause() freezes lender exits and revoking its pool breaks repayment. Monitor it (V6_MONITOR_MARKETPLACE) until drained, then retire."
+    }
+  ],
+  "reputationManagerPrevious": "0x1577Eb9985CcA859F25ED2EDaeD16A464ADFaE5e",
+  "agentLiquidityMarketplacePrevious": "0x358c5E69f712A4b3558333090a45A054bAeEb282",
+  "reputationManagerV4": "0x12953e732e5D1aFdA640554125367d1CEC2ac4FB",
+  "agentLiquidityMarketplace_v62": "0xCb23f2fb03Bfd4775Cc0e76E28f64c1e545071be",
+  "v7DeployedAt": "2026-09-23T01:13:04.233Z",
+  "v7Note": "Reputation did NOT migrate from the V3 manager; agents restart at score 0. Legacy contracts remain live under *_legacy keys."
+}

@@ -1,0 +1,302 @@
+{
+  "scenario": "v8-prior-fixes-regression",
+  "title": "F-01 / F-02 / F-07 regression on AgentLiquidityMarketplaceV62 (on-chain)",
+  "chainId": 5042002,
+  "marketplace": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+  "reputation": "0xD7906fDFBf69BA89a4c2FE148797e24f386fE3d2",
+  "startedAt": "2026-09-23T00:34:45.995Z",
+  "finishedAt": "2026-09-23T00:36:32.168Z",
+  "passed": 36,
+  "failed": 0,
+  "blocked": 0,
+  "checks": [
+    {
+      "label": "D can carry 3 concurrent loans of 100.0 USDC under its live credit limit",
+      "ok": true,
+      "detail": "limit 300.0 maxRepaid 100.0 collateral 0% poolAvail 554.670633"
+    },
+    {
+      "label": "D holds the M2-c first-loss stake its tier requires for the aggregate exposure",
+      "ok": true,
+      "detail": "stake 150.0 >= required 150.0"
+    },
+    {
+      "label": "D pre-transfer loans",
+      "ok": null,
+      "detail": "108, 109, 110"
+    },
+    {
+      "label": "loan #108 borrower == D",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "loan #109 borrower == D",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "loan #110 borrower == D",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "registry moved the identity: ownerOf == E, addressToAgentId[D] == 0, addressToAgentId[E] == agentId",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F-01(a): the ORIGINAL borrower may repay after the NFT moved",
+      "ok": true,
+      "detail": "state 2 (2 = REPAID)"
+    },
+    {
+      "label": "F-01(a): D's balance delta == collateral − (principal + interest) exactly",
+      "ok": true,
+      "detail": "Δ -100.134246 == 0.0 − 100.134246"
+    },
+    {
+      "label": "F-01(b): the NEW NFT holder may repay",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F-01(b): COLLATERAL went to loan.borrower (D), not to the new holder (E)",
+      "ok": true,
+      "detail": "D +0.0 (collateral 0.0), E −100.134246"
+    },
+    {
+      "label": "F-01(b): the reputation call resolved through the NEW holder (LoanCompleted for this agentId)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F-01(c): an unrelated address CANNOT repay (\"Not the borrower\")",
+      "ok": true,
+      "detail": "Not the borrower | execution reverted: \"Not the borrower\" | execution reverted: \"Not the borrower\" (action=\"estimateGas\""
+    },
+    {
+      "label": "F-01(d): the old owner D can no longer borrow (\"Not a registered agent\")",
+      "ok": true,
+      "detail": "Not a registered agent | execution reverted: \"Not a registered agent\" | execution reverted: \"Not a registered agent\" (ac"
+    },
+    {
+      "label": "F-01(d): M-1 stops the NEW holder borrowing against the creator's pool (\"Borrow restricted to pool creator\")",
+      "ok": true,
+      "detail": "Borrow restricted to pool creator | execution reverted: \"Borrow restricted to pool creator\" | execution reverted: \"Borro"
+    },
+    {
+      "label": "F-01(e): the identity moves back cleanly — ownerOf == D, addressToAgentId[D] == agentId, addressToAgentId[E] == 0",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "precondition: agent A has no active loans",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "cleanup: folding LA's leftover pending tranche from a previous run",
+      "ok": null,
+      "detail": "20.0"
+    },
+    {
+      "label": "precondition: LA has a base position and no pending tranche",
+      "ok": true,
+      "detail": "1183.0"
+    },
+    {
+      "label": "agent A can carry two concurrent loans at its live credit limit",
+      "ok": true,
+      "detail": "per-loan 604.0 USDC (limit 2100.0 outstanding 0.0 collateral 100%)"
+    },
+    {
+      "label": "canTopUp == true with no pending tranche (case b)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F-02: the top-up became a PENDING tranche stamped after the loan started",
+      "ok": true,
+      "detail": "pending 20.0 @ 1790123738 > loan start 1790123734"
+    },
+    {
+      "label": "F-02: LA's qualified amount for loan #1 is UNCHANGED by the top-up",
+      "ok": true,
+      "detail": "1183.0"
+    },
+    {
+      "label": "loan #2 started after the pending stamp (the un-mergeable case e)",
+      "ok": true,
+      "detail": "1790123743 > 1790123738"
+    },
+    {
+      "label": "canTopUp == false (exact oracle for the refusal)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F-02: supplyLiquidity REVERTS \"Top-up would forfeit in-flight interest\"",
+      "ok": true,
+      "detail": "Top-up would forfeit in-flight interest | execution reverted: \"Top-up would forfeit in-flight interest\" | execution reverted: \"Top"
+    },
+    {
+      "label": "a lender with no position is never refused (canTopUp true for a fresh address)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "canTopUp true again once no loan is in flight",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "agent F has borrowable head-room at its live credit limit",
+      "ok": true,
+      "detail": "252.0 USDC (limit 700.0 collateral 100%)"
+    },
+    {
+      "label": "registry reports the agent inactive",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F-07: a deactivated agent CANNOT open a new loan (\"Agent deactivated\")",
+      "ok": true,
+      "detail": "Agent deactivated | execution reverted: \"Agent deactivated\" | execution reverted: \"Agent deactivated\" (action=\"estimateG"
+    },
+    {
+      "label": "F-07: a deactivated agent CAN still repay (the closing path stays live)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F-07: a third-party lender can still withdraw from a deactivated agent's pool",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F-07: the creator can withdraw its stake once outstandingPrincipal == 0, even while deactivated",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "agent reactivated and able to borrow again",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "per-pool conservation exact for pool #51",
+      "ok": true,
+      "detail": "avail 1232.450601 loaned 0.0 Σamt 1203.0 Σearned 29.450601"
+    },
+    {
+      "label": "per-pool conservation exact for pool #56",
+      "ok": true,
+      "detail": "avail 555.069342 loaned 0.0 Σamt 550.0 Σearned 5.069342"
+    },
+    {
+      "label": "per-pool conservation exact for pool #55",
+      "ok": true,
+      "detail": "avail 152.998884 loaned 0.0 Σamt 150.0 Σearned 2.998884"
+    }
+  ],
+  "txs": [
+    {
+      "label": "transfer agent NFT D -> E",
+      "hash": "0x39d70957723192ee345e30cf7302a14a58686050f9aa9dfb5a928077fa53052a",
+      "gasUsed": "82421"
+    },
+    {
+      "label": "D repays #108",
+      "hash": "0xc0377f75abbda830ef7ce5c28744fb0dcc35b62cd5d2f082ee8843334b8e392c",
+      "gasUsed": "248415"
+    },
+    {
+      "label": "E repays #109",
+      "hash": "0x54533cc463a9303d8308a99adb0423a48fefa472ea58ce030dcf9b53ceb8e80e",
+      "gasUsed": "246108"
+    },
+    {
+      "label": "E repays #110",
+      "hash": "0x65d6dc9c2b15fb9d566f054825d0c40daab382772e687d9dd79d04113f5866cf",
+      "gasUsed": "224455"
+    },
+    {
+      "label": "transfer agent NFT back E -> D",
+      "hash": "0xc4a51353a0f32594a1ed1dfd3cf2e86beb827662f242174e2ea475a710b4cb00",
+      "gasUsed": "82421"
+    },
+    {
+      "label": "LA top-up during loan #1",
+      "hash": "0xf6f6e7462cc30024edcdbcd0b00a2089e90dccb213a485fd93f63305fd18cbbc",
+      "gasUsed": "99478"
+    },
+    {
+      "label": "A repays loan #1",
+      "hash": "0x4af8cdd0f0927b3b8a5de4ecdbcaa83a376f46e2b20ae2753fedb49181e86d75",
+      "gasUsed": "235806"
+    },
+    {
+      "label": "A repays loan #2",
+      "hash": "0x3d5de7a510992708384f2e4ab77949cccfe4351a359ec38366fcf47777bccee6",
+      "gasUsed": "211872"
+    },
+    {
+      "label": "F self-stake",
+      "hash": "0x35423f94ea49660a7701cba8adf5b62d64a56a32e1ab5773e6ddbdb17ff2be83",
+      "gasUsed": "97132"
+    },
+    {
+      "label": "F borrows -> #113",
+      "hash": "0x3f6b496b01a3e32fa5d6d93670893720ac475cfca4b383c02c43cc617e710cf2",
+      "gasUsed": "527262"
+    },
+    {
+      "label": "deactivateAgent",
+      "hash": "0xe8fb77e11519b0a6f210cc5ab9bfab8b869b4fc673955dc848ebb83ccdabc676",
+      "gasUsed": "27465"
+    },
+    {
+      "label": "deactivated agent repays",
+      "hash": "0x42b71927eb517d4f891b42323fba0c35d33f333884ad9c3f7bc8d7a7ddb96ee2",
+      "gasUsed": "228004"
+    },
+    {
+      "label": "lender withdraw from deactivated agent pool",
+      "hash": "0xcd694b557fdb291fc8a1f8d4f31b575fbf4c91e89a701410dd638f0cf34afeb0",
+      "gasUsed": "66851"
+    },
+    {
+      "label": "creator withdraw",
+      "hash": "0x2465883f4a4d4fa66138113b4a5d9bed82b05c683b5e8a140b82e35515f58317",
+      "gasUsed": "64080"
+    },
+    {
+      "label": "reactivateAgent",
+      "hash": "0xf89e9a1d30b5ed78c915bafd87145f3ec85162d516a0e6c2a0519a7b9dbe2a3c",
+      "gasUsed": "50003"
+    }
+  ],
+  "cumulativeSpend": {
+    "nativeFromDeployer": "19.139985775",
+    "usdcMinted": "33680.0"
+  },
+  "agents": {
+    "D": 56,
+    "A": 51,
+    "F": 55
+  },
+  "loans": {
+    "transferred": [
+      108,
+      109,
+      110
+    ],
+    "tranche": [
+      111,
+      112
+    ],
+    "deactivated": 113
+  }
+}

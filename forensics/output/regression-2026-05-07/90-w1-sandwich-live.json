@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-05-20T15:14:34.030Z",
+  "v6": "0x7a0560551b2370ee87458186c0b1eFCc38c7c57a",
+  "agentId": 185,
+  "loanStartTime": "1779290020",
+  "legitDepositTimestamp": "1779290011",
+  "attackerDepositTimestamp": "1779290029",
+  "legitEarnedInterest": "28480",
+  "attackerEarnedInterest": "0",
+  "passed": true
+}

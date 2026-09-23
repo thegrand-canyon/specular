@@ -1,0 +1,1634 @@
+{
+ "base": "http://127.0.0.1:3400",
+ "at": "2026-09-22T00:06:27.897Z",
+ "pass": 269,
+ "fail": 0,
+ "results": [
+  {
+   "section": "A",
+   "label": "address: too short",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"address must be a 0x-prefixed 20-byte hex address\",\"field\":\"address\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: address: too short",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "address: no 0x",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"address must be a 0x-prefixed 20-byte hex address\",\"field\":\"address\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: address: no 0x",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "address: 41 nibbles",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"address must be a 0x-prefixed 20-byte hex address\",\"field\":\"address\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: address: 41 nibbles",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "address: non-hex",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"address must be a 0x-prefixed 20-byte hex address\",\"field\":\"address\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: address: non-hex",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "address: bad EIP-55 checksum (mixed case)",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"address has an invalid EIP-55 checksum: 0x800E305A0caDdE6289dFDFEDF38218f45C06F72C\",\"field\":\"address\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: address: bad EIP-55 checksum (mixed case)",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "address: all-lowercase accepted (checksum-free form)",
+   "ok": true,
+   "detail": "HTTP 200"
+  },
+  {
+   "section": "A",
+   "label": "address: ENS name rejected",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"address must be a 0x-prefixed 20-byte hex address\",\"field\":\"address\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: address: ENS name rejected",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "address: path traversal",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"address must be a 0x-prefixed 20-byte hex address\",\"field\":\"address\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: address: path traversal",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "amount: negative",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"amount must be a positive decimal with at most 6 decimal places (got \\\"-1\\\")\",\"field\":\"amount\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: amount: negative",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "amount: zero",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"amount must be > 0\",\"field\":\"amount\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: amount: zero",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "amount: float sub-unit",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"amount must be a positive decimal with at most 6 decimal places (got \\\"1e-7\\\")\",\"field\":\"amount\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: amount: float sub-unit",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "amount: 7 decimals string",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"amount must be a positive decimal with at most 6 decimal places (got \\\"0.1234567\\\")\",\"field\":\"amount\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: amount: 7 decimals string",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "amount: NaN",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"amount must be a positive decimal with at most 6 decimal places (got \\\"NaN\\\")\",\"field\":\"amount\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: amount: NaN",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "amount: Infinity",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"amount must be a positive decimal with at most 6 decimal places (got \\\"Infinity\\\")\",\"field\":\"amount\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: amount: Infinity",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "amount: exponent string",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"amount must be a positive decimal with at most 6 decimal places (got \\\"1e6\\\")\",\"field\":\"amount\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: amount: exponent string",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "amount: huge",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"amount must be a positive decimal with at most 6 decimal places (got \\\"1e+30\\\")\",\"field\":\"amount\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: amount: huge",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "amount: 1e309 (Infinity)",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"amount must be a number or decimal string in USDC (e.g. 12.5)\",\"field\":\"amount\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: amount: 1e309 (Infinity)",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "amount: null",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"amount must be a number or decimal string in USDC (e.g. 12.5)\",\"field\":\"amount\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: amount: null",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "amount: object",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"amount must be a number or decimal string in USDC (e.g. 12.5)\",\"field\":\"amount\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: amount: object",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "amount: array",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"amount must be a number or decimal string in USDC (e.g. 12.5)\",\"field\":\"amount\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: amount: array",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "amount: bool",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"amount must be a number or decimal string in USDC (e.g. 12.5)\",\"field\":\"amount\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: amount: bool",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "amount: hex string",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"amount must be a positive decimal with at most 6 decimal places (got \\\"0xff\\\")\",\"field\":\"amount\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: amount: hex string",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "amount: over cap",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"amount=999999999 USDC exceeds this server's per-call cap of 50000 USDC (raise SPECULAR_MAX_AMOUNT_USDC to change)\",\"field\":\"amount\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: amount: over cap",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "amount: unicode digits",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"amount must be a positive decimal with at most 6 decimal places (got \\\"٥\\\")\",\"field\":\"amount\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: amount: unicode digits",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "amount: 600-char numeric",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"amount must be a positive decimal with at most 6 decimal places (got \\\"1111111111111111111111111111111111111111111111111111111111111111111111111111111"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: amount: 600-char numeric",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "amount: surrounding whitespace coerces to the exact value (INFO, lenient but not lossy)",
+   "ok": true,
+   "detail": "HTTP 200 {\"network\":\"arc-staging\",\"chainId\":5042002,\"realMoney\":false,\"action\":\"request_loan\",\"from\":\"0x800e305A0caDdE6289dFDFEDF38218f45C06F72C\",\"to\":\"0xB2d88bbFF61EF2CcF4B4A2CFd75aeed0f11F6878\",\"data\":\"0xaa4"
+  },
+  {
+   "section": "A",
+   "label": "durationDays: 0",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"durationDays=0 is below min 7\",\"field\":\"durationDays\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: durationDays: 0",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "durationDays: 6 (below min)",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"durationDays=6 is below min 7\",\"field\":\"durationDays\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: durationDays: 6 (below min)",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "durationDays: 366 (above max)",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"durationDays=366 exceeds max 365\",\"field\":\"durationDays\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: durationDays: 366 (above max)",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "durationDays: float",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"durationDays must be an integer number of days\",\"field\":\"durationDays\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: durationDays: float",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "durationDays: string junk",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"durationDays must be an integer number of days\",\"field\":\"durationDays\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: durationDays: string junk",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "durationDays: negative",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"durationDays=-7 is below min 7\",\"field\":\"durationDays\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: durationDays: negative",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "durationDays: huge",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"durationDays=1000000000000000000 exceeds max 365\",\"field\":\"durationDays\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: durationDays: huge",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "network: unknown",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"Unknown network \\\"nope\\\". Valid: base, arc-staging, arc-mainnet.\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: network: unknown",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "network: wrong case",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"Unknown network \\\"ARC-STAGING\\\". Valid: base, arc-staging, arc-mainnet.\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: network: wrong case",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "network: alias \"arc\"",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"Unknown network \\\"arc\\\". Valid: base, arc-staging, arc-mainnet.\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: network: alias \"arc\"",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "network: base (not enabled here)",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"Network \\\"base\\\" is not enabled on this server (enabled: arc-staging, arc-mainnet).\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: network: base (not enabled here)",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "network: __proto__",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"Unknown network \\\"__proto__\\\". Valid: base, arc-staging, arc-mainnet.\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: network: __proto__",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "network: constructor",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"Unknown network \\\"constructor\\\". Valid: base, arc-staging, arc-mainnet.\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: network: constructor",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "network: 300 chars",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"Unknown network \\\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\\". Valid: base, arc-staging, arc-mainnet.\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: network: 300 chars",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "loanId: negative",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"loanId must be an integer >= 1\",\"field\":\"loanId\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: loanId: negative",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "loanId: float",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"loanId must be an integer >= 1\",\"field\":\"loanId\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: loanId: float",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "loanId: huge",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"loanId must be an integer >= 1\",\"field\":\"loanId\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: loanId: huge",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "loanId: junk",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"loanId must be an integer >= 1\",\"field\":\"loanId\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: loanId: junk",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "loanId: hex",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"loanId must be an integer >= 1\",\"field\":\"loanId\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: loanId: hex",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "loanId: empty-ish space",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"loanId must be an integer >= 1\",\"field\":\"loanId\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: loanId: empty-ish space",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "pools query: limit=0",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"limit must be an integer between 1 and 200\",\"field\":\"limit\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: pools query: limit=0",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "pools query: limit=201",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"limit must be an integer between 1 and 200\",\"field\":\"limit\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: pools query: limit=201",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "pools query: limit=1.5",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"limit must be an integer between 1 and 200\",\"field\":\"limit\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: pools query: limit=1.5",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "pools query: limit=abc",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"limit must be an integer between 1 and 200\",\"field\":\"limit\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: pools query: limit=abc",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "pools query: minAvailableUsdc=-1",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"minAvailableUsdc must be a positive decimal with at most 6 decimal places (got \\\"-1\\\")\",\"field\":\"minAvailableUsdc\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: pools query: minAvailableUsdc=-1",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "pools query: minAvailableUsdc=1e3",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"minAvailableUsdc must be a positive decimal with at most 6 decimal places (got \\\"1e3\\\")\",\"field\":\"minAvailableUsdc\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: pools query: minAvailableUsdc=1e3",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "pools query: minAvailableUsdc 7dp",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"minAvailableUsdc must be a positive decimal with at most 6 decimal places (got \\\"0.1234567\\\")\",\"field\":\"minAvailableUsdc\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: pools query: minAvailableUsdc 7dp",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "txHash: short",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"hash must be a 0x-prefixed 32-byte hex transaction hash\",\"field\":\"hash\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: txHash: short",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "txHash: non-hex",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"hash must be a 0x-prefixed 32-byte hex transaction hash\",\"field\":\"hash\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: txHash: non-hex",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "malformed JSON -> 400",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"malformed JSON body\"}"
+  },
+  {
+   "section": "A-leak",
+   "label": "no leakage: malformed JSON",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "A",
+   "label": "oversized body (400KB) -> 413",
+   "ok": true,
+   "detail": "HTTP 413 {\"error\":\"request body exceeds 256kb\"}"
+  },
+  {
+   "section": "A",
+   "label": "wrong content-type text/plain is not parsed as JSON -> 4xx",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"request body must be a JSON object\"}"
+  },
+  {
+   "section": "A",
+   "label": "form-urlencoded body -> 4xx",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"request body must be a JSON object\"}"
+  },
+  {
+   "section": "A",
+   "label": "absent content-type is NOT parsed as JSON -> 4xx (no no-preflight CSRF shape)",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"request body must be a JSON object\"}"
+  },
+  {
+   "section": "A",
+   "label": "content-type with charset is accepted",
+   "ok": true,
+   "detail": "HTTP 200"
+  },
+  {
+   "section": "A",
+   "label": "prototype pollution: __proto__ in body has no effect",
+   "ok": true,
+   "detail": "HTTP 200; subsequent /v1/networks polluted=false"
+  },
+  {
+   "section": "A",
+   "label": "prototype pollution: nested __proto__ has no effect",
+   "ok": true,
+   "detail": "HTTP 200; subsequent /v1/networks polluted=false"
+  },
+  {
+   "section": "A",
+   "label": "prototype pollution: constructor.prototype has no effect",
+   "ok": true,
+   "detail": "HTTP 200; subsequent /v1/networks polluted=false"
+  },
+  {
+   "section": "A",
+   "label": "unknown prepare action -> 400 with valid list",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"unknown action \\\"drain_everything\\\"\",\"valid\":[\"register_agent\",\"create_pool\",\"approve_usdc\",\"supply_liquidity\",\"withdraw_liquidity\",\"request_loan\",\"re"
+  },
+  {
+   "section": "A",
+   "label": "unknown route -> 404 {error}",
+   "ok": true,
+   "detail": "HTTP 404 {\"error\":\"not found\"}"
+  },
+  {
+   "section": "A",
+   "label": "GET /mcp -> 405",
+   "ok": true,
+   "detail": "HTTP 405"
+  },
+  {
+   "section": "A",
+   "label": "path traversal on root -> 4xx, no file content",
+   "ok": true,
+   "detail": "HTTP 404 {\"error\":\"not found\"}"
+  },
+  {
+   "section": "A",
+   "label": "no X-Powered-By header",
+   "ok": true,
+   "detail": "null"
+  },
+  {
+   "section": "B",
+   "label": "MCP address: bad checksum",
+   "ok": true,
+   "detail": "HTTP 200 {\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"{\\n  \\\"error\\\": \\\"address has an invalid EIP-55 checksum: 0x800E305A0caDdE6289dFDFEDF38218f45C06F72C\\\",\\n  \\\"field\\\": \\\"address\\\"\\n}\"}],\"isError\":true},\"js"
+  },
+  {
+   "section": "B-leak",
+   "label": "no leakage: MCP address: bad checksum",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "B",
+   "label": "MCP address: short",
+   "ok": true,
+   "detail": "HTTP 200 {\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"{\\n  \\\"error\\\": \\\"address must be a 0x-prefixed 20-byte hex address\\\",\\n  \\\"field\\\": \\\"address\\\"\\n}\"}],\"isError\":true},\"jsonrpc\":\"2.0\",\"id\":1002}"
+  },
+  {
+   "section": "B-leak",
+   "label": "no leakage: MCP address: short",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "B",
+   "label": "MCP address: object",
+   "ok": true,
+   "detail": "HTTP 200 {\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"{\\n  \\\"error\\\": \\\"address must be a 0x-prefixed 20-byte hex address\\\",\\n  \\\"field\\\": \\\"address\\\"\\n}\"}],\"isError\":true},\"jsonrpc\":\"2.0\",\"id\":1003}"
+  },
+  {
+   "section": "B-leak",
+   "label": "no leakage: MCP address: object",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "B",
+   "label": "MCP address: array",
+   "ok": true,
+   "detail": "HTTP 200 {\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"{\\n  \\\"error\\\": \\\"address must be a 0x-prefixed 20-byte hex address\\\",\\n  \\\"field\\\": \\\"address\\\"\\n}\"}],\"isError\":true},\"jsonrpc\":\"2.0\",\"id\":1004}"
+  },
+  {
+   "section": "B-leak",
+   "label": "no leakage: MCP address: array",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "B",
+   "label": "MCP network: missing",
+   "ok": true,
+   "detail": "HTTP 200 {\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"{\\n  \\\"error\\\": \\\"\\\\\\\"network\\\\\\\" is required (one of: base, arc-staging, arc-mainnet). There is no default: base and arc-mainnet move real USDC; use arc-s"
+  },
+  {
+   "section": "B-leak",
+   "label": "no leakage: MCP network: missing",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "B",
+   "label": "MCP network: number",
+   "ok": true,
+   "detail": "HTTP 200 {\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"{\\n  \\\"error\\\": \\\"Unknown network \\\\\\\"5042002\\\\\\\". Valid: base, arc-staging, arc-mainnet.\\\"\\n}\"}],\"isError\":true},\"jsonrpc\":\"2.0\",\"id\":1006}"
+  },
+  {
+   "section": "B-leak",
+   "label": "no leakage: MCP network: number",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "B",
+   "label": "MCP network: null-prototype object",
+   "ok": true,
+   "detail": "HTTP 200 {\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"{\\n  \\\"error\\\": \\\"Unknown network \\\\\\\"{\\\\\\\"toString\\\\\\\":\\\\\\\"x\\\\\\\"}\\\\\\\". Valid: base, arc-staging, arc-mainnet.\\\"\\n}\"}],\"isError\":true},\"jsonrpc\":\"2.0\",\"id\""
+  },
+  {
+   "section": "B-leak",
+   "label": "no leakage: MCP network: null-prototype object",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "B",
+   "label": "MCP network: unknown",
+   "ok": true,
+   "detail": "HTTP 200 {\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"{\\n  \\\"error\\\": \\\"Unknown network \\\\\\\"ethereum\\\\\\\". Valid: base, arc-staging, arc-mainnet.\\\"\\n}\"}],\"isError\":true},\"jsonrpc\":\"2.0\",\"id\":1008}"
+  },
+  {
+   "section": "B-leak",
+   "label": "no leakage: MCP network: unknown",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "B",
+   "label": "MCP amount: negative",
+   "ok": true,
+   "detail": "HTTP 200 {\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"{\\n  \\\"error\\\": \\\"amount must be a positive decimal with at most 6 decimal places (got \\\\\\\"-5\\\\\\\")\\\",\\n  \\\"field\\\": \\\"amount\\\"\\n}\"}],\"isError\":true},\"jsonr"
+  },
+  {
+   "section": "B-leak",
+   "label": "no leakage: MCP amount: negative",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "B",
+   "label": "MCP amount: 7 decimals",
+   "ok": true,
+   "detail": "HTTP 200 {\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"{\\n  \\\"error\\\": \\\"amount must be a positive decimal with at most 6 decimal places (got \\\\\\\"0.1234567\\\\\\\")\\\",\\n  \\\"field\\\": \\\"amount\\\"\\n}\"}],\"isError\":true}"
+  },
+  {
+   "section": "B-leak",
+   "label": "no leakage: MCP amount: 7 decimals",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "B",
+   "label": "MCP amount: 1e30",
+   "ok": true,
+   "detail": "HTTP 200 {\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"{\\n  \\\"error\\\": \\\"amount must be a positive decimal with at most 6 decimal places (got \\\\\\\"1e+30\\\\\\\")\\\",\\n  \\\"field\\\": \\\"amount\\\"\\n}\"}],\"isError\":true},\"js"
+  },
+  {
+   "section": "B-leak",
+   "label": "no leakage: MCP amount: 1e30",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "B",
+   "label": "MCP amount: NaN",
+   "ok": true,
+   "detail": "HTTP 200 {\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"{\\n  \\\"error\\\": \\\"amount must be a positive decimal with at most 6 decimal places (got \\\\\\\"NaN\\\\\\\")\\\",\\n  \\\"field\\\": \\\"amount\\\"\\n}\"}],\"isError\":true},\"json"
+  },
+  {
+   "section": "B-leak",
+   "label": "no leakage: MCP amount: NaN",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "B",
+   "label": "MCP limit: 1.5",
+   "ok": true,
+   "detail": "HTTP 200 {\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"{\\n  \\\"error\\\": \\\"limit must be an integer between 1 and 200\\\",\\n  \\\"field\\\": \\\"limit\\\"\\n}\"}],\"isError\":true},\"jsonrpc\":\"2.0\",\"id\":1013}"
+  },
+  {
+   "section": "B-leak",
+   "label": "no leakage: MCP limit: 1.5",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "B",
+   "label": "MCP limit: 1e9",
+   "ok": true,
+   "detail": "HTTP 200 {\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"{\\n  \\\"error\\\": \\\"limit must be an integer between 1 and 200\\\",\\n  \\\"field\\\": \\\"limit\\\"\\n}\"}],\"isError\":true},\"jsonrpc\":\"2.0\",\"id\":1014}"
+  },
+  {
+   "section": "B-leak",
+   "label": "no leakage: MCP limit: 1e9",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "B",
+   "label": "MCP loanId: negative",
+   "ok": true,
+   "detail": "HTTP 200 {\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"{\\n  \\\"error\\\": \\\"loanId must be an integer >= 1\\\",\\n  \\\"field\\\": \\\"loanId\\\"\\n}\"}],\"isError\":true},\"jsonrpc\":\"2.0\",\"id\":1015}"
+  },
+  {
+   "section": "B-leak",
+   "label": "no leakage: MCP loanId: negative",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "B",
+   "label": "MCP data: odd-length hex",
+   "ok": true,
+   "detail": "HTTP 200 {\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"{\\n  \\\"error\\\": \\\"data must be 0x-prefixed hex bytes\\\",\\n  \\\"field\\\": \\\"data\\\"\\n}\"}],\"isError\":true},\"jsonrpc\":\"2.0\",\"id\":1016}"
+  },
+  {
+   "section": "B-leak",
+   "label": "no leakage: MCP data: odd-length hex",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "B",
+   "label": "MCP data: 9KB hex over cap",
+   "ok": true,
+   "detail": "HTTP 200 {\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"{\\n  \\\"error\\\": \\\"data exceeds 8192 bytes\\\",\\n  \\\"field\\\": \\\"data\\\"\\n}\"}],\"isError\":true},\"jsonrpc\":\"2.0\",\"id\":1017}"
+  },
+  {
+   "section": "B-leak",
+   "label": "no leakage: MCP data: 9KB hex over cap",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "B",
+   "label": "MCP arguments.__proto__ has no effect",
+   "ok": true,
+   "detail": "HTTP 200; polluted=false"
+  },
+  {
+   "section": "B",
+   "label": "MCP unknown tool name with traversal -> -32602",
+   "ok": true,
+   "detail": "{\"jsonrpc\":\"2.0\",\"id\":1019,\"error\":{\"code\":-32602,\"message\":\"MCP error -32602: Unknown tool: ../../etc/passwd\"}}"
+  },
+  {
+   "section": "B",
+   "label": "MCP oversized body -> 413",
+   "ok": true,
+   "detail": "HTTP 413"
+  },
+  {
+   "section": "C",
+   "label": "C1 tx to a non-Specular address (valid calldata)",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"transaction targets 0x87A0c1e908a63e9897592e0D1345846e84B42BaA, which is not a Specular contract on arc-staging (marketplace 0xB2d88bbFF61EF2CcF4B4A2CFd75aeed0f11F6878, registry 0x4712A978A0EADe68f0b485b981112A"
+  },
+  {
+   "section": "C-leak",
+   "label": "no leakage: C1 tx to a non-Specular address (valid calldata)",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "C",
+   "label": "C1b tx to the OLD (legacy) staging marketplace",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"transaction targets 0xDbDf60AE5CB46D23aA44c062a4943655a6820f31, which is not a Specular contract on arc-staging (marketplace 0xB2d88bbFF61EF2CcF4B4A2CFd75aeed0f11F6878, registry 0x4712A978A0EADe68f0b485b981112A"
+  },
+  {
+   "section": "C-leak",
+   "label": "no leakage: C1b tx to the OLD (legacy) staging marketplace",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "C",
+   "label": "C2 USDC approve to a foreign spender",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"USDC approve spender 0x960E98eAe4bcc3EBD2f3e35c6AeB3E962D96413d is not the Specular marketplace 0xB2d88bbFF61EF2CcF4B4A2CFd75aeed0f11F6878; refusing to relay\",\"field\":\"signedTransaction\"}"
+  },
+  {
+   "section": "C-leak",
+   "label": "no leakage: C2 USDC approve to a foreign spender",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "C",
+   "label": "C3 USDC approve MaxUint256 to the marketplace",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"USDC approve of unlimited exceeds the exact-approval cap (100000 USDC); approve only what the next call needs\",\"field\":\"signedTransaction\"}"
+  },
+  {
+   "section": "C-leak",
+   "label": "no leakage: C3 USDC approve MaxUint256 to the marketplace",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "C",
+   "label": "C3b USDC approve just over the 100k cap",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"USDC approve of 100000.000001 exceeds the exact-approval cap (100000 USDC); approve only what the next call needs\",\"field\":\"signedTransaction\"}"
+  },
+  {
+   "section": "C-leak",
+   "label": "no leakage: C3b USDC approve just over the 100k cap",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "C",
+   "label": "C3c USDC transfer (not an allow-listed fn)",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"calldata does not decode to a known usdc function\",\"field\":\"signedTransaction\"}"
+  },
+  {
+   "section": "C-leak",
+   "label": "no leakage: C3c USDC transfer (not an allow-listed fn)",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "C",
+   "label": "C4 owner-only selector setPlatformFeeRate",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"marketplace.setPlatformFeeRate is not relayable (allowed: createAgentPool, supplyLiquidity, withdrawLiquidity, requestLoan, repayLoan, claimInterest)\",\"field\":\"signedTransaction\"}"
+  },
+  {
+   "section": "C-leak",
+   "label": "no leakage: C4 owner-only selector setPlatformFeeRate",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "C",
+   "label": "C4b owner-only pause()",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"marketplace.pause is not relayable (allowed: createAgentPool, supplyLiquidity, withdrawLiquidity, requestLoan, repayLoan, claimInterest)\",\"field\":\"signedTransaction\"}"
+  },
+  {
+   "section": "C-leak",
+   "label": "no leakage: C4b owner-only pause()",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "C",
+   "label": "C4c owner-only withdrawFees(amount)",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"marketplace.withdrawFees is not relayable (allowed: createAgentPool, supplyLiquidity, withdrawLiquidity, requestLoan, repayLoan, claimInterest)\",\"field\":\"signedTransaction\"}"
+  },
+  {
+   "section": "C-leak",
+   "label": "no leakage: C4c owner-only withdrawFees(amount)",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "C",
+   "label": "C5 wrong chainId (base 8453 tx offered to arc-staging)",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"transaction chainId 8453 does not match arc-staging (chainId 5042002)\",\"field\":\"signedTransaction\"}"
+  },
+  {
+   "section": "C-leak",
+   "label": "no leakage: C5 wrong chainId (base 8453 tx offered to arc-staging)",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "C",
+   "label": "C5b arc-staging tx offered to the arc-mainnet route (cross-network replay)",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"transaction chainId 5042002 does not match arc-mainnet (chainId 5042)\",\"field\":\"signedTransaction\"}"
+  },
+  {
+   "section": "C-leak",
+   "label": "no leakage: C5b arc-staging tx offered to the arc-mainnet route (cross-network replay)",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "C",
+   "label": "C6 value > 0",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"Specular transactions must carry value 0; refusing to relay a native-token transfer\",\"field\":\"signedTransaction\"}"
+  },
+  {
+   "section": "C-leak",
+   "label": "no leakage: C6 value > 0",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "C",
+   "label": "C6b value > 0 to USDC with valid approve",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"Specular transactions must carry value 0; refusing to relay a native-token transfer\",\"field\":\"signedTransaction\"}"
+  },
+  {
+   "section": "C-leak",
+   "label": "no leakage: C6b value > 0 to USDC with valid approve",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "C",
+   "label": "C7 contract creation (to = null)",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"contract-creation transactions are not relayed\",\"field\":\"signedTransaction\"}"
+  },
+  {
+   "section": "C-leak",
+   "label": "no leakage: C7 contract creation (to = null)",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "C",
+   "label": "C8 non-canonical calldata: allow-listed call + trailing byte (H-1)",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"calldata is not the canonical ABI encoding of marketplace.requestLoan (1 unexpected byte(s)); re-encode the call exactly as prepare_* returns it\",\"field\":\"signedTransaction\"}"
+  },
+  {
+   "section": "C-leak",
+   "label": "no leakage: C8 non-canonical calldata: allow-listed call + trailing byte (H-1)",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "C",
+   "label": "C8b non-canonical calldata: + 32 zero bytes",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"calldata is not the canonical ABI encoding of marketplace.requestLoan (32 unexpected byte(s)); re-encode the call exactly as prepare_* returns it\",\"field\":\"signedTransaction\"}"
+  },
+  {
+   "section": "C-leak",
+   "label": "no leakage: C8b non-canonical calldata: + 32 zero bytes",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "C",
+   "label": "C9 empty calldata (plain call to the marketplace)",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"transaction has no calldata\",\"field\":\"signedTransaction\"}"
+  },
+  {
+   "section": "C-leak",
+   "label": "no leakage: C9 empty calldata (plain call to the marketplace)",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "C",
+   "label": "C9b unknown selector on the marketplace",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"calldata does not decode to a known marketplace function\",\"field\":\"signedTransaction\"}"
+  },
+  {
+   "section": "C-leak",
+   "label": "no leakage: C9b unknown selector on the marketplace",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "C",
+   "label": "C10 legacy type-0 (EIP-155) is NOT silently relayed as a funded tx",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"broadcast rejected by RPC: The signing wallet cannot pay gas on this network. (insufficient funds for intrinsic transaction cost)\",\"field\":\"signedTransaction\"}"
+  },
+  {
+   "section": "C-note",
+   "label": "C10 legacy type-0 observed status",
+   "ok": null,
+   "detail": "HTTP 400 {\"error\":\"broadcast rejected by RPC: The signing wallet cannot pay gas on this network. (insufficient funds for intrinsic transaction cost)\",\"field\":\"signedTransaction\"}"
+  },
+  {
+   "section": "C",
+   "label": "C10b pre-EIP-155 legacy tx (no replay protection)",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"transaction chainId 0 does not match arc-staging (chainId 5042002)\",\"field\":\"signedTransaction\"}"
+  },
+  {
+   "section": "C-leak",
+   "label": "no leakage: C10b pre-EIP-155 legacy tx (no replay protection)",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "C",
+   "label": "C11 garbage hex",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"signedTransaction could not be decoded: data short segment too short\",\"field\":\"signedTransaction\"}"
+  },
+  {
+   "section": "C-leak",
+   "label": "no leakage: C11 garbage hex",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "C",
+   "label": "C11b empty 0x",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"signedTransaction must be 0x-prefixed hex (the RLP-encoded, signed transaction)\",\"field\":\"signedTransaction\"}"
+  },
+  {
+   "section": "C-leak",
+   "label": "no leakage: C11b empty 0x",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "C",
+   "label": "C11c odd-length hex",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"signedTransaction must be 0x-prefixed hex (the RLP-encoded, signed transaction)\",\"field\":\"signedTransaction\"}"
+  },
+  {
+   "section": "C-leak",
+   "label": "no leakage: C11c odd-length hex",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "C",
+   "label": "C11d not hex at all",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"signedTransaction must be 0x-prefixed hex (the RLP-encoded, signed transaction)\",\"field\":\"signedTransaction\"}"
+  },
+  {
+   "section": "C-leak",
+   "label": "no leakage: C11d not hex at all",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "C",
+   "label": "C11e decimal number",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"signedTransaction must be 0x-prefixed hex (the RLP-encoded, signed transaction)\",\"field\":\"signedTransaction\"}"
+  },
+  {
+   "section": "C-leak",
+   "label": "no leakage: C11e decimal number",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "C",
+   "label": "C11f null",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"signedTransaction must be 0x-prefixed hex (the RLP-encoded, signed transaction)\",\"field\":\"signedTransaction\"}"
+  },
+  {
+   "section": "C-leak",
+   "label": "no leakage: C11f null",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "C",
+   "label": "C11g object",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"signedTransaction must be 0x-prefixed hex (the RLP-encoded, signed transaction)\",\"field\":\"signedTransaction\"}"
+  },
+  {
+   "section": "C-leak",
+   "label": "no leakage: C11g object",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "C",
+   "label": "C11h array",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"signedTransaction must be 0x-prefixed hex (the RLP-encoded, signed transaction)\",\"field\":\"signedTransaction\"}"
+  },
+  {
+   "section": "C-leak",
+   "label": "no leakage: C11h array",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "C",
+   "label": "C11i 17KB of hex (over MAX_RAW_BYTES)",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"signedTransaction exceeds 16384 bytes\",\"field\":\"signedTransaction\"}"
+  },
+  {
+   "section": "C-leak",
+   "label": "no leakage: C11i 17KB of hex (over MAX_RAW_BYTES)",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "C",
+   "label": "C11j valid RLP list but not a tx",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"signedTransaction could not be decoded: invalid address\",\"field\":\"signedTransaction\"}"
+  },
+  {
+   "section": "C-leak",
+   "label": "no leakage: C11j valid RLP list but not a tx",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "C",
+   "label": "C12 unsigned transaction",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"transaction is not signed; sign it with your own wallet first\",\"field\":\"signedTransaction\"}"
+  },
+  {
+   "section": "C-leak",
+   "label": "no leakage: C12 unsigned transaction",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "C",
+   "label": "C13 missing signedTransaction -> 4xx",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"signedTransaction must be 0x-prefixed hex (the RLP-encoded, signed transaction)\",\"field\":\"signedTransaction\"}"
+  },
+  {
+   "section": "C",
+   "label": "C14 MCP broadcast tool refuses a non-Specular target",
+   "ok": true,
+   "detail": "{\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"{\\n  \\\"error\\\": \\\"transaction targets 0xC52A18e27B9a03E7C279601316296B610E93aeD7, which is not a Specular contract on arc-staging (marketplace 0xB2d88bbFF61EF2CcF4B4A2CFd75aee"
+  },
+  {
+   "section": "C",
+   "label": "C15 a well-formed allow-listed tx passes validation (fails only at the chain, unfunded key)",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"broadcast rejected by RPC: The signing wallet cannot pay gas on this network. (insufficient funds for intrinsic transaction cost)\",\"field\":\"signedTransaction\"}"
+  },
+  {
+   "section": "D",
+   "label": "D1 to = arbitrary EOA",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"to=0x4716af39F6d1F194845E1Bf77F59973677d4a85C is not a Specular contract on arc-staging\",\"field\":\"to\"}"
+  },
+  {
+   "section": "D-leak",
+   "label": "no leakage: D1 to = arbitrary EOA",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "D",
+   "label": "D1b to = zero address",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"to=0x0000000000000000000000000000000000000000 is not a Specular contract on arc-staging\",\"field\":\"to\"}"
+  },
+  {
+   "section": "D-leak",
+   "label": "no leakage: D1b to = zero address",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "D",
+   "label": "D1c to = legacy staging marketplace",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"to=0xDbDf60AE5CB46D23aA44c062a4943655a6820f31 is not a Specular contract on arc-staging\",\"field\":\"to\"}"
+  },
+  {
+   "section": "D-leak",
+   "label": "no leakage: D1c to = legacy staging marketplace",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "D",
+   "label": "D1d to = a Specular contract on the OTHER network",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"to=0xB2d88bbFF61EF2CcF4B4A2CFd75aeed0f11F6878 is not a Specular contract on arc-mainnet\",\"field\":\"to\"}"
+  },
+  {
+   "section": "D-leak",
+   "label": "no leakage: D1d to = a Specular contract on the OTHER network",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "D",
+   "label": "D2 to = a URL",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"to must be a 0x-prefixed 20-byte hex address\",\"field\":\"to\"}"
+  },
+  {
+   "section": "D-leak",
+   "label": "no leakage: D2 to = a URL",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "D",
+   "label": "D2b to = file path",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"to must be a 0x-prefixed 20-byte hex address\",\"field\":\"to\"}"
+  },
+  {
+   "section": "D-leak",
+   "label": "no leakage: D2b to = file path",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "D",
+   "label": "D2c to = localhost:port",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"to must be a 0x-prefixed 20-byte hex address\",\"field\":\"to\"}"
+  },
+  {
+   "section": "D-leak",
+   "label": "no leakage: D2c to = localhost:port",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "D",
+   "label": "D3 client-supplied rpcUrl/provider/chainId in the body are IGNORED (RPC is pinned server-side)",
+   "ok": true,
+   "detail": "clean HTTP 200 vs override HTTP 200: {\"network\":\"arc-staging\",\"chainId\":5042002,\"to\":\"0xB2d88bbFF61EF2CcF4B4A2CFd75aeed0f11F6878\",\"data\":\"0xaa452fa600000000000000000000000000000000000000000000000000000000000f42400000000000000000000000000"
+  },
+  {
+   "section": "D",
+   "label": "D4 from = junk",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"from must be a 0x-prefixed 20-byte hex address\",\"field\":\"from\"}"
+  },
+  {
+   "section": "D-leak",
+   "label": "no leakage: D4 from = junk",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "D",
+   "label": "D5 arbitrary calldata to an allow-listed contract is eth_call only (read-only, no state change)",
+   "ok": true,
+   "detail": "HTTP 200 {\"network\":\"arc-staging\",\"chainId\":5042002,\"to\":\"0xB2d88bbFF61EF2CcF4B4A2CFd75aeed0f11F6878\",\"data\":\"0x8da5cb5b\",\"ok\":true,\"gasEstimate\":\"24526\",\"revertReason\":null,\"plainLanguage\":null,\"from\":\"0x800e"
+  },
+  {
+   "section": "D-note",
+   "label": "D5 arbitrary-calldata simulate response",
+   "ok": null,
+   "detail": "{\"network\":\"arc-staging\",\"chainId\":5042002,\"to\":\"0xB2d88bbFF61EF2CcF4B4A2CFd75aeed0f11F6878\",\"data\":\"0x8da5cb5b\",\"ok\":true,\"gasEstimate\":\"24526\",\"revertReason\":null,\"plainLanguage\":null,\"from\":\"0x800e305A0caDdE6289dFDFEDF38218f45C06F72C\"}"
+  },
+  {
+   "section": "D",
+   "label": "D6 no credentials in any advertised rpcUrl",
+   "ok": true,
+   "detail": "{\"error\":\"not found\"}"
+  },
+  {
+   "section": "E",
+   "label": "no leakage: root",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "E",
+   "label": "root: response is JSON, status 200",
+   "ok": true,
+   "detail": "HTTP 200 {\"name\":\"specular-agent-api\",\"version\":\"2.1.0\",\"custody\":\"non-custodial: reads execute server-side; writes are returned "
+  },
+  {
+   "section": "E",
+   "label": "no leakage: openapi",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "E",
+   "label": "openapi: response is JSON, status 200",
+   "ok": true,
+   "detail": "HTTP 200 {\"openapi\":\"3.1.0\",\"info\":{\"title\":\"Specular Protocol Agent API\",\"version\":\"2.1.0\",\"summary\":\"Non-custodial credit infra"
+  },
+  {
+   "section": "E",
+   "label": "no leakage: health",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "E",
+   "label": "health: response is JSON, status 200",
+   "ok": true,
+   "detail": "HTTP 200 {\"status\":\"ok\",\"version\":\"2.1.0\",\"networks\":[{\"network\":\"arc-staging\",\"ok\":true,\"blockNumber\":63331888,\"blockTimestamp\":"
+  },
+  {
+   "section": "E",
+   "label": "no leakage: unknown network",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "E",
+   "label": "unknown network: response is JSON, status 400",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"Unknown network \\\"nope\\\". Valid: base, arc-staging, arc-mainnet.\"}"
+  },
+  {
+   "section": "E",
+   "label": "no leakage: bad address",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "E",
+   "label": "bad address: response is JSON, status 400",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"address must be a 0x-prefixed 20-byte hex address\",\"field\":\"address\"}"
+  },
+  {
+   "section": "E",
+   "label": "no leakage: unknown loan id",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "E",
+   "label": "unknown loan id: response is JSON, status 400",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"Loan 99999999 does not exist on arc-staging (highest loanId is 79)\",\"field\":\"loanId\"}"
+  },
+  {
+   "section": "E",
+   "label": "no leakage: bad prepare",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "E",
+   "label": "bad prepare: response is JSON, status 400",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"amount must be a positive decimal with at most 6 decimal places (got \\\"x\\\")\",\"field\":\"amount\"}"
+  },
+  {
+   "section": "E",
+   "label": "no leakage: bad broadcast",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "E",
+   "label": "bad broadcast: response is JSON, status 400",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"signedTransaction could not be decoded: data short segment too short\",\"field\":\"signedTransaction\"}"
+  },
+  {
+   "section": "E",
+   "label": "no leakage: malformed json",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "E",
+   "label": "malformed json: response is JSON, status 400",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"malformed JSON body\"}"
+  },
+  {
+   "section": "E",
+   "label": "no leakage: mcp unknown method",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "E",
+   "label": "mcp unknown method: response is JSON, status 200",
+   "ok": true,
+   "detail": "HTTP 200 {\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32601,\"message\":\"Method not found\"}}"
+  },
+  {
+   "section": "E",
+   "label": "no leakage: mcp tool error",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "E",
+   "label": "mcp tool error: response is JSON, status 200",
+   "ok": true,
+   "detail": "HTTP 200 {\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"{\\n  \\\"error\\\": \\\"Loan 99999999 does not exist on arc-staging (highest loan"
+  },
+  {
+   "section": "E",
+   "label": "no leakage: mcp non-object body",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "E",
+   "label": "mcp non-object body: response is JSON, status 400",
+   "ok": true,
+   "detail": "HTTP 400 {\"error\":\"malformed JSON body\"}"
+  },
+  {
+   "section": "E",
+   "label": "no leakage: mcp array of junk",
+   "ok": true,
+   "detail": "clean"
+  },
+  {
+   "section": "E",
+   "label": "mcp array of junk: response is JSON, status 400",
+   "ok": true,
+   "detail": "HTTP 400 [{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32700,\"message\":\"Parse error: Invalid JSON-RPC message\"},\"id\":null}]"
+  }
+ ]
+}

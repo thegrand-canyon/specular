@@ -1,0 +1,999 @@
+{
+  "generatedAt": "2026-09-21T23:28:25.890Z",
+  "runs": [
+    {
+      "profile": "H1-7d-to-term",
+      "tenorDays": 7,
+      "holdToTerm": true,
+      "levers": "NEW (Arc mainnet post-audit)",
+      "snaps": [
+        {
+          "loan": 1,
+          "day": 6.993078703703704,
+          "score": 105,
+          "creditLimitUsdc": 1000,
+          "netPaidUsdc": 0.143835,
+          "ownCapitalUsdc": 0.143835
+        },
+        {
+          "loan": 11,
+          "day": 76.92386574074074,
+          "score": 155,
+          "creditLimitUsdc": 1000,
+          "netPaidUsdc": 1.582185,
+          "ownCapitalUsdc": 1.582185
+        },
+        {
+          "loan": 21,
+          "day": 146.85465277777777,
+          "score": 205,
+          "creditLimitUsdc": 5000,
+          "netPaidUsdc": 3.020535,
+          "ownCapitalUsdc": 3.020535
+        },
+        {
+          "loan": 31,
+          "day": 216.78543981481482,
+          "score": 255,
+          "creditLimitUsdc": 5000,
+          "netPaidUsdc": 4.458885,
+          "ownCapitalUsdc": 4.458885
+        },
+        {
+          "loan": 41,
+          "day": 286.71622685185184,
+          "score": 305,
+          "creditLimitUsdc": 5000,
+          "netPaidUsdc": 5.897235,
+          "ownCapitalUsdc": 5.897235
+        },
+        {
+          "loan": 51,
+          "day": 356.64701388888886,
+          "score": 355,
+          "creditLimitUsdc": 5000,
+          "netPaidUsdc": 7.335585,
+          "ownCapitalUsdc": 7.335585
+        },
+        {
+          "loan": 61,
+          "day": 426.57780092592594,
+          "score": 405,
+          "creditLimitUsdc": 10000,
+          "netPaidUsdc": 8.72599,
+          "ownCapitalUsdc": 8.72599
+        },
+        {
+          "loan": 71,
+          "day": 496.50858796296296,
+          "score": 455,
+          "creditLimitUsdc": 10000,
+          "netPaidUsdc": 9.68489,
+          "ownCapitalUsdc": 9.68489
+        },
+        {
+          "loan": 81,
+          "day": 566.439375,
+          "score": 505,
+          "creditLimitUsdc": 10000,
+          "netPaidUsdc": 10.64379,
+          "ownCapitalUsdc": 10.64379
+        },
+        {
+          "loan": 91,
+          "day": 636.3701620370371,
+          "score": 555,
+          "creditLimitUsdc": 10000,
+          "netPaidUsdc": 11.60269,
+          "ownCapitalUsdc": 11.60269
+        },
+        {
+          "loan": 100,
+          "day": 699.3078703703703,
+          "score": 600,
+          "creditLimitUsdc": 25000,
+          "netPaidUsdc": 12.4657,
+          "ownCapitalUsdc": 12.4657
+        }
+      ],
+      "milestones": {
+        "200": {
+          "loan": 20,
+          "day": 139.86157407407407,
+          "score": 200,
+          "creditLimitUsdc": 5000,
+          "netPaidUsdc": 2.8767,
+          "ownCapitalUsdc": 2.8767
+        },
+        "400": {
+          "loan": 60,
+          "day": 419.58472222222224,
+          "score": 400,
+          "creditLimitUsdc": 10000,
+          "netPaidUsdc": 8.6301,
+          "ownCapitalUsdc": 8.6301
+        },
+        "500": {
+          "loan": 80,
+          "day": 559.4462962962963,
+          "score": 500,
+          "creditLimitUsdc": 10000,
+          "netPaidUsdc": 10.5479,
+          "ownCapitalUsdc": 10.5479
+        },
+        "600": {
+          "loan": 100,
+          "day": 699.3078703703703,
+          "score": 600,
+          "creditLimitUsdc": 25000,
+          "netPaidUsdc": 12.4657,
+          "ownCapitalUsdc": 12.4657
+        }
+      },
+      "loans": 100,
+      "finalScore": 600,
+      "days": 699.3078703703703,
+      "realisedCostUsdc": 12.4657,
+      "feesUsdc": 0.1246,
+      "lenderEarnedUsdc": 12.3411,
+      "gas": "69175015",
+      "perLoanUsdc": 50,
+      "peakOwnCapitalUsdc": 12.4657
+    },
+    {
+      "profile": "H2-30d-to-term",
+      "tenorDays": 30,
+      "holdToTerm": true,
+      "levers": "NEW (Arc mainnet post-audit)",
+      "snaps": [
+        {
+          "loan": 1,
+          "day": 29.993078703703702,
+          "score": 105,
+          "creditLimitUsdc": 1000,
+          "netPaidUsdc": 0.616438,
+          "ownCapitalUsdc": 0.616438
+        },
+        {
+          "loan": 11,
+          "day": 329.9238657407407,
+          "score": 155,
+          "creditLimitUsdc": 1000,
+          "netPaidUsdc": 6.780818,
+          "ownCapitalUsdc": 6.780818
+        },
+        {
+          "loan": 21,
+          "day": 629.8546527777778,
+          "score": 205,
+          "creditLimitUsdc": 5000,
+          "netPaidUsdc": 12.945198,
+          "ownCapitalUsdc": 12.945198
+        },
+        {
+          "loan": 31,
+          "day": 929.7854398148148,
+          "score": 255,
+          "creditLimitUsdc": 5000,
+          "netPaidUsdc": 19.109578,
+          "ownCapitalUsdc": 19.109578
+        },
+        {
+          "loan": 41,
+          "day": 1229.7162268518518,
+          "score": 305,
+          "creditLimitUsdc": 5000,
+          "netPaidUsdc": 25.273958,
+          "ownCapitalUsdc": 25.273958
+        },
+        {
+          "loan": 51,
+          "day": 1529.647013888889,
+          "score": 355,
+          "creditLimitUsdc": 5000,
+          "netPaidUsdc": 31.438338,
+          "ownCapitalUsdc": 31.438338
+        },
+        {
+          "loan": 61,
+          "day": 1829.5778009259259,
+          "score": 405,
+          "creditLimitUsdc": 10000,
+          "netPaidUsdc": 37.397238,
+          "ownCapitalUsdc": 37.397238
+        },
+        {
+          "loan": 71,
+          "day": 2129.508587962963,
+          "score": 455,
+          "creditLimitUsdc": 10000,
+          "netPaidUsdc": 41.506818,
+          "ownCapitalUsdc": 41.506818
+        },
+        {
+          "loan": 81,
+          "day": 2429.439375,
+          "score": 505,
+          "creditLimitUsdc": 10000,
+          "netPaidUsdc": 45.616398,
+          "ownCapitalUsdc": 45.616398
+        },
+        {
+          "loan": 91,
+          "day": 2729.370162037037,
+          "score": 555,
+          "creditLimitUsdc": 10000,
+          "netPaidUsdc": 49.725978,
+          "ownCapitalUsdc": 49.725978
+        },
+        {
+          "loan": 100,
+          "day": 2999.3078703703704,
+          "score": 600,
+          "creditLimitUsdc": 25000,
+          "netPaidUsdc": 53.4246,
+          "ownCapitalUsdc": 53.4246
+        }
+      ],
+      "milestones": {
+        "200": {
+          "loan": 20,
+          "day": 599.861574074074,
+          "score": 200,
+          "creditLimitUsdc": 5000,
+          "netPaidUsdc": 12.32876,
+          "ownCapitalUsdc": 12.32876
+        },
+        "400": {
+          "loan": 60,
+          "day": 1799.5847222222221,
+          "score": 400,
+          "creditLimitUsdc": 10000,
+          "netPaidUsdc": 36.98628,
+          "ownCapitalUsdc": 36.98628
+        },
+        "500": {
+          "loan": 80,
+          "day": 2399.446296296296,
+          "score": 500,
+          "creditLimitUsdc": 10000,
+          "netPaidUsdc": 45.20544,
+          "ownCapitalUsdc": 45.20544
+        },
+        "600": {
+          "loan": 100,
+          "day": 2999.3078703703704,
+          "score": 600,
+          "creditLimitUsdc": 25000,
+          "netPaidUsdc": 53.4246,
+          "ownCapitalUsdc": 53.4246
+        }
+      },
+      "loans": 100,
+      "finalScore": 600,
+      "days": 2999.3078703703704,
+      "realisedCostUsdc": 53.4246,
+      "feesUsdc": 0.5342,
+      "lenderEarnedUsdc": 52.8904,
+      "gas": "69175027",
+      "perLoanUsdc": 50,
+      "peakOwnCapitalUsdc": 53.4246
+    },
+    {
+      "profile": "H3-daily-cycler",
+      "tenorDays": 7,
+      "holdToTerm": false,
+      "levers": "NEW (Arc mainnet post-audit)",
+      "snaps": [
+        {
+          "loan": 1,
+          "day": 1.000023148148148,
+          "score": 105,
+          "creditLimitUsdc": 1000,
+          "netPaidUsdc": 0.143835,
+          "ownCapitalUsdc": 0.143835
+        },
+        {
+          "loan": 11,
+          "day": 11.00025462962963,
+          "score": 155,
+          "creditLimitUsdc": 1000,
+          "netPaidUsdc": 1.582185,
+          "ownCapitalUsdc": 1.582185
+        },
+        {
+          "loan": 21,
+          "day": 21.000486111111112,
+          "score": 205,
+          "creditLimitUsdc": 5000,
+          "netPaidUsdc": 3.020535,
+          "ownCapitalUsdc": 3.020535
+        },
+        {
+          "loan": 31,
+          "day": 31.000717592592594,
+          "score": 255,
+          "creditLimitUsdc": 5000,
+          "netPaidUsdc": 4.458885,
+          "ownCapitalUsdc": 4.458885
+        },
+        {
+          "loan": 41,
+          "day": 41.00094907407407,
+          "score": 305,
+          "creditLimitUsdc": 5000,
+          "netPaidUsdc": 5.897235,
+          "ownCapitalUsdc": 5.897235
+        },
+        {
+          "loan": 51,
+          "day": 51.00118055555556,
+          "score": 355,
+          "creditLimitUsdc": 5000,
+          "netPaidUsdc": 7.335585,
+          "ownCapitalUsdc": 7.335585
+        },
+        {
+          "loan": 61,
+          "day": 61.001412037037035,
+          "score": 405,
+          "creditLimitUsdc": 10000,
+          "netPaidUsdc": 8.72599,
+          "ownCapitalUsdc": 8.72599
+        },
+        {
+          "loan": 71,
+          "day": 71.00164351851852,
+          "score": 455,
+          "creditLimitUsdc": 10000,
+          "netPaidUsdc": 9.68489,
+          "ownCapitalUsdc": 9.68489
+        },
+        {
+          "loan": 81,
+          "day": 81.001875,
+          "score": 505,
+          "creditLimitUsdc": 10000,
+          "netPaidUsdc": 10.64379,
+          "ownCapitalUsdc": 10.64379
+        },
+        {
+          "loan": 91,
+          "day": 91.00210648148148,
+          "score": 555,
+          "creditLimitUsdc": 10000,
+          "netPaidUsdc": 11.60269,
+          "ownCapitalUsdc": 11.60269
+        },
+        {
+          "loan": 100,
+          "day": 100.00231481481481,
+          "score": 600,
+          "creditLimitUsdc": 25000,
+          "netPaidUsdc": 12.4657,
+          "ownCapitalUsdc": 12.4657
+        }
+      ],
+      "milestones": {
+        "200": {
+          "loan": 20,
+          "day": 20.000462962962963,
+          "score": 200,
+          "creditLimitUsdc": 5000,
+          "netPaidUsdc": 2.8767,
+          "ownCapitalUsdc": 2.8767
+        },
+        "400": {
+          "loan": 60,
+          "day": 60.00138888888889,
+          "score": 400,
+          "creditLimitUsdc": 10000,
+          "netPaidUsdc": 8.6301,
+          "ownCapitalUsdc": 8.6301
+        },
+        "500": {
+          "loan": 80,
+          "day": 80.00185185185185,
+          "score": 500,
+          "creditLimitUsdc": 10000,
+          "netPaidUsdc": 10.5479,
+          "ownCapitalUsdc": 10.5479
+        },
+        "600": {
+          "loan": 100,
+          "day": 100.00231481481481,
+          "score": 600,
+          "creditLimitUsdc": 25000,
+          "netPaidUsdc": 12.4657,
+          "ownCapitalUsdc": 12.4657
+        }
+      },
+      "loans": 100,
+      "finalScore": 600,
+      "days": 100.00231481481481,
+      "realisedCostUsdc": 12.4657,
+      "feesUsdc": 0.1246,
+      "lenderEarnedUsdc": 12.3411,
+      "gas": "69175039",
+      "perLoanUsdc": 50,
+      "peakOwnCapitalUsdc": 12.4657
+    },
+    {
+      "profile": "H1-7d-to-term",
+      "tenorDays": 7,
+      "holdToTerm": true,
+      "levers": "OLD (pre-tightening)",
+      "snaps": [
+        {
+          "loan": 1,
+          "day": 6.993078703703704,
+          "score": 110,
+          "creditLimitUsdc": 1000,
+          "netPaidUsdc": 0.287671,
+          "ownCapitalUsdc": 0.287671
+        },
+        {
+          "loan": 11,
+          "day": 76.92386574074074,
+          "score": 210,
+          "creditLimitUsdc": 5000,
+          "netPaidUsdc": 3.164381,
+          "ownCapitalUsdc": 3.164381
+        },
+        {
+          "loan": 21,
+          "day": 146.85465277777777,
+          "score": 310,
+          "creditLimitUsdc": 5000,
+          "netPaidUsdc": 6.041091,
+          "ownCapitalUsdc": 6.041091
+        },
+        {
+          "loan": 31,
+          "day": 216.78543981481482,
+          "score": 410,
+          "creditLimitUsdc": 10000,
+          "netPaidUsdc": 8.82191,
+          "ownCapitalUsdc": 8.82191
+        },
+        {
+          "loan": 41,
+          "day": 286.71622685185184,
+          "score": 510,
+          "creditLimitUsdc": 10000,
+          "netPaidUsdc": 10.73971,
+          "ownCapitalUsdc": 10.73971
+        },
+        {
+          "loan": 50,
+          "day": 349.65393518518516,
+          "score": 600,
+          "creditLimitUsdc": 25000,
+          "netPaidUsdc": 12.46573,
+          "ownCapitalUsdc": 12.46573
+        }
+      ],
+      "milestones": {
+        "200": {
+          "loan": 10,
+          "day": 69.93078703703704,
+          "score": 200,
+          "creditLimitUsdc": 5000,
+          "netPaidUsdc": 2.87671,
+          "ownCapitalUsdc": 2.87671
+        },
+        "400": {
+          "loan": 30,
+          "day": 209.79236111111112,
+          "score": 400,
+          "creditLimitUsdc": 10000,
+          "netPaidUsdc": 8.63013,
+          "ownCapitalUsdc": 8.63013
+        },
+        "500": {
+          "loan": 40,
+          "day": 279.72314814814814,
+          "score": 500,
+          "creditLimitUsdc": 10000,
+          "netPaidUsdc": 10.54793,
+          "ownCapitalUsdc": 10.54793
+        },
+        "600": {
+          "loan": 50,
+          "day": 349.65393518518516,
+          "score": 600,
+          "creditLimitUsdc": 25000,
+          "netPaidUsdc": 12.46573,
+          "ownCapitalUsdc": 12.46573
+        }
+      },
+      "loans": 50,
+      "finalScore": 600,
+      "days": 349.65393518518516,
+      "realisedCostUsdc": 12.46573,
+      "feesUsdc": 0.12462,
+      "lenderEarnedUsdc": 12.34111,
+      "gas": "34946185",
+      "perLoanUsdc": 100,
+      "peakOwnCapitalUsdc": 12.46573
+    },
+    {
+      "profile": "H2-30d-to-term",
+      "tenorDays": 30,
+      "holdToTerm": true,
+      "levers": "OLD (pre-tightening)",
+      "snaps": [
+        {
+          "loan": 1,
+          "day": 29.993078703703702,
+          "score": 110,
+          "creditLimitUsdc": 1000,
+          "netPaidUsdc": 1.232876,
+          "ownCapitalUsdc": 1.232876
+        },
+        {
+          "loan": 11,
+          "day": 329.9238657407407,
+          "score": 210,
+          "creditLimitUsdc": 5000,
+          "netPaidUsdc": 13.561636,
+          "ownCapitalUsdc": 13.561636
+        },
+        {
+          "loan": 21,
+          "day": 629.8546527777778,
+          "score": 310,
+          "creditLimitUsdc": 5000,
+          "netPaidUsdc": 25.890396,
+          "ownCapitalUsdc": 25.890396
+        },
+        {
+          "loan": 31,
+          "day": 929.7854398148148,
+          "score": 410,
+          "creditLimitUsdc": 10000,
+          "netPaidUsdc": 37.808197,
+          "ownCapitalUsdc": 37.808197
+        },
+        {
+          "loan": 41,
+          "day": 1229.7162268518518,
+          "score": 510,
+          "creditLimitUsdc": 10000,
+          "netPaidUsdc": 46.027367,
+          "ownCapitalUsdc": 46.027367
+        },
+        {
+          "loan": 50,
+          "day": 1499.6539351851852,
+          "score": 600,
+          "creditLimitUsdc": 25000,
+          "netPaidUsdc": 53.42462,
+          "ownCapitalUsdc": 53.42462
+        }
+      ],
+      "milestones": {
+        "200": {
+          "loan": 10,
+          "day": 299.930787037037,
+          "score": 200,
+          "creditLimitUsdc": 5000,
+          "netPaidUsdc": 12.32876,
+          "ownCapitalUsdc": 12.32876
+        },
+        "400": {
+          "loan": 30,
+          "day": 899.7923611111111,
+          "score": 400,
+          "creditLimitUsdc": 10000,
+          "netPaidUsdc": 36.98628,
+          "ownCapitalUsdc": 36.98628
+        },
+        "500": {
+          "loan": 40,
+          "day": 1199.723148148148,
+          "score": 500,
+          "creditLimitUsdc": 10000,
+          "netPaidUsdc": 45.20545,
+          "ownCapitalUsdc": 45.20545
+        },
+        "600": {
+          "loan": 50,
+          "day": 1499.6539351851852,
+          "score": 600,
+          "creditLimitUsdc": 25000,
+          "netPaidUsdc": 53.42462,
+          "ownCapitalUsdc": 53.42462
+        }
+      },
+      "loans": 50,
+      "finalScore": 600,
+      "days": 1499.6539351851852,
+      "realisedCostUsdc": 53.42462,
+      "feesUsdc": 0.53422,
+      "lenderEarnedUsdc": 52.8904,
+      "gas": "34946197",
+      "perLoanUsdc": 100,
+      "peakOwnCapitalUsdc": 53.42462
+    },
+    {
+      "profile": "H3-daily-cycler",
+      "tenorDays": 7,
+      "holdToTerm": false,
+      "levers": "OLD (pre-tightening)",
+      "snaps": [
+        {
+          "loan": 1,
+          "day": 1.000023148148148,
+          "score": 110,
+          "creditLimitUsdc": 1000,
+          "netPaidUsdc": 0.287671,
+          "ownCapitalUsdc": 0.287671
+        },
+        {
+          "loan": 11,
+          "day": 11.00025462962963,
+          "score": 210,
+          "creditLimitUsdc": 5000,
+          "netPaidUsdc": 3.164381,
+          "ownCapitalUsdc": 3.164381
+        },
+        {
+          "loan": 21,
+          "day": 21.000486111111112,
+          "score": 310,
+          "creditLimitUsdc": 5000,
+          "netPaidUsdc": 6.041091,
+          "ownCapitalUsdc": 6.041091
+        },
+        {
+          "loan": 31,
+          "day": 31.000717592592594,
+          "score": 410,
+          "creditLimitUsdc": 10000,
+          "netPaidUsdc": 8.82191,
+          "ownCapitalUsdc": 8.82191
+        },
+        {
+          "loan": 41,
+          "day": 41.00094907407407,
+          "score": 510,
+          "creditLimitUsdc": 10000,
+          "netPaidUsdc": 10.73971,
+          "ownCapitalUsdc": 10.73971
+        },
+        {
+          "loan": 50,
+          "day": 50.001157407407405,
+          "score": 600,
+          "creditLimitUsdc": 25000,
+          "netPaidUsdc": 12.46573,
+          "ownCapitalUsdc": 12.46573
+        }
+      ],
+      "milestones": {
+        "200": {
+          "loan": 10,
+          "day": 10.000231481481482,
+          "score": 200,
+          "creditLimitUsdc": 5000,
+          "netPaidUsdc": 2.87671,
+          "ownCapitalUsdc": 2.87671
+        },
+        "400": {
+          "loan": 30,
+          "day": 30.000694444444445,
+          "score": 400,
+          "creditLimitUsdc": 10000,
+          "netPaidUsdc": 8.63013,
+          "ownCapitalUsdc": 8.63013
+        },
+        "500": {
+          "loan": 40,
+          "day": 40.00092592592593,
+          "score": 500,
+          "creditLimitUsdc": 10000,
+          "netPaidUsdc": 10.54793,
+          "ownCapitalUsdc": 10.54793
+        },
+        "600": {
+          "loan": 50,
+          "day": 50.001157407407405,
+          "score": 600,
+          "creditLimitUsdc": 25000,
+          "netPaidUsdc": 12.46573,
+          "ownCapitalUsdc": 12.46573
+        }
+      },
+      "loans": 50,
+      "finalScore": 600,
+      "days": 50.001157407407405,
+      "realisedCostUsdc": 12.46573,
+      "feesUsdc": 0.12462,
+      "lenderEarnedUsdc": 12.34111,
+      "gas": "34946209",
+      "perLoanUsdc": 100,
+      "peakOwnCapitalUsdc": 12.46573
+    },
+    {
+      "profile": "H4-1k-30d",
+      "tenorDays": 30,
+      "holdToTerm": true,
+      "levers": "NEW (Arc mainnet post-audit)",
+      "snaps": [
+        {
+          "loan": 1,
+          "day": 29.993078703703702,
+          "score": 105,
+          "creditLimitUsdc": 1000,
+          "netPaidUsdc": 12.328767,
+          "ownCapitalUsdc": 12.328767
+        },
+        {
+          "loan": 11,
+          "day": 329.9238657407407,
+          "score": 155,
+          "creditLimitUsdc": 1000,
+          "netPaidUsdc": 135.616437,
+          "ownCapitalUsdc": 135.616437
+        },
+        {
+          "loan": 21,
+          "day": 629.8546527777778,
+          "score": 205,
+          "creditLimitUsdc": 5000,
+          "netPaidUsdc": 258.904107,
+          "ownCapitalUsdc": 258.904107
+        },
+        {
+          "loan": 31,
+          "day": 929.7854398148148,
+          "score": 255,
+          "creditLimitUsdc": 5000,
+          "netPaidUsdc": 382.191777,
+          "ownCapitalUsdc": 382.191777
+        },
+        {
+          "loan": 41,
+          "day": 1229.7162268518518,
+          "score": 305,
+          "creditLimitUsdc": 5000,
+          "netPaidUsdc": 505.479447,
+          "ownCapitalUsdc": 505.479447
+        },
+        {
+          "loan": 51,
+          "day": 1529.647013888889,
+          "score": 355,
+          "creditLimitUsdc": 5000,
+          "netPaidUsdc": 628.767117,
+          "ownCapitalUsdc": 628.767117
+        },
+        {
+          "loan": 61,
+          "day": 1829.5778009259259,
+          "score": 405,
+          "creditLimitUsdc": 10000,
+          "netPaidUsdc": 747.945198,
+          "ownCapitalUsdc": 747.945198
+        },
+        {
+          "loan": 71,
+          "day": 2129.508587962963,
+          "score": 455,
+          "creditLimitUsdc": 10000,
+          "netPaidUsdc": 830.136978,
+          "ownCapitalUsdc": 830.136978
+        },
+        {
+          "loan": 81,
+          "day": 2429.439375,
+          "score": 505,
+          "creditLimitUsdc": 10000,
+          "netPaidUsdc": 912.328758,
+          "ownCapitalUsdc": 912.328758
+        },
+        {
+          "loan": 91,
+          "day": 2729.370162037037,
+          "score": 555,
+          "creditLimitUsdc": 10000,
+          "netPaidUsdc": 994.520538,
+          "ownCapitalUsdc": 994.520538
+        },
+        {
+          "loan": 100,
+          "day": 2999.3078703703704,
+          "score": 600,
+          "creditLimitUsdc": 25000,
+          "netPaidUsdc": 1068.49314,
+          "ownCapitalUsdc": 1068.49314
+        }
+      ],
+      "milestones": {
+        "200": {
+          "loan": 20,
+          "day": 599.861574074074,
+          "score": 200,
+          "creditLimitUsdc": 5000,
+          "netPaidUsdc": 246.57534,
+          "ownCapitalUsdc": 246.57534
+        },
+        "400": {
+          "loan": 60,
+          "day": 1799.5847222222221,
+          "score": 400,
+          "creditLimitUsdc": 10000,
+          "netPaidUsdc": 739.72602,
+          "ownCapitalUsdc": 739.72602
+        },
+        "500": {
+          "loan": 80,
+          "day": 2399.446296296296,
+          "score": 500,
+          "creditLimitUsdc": 10000,
+          "netPaidUsdc": 904.10958,
+          "ownCapitalUsdc": 904.10958
+        },
+        "600": {
+          "loan": 100,
+          "day": 2999.3078703703704,
+          "score": 600,
+          "creditLimitUsdc": 25000,
+          "netPaidUsdc": 1068.49314,
+          "ownCapitalUsdc": 1068.49314
+        }
+      },
+      "loans": 100,
+      "finalScore": 600,
+      "days": 2999.3078703703704,
+      "realisedCostUsdc": 1068.49314,
+      "feesUsdc": 10.68486,
+      "lenderEarnedUsdc": 1057.80828,
+      "gas": "69176967",
+      "perLoanUsdc": 1000,
+      "peakOwnCapitalUsdc": 1068.49314,
+      "loanUsdc": 1000
+    },
+    {
+      "profile": "H5-at-tier-limit-30d",
+      "tenorDays": 30,
+      "holdToTerm": true,
+      "levers": "NEW (Arc mainnet post-audit)",
+      "snaps": [
+        {
+          "loan": 1,
+          "day": 29.993078703703702,
+          "score": 105,
+          "creditLimitUsdc": 1000,
+          "netPaidUsdc": 12.328767,
+          "ownCapitalUsdc": 12.328767
+        },
+        {
+          "loan": 11,
+          "day": 329.9238657407407,
+          "score": 155,
+          "creditLimitUsdc": 1000,
+          "netPaidUsdc": 135.616437,
+          "ownCapitalUsdc": 135.616437
+        },
+        {
+          "loan": 21,
+          "day": 629.8546527777778,
+          "score": 205,
+          "creditLimitUsdc": 5000,
+          "netPaidUsdc": 308.219175,
+          "ownCapitalUsdc": 308.219175
+        },
+        {
+          "loan": 31,
+          "day": 929.7854398148148,
+          "score": 255,
+          "creditLimitUsdc": 5000,
+          "netPaidUsdc": 924.657525,
+          "ownCapitalUsdc": 924.657525
+        },
+        {
+          "loan": 41,
+          "day": 1229.7162268518518,
+          "score": 305,
+          "creditLimitUsdc": 5000,
+          "netPaidUsdc": 1541.095875,
+          "ownCapitalUsdc": 1541.095875
+        },
+        {
+          "loan": 51,
+          "day": 1529.647013888889,
+          "score": 355,
+          "creditLimitUsdc": 5000,
+          "netPaidUsdc": 2157.534225,
+          "ownCapitalUsdc": 2157.534225
+        },
+        {
+          "loan": 61,
+          "day": 1829.5778125,
+          "score": 405,
+          "creditLimitUsdc": 10000,
+          "netPaidUsdc": 2794.52052,
+          "ownCapitalUsdc": 2794.52052
+        },
+        {
+          "loan": 71,
+          "day": 2129.508599537037,
+          "score": 455,
+          "creditLimitUsdc": 10000,
+          "netPaidUsdc": 3616.43832,
+          "ownCapitalUsdc": 3616.43832
+        },
+        {
+          "loan": 81,
+          "day": 2429.439386574074,
+          "score": 505,
+          "creditLimitUsdc": 10000,
+          "netPaidUsdc": 4438.35612,
+          "ownCapitalUsdc": 4438.35612
+        },
+        {
+          "loan": 91,
+          "day": 2729.370173611111,
+          "score": 555,
+          "creditLimitUsdc": 10000,
+          "netPaidUsdc": 5260.27392,
+          "ownCapitalUsdc": 5260.27392
+        },
+        {
+          "loan": 100,
+          "day": 2999.3078819444445,
+          "score": 600,
+          "creditLimitUsdc": 25000,
+          "netPaidUsdc": 5999.99994,
+          "ownCapitalUsdc": 5999.99994
+        }
+      ],
+      "milestones": {
+        "200": {
+          "loan": 20,
+          "day": 599.861574074074,
+          "score": 200,
+          "creditLimitUsdc": 5000,
+          "netPaidUsdc": 246.57534,
+          "ownCapitalUsdc": 246.57534
+        },
+        "400": {
+          "loan": 60,
+          "day": 1799.5847337962964,
+          "score": 400,
+          "creditLimitUsdc": 10000,
+          "netPaidUsdc": 2712.32874,
+          "ownCapitalUsdc": 2712.32874
+        },
+        "500": {
+          "loan": 80,
+          "day": 2399.44630787037,
+          "score": 500,
+          "creditLimitUsdc": 10000,
+          "netPaidUsdc": 4356.16434,
+          "ownCapitalUsdc": 4356.16434
+        },
+        "600": {
+          "loan": 100,
+          "day": 2999.3078819444445,
+          "score": 600,
+          "creditLimitUsdc": 25000,
+          "netPaidUsdc": 5999.99994,
+          "ownCapitalUsdc": 5999.99994
+        }
+      },
+      "loans": 100,
+      "finalScore": 600,
+      "days": 2999.3078819444445,
+      "realisedCostUsdc": 5999.99994,
+      "feesUsdc": 59.99994,
+      "lenderEarnedUsdc": 5940,
+      "gas": "69178059",
+      "perLoanUsdc": "at tier credit limit",
+      "peakOwnCapitalUsdc": 5999.99994,
+      "loanUsdc": "limit"
+    }
+  ]
+}

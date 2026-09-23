@@ -1,0 +1,49 @@
+Owner (agent #49): 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+V6: 0xCeF77E14dB17aE0272510ddbDa97075e7Eb6EbF3
+PRE pool: lenderCount=4, totalLiq=0, avail=0.000002
+needed fresh wallets: 49 (to reach cap of 50 with existing 1)
+owner approved 1500 USDC for V6
+
+[1] Generating + funding 49 fresh wallets
+  funded 10/49
+  funded 20/49
+  funded 30/49
+  funded 40/49
+  all funded
+
+[2] Each fresh lender supplies 100 USDC
+  supplied 10/49, last gas=154087
+  supplied 20/49, last gas=154087
+  supplied 30/49, last gas=154087
+  supplied 40/49, last gas=154087
+  ❌ lender 46 supply failed: execution reverted: "Pool lender capacity reached"
+  successful supplies: 46/49
+  pool lenderCount: 50
+
+[3] 51st supply attempt — must revert with "Pool lender capacity reached"
+  ✅ correctly reverted: "execution reverted: "Pool lender capacity reached""
+
+[4] Owner borrows 500 USDC, repays — interest distributes across all lenders
+  loan tx: 0x208cee78546b9c9ae4edc3409cbfe2b6e297080984ea14500910afeb5bc60c79, gas: 399505
+  loanId: 14
+  repay tx: 0x4a9289e8fec10e7dc7a086ec8b61e92eb2b9559cc7a56dc22b875ae0c1d84170, gas: 1407632
+  ✅ NO PANIC across 50 distinct lenders
+
+[5] Each lender claims interest
+  claimed 10/46
+  claimed 20/46
+  claimed 30/46
+  claimed 40/46
+  total claimed: 6.102728 USDC
+
+§S1 invariant: avail=4600.000014 ≤ mpBal=4600.061827? ✅
+
+[6] Cleanup
+  cleaned 10/46
+  cleaned 20/46
+  cleaned 30/46
+  cleaned 40/46
+
+POST pool: lenderCount=50, totalLiq=0, avail=0.000014
+
+Saved.

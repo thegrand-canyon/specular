@@ -1,0 +1,13 @@
+=== TypeScript type-check for Specular SDK ===
+TypeScript version: Version 5.9.3
+Strict mode: on (noImplicitAny, strictNullChecks, etc.)
+
+Files type-checked:
+  /Users/peterschroeder/Specular/src/sdk/SpecularQuickstart.d.ts
+  /Users/peterschroeder/Specular/src/sdk/x402/SpecularX402Client.d.ts
+  /Users/peterschroeder/Specular/src/sdk/x402/SpecularX402Server.d.ts
+  /Users/peterschroeder/Specular/src/sdk/x402/index.d.ts
+  /Users/peterschroeder/Specular/src/sdk/__types-test__/sdk-types.test-d.ts
+
+
+Result: PASS — types compile cleanly under strict mode

@@ -1,0 +1,46 @@
+{
+  "network": "arc-testnet-v6-staging",
+  "chainId": 5042002,
+  "rpcUrl": "https://arc-testnet.drpc.org",
+  "note": "FIXED V6 stack (2026-07/08 audit fixes + levers) — TESTNET STAGING / mainnet rehearsal. Fresh MockUSDC.",
+  "mockUSDC": "0x9F3C10985998D1354D1465c5135Aa924775bd11D",
+  "usdc": "0x9F3C10985998D1354D1465c5135Aa924775bd11D",
+  "agentRegistryV2": "0x4712A978A0EADe68f0b485b981112Ae66aA622d9",
+  "reputationManagerV3": "0xD7906fDFBf69BA89a4c2FE148797e24f386fE3d2",
+  "agentLiquidityMarketplace_v6": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+  "agentCreditFaucet": "0x11D3e3A358D0Ef572260E33DAC66D0276EB97c57",
+  "deployer": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+  "deployedAt": "2026-08-23T16:51:28.084Z",
+  "agentLiquidityMarketplace_v6_0_legacy_still_live": "0xDbDf60AE5CB46D23aA44c062a4943655a6820f31",
+  "marketplaceVersion": "V6.2 + ReputationManagerV4 (V7 credit model: M1 ladder + M2 self-stake)",
+  "marketplaceRedeployedAt": "2026-09-19T21:05:29.907Z",
+  "reputationManagerV4": "0xD7906fDFBf69BA89a4c2FE148797e24f386fE3d2",
+  "agentLiquidityMarketplace_v62": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+  "v7DeployedAt": "2026-09-22T22:56:30.444Z",
+  "v7Note": "Reputation did NOT migrate from the V3 manager; agents restart at score 0. Legacy contracts remain live under *_legacy keys.",
+  "supersededDeployments": [
+    {
+      "supersededAt": "2026-09-19T00:00:00.000Z",
+      "marketplace": "0xDbDf60AE5CB46D23aA44c062a4943655a6820f31",
+      "reputationManager": "0x085D581FB56d4aD428d9852466557286099dD46c",
+      "version": "V6.0 (2026-07/08 fixes)",
+      "note": "Superseded by V6.1."
+    },
+    {
+      "supersededAt": "2026-09-19T00:00:00.000Z",
+      "marketplace": "0xB2d88bbFF61EF2CcF4B4A2CFd75aeed0f11F6878",
+      "reputationManager": "0x085D581FB56d4aD428d9852466557286099dD46c",
+      "version": "V6.1 (2026-09-19 audit fixes)",
+      "note": "STILL HOLDS ~482 USDC of test lender funds. Left running on purpose. Monitor until drained."
+    },
+    {
+      "supersededAt": "2026-09-22T00:00:00.000Z",
+      "marketplace": "0xa736EE7BB1BFB21bD294B220Bd7027B6Fe266300",
+      "reputationManager": "0x66977dF45F38D8b0Dc463817C4B46a7E08ddbdFB",
+      "version": "V6.2 + RMV4 (pre scale-fix)",
+      "note": "Superseded by the scale-fixed V7."
+    }
+  ],
+  "reputationManagerPrevious": "0x66977dF45F38D8b0Dc463817C4B46a7E08ddbdFB",
+  "agentLiquidityMarketplacePrevious": "0xa736EE7BB1BFB21bD294B220Bd7027B6Fe266300"
+}

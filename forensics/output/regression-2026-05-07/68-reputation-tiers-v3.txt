@@ -1,0 +1,23 @@
+=== REPUTATION TIER TRANSITIONS ===
+borrower=0x59b7047E2bf57F7235A365bF074C5A09AE9A4886 agentId=158
+  initial: score=0, creditLimit=1000 USDC, collateralRate=100%, interestRate=15% APR
+  cycle-1: score=10, creditLimit=1000 USDC, collateralRate=100%, interestRate=15% APR
+  *** TIER TRANSITION at cycle 1: score=10, new tier=0
+FATAL: Error: server response 408 Request Timeout (request={  }, response={  }, error=null, info={ "requestUrl": "https://arc-testnet.drpc.org", "responseBody": "{\"id\":275,\"jsonrpc\":\"2.0\",\"error\":{\"message\":\"Request timeout on the free tier, please upgrade your tier to the paid one\",\"code\":30}}", "responseStatus": "408 Request Timeout" }, code=SERVER_ERROR, version=6.16.0)
+    at makeError (/Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/utils/errors.js:137:21)
+    at assert (/Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/utils/errors.js:157:15)
+    at FetchResponse.assertOk (/Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/utils/fetch.js:839:32)
+    at JsonRpcProvider._send (/Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/providers/provider-jsonrpc.js:917:18)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async /Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/providers/provider-jsonrpc.js:281:40 {
+  code: 'SERVER_ERROR',
+  request: FetchRequest {},
+  response: FetchResponse {},
+  error: undefined,
+  info: {
+    requestUrl: 'https://arc-testnet.drpc.org',
+    responseBody: '{"id":275,"jsonrpc":"2.0","error":{"message":"Request timeout on the free tier, please upgrade your tier to the paid one","code":30}}',
+    responseStatus: '408 Request Timeout'
+  },
+  shortMessage: 'server response 408 Request Timeout'
+}

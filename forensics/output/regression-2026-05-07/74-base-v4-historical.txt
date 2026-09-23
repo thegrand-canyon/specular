@@ -1,0 +1,7 @@
+=== BASE V4 HISTORICAL DEEP — pool 1 lifecycle ===
+Block: 46036416 MP: 0xd7b4dEE74C61844DFA75aEbe224e4635463b1C8f
+Paging events 45936416 → 46036416 (page=5000)
+
+=== Event totals (last 100k blocks) ===
+  TOTAL: 0
+Saved.

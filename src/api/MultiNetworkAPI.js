@@ -48,6 +48,14 @@ const poolsCache = new CacheManager({
 app.use(cors());
 app.use(express.json());
 
+// JSON-format body-parser errors (so SDK consumers always get JSON, never HTML)
+app.use((err, req, res, next) => {
+    if (err && err.type === 'entity.parse.failed') {
+        return res.status(400).json({ error: 'Invalid JSON body', detail: err.message });
+    }
+    next(err);
+});
+
 // Apply circuit breaker first (protects against memory exhaustion)
 app.use(circuitBreaker.middleware());
 
@@ -152,7 +160,26 @@ function loadAbi(name) {
     }
 }
 
-const mpAbi = loadAbi('AgentLiquidityMarketplace');
+// V6.1 (2026-09 audit fixes) views. The committed abis/AgentLiquidityMarketplace.json
+// predates them; append the fragments so the preview endpoint can call them. On
+// a pre-V6.1 deployment they revert (no such selector) and the endpoint falls
+// back to the nominal figure, which is what those contracts actually charge.
+const V61_VIEW_FRAGMENTS = [
+    'function VERSION() view returns (string)',
+    'function LATE_INTEREST_CAP() view returns (uint256)',
+    'function previewRepayment(uint256 loanId) view returns (uint256 interest, uint256 total, uint256 chargeableSeconds, uint256 lateSeconds)',
+    'function canTopUp(uint256 agentId, address lender) view returns (bool)',
+    'function getActiveLoanIds(uint256 agentId) view returns (uint256[])',
+    'function calculateInterest(uint256 principal, uint256 annualRateBPS, uint256 durationSeconds) pure returns (uint256)'
+];
+const mpAbiBase = loadAbi('AgentLiquidityMarketplace');
+const mpAbi = (() => {
+    const have = new Set(mpAbiBase.filter(f => f.type === 'function').map(f => f.name));
+    const extra = new ethers.Interface(V61_VIEW_FRAGMENTS).fragments
+        .filter(f => f.type === 'function' && !have.has(f.name))
+        .map(f => JSON.parse(f.format('json')));
+    return [...mpAbiBase, ...extra];
+})();
 const registryAbi = loadAbi('AgentRegistryV2');
 const rmAbi = loadAbi('ReputationManagerV3');
 
@@ -826,6 +853,72 @@ app.get('/agent/:id/loans', validateNetwork, async (req, res) => {
     }
 });
 
+// GET /loan/:id/repayment — exact amount repayLoan(id) pulls right now.
+// V6.1: previewRepayment (a LATE loan pays interest on the elapsed time, capped
+// at duration + LATE_INTEREST_CAP). Pre-V6.1: principal + nominal fixed-term
+// interest (what those contracts charge). Size the USDC approval from `total`,
+// never from principal + nominal interest on a V6.1 network.
+app.get('/loan/:id/repayment', validateNetwork, async (req, res) => {
+    try {
+        const networkKey = getNetwork(req);
+        const { marketplace } = getContracts(networkKey);
+        if (!/^\d+$/.test(req.params.id)) return res.status(400).json({ error: 'loanId must be a non-negative integer' });
+        const loanId = BigInt(req.params.id);
+        const loan = await marketplace.loans(loanId);
+        if (!loan.borrower || loan.borrower === ethers.ZeroAddress) {
+            return res.status(404).json({ error: 'Loan not found', network: networkKey, loanId: Number(loanId) });
+        }
+        const states = ['REQUESTED', 'ACTIVE', 'REPAID', 'DEFAULTED'];
+        const state = states[Number(loan.state)] ?? String(loan.state);
+        if (state !== 'ACTIVE') {
+            return res.status(400).json({ error: `Loan ${loanId} is ${state}, not ACTIVE; nothing to repay`, network: networkKey, loanId: Number(loanId), state });
+        }
+        let version = 'V6';
+        try { version = String(await marketplace.VERSION()); } catch (e) { version = 'V6'; }
+        let quote;
+        if (version !== 'V6') {
+            const pv = await marketplace.previewRepayment(loanId);
+            let cap = 30n * 86400n;
+            try { cap = BigInt(await marketplace.LATE_INTEREST_CAP()); } catch (e) { /* default */ }
+            const maxChargeable = BigInt(loan.duration) + cap;
+            quote = {
+                interest: pv.interest, total: pv.total,
+                chargeableSeconds: pv.chargeableSeconds, lateSeconds: pv.lateSeconds,
+                accruing: pv.lateSeconds > 0n && pv.chargeableSeconds < maxChargeable,
+                source: 'previewRepayment'
+            };
+        } else {
+            const interest = await marketplace.calculateInterest(loan.amount, loan.interestRate, loan.duration);
+            quote = { interest, total: BigInt(loan.amount) + interest, chargeableSeconds: BigInt(loan.duration), lateSeconds: 0n, accruing: false, source: 'calculateInterest' };
+        }
+        res.json({
+            network: networkKey,
+            marketplaceVersion: version,
+            loanId: Number(loanId),
+            borrower: loan.borrower,
+            endTime: Number(loan.endTime),
+            principal: loan.amount.toString(),
+            interest: quote.interest.toString(),
+            total: quote.total.toString(),
+            principalUsdc: ethers.formatUnits(loan.amount, 6),
+            interestUsdc: ethers.formatUnits(quote.interest, 6),
+            totalUsdc: ethers.formatUnits(quote.total, 6),
+            chargeableDays: Number(quote.chargeableSeconds) / 86400,
+            lateSeconds: Number(quote.lateSeconds),
+            late: quote.lateSeconds > 0n,
+            accruing: quote.accruing,
+            source: quote.source,
+            note: quote.source === 'previewRepayment'
+                ? (quote.accruing
+                    ? 'LATE: interest accrues per second until it caps at duration + 30 days; the total grows until the repay is mined. Approve total plus a small bounded margin, then revoke the leftover.'
+                    : 'Approve exactly `total` (base units) to the marketplace before repayLoan.')
+                : 'Pre-V6.1 deployment: interest is fixed for the full term. Approve exactly `total` before repayLoan.'
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Get specific network info
 app.get('/network/:network', (req, res) => {
     const networkKey = req.params.network.toLowerCase();
@@ -851,6 +944,153 @@ app.get('/network/:network', (req, res) => {
             usdc: network.addresses.usdc
         }
     });
+});
+
+// =============================================================================
+// TX BUILDER — POST endpoints that return unsigned calldata for SDK consumers.
+// SDK signs and broadcasts; these only encode + return { to, data }.
+// =============================================================================
+
+const mpIface = new ethers.Interface(mpAbi);
+const registryIface = new ethers.Interface(registryAbi);
+
+function txBuilderResponse(network, to, data, methodName) {
+    return {
+        to,
+        data,
+        chainId: NETWORKS[network].chainId,
+        method: methodName,
+        network,
+    };
+}
+
+// Helpers
+function pickNetwork(req) {
+    try { return getNetwork(req); }
+    catch (e) { return null; }
+}
+
+function ensureBigIntString(v, name) {
+    if (typeof v === 'number' && Number.isFinite(v) && Number.isInteger(v) && v >= 0) return BigInt(v);
+    if (typeof v === 'string' && /^\d+$/.test(v)) return BigInt(v);
+    if (typeof v === 'bigint' && v >= 0n) return v;
+    throw new Error(`${name} must be a non-negative integer (number or numeric string), got ${typeof v}`);
+}
+
+// POST /tx/request-loan { amount, durationDays }
+app.post('/tx/request-loan', (req, res) => {
+    try {
+        const network = pickNetwork(req);
+        if (!network) return res.status(400).json({ error: 'Invalid network' });
+        const { amount, durationDays } = req.body || {};
+        const amt = ensureBigIntString(amount, 'amount');
+        const dur = ensureBigIntString(durationDays, 'durationDays');
+        if (dur < 7n || dur > 365n) {
+            return res.status(400).json({
+                error: `durationDays must be 7-365 (got ${durationDays}). If you passed seconds (e.g. 604800), pass days instead.`
+            });
+        }
+        const data = mpIface.encodeFunctionData('requestLoan', [amt, dur]);
+        const to = NETWORKS[network].addresses.agentLiquidityMarketplace;
+        res.json(txBuilderResponse(network, to, data, 'requestLoan'));
+    } catch (e) {
+        res.status(400).json({ error: e.message });
+    }
+});
+
+// POST /tx/repay-loan { loanId }
+app.post('/tx/repay-loan', (req, res) => {
+    try {
+        const network = pickNetwork(req);
+        if (!network) return res.status(400).json({ error: 'Invalid network' });
+        const { loanId } = req.body || {};
+        const id = ensureBigIntString(loanId, 'loanId');
+        const data = mpIface.encodeFunctionData('repayLoan', [id]);
+        const to = NETWORKS[network].addresses.agentLiquidityMarketplace;
+        res.json(txBuilderResponse(network, to, data, 'repayLoan'));
+    } catch (e) {
+        res.status(400).json({ error: e.message });
+    }
+});
+
+// POST /tx/supply-liquidity { agentId, amount }
+app.post('/tx/supply-liquidity', (req, res) => {
+    try {
+        const network = pickNetwork(req);
+        if (!network) return res.status(400).json({ error: 'Invalid network' });
+        const { agentId, amount } = req.body || {};
+        const aid = ensureBigIntString(agentId, 'agentId');
+        const amt = ensureBigIntString(amount, 'amount');
+        if (amt === 0n) return res.status(400).json({ error: 'amount must be > 0' });
+        const data = mpIface.encodeFunctionData('supplyLiquidity', [aid, amt]);
+        const to = NETWORKS[network].addresses.agentLiquidityMarketplace;
+        res.json(txBuilderResponse(network, to, data, 'supplyLiquidity'));
+    } catch (e) {
+        res.status(400).json({ error: e.message });
+    }
+});
+
+// POST /tx/withdraw-liquidity { agentId, amount }
+app.post('/tx/withdraw-liquidity', (req, res) => {
+    try {
+        const network = pickNetwork(req);
+        if (!network) return res.status(400).json({ error: 'Invalid network' });
+        const { agentId, amount } = req.body || {};
+        const aid = ensureBigIntString(agentId, 'agentId');
+        const amt = ensureBigIntString(amount, 'amount');
+        if (amt === 0n) return res.status(400).json({ error: 'amount must be > 0' });
+        const data = mpIface.encodeFunctionData('withdrawLiquidity', [aid, amt]);
+        const to = NETWORKS[network].addresses.agentLiquidityMarketplace;
+        res.json(txBuilderResponse(network, to, data, 'withdrawLiquidity'));
+    } catch (e) {
+        res.status(400).json({ error: e.message });
+    }
+});
+
+// POST /tx/claim-interest { agentId }
+app.post('/tx/claim-interest', (req, res) => {
+    try {
+        const network = pickNetwork(req);
+        if (!network) return res.status(400).json({ error: 'Invalid network' });
+        const { agentId } = req.body || {};
+        const aid = ensureBigIntString(agentId, 'agentId');
+        const data = mpIface.encodeFunctionData('claimInterest', [aid]);
+        const to = NETWORKS[network].addresses.agentLiquidityMarketplace;
+        res.json(txBuilderResponse(network, to, data, 'claimInterest'));
+    } catch (e) {
+        res.status(400).json({ error: e.message });
+    }
+});
+
+// POST /tx/create-agent-pool {} — agent registers their own pool
+app.post('/tx/create-agent-pool', (req, res) => {
+    try {
+        const network = pickNetwork(req);
+        if (!network) return res.status(400).json({ error: 'Invalid network' });
+        const data = mpIface.encodeFunctionData('createAgentPool', []);
+        const to = NETWORKS[network].addresses.agentLiquidityMarketplace;
+        res.json(txBuilderResponse(network, to, data, 'createAgentPool'));
+    } catch (e) {
+        res.status(400).json({ error: e.message });
+    }
+});
+
+// POST /tx/register { agentURI } — register an agent
+app.post('/tx/register', (req, res) => {
+    try {
+        const network = pickNetwork(req);
+        if (!network) return res.status(400).json({ error: 'Invalid network' });
+        const { agentURI } = req.body || {};
+        if (typeof agentURI !== 'string' || agentURI.length === 0) {
+            return res.status(400).json({ error: 'agentURI must be a non-empty string' });
+        }
+        // register(string agentURI, MetadataEntry[] metadata)
+        const data = registryIface.encodeFunctionData('register', [agentURI, []]);
+        const to = NETWORKS[network].addresses.agentRegistryV2;
+        res.json(txBuilderResponse(network, to, data, 'register'));
+    } catch (e) {
+        res.status(400).json({ error: e.message });
+    }
 });
 
 // Monitoring/stats endpoint
@@ -905,6 +1145,15 @@ app.listen(PORT, () => {
     console.log(`   - GET /network/:network - Get specific network info`);
     console.log(`   - GET /stats - Server performance metrics`);
     console.log(`   - GET /dashboard - Web dashboard`);
+    console.log(`\n📤 TX Builder (POST):`);
+    console.log(`   - POST /tx/request-loan       { amount, durationDays }`);
+    console.log(`   - POST /tx/repay-loan         { loanId }`);
+    console.log(`   - POST /tx/supply-liquidity   { agentId, amount }`);
+    console.log(`   - POST /tx/withdraw-liquidity { agentId, amount }`);
+    console.log(`   - POST /tx/claim-interest     { agentId }`);
+    console.log(`   - POST /tx/create-agent-pool  {}`);
+    console.log(`   - POST /tx/register           { agentURI }`);
+    console.log(`     all return { to, data, chainId, method, network }`);
 
     console.log(`\n⚡ Performance Optimizations:`);
     console.log(`   ✅ Request limiter: Max ${requestLimiter.maxConcurrent} concurrent, queue ${requestLimiter.queueSize}`);

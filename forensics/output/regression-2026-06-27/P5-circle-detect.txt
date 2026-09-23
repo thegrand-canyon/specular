@@ -1,0 +1,7 @@
+Status: 402
+Price (base units): 2200
+Pay to: 0x4466d4A84b7c49a6A094ec6eef4a0712D6dd125e
+Network: base
+Asset: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+Circle batched? : false
+Batch verifying contract: (n/a)

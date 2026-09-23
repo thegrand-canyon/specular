@@ -1,0 +1,14 @@
+Loaded 77 known wallets
+Master USDC before: 927221.354655
+Scanning 31 pools...
+  0xcdf48fbe... pool 140: withdrew 55.01424
+  0x0ee003c8... pool 139: withdrew 55.01424
+  0x5c1b1427... pool 141: withdrew 55.01424
+  0x2e2bd8fe... pool 136: withdrew 200
+
+=== LEFTOVER CLEANUP DONE ===
+Withdraws: 4, total: 365.04272 USDC
+From wallet balances: 1465.013953 USDC
+From ETH: 4.406957858998 ETH
+Master USDC delta: +1465.013953
+Master final USDC: 928686.368608

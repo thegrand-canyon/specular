@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-05-14T19:00:59.530Z",
+  "nBorrowers": 10,
+  "nLenders": 5,
+  "nBursts": 10,
+  "supplyOk": 5,
+  "totalLoans": 3,
+  "totalFails": 97,
+  "finalDupViolations": 0,
+  "finalMpBal": "1122696676204"
+}

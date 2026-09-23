@@ -1,0 +1,24 @@
+
+===== Arc v4 (canonical) =====
+bytecode size: 9254 bytes
+requestLoan gas (fresh agent #49):       revert: execution reverted: "Insufficient pool liquidity"
+requestLoan gas (777-loan agent #43):    3939066
+
+===== Arc V6 (deployed) =====
+bytecode size: 11026 bytes
+requestLoan gas (fresh agent #49):       revert: execution reverted: "Insufficient pool liquidity"
+
+===== Base v4 (canonical) =====
+bytecode size: 9254 bytes
+requestLoan gas: 408426
+
+===== COMPARISON =====
+Bytecode sizes:
+  Arc v4:  9254 bytes
+  Arc V6:  11026 bytes (Δ +1772, 19.1%)
+  Base v4: 9254 bytes
+
+requestLoan gas:
+  Arc v4 (#43, 777 loans): 3939066
+
+Saved: ./forensics/output/regression-2026-05-07/24-gas-comparison.json

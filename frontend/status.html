@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Specular — Status</title>
+<style>
+:root {
+    --bg: #0a0a0a;
+    --fg: #ededed;
+    --dim: #888;
+    --orange: #FF6A00;
+    --green: #4ade80;
+    --red: #ef4444;
+    --card: #161616;
+    --border: #242424;
+    --mono: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+}
+* { box-sizing: border-box; }
+body {
+    background: var(--bg); color: var(--fg);
+    font-family: 'Inter', -apple-system, sans-serif;
+    margin: 0; padding: 24px;
+    max-width: 1100px; margin: 0 auto;
+}
+h1 { font-family: 'Outfit', sans-serif; font-weight: 700; color: var(--orange); margin: 16px 0 4px; }
+.sub { color: var(--dim); font-size: 13px; margin-bottom: 32px; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+@media (max-width: 700px) { .grid { grid-template-columns: 1fr; } }
+.card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 20px;
+}
+.card h2 { font-family: 'Outfit', sans-serif; font-size: 16px; margin: 0 0 16px; color: var(--orange); }
+.row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 0; border-bottom: 1px solid var(--border);
+}
+.row:last-child { border-bottom: none; }
+.k { color: var(--dim); font-size: 13px; }
+.v { font-family: var(--mono); font-size: 13px; }
+.v.big { font-size: 18px; color: var(--fg); font-weight: 600; }
+.ok { color: var(--green); }
+.bad { color: var(--red); }
+.addr { font-family: var(--mono); font-size: 11px; color: var(--dim); word-break: break-all; }
+a { color: var(--orange); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.loading { color: var(--dim); font-style: italic; }
+.note { font-size: 12px; color: var(--dim); margin-top: 8px; }
+.footer { text-align: center; color: var(--dim); font-size: 12px; margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<h1>Specular Protocol Status</h1>
+<div class="sub">Live state from both deployments. Refreshed on page load.</div>
+
+<div class="grid">
+    <div class="card" id="base-card">
+        <h2>Base Mainnet</h2>
+        <div id="base-content"><div class="loading">Loading…</div></div>
+    </div>
+
+    <div class="card" id="arc-card">
+        <h2>Arc Testnet</h2>
+        <div id="arc-content"><div class="loading">Loading…</div></div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Code &amp; Resources</h2>
+    <div class="row"><span class="k">Repository</span><span class="v"><a href="https://github.com/thegrand-canyon/specular" target="_blank">thegrand-canyon/specular</a></span></div>
+    <div class="row"><span class="k">SDK (JavaScript)</span><span class="v"><code>src/sdk/SpecularQuickstart.js</code></span></div>
+    <div class="row"><span class="k">SDK (Python)</span><span class="v"><code>python/specular/</code></span></div>
+    <div class="row"><span class="k">LangChain tools</span><span class="v">JS + Python</span></div>
+    <div class="row"><span class="k">OpenAI Functions</span><span class="v">JS + Python</span></div>
+    <div class="row"><span class="k">Anthropic Tool Use</span><span class="v">JS + Python</span></div>
+    <div class="row"><span class="k">Agent templates</span><span class="v"><code>src/sdk/templates/</code></span></div>
+</div>
+
+<div class="footer">
+    Specular Protocol — Credit infrastructure for AI agents.
+    <br>4 internal audit passes · 414 hardhat tests · 2.6M Foundry random ops · 0 V6 invariant violations
+</div>
+
+<script type="module">
+import { ethers } from 'https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.min.js';
+
+const NETS = [
+    {
+        id: 'base',
+        rpc: 'https://mainnet.base.org',
+        v6: '0x0a4e3C745aB95aceb45B05C28D89fe4Db8815F9a',
+        v4Archive: '0xd7b4dEE74C61844DFA75aEbe224e4635463b1C8f',
+        registry: '0xb9996de05fD514A0cB2B81fa25448EECD4559Aaa',
+        faucet: '0x990f7495528bFC2ebcb8CbD6EeBd2Bc32B450164',
+        usdc: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+        explorer: 'https://basescan.org/address/',
+        elementId: 'base-content'
+    },
+    {
+        id: 'arc',
+        rpc: 'https://arc-testnet.drpc.org',
+        v6: '0x7a0560551b2370ee87458186c0b1eFCc38c7c57a',
+        registry: '0x741C03c0d95d2c15E479CE1c7E69B3196d86faD7',
+        faucet: '0xb22FccD4a223C002E7cE963060A2cEF45D162b14',
+        usdc: '0xf2807051e292e945751A25616705a9aadfb39895',
+        explorer: 'https://testnet.arcscan.app/address/',
+        elementId: 'arc-content'
+    }
+];
+
+const V6_ABI = [
+    'function paused() view returns (bool)',
+    'function migrationFinalized() view returns (bool)',
+    'function totalPools() view returns (uint256)',
+    'function nextLoanId() view returns (uint256)',
+    'function accumulatedFees() view returns (uint256)',
+    'function platformFeeRate() view returns (uint256)',
+    'function MAX_LENDERS_PER_POOL() view returns (uint256)',
+    'function MAX_ACTIVE_LOANS_PER_AGENT() view returns (uint256)'
+];
+const REG_ABI = ['function totalAgents() view returns (uint256)'];
+const USDC_ABI = ['function balanceOf(address) view returns (uint256)'];
+const FAUCET_ABI = ['function balance() view returns (uint256)', 'function maxEligibleAgentId() view returns (uint256)', 'function totalGranted() view returns (uint256)', 'function claimAmount() view returns (uint256)'];
+
+const fmt = (v, dec = 6) => Number(ethers.formatUnits(v, dec)).toLocaleString();
+
+async function loadNetwork(n) {
+    const el = document.getElementById(n.elementId);
+    try {
+        const provider = new ethers.JsonRpcProvider(n.rpc);
+        const v6 = new ethers.Contract(n.v6, V6_ABI, provider);
+        const reg = new ethers.Contract(n.registry, REG_ABI, provider);
+        const usdc = new ethers.Contract(n.usdc, USDC_ABI, provider);
+        const faucet = n.faucet ? new ethers.Contract(n.faucet, FAUCET_ABI, provider) : null;
+
+        const [paused, migFinal, totalPools, nextLoan, fees, feeRate, totalAgents, v6Usdc] = await Promise.all([
+            v6.paused(), v6.migrationFinalized(), v6.totalPools(), v6.nextLoanId(),
+            v6.accumulatedFees(), v6.platformFeeRate(), reg.totalAgents(), usdc.balanceOf(n.v6)
+        ]);
+        let faucetBal, faucetMax, faucetGranted, faucetClaim;
+        if (faucet) {
+            [faucetBal, faucetMax, faucetGranted, faucetClaim] = await Promise.all([
+                faucet.balance(), faucet.maxEligibleAgentId(), faucet.totalGranted(), faucet.claimAmount()
+            ]);
+        }
+
+        const totalLoans = Number(nextLoan) - 1;
+        const rows = [
+            ['V6 address', `<a href="${n.explorer}${n.v6}" target="_blank" class="addr">${n.v6.slice(0, 10)}…${n.v6.slice(-8)}</a>`],
+            ['Status', paused ? '<span class="v bad">PAUSED</span>' : '<span class="v ok">LIVE</span>'],
+            ['Migration finalized', migFinal ? '<span class="v ok">yes</span>' : '<span class="v">no (open)</span>'],
+            ['Total agents (registry)', `<span class="v big">${totalAgents.toString()}</span>`],
+            ['Total pools created', `<span class="v big">${totalPools.toString()}</span>`],
+            ['Total loans (lifetime)', `<span class="v big">${totalLoans}</span>`],
+            ['V6 USDC held', `<span class="v big">${fmt(v6Usdc)}</span>`],
+            ['Accumulated fees', `<span class="v">${fmt(fees)} USDC</span>`],
+            ['Platform fee rate', `<span class="v">${Number(feeRate) / 100}%</span>`]
+        ];
+        if (faucet) {
+            rows.push(
+                ['—', '—'],
+                ['Faucet address', `<a href="${n.explorer}${n.faucet}" target="_blank" class="addr">${n.faucet.slice(0, 10)}…${n.faucet.slice(-8)}</a>`],
+                ['Faucet balance', `<span class="v">${fmt(faucetBal)} USDC</span>`],
+                ['Per-agent claim', `<span class="v">${fmt(faucetClaim)} USDC</span>`],
+                ['Eligible agents', `<span class="v">1 to ${faucetMax.toString()}</span>`],
+                ['Total granted (lifetime)', `<span class="v">${fmt(faucetGranted)} USDC</span>`]
+            );
+        }
+        el.innerHTML = rows.map(([k, v]) =>
+            k === '—' ? '<div class="row" style="border-color:#333"><span></span></div>' : `<div class="row"><span class="k">${k}</span><span>${v}</span></div>`
+        ).join('');
+    } catch (e) {
+        el.innerHTML = `<div class="bad">Failed to load: ${e.message || e}</div>`;
+    }
+}
+
+NETS.forEach(loadNetwork);
+</script>
+
+</body>
+</html>

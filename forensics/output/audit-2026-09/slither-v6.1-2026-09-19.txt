@@ -1,0 +1,487 @@
+/Users/peterschroeder/.local/share/uv/tools/slither-analyzer/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+'forge clean' running (wd: /Users/peterschroeder/Specular)
+'forge config --json' running
+'forge build --build-info --skip ./test/foundry/** ./script/** --force' running (wd: /Users/peterschroeder/Specular)
+
+Detector: encode-packed-collision
+ReputationManagerV2.giveFeedback(uint256,int128,uint8,string,string,string,string,bytes32) (contracts/core/ReputationManagerV2.sol#103-161) calls abi.encodePacked() with multiple dynamic arguments:
+	- feedbackHash = keccak256(bytes)(abi.encodePacked(agentId,msg.sender,value,tag1,tag2,block.timestamp,totalFeedbackCount)) (contracts/core/ReputationManagerV2.sol#117-127)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#abi-encodePacked-collision
+
+Detector: divide-before-multiply
+AgentLiquidityMarketplace.calculateInterest(uint256,uint256,uint256) (contracts/core/AgentLiquidityMarketplace.sol#399-407) performs a multiplication on the result of a division:
+	- annualInterest = (principal * annualRateBPS) / 10000 (contracts/core/AgentLiquidityMarketplace.sol#404)
+	- interest = (annualInterest * durationSeconds) / 31536000 (contracts/core/AgentLiquidityMarketplace.sol#405)
+AgentLiquidityMarketplaceV6.calculateInterest(uint256,uint256,uint256) (contracts/core/AgentLiquidityMarketplaceV6.sol#991-999) performs a multiplication on the result of a division:
+	- annualInterest = (principal * annualRateBPS) / 10000 (contracts/core/AgentLiquidityMarketplaceV6.sol#996)
+	- interest = (annualInterest * durationSeconds) / 31536000 (contracts/core/AgentLiquidityMarketplaceV6.sol#997)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#divide-before-multiply
+
+Detector: incorrect-equality
+AgentLiquidityMarketplace._countActiveLoans(address) (contracts/core/AgentLiquidityMarketplace.sol#547-558) uses a dangerous strict equality:
+	- loans[loanIds[i]].state == LoanState.ACTIVE (contracts/core/AgentLiquidityMarketplace.sol#552)
+AgentLiquidityMarketplaceV6._countActiveLoansFromArray(address) (contracts/core/AgentLiquidityMarketplaceV6.sol#1412-1423) uses a dangerous strict equality:
+	- loans[loanIds[i]].state == LoanState.ACTIVE (contracts/core/AgentLiquidityMarketplaceV6.sol#1417)
+LendingPoolV2.calculateRepaymentAmount(uint256) (contracts/core/LendingPoolV2.sol#302-308) uses a dangerous strict equality:
+	- require(bool,string)(loan.state == LoanState.ACTIVE,Loan not active) (contracts/core/LendingPoolV2.sol#304)
+LendingPoolV3.calculateRepaymentAmount(uint256) (contracts/core/LendingPoolV3.sol#365-371) uses a dangerous strict equality:
+	- require(bool,string)(loan.state == LoanState.ACTIVE,Loan not active) (contracts/core/LendingPoolV3.sol#367)
+ReputationManager.initializeReputation(address) (contracts/core/ReputationManager.sol#63-77) uses a dangerous strict equality:
+	- require(bool,string)(reputation[_agent].lastUpdated == 0,Reputation already initialized) (contracts/core/ReputationManager.sol#65)
+ReputationManagerV2.getSummary(uint256,address[],string[]) (contracts/core/ReputationManagerV2.sol#249-305) uses a dangerous strict equality:
+	- keccak256(bytes)(bytes(fb.tag1)) == keccak256(bytes)(bytes(tags[j_scope_0])) || keccak256(bytes)(bytes(fb.tag2)) == keccak256(bytes)(bytes(tags[j_scope_0])) (contracts/core/ReputationManagerV2.sol#284-285)
+ReputationManagerV2.giveFeedback(uint256,int128,uint8,string,string,string,string,bytes32) (contracts/core/ReputationManagerV2.sol#103-161) uses a dangerous strict equality:
+	- require(bool,string)(feedbacks[feedbackHash].timestamp == 0,Feedback already exists) (contracts/core/ReputationManagerV2.sol#130)
+ReputationManagerV2.initializeReputation(uint256) (contracts/core/ReputationManagerV2.sol#351-365) uses a dangerous strict equality:
+	- require(bool,string)(reputation[agentId].lastUpdated == 0,Reputation already initialized) (contracts/core/ReputationManagerV2.sol#353)
+ReputationManagerV2.readAllFeedback(uint256,address[],string[]) (contracts/core/ReputationManagerV2.sol#184-237) uses a dangerous strict equality:
+	- keccak256(bytes)(bytes(fb.tag1)) == keccak256(bytes)(bytes(tags[j_scope_0])) || keccak256(bytes)(bytes(fb.tag2)) == keccak256(bytes)(bytes(tags[j_scope_0])) (contracts/core/ReputationManagerV2.sol#214-215)
+ValidationRegistry.getSummary(uint256,address[],string) (contracts/core/ValidationRegistry.sol#308-378) uses a dangerous strict equality:
+	- validation.status == ValidationStatus.PENDING || validation.status == ValidationStatus.DISPUTED (contracts/core/ValidationRegistry.sol#339-340)
+ValidationRegistry.getSummary(uint256,address[],string) (contracts/core/ValidationRegistry.sol#308-378) uses a dangerous strict equality:
+	- validation.status == ValidationStatus.APPROVED (contracts/core/ValidationRegistry.sol#365)
+ValidationRegistry.getSummary(uint256,address[],string) (contracts/core/ValidationRegistry.sol#308-378) uses a dangerous strict equality:
+	- validation.status == ValidationStatus.REJECTED (contracts/core/ValidationRegistry.sol#367)
+ValidationRegistry.validationRequest(address,uint256,string,bytes32) (contracts/core/ValidationRegistry.sol#156-212) uses a dangerous strict equality:
+	- require(bool,string)(validations[requestHash].timestamp == 0,Validation request already exists) (contracts/core/ValidationRegistry.sol#179-182)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#dangerous-strict-equalities
+
+Detector: unused-return
+ReputationManagerV3.calculateCreditLimit(address) (contracts/core/ReputationManagerV3.sol#311-331) ignores return value by (None,None,None,avgScore) = validationRegistry.getSummary(agentId,new address[](0),) (contracts/core/ReputationManagerV3.sol#324)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#unused-return
+
+Detector: events-access
+ReputationManagerV2.setLendingPool(address) (contracts/core/ReputationManagerV2.sol#83-87) should emit an event for: 
+	- lendingPool = _lendingPool (contracts/core/ReputationManagerV2.sol#86) 
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#missing-events-access-control
+
+Detector: events-maths
+AgentLiquidityMarketplace.withdrawFees(uint256) (contracts/core/AgentLiquidityMarketplace.sol#487-491) should emit an event for: 
+	- accumulatedFees -= amount (contracts/core/AgentLiquidityMarketplace.sol#489) 
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#missing-events-arithmetic
+
+Detector: timestamp
+AgentLiquidityMarketplace.withdrawLiquidity(uint256,uint256) (contracts/core/AgentLiquidityMarketplace.sol#172-190) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(position.amount >= amount,Insufficient balance) (contracts/core/AgentLiquidityMarketplace.sol#176)
+AgentLiquidityMarketplace._disburseLoan(uint256) (contracts/core/AgentLiquidityMarketplace.sol#256-278) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(loan.state == LoanState.REQUESTED,Invalid loan state) (contracts/core/AgentLiquidityMarketplace.sol#260)
+AgentLiquidityMarketplace.repayLoan(uint256) (contracts/core/AgentLiquidityMarketplace.sol#283-329) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(msg.sender == loan.borrower,Not the borrower) (contracts/core/AgentLiquidityMarketplace.sol#285)
+	- require(bool,string)(loan.state == LoanState.ACTIVE,Loan not active) (contracts/core/AgentLiquidityMarketplace.sol#286)
+	- onTime = block.timestamp <= loan.endTime (contracts/core/AgentLiquidityMarketplace.sol#325)
+AgentLiquidityMarketplace.liquidateLoan(uint256) (contracts/core/AgentLiquidityMarketplace.sol#365-394) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(loan.state == LoanState.ACTIVE,Loan not active) (contracts/core/AgentLiquidityMarketplace.sol#367)
+	- require(bool,string)(block.timestamp > loan.endTime,Loan not overdue) (contracts/core/AgentLiquidityMarketplace.sol#368)
+AgentLiquidityMarketplace._countActiveLoans(address) (contracts/core/AgentLiquidityMarketplace.sol#547-558) uses timestamp for comparisons
+	Dangerous comparisons:
+	- loans[loanIds[i]].state == LoanState.ACTIVE (contracts/core/AgentLiquidityMarketplace.sol#552)
+AgentLiquidityMarketplaceV6.createAgentPool() (contracts/core/AgentLiquidityMarketplaceV6.sol#240-260) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(! agentPools[agentId].isActive,Pool already exists) (contracts/core/AgentLiquidityMarketplaceV6.sol#245)
+AgentLiquidityMarketplaceV6.supplyLiquidity(uint256,uint256) (contracts/core/AgentLiquidityMarketplaceV6.sol#279-357) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(agentPools[agentId].isActive,Pool not active) (contracts/core/AgentLiquidityMarketplaceV6.sol#286)
+AgentLiquidityMarketplaceV6._activeLoanStartedIn(uint256,uint256,uint256) (contracts/core/AgentLiquidityMarketplaceV6.sol#360-367) uses timestamp for comparisons
+	Dangerous comparisons:
+	- s >= lo && s < hi (contracts/core/AgentLiquidityMarketplaceV6.sol#364)
+AgentLiquidityMarketplaceV6.withdrawLiquidity(uint256,uint256) (contracts/core/AgentLiquidityMarketplaceV6.sol#409-469) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(position.amount >= amount,Insufficient balance) (contracts/core/AgentLiquidityMarketplaceV6.sol#415)
+	- require(bool,string)(pool.availableLiquidity >= amount,Insufficient pool liquidity) (contracts/core/AgentLiquidityMarketplaceV6.sol#416)
+AgentLiquidityMarketplaceV6.requestLoan(uint256,uint256) (contracts/core/AgentLiquidityMarketplaceV6.sol#613-684) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(agentPools[agentId].isActive,No pool for agent) (contracts/core/AgentLiquidityMarketplaceV6.sol#621)
+	- require(bool,string)(amount <= pool.availableLiquidity,Insufficient pool liquidity) (contracts/core/AgentLiquidityMarketplaceV6.sol#624)
+	- require(bool,string)(pool.agentAddress == msg.sender,Borrow restricted to pool creator) (contracts/core/AgentLiquidityMarketplaceV6.sol#629)
+	- require(bool,string)(outstandingPrincipal[agentId] + amount <= creditLimit,Exceeds credit limit) (contracts/core/AgentLiquidityMarketplaceV6.sol#642)
+AgentLiquidityMarketplaceV6._disburseLoan(uint256) (contracts/core/AgentLiquidityMarketplaceV6.sol#689-719) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(loan.state == LoanState.REQUESTED,Invalid loan state) (contracts/core/AgentLiquidityMarketplaceV6.sol#693)
+AgentLiquidityMarketplaceV6.repayLoan(uint256) (contracts/core/AgentLiquidityMarketplaceV6.sol#724-814) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(loan.state == LoanState.ACTIVE,Loan not active) (contracts/core/AgentLiquidityMarketplaceV6.sol#726)
+	- require(bool,string)(msg.sender == loan.borrower || msg.sender == holder,Not the borrower) (contracts/core/AgentLiquidityMarketplaceV6.sol#735)
+	- lateSeconds > 0 (contracts/core/AgentLiquidityMarketplaceV6.sol#764)
+	- onTime = block.timestamp <= loan.endTime (contracts/core/AgentLiquidityMarketplaceV6.sol#807)
+	- heldLongEnough = minHoldForReputationReward == 0 || (block.timestamp - loan.startTime) >= minHoldForReputationReward (contracts/core/AgentLiquidityMarketplaceV6.sol#808-809)
+	- paidInterest = interest > 0 (contracts/core/AgentLiquidityMarketplaceV6.sol#810)
+	- reputationManager.recordLoanCompletion(holder,loan.amount,onTime && heldLongEnough && paidInterest) (contracts/core/AgentLiquidityMarketplaceV6.sol#811)
+AgentLiquidityMarketplaceV6._interestDue(AgentLiquidityMarketplaceV6.Loan) (contracts/core/AgentLiquidityMarketplaceV6.sol#818-827) uses timestamp for comparisons
+	Dangerous comparisons:
+	- chargeableSeconds > cap (contracts/core/AgentLiquidityMarketplaceV6.sol#824)
+	- elapsed > loan.duration (contracts/core/AgentLiquidityMarketplaceV6.sol#822)
+	- block.timestamp > loan.endTime (contracts/core/AgentLiquidityMarketplaceV6.sol#825)
+AgentLiquidityMarketplaceV6.previewRepayment(uint256) (contracts/core/AgentLiquidityMarketplaceV6.sol#837-844) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(loan.state == LoanState.ACTIVE,Loan not active) (contracts/core/AgentLiquidityMarketplaceV6.sol#841)
+AgentLiquidityMarketplaceV6._distributeInterest(uint256,uint256,uint256) (contracts/core/AgentLiquidityMarketplaceV6.sol#872-924) uses timestamp for comparisons
+	Dangerous comparisons:
+	- dust > 0 (contracts/core/AgentLiquidityMarketplaceV6.sol#918)
+AgentLiquidityMarketplaceV6.liquidateLoan(uint256) (contracts/core/AgentLiquidityMarketplaceV6.sol#929-986) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(loan.state == LoanState.ACTIVE,Loan not active) (contracts/core/AgentLiquidityMarketplaceV6.sol#931)
+	- require(bool,string)(block.timestamp > loan.endTime,Loan not overdue) (contracts/core/AgentLiquidityMarketplaceV6.sol#932)
+AgentLiquidityMarketplaceV6.getAgentPool(uint256) (contracts/core/AgentLiquidityMarketplaceV6.sol#1004-1027) uses timestamp for comparisons
+	Dangerous comparisons:
+	- pool.totalLiquidity > 0 (contracts/core/AgentLiquidityMarketplaceV6.sol#1014-1016)
+AgentLiquidityMarketplaceV6.getLenderPosition(uint256,address) (contracts/core/AgentLiquidityMarketplaceV6.sol#1032-1051) uses timestamp for comparisons
+	Dangerous comparisons:
+	- pool.totalLiquidity > 0 (contracts/core/AgentLiquidityMarketplaceV6.sol#1041-1043)
+AgentLiquidityMarketplaceV6.claimInterest(uint256) (contracts/core/AgentLiquidityMarketplaceV6.sol#1084-1111) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(pool.availableLiquidity >= interest,Drain underflow) (contracts/core/AgentLiquidityMarketplaceV6.sol#1092)
+AgentLiquidityMarketplaceV6.withdrawFees(uint256) (contracts/core/AgentLiquidityMarketplaceV6.sol#1116-1121) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(amount <= accumulatedFees,Insufficient fees) (contracts/core/AgentLiquidityMarketplaceV6.sol#1117)
+AgentLiquidityMarketplaceV6.seedPosition(uint256,address,uint256,uint256,uint256) (contracts/core/AgentLiquidityMarketplaceV6.sol#1205-1243) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(agentPools[agentId].agentId == agentId,Pool not seeded) (contracts/core/AgentLiquidityMarketplaceV6.sol#1213)
+	- require(bool,string)(sumPositions <= agentPools[agentId].totalLiquidity,Position sum exceeds totalLiquidity) (contracts/core/AgentLiquidityMarketplaceV6.sol#1237-1240)
+AgentLiquidityMarketplaceV6.resetPoolAccounting(uint256) (contracts/core/AgentLiquidityMarketplaceV6.sol#1344-1397) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(pool.agentId == agentId,Pool does not exist) (contracts/core/AgentLiquidityMarketplaceV6.sol#1346)
+	- require(bool,string)(agentRegistry.ownerOf(agentId) == pool.agentAddress,Agent transferred; resync via migration helpers) (contracts/core/AgentLiquidityMarketplaceV6.sol#1353-1356)
+AgentLiquidityMarketplaceV6._countActiveLoansFromArray(address) (contracts/core/AgentLiquidityMarketplaceV6.sol#1412-1423) uses timestamp for comparisons
+	Dangerous comparisons:
+	- loans[loanIds[i]].state == LoanState.ACTIVE (contracts/core/AgentLiquidityMarketplaceV6.sol#1417)
+AgentLiquidityMarketplaceV6_Patch.withdrawLiquidity(uint256,uint256) (contracts/core/AgentLiquidityMarketplaceV6_Patch.sol#128-143) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(position.amount >= amount,insufficient position) (contracts/core/AgentLiquidityMarketplaceV6_Patch.sol#131)
+AgentLiquidityMarketplaceV6_Patch.repayLoan(uint256) (contracts/core/AgentLiquidityMarketplaceV6_Patch.sol#224-246) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(loan.state == LoanState.ACTIVE,not active) (contracts/core/AgentLiquidityMarketplaceV6_Patch.sol#226)
+	- require(bool,string)(loan.borrower == msg.sender,not borrower) (contracts/core/AgentLiquidityMarketplaceV6_Patch.sol#227)
+	- elapsed > loan.endTime - loan.startTime (contracts/core/AgentLiquidityMarketplaceV6_Patch.sol#230)
+AgentRegistry.deactivateAgent(address) (contracts/core/AgentRegistry.sol#72-79) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(agents[_agent].isActive,Agent already deactivated) (contracts/core/AgentRegistry.sol#74)
+AgentRegistry.reactivateAgent(address) (contracts/core/AgentRegistry.sol#85-92) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(! agents[_agent].isActive,Agent already active) (contracts/core/AgentRegistry.sol#87)
+AgentRegistry.isAgentActive(address) (contracts/core/AgentRegistry.sol#109-111) uses timestamp for comparisons
+	Dangerous comparisons:
+	- isRegistered[_agent] && agents[_agent].isActive (contracts/core/AgentRegistry.sol#110)
+AgentRegistryV2.setAgentWallet(uint256,address,uint256,bytes) (contracts/core/AgentRegistryV2.sol#140-162) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(block.timestamp <= deadline,Signature expired) (contracts/core/AgentRegistryV2.sol#146)
+AgentRegistryV2.deactivateAgent(uint256) (contracts/core/AgentRegistryV2.sol#202-209) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(agents[agentId].isActive,Agent already deactivated) (contracts/core/AgentRegistryV2.sol#204)
+AgentRegistryV2.reactivateAgent(uint256) (contracts/core/AgentRegistryV2.sol#215-222) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(! agents[agentId].isActive,Agent already active) (contracts/core/AgentRegistryV2.sol#217)
+AgentRegistryV2.isAgentActive(address) (contracts/core/AgentRegistryV2.sol#240-243) uses timestamp for comparisons
+	Dangerous comparisons:
+	- agentId != 0 && agents[agentId].isActive (contracts/core/AgentRegistryV2.sol#242)
+LendingPool.approveLoan(uint256) (contracts/core/LendingPool.sol#141-167) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(loan.state == LoanState.REQUESTED,Loan not in requested state) (contracts/core/LendingPool.sol#143)
+	- require(bool,string)(availableLiquidity >= loan.amount,Insufficient liquidity) (contracts/core/LendingPool.sol#144)
+LendingPool.repayLoan(uint256) (contracts/core/LendingPool.sol#173-206) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(loan.borrower == msg.sender,Not loan borrower) (contracts/core/LendingPool.sol#175)
+	- require(bool,string)(loan.state == LoanState.ACTIVE,Loan not active) (contracts/core/LendingPool.sol#176)
+	- onTime = block.timestamp <= loan.endTime (contracts/core/LendingPool.sol#187)
+LendingPool.liquidateLoan(uint256) (contracts/core/LendingPool.sol#212-229) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(loan.state == LoanState.ACTIVE,Loan not active) (contracts/core/LendingPool.sol#214)
+	- require(bool,string)(block.timestamp > loan.endTime,Loan not past due) (contracts/core/LendingPool.sol#215)
+LendingPool.withdrawLiquidity(uint256) (contracts/core/LendingPool.sol#250-260) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(_amount <= availableLiquidity,Insufficient available liquidity) (contracts/core/LendingPool.sol#252)
+LendingPoolV2.approveLoan(uint256) (contracts/core/LendingPoolV2.sol#141-167) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(loan.state == LoanState.REQUESTED,Loan not in requested state) (contracts/core/LendingPoolV2.sol#143)
+	- require(bool,string)(availableLiquidity >= loan.amount,Insufficient liquidity) (contracts/core/LendingPoolV2.sol#144)
+LendingPoolV2.repayLoan(uint256) (contracts/core/LendingPoolV2.sol#173-206) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(loan.borrower == msg.sender,Not loan borrower) (contracts/core/LendingPoolV2.sol#175)
+	- require(bool,string)(loan.state == LoanState.ACTIVE,Loan not active) (contracts/core/LendingPoolV2.sol#176)
+	- onTime = block.timestamp <= loan.endTime (contracts/core/LendingPoolV2.sol#187)
+LendingPoolV2.liquidateLoan(uint256) (contracts/core/LendingPoolV2.sol#212-229) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(loan.state == LoanState.ACTIVE,Loan not active) (contracts/core/LendingPoolV2.sol#214)
+	- require(bool,string)(block.timestamp > loan.endTime,Loan not past due) (contracts/core/LendingPoolV2.sol#215)
+LendingPoolV2.withdrawLiquidity(uint256) (contracts/core/LendingPoolV2.sol#250-260) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(_amount <= availableLiquidity,Insufficient available liquidity) (contracts/core/LendingPoolV2.sol#252)
+LendingPoolV2.calculateRepaymentAmount(uint256) (contracts/core/LendingPoolV2.sol#302-308) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(loan.state == LoanState.ACTIVE,Loan not active) (contracts/core/LendingPoolV2.sol#304)
+LendingPoolV3._canAutoApprove(address,uint256) (contracts/core/LendingPoolV3.sol#159-168) uses timestamp for comparisons
+	Dangerous comparisons:
+	- availableLiquidity < amount (contracts/core/LendingPoolV3.sol#162)
+LendingPoolV3._approveLoanInternal(uint256) (contracts/core/LendingPoolV3.sol#174-197) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(loan.state == LoanState.REQUESTED,Loan not in requested state) (contracts/core/LendingPoolV3.sol#176)
+	- require(bool,string)(availableLiquidity >= loan.amount,Insufficient liquidity) (contracts/core/LendingPoolV3.sol#177)
+LendingPoolV3.repayLoan(uint256) (contracts/core/LendingPoolV3.sol#212-247) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(loan.borrower == msg.sender,Not loan borrower) (contracts/core/LendingPoolV3.sol#214)
+	- require(bool,string)(loan.state == LoanState.ACTIVE,Loan not active) (contracts/core/LendingPoolV3.sol#215)
+	- onTime = block.timestamp <= loan.endTime (contracts/core/LendingPoolV3.sol#226)
+LendingPoolV3.liquidateLoan(uint256) (contracts/core/LendingPoolV3.sol#253-274) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(loan.state == LoanState.ACTIVE,Loan not active) (contracts/core/LendingPoolV3.sol#255)
+	- require(bool,string)(block.timestamp > loan.endTime,Loan not past due) (contracts/core/LendingPoolV3.sol#256)
+LendingPoolV3.withdrawLiquidity(uint256) (contracts/core/LendingPoolV3.sol#295-305) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(_amount <= availableLiquidity,Insufficient available liquidity) (contracts/core/LendingPoolV3.sol#297)
+LendingPoolV3.calculateRepaymentAmount(uint256) (contracts/core/LendingPoolV3.sol#365-371) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(loan.state == LoanState.ACTIVE,Loan not active) (contracts/core/LendingPoolV3.sol#367)
+ReputationManager.initializeReputation(address) (contracts/core/ReputationManager.sol#63-77) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(reputation[_agent].lastUpdated == 0,Reputation already initialized) (contracts/core/ReputationManager.sol#65)
+ReputationManager.recordLoanCompletion(address,uint256,bool) (contracts/core/ReputationManager.sol#85-115) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(reputation[_agent].lastUpdated > 0,Reputation not initialized) (contracts/core/ReputationManager.sol#90)
+	- newScore > MAX_SCORE (contracts/core/ReputationManager.sol#103)
+	- rep.score > penalty (contracts/core/ReputationManager.sol#110)
+ReputationManager.recordDefault(address,uint256) (contracts/core/ReputationManager.sol#122-137) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(reputation[_agent].lastUpdated > 0,Reputation not initialized) (contracts/core/ReputationManager.sol#123)
+	- rep.score > penalty (contracts/core/ReputationManager.sol#133)
+ReputationManager.recordBorrow(address,uint256) (contracts/core/ReputationManager.sol#144-147) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(reputation[_agent].lastUpdated > 0,Reputation not initialized) (contracts/core/ReputationManager.sol#145)
+ReputationManager.getReputationScore(address) (contracts/core/ReputationManager.sol#154-157) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(reputation[_agent].lastUpdated > 0,Reputation not initialized) (contracts/core/ReputationManager.sol#155)
+ReputationManager.calculateCreditLimit(address) (contracts/core/ReputationManager.sol#164-181) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(reputation[_agent].lastUpdated > 0,Reputation not initialized) (contracts/core/ReputationManager.sol#165)
+	- score >= 800 (contracts/core/ReputationManager.sol#170)
+	- score >= 600 (contracts/core/ReputationManager.sol#172)
+	- score >= 400 (contracts/core/ReputationManager.sol#174)
+	- score >= 200 (contracts/core/ReputationManager.sol#176)
+ReputationManager.calculateCollateralRequirement(address) (contracts/core/ReputationManager.sol#188-202) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(reputation[_agent].lastUpdated > 0,Reputation not initialized) (contracts/core/ReputationManager.sol#189)
+	- score >= 700 (contracts/core/ReputationManager.sol#193)
+	- score >= 500 (contracts/core/ReputationManager.sol#195)
+	- score >= 300 (contracts/core/ReputationManager.sol#197)
+ReputationManager.getReputationData(address) (contracts/core/ReputationManager.sol#209-212) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(reputation[_agent].lastUpdated > 0,Reputation not initialized) (contracts/core/ReputationManager.sol#210)
+ReputationManagerV2.giveFeedback(uint256,int128,uint8,string,string,string,string,bytes32) (contracts/core/ReputationManagerV2.sol#103-161) uses timestamp for comparisons
+	Dangerous comparisons:
+	- feedbackHash == bytes32(0) (contracts/core/ReputationManagerV2.sol#116)
+	- require(bool,string)(feedbacks[feedbackHash].timestamp == 0,Feedback already exists) (contracts/core/ReputationManagerV2.sol#130)
+ReputationManagerV2.readFeedback(bytes32) (contracts/core/ReputationManagerV2.sol#168-175) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(feedbacks[feedbackHash].timestamp != 0,Feedback does not exist) (contracts/core/ReputationManagerV2.sol#173)
+ReputationManagerV2.readAllFeedback(uint256,address[],string[]) (contracts/core/ReputationManagerV2.sol#184-237) uses timestamp for comparisons
+	Dangerous comparisons:
+	- fb.clientAddress == clientAddresses[j] (contracts/core/ReputationManagerV2.sol#204)
+	- keccak256(bytes)(bytes(fb.tag1)) == keccak256(bytes)(bytes(tags[j_scope_0])) || keccak256(bytes)(bytes(fb.tag2)) == keccak256(bytes)(bytes(tags[j_scope_0])) (contracts/core/ReputationManagerV2.sol#214-215)
+ReputationManagerV2.getSummary(uint256,address[],string[]) (contracts/core/ReputationManagerV2.sol#249-305) uses timestamp for comparisons
+	Dangerous comparisons:
+	- fb.clientAddress == clientAddresses[j] (contracts/core/ReputationManagerV2.sol#277)
+	- keccak256(bytes)(bytes(fb.tag1)) == keccak256(bytes)(bytes(tags[j_scope_0])) || keccak256(bytes)(bytes(fb.tag2)) == keccak256(bytes)(bytes(tags[j_scope_0])) (contracts/core/ReputationManagerV2.sol#284-285)
+	- fb.value < minValue (contracts/core/ReputationManagerV2.sol#295)
+	- fb.value > maxValue (contracts/core/ReputationManagerV2.sol#296)
+ReputationManagerV2.revokeFeedback(bytes32) (contracts/core/ReputationManagerV2.sol#311-320) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(fb.timestamp != 0,Feedback does not exist) (contracts/core/ReputationManagerV2.sol#313)
+	- require(bool,string)(fb.clientAddress == msg.sender,Not feedback author) (contracts/core/ReputationManagerV2.sol#314)
+	- require(bool,string)(! fb.revoked,Already revoked) (contracts/core/ReputationManagerV2.sol#315)
+ReputationManagerV2.appendResponse(bytes32,string) (contracts/core/ReputationManagerV2.sol#327-343) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(fb.timestamp != 0,Feedback does not exist) (contracts/core/ReputationManagerV2.sol#331)
+ReputationManagerV2.initializeReputation(uint256) (contracts/core/ReputationManagerV2.sol#351-365) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(reputation[agentId].lastUpdated == 0,Reputation already initialized) (contracts/core/ReputationManagerV2.sol#353)
+ReputationManagerV2._recordLoanCompletion(uint256,uint256,bool) (contracts/core/ReputationManagerV2.sol#370-393) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(reputation[agentId].lastUpdated > 0,Reputation not initialized) (contracts/core/ReputationManagerV2.sol#375)
+	- rep.score + bonus <= MAX_SCORE (contracts/core/ReputationManagerV2.sol#385)
+ReputationManagerV2._recordDefault(uint256,uint256) (contracts/core/ReputationManagerV2.sol#398-414) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(reputation[agentId].lastUpdated > 0,Reputation not initialized) (contracts/core/ReputationManagerV2.sol#399)
+	- rep.score >= penalty (contracts/core/ReputationManagerV2.sol#407)
+ReputationManagerV2._recordBorrow(uint256,uint256) (contracts/core/ReputationManagerV2.sol#419-422) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(reputation[agentId].lastUpdated > 0,Reputation not initialized) (contracts/core/ReputationManagerV2.sol#420)
+ReputationManagerV2.getReputationScore(uint256) (contracts/core/ReputationManagerV2.sol#467-474) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(reputation[agentId].lastUpdated > 0,Reputation not initialized) (contracts/core/ReputationManagerV2.sol#472)
+ReputationManagerV2.calculateCreditLimit(uint256) (contracts/core/ReputationManagerV2.sol#481-502) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(reputation[agentId].lastUpdated > 0,Reputation not initialized) (contracts/core/ReputationManagerV2.sol#486)
+	- score >= 800 (contracts/core/ReputationManagerV2.sol#491)
+	- score >= 600 (contracts/core/ReputationManagerV2.sol#493)
+	- score >= 400 (contracts/core/ReputationManagerV2.sol#495)
+	- score >= 200 (contracts/core/ReputationManagerV2.sol#497)
+ReputationManagerV2.calculateCollateralRequirement(uint256) (contracts/core/ReputationManagerV2.sol#509-530) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(reputation[agentId].lastUpdated > 0,Reputation not initialized) (contracts/core/ReputationManagerV2.sol#514)
+	- score >= 800 (contracts/core/ReputationManagerV2.sol#519)
+	- score >= 600 (contracts/core/ReputationManagerV2.sol#521)
+	- score >= 400 (contracts/core/ReputationManagerV2.sol#523)
+	- score >= 200 (contracts/core/ReputationManagerV2.sol#525)
+ReputationManagerV2.getReputationScore(address) (contracts/core/ReputationManagerV2.sol#537-546) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(reputation[agentId].lastUpdated > 0,Reputation not initialized) (contracts/core/ReputationManagerV2.sol#544)
+ReputationManagerV3.recordLoanCompletion(address,uint256,bool) (contracts/core/ReputationManagerV3.sol#228-269) uses timestamp for comparisons
+	Dangerous comparisons:
+	- block.timestamp >= windowStart[agentId] + reputationGainWindow (contracts/core/ReputationManagerV3.sol#247)
+ValidationRegistry.validationRequest(address,uint256,string,bytes32) (contracts/core/ValidationRegistry.sol#156-212) uses timestamp for comparisons
+	Dangerous comparisons:
+	- requestHash == bytes32(0) (contracts/core/ValidationRegistry.sol#166)
+	- require(bool,string)(validations[requestHash].timestamp == 0,Validation request already exists) (contracts/core/ValidationRegistry.sol#179-182)
+ValidationRegistry.validationResponse(bytes32,uint8,string,bytes32,string) (contracts/core/ValidationRegistry.sol#222-257) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(validation.timestamp != 0,Validation request does not exist) (contracts/core/ValidationRegistry.sol#231)
+	- require(bool,string)(msg.sender == validation.validatorAddress,Not the assigned validator) (contracts/core/ValidationRegistry.sol#232-235)
+	- require(bool,string)(validation.status == ValidationStatus.PENDING,Validation already completed) (contracts/core/ValidationRegistry.sol#236-239)
+ValidationRegistry.disputeValidation(bytes32) (contracts/core/ValidationRegistry.sol#263-282) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(validation.timestamp != 0,Validation does not exist) (contracts/core/ValidationRegistry.sol#266)
+	- require(bool,string)(msg.sender == validation.requester || msg.sender == agentRegistry.ownerOf(validation.agentId),Not authorized to dispute) (contracts/core/ValidationRegistry.sol#267-271)
+	- require(bool,string)(validation.status == ValidationStatus.APPROVED || validation.status == ValidationStatus.REJECTED,Can only dispute completed validations) (contracts/core/ValidationRegistry.sol#272-276)
+ValidationRegistry.getValidationStatus(bytes32) (contracts/core/ValidationRegistry.sol#289-296) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(validations[requestHash].timestamp != 0,Validation does not exist) (contracts/core/ValidationRegistry.sol#294)
+ValidationRegistry.getSummary(uint256,address[],string) (contracts/core/ValidationRegistry.sol#308-378) uses timestamp for comparisons
+	Dangerous comparisons:
+	- validation.status == ValidationStatus.PENDING || validation.status == ValidationStatus.DISPUTED (contracts/core/ValidationRegistry.sol#339-340)
+	- validation.validatorAddress == validatorAddresses[j] (contracts/core/ValidationRegistry.sol#348)
+	- keccak256(bytes)(bytes(validation.tag)) != keccak256(bytes)(bytes(tag)) (contracts/core/ValidationRegistry.sol#357)
+	- validation.status == ValidationStatus.APPROVED (contracts/core/ValidationRegistry.sol#365)
+	- validation.status == ValidationStatus.REJECTED (contracts/core/ValidationRegistry.sol#367)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#block-timestamp
+
+Detector: cyclomatic-complexity
+ReputationManagerV2.getSummary(uint256,address[],string[]) (contracts/core/ReputationManagerV2.sol#249-305) has a high cyclomatic complexity (12).
+ValidationRegistry.getSummary(uint256,address[],string) (contracts/core/ValidationRegistry.sol#308-378) has a high cyclomatic complexity (12).
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#cyclomatic-complexity
+
+Detector: dead-code
+AgentLiquidityMarketplaceV6._countActiveLoansFromArray(address) (contracts/core/AgentLiquidityMarketplaceV6.sol#1412-1423) is never used and should be removed
+AgentLiquidityMarketplaceV6_Patch._countActiveLoans(address) (contracts/core/AgentLiquidityMarketplaceV6_Patch.sol#188-190) is never used and should be removed
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#dead-code
+
+Detector: naming-convention
+Contract AgentLiquidityMarketplaceV6_Patch (contracts/core/AgentLiquidityMarketplaceV6_Patch.sol#26-279) is not in CapWords
+Parameter AgentRegistry.registerAgent(string)._metadata (contracts/core/AgentRegistry.sol#36) is not in mixedCase
+Parameter AgentRegistry.updateMetadata(string)._metadata (contracts/core/AgentRegistry.sol#58) is not in mixedCase
+Parameter AgentRegistry.deactivateAgent(address)._agent (contracts/core/AgentRegistry.sol#72) is not in mixedCase
+Parameter AgentRegistry.reactivateAgent(address)._agent (contracts/core/AgentRegistry.sol#85) is not in mixedCase
+Parameter AgentRegistry.getAgentInfo(address)._agent (contracts/core/AgentRegistry.sol#99) is not in mixedCase
+Parameter AgentRegistry.isAgentActive(address)._agent (contracts/core/AgentRegistry.sol#109) is not in mixedCase
+Parameter LendingPool.requestLoan(uint256,uint256)._amount (contracts/core/LendingPool.sol#94) is not in mixedCase
+Parameter LendingPool.requestLoan(uint256,uint256)._durationDays (contracts/core/LendingPool.sol#94) is not in mixedCase
+Parameter LendingPool.approveLoan(uint256)._loanId (contracts/core/LendingPool.sol#141) is not in mixedCase
+Parameter LendingPool.repayLoan(uint256)._loanId (contracts/core/LendingPool.sol#173) is not in mixedCase
+Parameter LendingPool.liquidateLoan(uint256)._loanId (contracts/core/LendingPool.sol#212) is not in mixedCase
+Parameter LendingPool.depositLiquidity(uint256)._amount (contracts/core/LendingPool.sol#235) is not in mixedCase
+Parameter LendingPool.withdrawLiquidity(uint256)._amount (contracts/core/LendingPool.sol#250) is not in mixedCase
+Parameter LendingPool.calculateInterestRate(uint256)._reputationScore (contracts/core/LendingPool.sol#267) is not in mixedCase
+Parameter LendingPool.calculateInterest(uint256,uint256,uint256)._principal (contracts/core/LendingPool.sol#289) is not in mixedCase
+Parameter LendingPool.calculateInterest(uint256,uint256,uint256)._interestRate (contracts/core/LendingPool.sol#290) is not in mixedCase
+Parameter LendingPool.calculateInterest(uint256,uint256,uint256)._durationDays (contracts/core/LendingPool.sol#291) is not in mixedCase
+Parameter LendingPool.getBorrowerLoans(address)._borrower (contracts/core/LendingPool.sol#302) is not in mixedCase
+Parameter LendingPool.getLoan(uint256)._loanId (contracts/core/LendingPool.sol#311) is not in mixedCase
+Parameter LendingPoolV2.requestLoan(uint256,uint256)._amount (contracts/core/LendingPoolV2.sol#94) is not in mixedCase
+Parameter LendingPoolV2.requestLoan(uint256,uint256)._durationDays (contracts/core/LendingPoolV2.sol#94) is not in mixedCase
+Parameter LendingPoolV2.approveLoan(uint256)._loanId (contracts/core/LendingPoolV2.sol#141) is not in mixedCase
+Parameter LendingPoolV2.repayLoan(uint256)._loanId (contracts/core/LendingPoolV2.sol#173) is not in mixedCase
+Parameter LendingPoolV2.liquidateLoan(uint256)._loanId (contracts/core/LendingPoolV2.sol#212) is not in mixedCase
+Parameter LendingPoolV2.depositLiquidity(uint256)._amount (contracts/core/LendingPoolV2.sol#235) is not in mixedCase
+Parameter LendingPoolV2.withdrawLiquidity(uint256)._amount (contracts/core/LendingPoolV2.sol#250) is not in mixedCase
+Parameter LendingPoolV2.calculateInterestRate(uint256)._reputationScore (contracts/core/LendingPoolV2.sol#267) is not in mixedCase
+Parameter LendingPoolV2.calculateInterest(uint256,uint256,uint256)._principal (contracts/core/LendingPoolV2.sol#289) is not in mixedCase
+Parameter LendingPoolV2.calculateInterest(uint256,uint256,uint256)._interestRate (contracts/core/LendingPoolV2.sol#290) is not in mixedCase
+Parameter LendingPoolV2.calculateInterest(uint256,uint256,uint256)._durationDays (contracts/core/LendingPoolV2.sol#291) is not in mixedCase
+Parameter LendingPoolV2.calculateRepaymentAmount(uint256)._loanId (contracts/core/LendingPoolV2.sol#302) is not in mixedCase
+Parameter LendingPoolV2.getBorrowerLoans(address)._borrower (contracts/core/LendingPoolV2.sol#315) is not in mixedCase
+Parameter LendingPoolV2.getLoan(uint256)._loanId (contracts/core/LendingPoolV2.sol#324) is not in mixedCase
+Parameter LendingPoolV3.requestLoan(uint256,uint256)._amount (contracts/core/LendingPoolV3.sol#104) is not in mixedCase
+Parameter LendingPoolV3.requestLoan(uint256,uint256)._durationDays (contracts/core/LendingPoolV3.sol#104) is not in mixedCase
+Parameter LendingPoolV3.approveLoan(uint256)._loanId (contracts/core/LendingPoolV3.sol#203) is not in mixedCase
+Parameter LendingPoolV3.repayLoan(uint256)._loanId (contracts/core/LendingPoolV3.sol#212) is not in mixedCase
+Parameter LendingPoolV3.liquidateLoan(uint256)._loanId (contracts/core/LendingPoolV3.sol#253) is not in mixedCase
+Parameter LendingPoolV3.depositLiquidity(uint256)._amount (contracts/core/LendingPoolV3.sol#280) is not in mixedCase
+Parameter LendingPoolV3.withdrawLiquidity(uint256)._amount (contracts/core/LendingPoolV3.sol#295) is not in mixedCase
+Parameter LendingPoolV3.setAutoApproveConfig(bool,uint256,uint256)._enabled (contracts/core/LendingPoolV3.sol#314) is not in mixedCase
+Parameter LendingPoolV3.setAutoApproveConfig(bool,uint256,uint256)._maxAmount (contracts/core/LendingPoolV3.sol#315) is not in mixedCase
+Parameter LendingPoolV3.setAutoApproveConfig(bool,uint256,uint256)._minReputation (contracts/core/LendingPoolV3.sol#316) is not in mixedCase
+Parameter LendingPoolV3.calculateInterestRate(uint256)._reputationScore (contracts/core/LendingPoolV3.sol#330) is not in mixedCase
+Parameter LendingPoolV3.calculateInterest(uint256,uint256,uint256)._principal (contracts/core/LendingPoolV3.sol#352) is not in mixedCase
+Parameter LendingPoolV3.calculateInterest(uint256,uint256,uint256)._interestRate (contracts/core/LendingPoolV3.sol#353) is not in mixedCase
+Parameter LendingPoolV3.calculateInterest(uint256,uint256,uint256)._durationDays (contracts/core/LendingPoolV3.sol#354) is not in mixedCase
+Parameter LendingPoolV3.calculateRepaymentAmount(uint256)._loanId (contracts/core/LendingPoolV3.sol#365) is not in mixedCase
+Parameter LendingPoolV3.getBorrowerLoans(address)._borrower (contracts/core/LendingPoolV3.sol#378) is not in mixedCase
+Parameter LendingPoolV3.getLoan(uint256)._loanId (contracts/core/LendingPoolV3.sol#387) is not in mixedCase
+Parameter ReputationManager.setLendingPool(address)._lendingPool (contracts/core/ReputationManager.sol#52) is not in mixedCase
+Parameter ReputationManager.initializeReputation(address)._agent (contracts/core/ReputationManager.sol#63) is not in mixedCase
+Parameter ReputationManager.recordLoanCompletion(address,uint256,bool)._agent (contracts/core/ReputationManager.sol#86) is not in mixedCase
+Parameter ReputationManager.recordLoanCompletion(address,uint256,bool)._amount (contracts/core/ReputationManager.sol#87) is not in mixedCase
+Parameter ReputationManager.recordLoanCompletion(address,uint256,bool)._onTime (contracts/core/ReputationManager.sol#88) is not in mixedCase
+Parameter ReputationManager.recordDefault(address,uint256)._agent (contracts/core/ReputationManager.sol#122) is not in mixedCase
+Parameter ReputationManager.recordDefault(address,uint256)._amount (contracts/core/ReputationManager.sol#122) is not in mixedCase
+Parameter ReputationManager.recordBorrow(address,uint256)._agent (contracts/core/ReputationManager.sol#144) is not in mixedCase
+Parameter ReputationManager.recordBorrow(address,uint256)._amount (contracts/core/ReputationManager.sol#144) is not in mixedCase
+Parameter ReputationManager.getReputationScore(address)._agent (contracts/core/ReputationManager.sol#154) is not in mixedCase
+Parameter ReputationManager.calculateCreditLimit(address)._agent (contracts/core/ReputationManager.sol#164) is not in mixedCase
+Parameter ReputationManager.calculateCollateralRequirement(address)._agent (contracts/core/ReputationManager.sol#188) is not in mixedCase
+Parameter ReputationManager.getReputationData(address)._agent (contracts/core/ReputationManager.sol#209) is not in mixedCase
+Parameter ReputationManagerV2.setLendingPool(address)._lendingPool (contracts/core/ReputationManagerV2.sol#83) is not in mixedCase
+Parameter ReputationManagerV2.recordLoanCompletion(uint256,uint256,bool)._amount (contracts/core/ReputationManagerV2.sol#432) is not in mixedCase
+Parameter ReputationManagerV2.recordLoanCompletion(uint256,uint256,bool)._onTime (contracts/core/ReputationManagerV2.sol#433) is not in mixedCase
+Parameter ReputationManagerV2.recordDefault(uint256,uint256)._amount (contracts/core/ReputationManagerV2.sol#443) is not in mixedCase
+Parameter ReputationManagerV2.recordBorrow(uint256,uint256)._amount (contracts/core/ReputationManagerV2.sol#455) is not in mixedCase
+Parameter ReputationManagerV2.recordBorrow(address,uint256)._amount (contracts/core/ReputationManagerV2.sol#586) is not in mixedCase
+Parameter ReputationManagerV2.recordLoanCompletion(address,uint256,bool)._amount (contracts/core/ReputationManagerV2.sol#597) is not in mixedCase
+Parameter ReputationManagerV2.recordLoanCompletion(address,uint256,bool)._onTime (contracts/core/ReputationManagerV2.sol#598) is not in mixedCase
+Parameter ReputationManagerV2.recordDefault(address,uint256)._amount (contracts/core/ReputationManagerV2.sol#608) is not in mixedCase
+Parameter ReputationManagerV3.setValidationRegistry(address)._validationRegistry (contracts/core/ReputationManagerV3.sol#117) is not in mixedCase
+Parameter ReputationManagerV3.setScoringParameters(uint256,uint256,uint256,uint256)._onTimeBonus (contracts/core/ReputationManagerV3.sol#126) is not in mixedCase
+Parameter ReputationManagerV3.setScoringParameters(uint256,uint256,uint256,uint256)._defaultPenaltyBase (contracts/core/ReputationManagerV3.sol#127) is not in mixedCase
+Parameter ReputationManagerV3.setScoringParameters(uint256,uint256,uint256,uint256)._defaultPenaltyLarge (contracts/core/ReputationManagerV3.sol#128) is not in mixedCase
+Parameter ReputationManagerV3.setScoringParameters(uint256,uint256,uint256,uint256)._largeLoanThreshold (contracts/core/ReputationManagerV3.sol#129) is not in mixedCase
+Parameter ReputationManagerV3.setValidationBonusParameters(uint256,uint256)._bonusThreshold (contracts/core/ReputationManagerV3.sol#168) is not in mixedCase
+Parameter ReputationManagerV3.setValidationBonusParameters(uint256,uint256)._creditBonus (contracts/core/ReputationManagerV3.sol#169) is not in mixedCase
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#conformance-to-solidity-naming-conventions
+
+Detector: too-many-digits
+ReputationManager.calculateCreditLimit(address) (contracts/core/ReputationManager.sol#164-181) uses literals with too many digits:
+	- 100000 * 10 ** 6 (contracts/core/ReputationManager.sol#171)
+MockUSDC.constructor() (contracts/tokens/MockUSDC.sol#13-16) uses literals with too many digits:
+	- _mint(msg.sender,1000000 * 10 ** 6) (contracts/tokens/MockUSDC.sol#15)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#too-many-digits
+
+Detector: unindexed-event-address
+Event ReentrancyAttacker.ReentryAttempted(address,bool) (contracts/test/ReentrancyAttacker.sol#33) has address parameters but no indexed parameters
+Event Pausable.Paused(address) (node_modules/@openzeppelin/contracts/utils/Pausable.sol#23) has address parameters but no indexed parameters
+Event Pausable.Unpaused(address) (node_modules/@openzeppelin/contracts/utils/Pausable.sol#28) has address parameters but no indexed parameters
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#unindexed-event-address-parameters
+
+Detector: cache-array-length
+Loop condition i < approvedValidators.length (contracts/core/ValidationRegistry.sol#129) should use cached array length instead of referencing `length` member of the storage array.
+ Loop condition i_scope_0 < approvedValidators.length (contracts/core/ValidationRegistry.sol#137) should use cached array length instead of referencing `length` member of the storage array.
+ Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#cache-array-length
+
+Detector: immutable-states
+AgentLiquidityMarketplace.agentRegistry (contracts/core/AgentLiquidityMarketplace.sol#21) should be immutable 
+AgentLiquidityMarketplace.reputationManager (contracts/core/AgentLiquidityMarketplace.sol#22) should be immutable 
+AgentLiquidityMarketplace.usdcToken (contracts/core/AgentLiquidityMarketplace.sol#23) should be immutable 
+LendingPool.agentRegistry (contracts/core/LendingPool.sol#40) should be immutable 
+LendingPool.reputationManager (contracts/core/LendingPool.sol#41) should be immutable 
+LendingPool.usdcToken (contracts/core/LendingPool.sol#42) should be immutable 
+LendingPoolV2.agentRegistry (contracts/core/LendingPoolV2.sol#40) should be immutable 
+LendingPoolV2.reputationManager (contracts/core/LendingPoolV2.sol#41) should be immutable 
+LendingPoolV2.usdcToken (contracts/core/LendingPoolV2.sol#42) should be immutable 
+LendingPoolV3.agentRegistry (contracts/core/LendingPoolV3.sol#44) should be immutable 
+LendingPoolV3.reputationManager (contracts/core/LendingPoolV3.sol#45) should be immutable 
+LendingPoolV3.usdcToken (contracts/core/LendingPoolV3.sol#46) should be immutable 
+ReputationManager.agentRegistry (contracts/core/ReputationManager.sol#22) should be immutable 
+ReputationManagerV3.agentRegistry (contracts/core/ReputationManagerV3.sol#14) should be immutable 
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#state-variables-that-could-be-declared-immutable
+. analyzed (55 contracts with 100 detectors), 199 result(s) found

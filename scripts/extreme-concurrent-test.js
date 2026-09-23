@@ -22,9 +22,9 @@ const RPC_URLS = {
 
 // Use all available test agents
 const AGENTS = [
-    { name: 'Agent 1', key: process.env.PRIVATE_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000' },
-    { name: 'Agent 2', key: 'process.env.TEST_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000'' },
-    { name: 'Agent 3', key: 'process.env.TEST_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000'' },
+    { name: 'Agent 1', key: process.env.PRIVATE_KEY },
+    { name: 'Agent 2', key: process.env.TEST_KEY },
+    { name: 'Agent 3', key: process.env.TEST_KEY },
 ];
 
 async function runAgentCycles(agentConfig, provider, addresses, keys, agentNum) {

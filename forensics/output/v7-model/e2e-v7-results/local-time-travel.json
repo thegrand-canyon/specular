@@ -1,0 +1,328 @@
+{
+  "scenario": "local-time-travel",
+  "chainId": 31337,
+  "runAt": "2026-09-23T00:37:18.516Z",
+  "note": "LOCAL hardhat with time travel — nothing broadcast to any network",
+  "passed": 46,
+  "failed": 0,
+  "checks": [
+    {
+      "scenario": "setup",
+      "label": "levers",
+      "ok": null,
+      "detail": "live arc-staging values: k=2, step=100, boot=100, refDur=7d, minHold=1d, minSupply=10, fee=100bps, M-1 on, rate 5/day, lockout 180d"
+    },
+    {
+      "scenario": "setup",
+      "label": "owner pool authorization REVOKED — every measured mechanism below runs through the marketplace",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "setup",
+      "label": "agent G1 (#1)",
+      "ok": null,
+      "detail": "score 605 maxRepaid 200.0 ladder 500.0 limit 500.0 coll 0%"
+    },
+    {
+      "scenario": "setup",
+      "label": "agent G2 (#2)",
+      "ok": null,
+      "detail": "score 605 maxRepaid 1200.0 ladder 2500.0 limit 2500.0 coll 0%"
+    },
+    {
+      "scenario": "setup",
+      "label": "agent G3 (#3)",
+      "ok": null,
+      "detail": "score 450 maxRepaid 100.0 ladder 300.0 limit 300.0 coll 100%"
+    },
+    {
+      "scenario": "setup",
+      "label": "agent G4 (#4)",
+      "ok": null,
+      "detail": "score 605 maxRepaid 500.0 ladder 1100.0 limit 1100.0 coll 0%"
+    },
+    {
+      "scenario": "setup",
+      "label": "agent G5 (#5)",
+      "ok": null,
+      "detail": "score 605 maxRepaid 600.0 ladder 1300.0 limit 1300.0 coll 0%"
+    },
+    {
+      "scenario": "setup",
+      "label": "agent G6 (#6)",
+      "ok": null,
+      "detail": "score 605 maxRepaid 500.0 ladder 1100.0 limit 1100.0 coll 0%"
+    },
+    {
+      "scenario": "L1",
+      "label": "G1: default of 300 USDC costs 50 points (floor: 100·300/1000 = 30 < base 50)",
+      "ok": true,
+      "detail": "605 -> 555"
+    },
+    {
+      "scenario": "L2",
+      "label": "G1: maxRepaidPrincipal reset 200.0 -> 0",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "L2",
+      "label": "G1: CreditCapacityUpdated(agent, 0) emitted",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "L2",
+      "label": "G1: AgentLockedOut(agent, now + 180 days) emitted",
+      "ok": true,
+      "detail": "until 2154128246"
+    },
+    {
+      "scenario": "L2",
+      "label": "G1: isLockedOut == true and creditLimit forced to 0",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "L2",
+      "label": "G1: a locked-out agent cannot borrow (\"Exceeds credit limit\")",
+      "ok": true,
+      "detail": "VM Exception while processing transaction: reverted with reason string 'Exceeds credit limit'"
+    },
+    {
+      "scenario": "L1",
+      "label": "G5: default of 1000 USDC costs 100 points (100·1000/1000 = 100 (at the threshold))",
+      "ok": true,
+      "detail": "605 -> 505"
+    },
+    {
+      "scenario": "L2",
+      "label": "G5: maxRepaidPrincipal reset 600.0 -> 0",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "L2",
+      "label": "G5: CreditCapacityUpdated(agent, 0) emitted",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "L2",
+      "label": "G5: AgentLockedOut(agent, now + 180 days) emitted",
+      "ok": true,
+      "detail": "until 2154819452"
+    },
+    {
+      "scenario": "L2",
+      "label": "G5: isLockedOut == true and creditLimit forced to 0",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "L2",
+      "label": "G5: a locked-out agent cannot borrow (\"Exceeds credit limit\")",
+      "ok": true,
+      "detail": "VM Exception while processing transaction: reverted with reason string 'Exceeds credit limit'"
+    },
+    {
+      "scenario": "L1",
+      "label": "G2: default of 2000 USDC costs 200 points (100·2000/1000 = 200 (scales with size))",
+      "ok": true,
+      "detail": "605 -> 405"
+    },
+    {
+      "scenario": "L2",
+      "label": "G2: maxRepaidPrincipal reset 1200.0 -> 0",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "L2",
+      "label": "G2: CreditCapacityUpdated(agent, 0) emitted",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "L2",
+      "label": "G2: AgentLockedOut(agent, now + 180 days) emitted",
+      "ok": true,
+      "detail": "until 2155510658"
+    },
+    {
+      "scenario": "L2",
+      "label": "G2: isLockedOut == true and creditLimit forced to 0",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "L2",
+      "label": "G2: a locked-out agent cannot borrow (\"Exceeds credit limit\")",
+      "ok": true,
+      "detail": "VM Exception while processing transaction: reverted with reason string 'Exceeds credit limit'"
+    },
+    {
+      "scenario": "L1",
+      "label": "the penalty is proportional above the threshold (1000 -> 100 pts, 2000 -> 200 pts) and floors below it (300 -> 50 pts)",
+      "ok": true,
+      "detail": "50 / 100 / 200"
+    },
+    {
+      "scenario": "L4",
+      "label": "first default set a 180-day lockout",
+      "ok": true,
+      "detail": "2156201865"
+    },
+    {
+      "scenario": "L4",
+      "label": "a later, smaller default with a SHORTER lockout lever did NOT shorten the existing lockout",
+      "ok": true,
+      "detail": "2156201865 -> 2156201865"
+    },
+    {
+      "scenario": "L3",
+      "label": "credit limit is still 0 ten seconds before the lockout expires",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "L3",
+      "label": "isLockedOut false once the 180 days elapse",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "L3",
+      "label": "the ladder restarts at the BOOTSTRAP rung (100 USDC), not where it was",
+      "ok": true,
+      "detail": "100.0"
+    },
+    {
+      "scenario": "L3",
+      "label": "credit limit recovers to min(tierLimit, bootstrap) exactly",
+      "ok": true,
+      "detail": "score 555 tierLimit 10000.0 ladder 100.0 -> limit 100.0"
+    },
+    {
+      "scenario": "L3",
+      "label": "the agent can borrow again at the bootstrap rung after the lockout",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "L3",
+      "label": "and the ladder starts climbing again from zero (maxRepaidPrincipal 100)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "L5",
+      "label": "3 days late: reputation penalty == 25 points (base 10 + 5/day, cap 100)",
+      "ok": true,
+      "detail": "450 -> 425, event penalty 25"
+    },
+    {
+      "scenario": "L5",
+      "label": "3 days late: LateRepaymentRecorded carries the loanId and lateSeconds",
+      "ok": true,
+      "detail": "lateSeconds 259261"
+    },
+    {
+      "scenario": "L5",
+      "label": "3 days late: the ladder did NOT advance (maxRepaidPrincipal unchanged)",
+      "ok": true,
+      "detail": "100.0"
+    },
+    {
+      "scenario": "L5",
+      "label": "3 days late: lateCount incremented and interest charged on elapsed time (F-03)",
+      "ok": true,
+      "detail": "chargeable 864060s interest 0.273991"
+    },
+    {
+      "scenario": "L6",
+      "label": "25 days late: reputation penalty == 100 points (base 10 + 5/day, cap 100)",
+      "ok": true,
+      "detail": "425 -> 325, event penalty 100"
+    },
+    {
+      "scenario": "L6",
+      "label": "25 days late: LateRepaymentRecorded carries the loanId and lateSeconds",
+      "ok": true,
+      "detail": "lateSeconds 2160061"
+    },
+    {
+      "scenario": "L6",
+      "label": "25 days late: the ladder did NOT advance (maxRepaidPrincipal unchanged)",
+      "ok": true,
+      "detail": "100.0"
+    },
+    {
+      "scenario": "L6",
+      "label": "25 days late: lateCount incremented and interest charged on elapsed time (F-03)",
+      "ok": true,
+      "detail": "chargeable 2764860s interest 0.876731"
+    },
+    {
+      "scenario": "L6",
+      "label": "the cap keeps a very late repayment from costing more than latePenaltyMax",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "L7",
+      "label": "precondition: 0 % collateral tier, creditLimit >= 1000, stake 500, early lender 600, pool has 1100 available",
+      "ok": true,
+      "detail": "limit 1100.0 avail 1100.0"
+    },
+    {
+      "scenario": "L7",
+      "label": "the loan is fully unsecured (0 % collateral tier), so the default loss == principal",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "L7",
+      "label": "the mid-loan joiner is NOT qualified for this loan (W1), the early lender is",
+      "ok": true,
+      "detail": "early 600.0 mid 0.0"
+    },
+    {
+      "scenario": "L7",
+      "label": "M2-b: the creator's self-stake absorbed the loss FIRST, in full (500 -> 0)",
+      "ok": true,
+      "detail": "absorbed 500.0"
+    },
+    {
+      "scenario": "L7",
+      "label": "the residual 500 fell ENTIRELY on the qualified early lender (600 -> 100)",
+      "ok": true,
+      "detail": "100.0"
+    },
+    {
+      "scenario": "L7",
+      "label": "the MID-LOAN joiner was not charged at all (400 -> 400) — the L7 fix",
+      "ok": true,
+      "detail": "400.0"
+    },
+    {
+      "scenario": "L7",
+      "label": "flat pro-rata (the V6.1 behaviour) would have charged the joiner 200.0 USDC — it was charged 0",
+      "ok": true,
+      "detail": "counterfactual 200.0"
+    },
+    {
+      "scenario": "L7",
+      "label": "per-pool conservation stays EXACT through the socialised loss",
+      "ok": true,
+      "detail": "avail 500.0 + loaned 0.0 == Σamt 500.0 + Σearned 0.0"
+    },
+    {
+      "scenario": "L7",
+      "label": "the defaulting agent is locked out and its capacity reset",
+      "ok": true,
+      "detail": ""
+    }
+  ]
+}

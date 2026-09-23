@@ -1,6 +1,14 @@
 // Contract addresses and network config for Arc Testnet
+//
+// Marketplace migration history (newest first):
+//   V6 — 0x56ecCB27D953a3c84463Df97e18b4E596462CbdE (deployed 2026-05-13, post-Claude-review, §B1+§S1+§S5 + 4 self-found fixes, EMPTY)
+//   v4 — 0x048363A325A5B188b7FF157d725C5e329f0171D3 (CURRENT canonical, ~36k USDC liquidity)
+//   v3 — 0xD1cf6E7864Bc4CbBE52aA94369dF08B106927559 (deprecated, frontend pointed here pre-fix)
+//
+// To cutover to V6 after migration: change `marketplace` below AND replace
+// `frontend/abis/AgentLiquidityMarketplace.json` with the V6 ABI.
 export const ADDRESSES = {
-    marketplace: '0xD1cf6E7864Bc4CbBE52aA94369dF08B106927559',
+    marketplace: '0x048363A325A5B188b7FF157d725C5e329f0171D3',  // v4 canonical
     registry:    '0x741C03c0d95d2c15E479CE1c7E69B3196d86faD7',
     reputation:  '0x94F2fa47c4488202a46dAA9038Ed9C9c4c07467F',
     validationRegistry: '0xD97AeE70866b0feF43A4544475A5De4c061eCcea',

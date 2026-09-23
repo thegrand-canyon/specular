@@ -209,7 +209,11 @@ async function main() {
     console.log(`   Attack Vector: Rapid Build-Then-Default\n`);
 
     const costToPrime = 6; // From earlier analysis, $6 in interest
-    const primeLimit = 50000; // Credit limit at PRIME
+    // [V7] The top-tier limit is on-chain, owner-settable state on
+    // ReputationManagerV4 — not a constant. Pass the live figure in
+    // (tierLimits(5) / calculateCreditLimit), or override via env for a
+    // what-if. 50,000 is the V3 default and is only the fallback here.
+    const primeLimit = Number(process.env.SPECULAR_TOP_TIER_LIMIT_USDC || 50000);
 
     console.log(`      1. Build reputation to PRIME:`);
     console.log(`         Cost:                ${costToPrime} USDC`);

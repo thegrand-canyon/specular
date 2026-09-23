@@ -1,0 +1,35 @@
+=== V6 Migration Helpers — Live Verification ===
+V6: 0x56ecCB27D953a3c84463Df97e18b4E596462CbdE
+Owner: 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+
+[1] migrationFinalized: false
+
+[2] Register fresh test agent
+  agent address: 0xF6Dc003e17490AB4D36837E525d7B48F79Df52cf
+  agentId: 134
+
+[3] Owner calls seedPool(aid, agent, 100, 100, 0)
+  ✓ pool seeded. totalLiquidity=100, available=100, lenderCount=0
+
+[4] Owner calls seedPosition for a fresh lender
+  ✓ lender position seeded: amount=100
+  pool now has lenderCount=1
+
+[5] Lender withdraws their seeded position
+  ✓ lender withdrew. USDC delta: 100 ✓ matches
+
+[6] Call compactPoolLenders (no duplicates exist, expect no-op success)
+  ✓ compactPoolLenders ran. lenderCount: 1 → 1
+
+[7] Verify setMigrationFinalized() is callable by owner (gas estimate only — NOT executing)
+  ✓ setMigrationFinalized estimateGas: 47113 (NOT executed — would lock helpers permanently)
+
+[Cleanup] Drain residual ETH from test wallets
+
+=== RESULT: All migration helpers verified live on Arc V6 ===
+  ✓ migrationFinalized state: still false (unlocked)
+  ✓ seedPool: pool created with correct state
+  ✓ seedPosition: lender position seeded
+  ✓ withdrawLiquidity: post-seed withdrawal succeeded
+  ✓ compactPoolLenders: no-op success on already-compact pool
+  ✓ setMigrationFinalized: estimateGas confirms callable (but NOT executed to preserve helpers)

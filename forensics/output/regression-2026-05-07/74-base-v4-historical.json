@@ -1,0 +1,34 @@
+{
+  "timestamp": "2026-05-15T16:24:24.711Z",
+  "block": 46036416,
+  "fromBlock": 45936416,
+  "eventsByType": {
+    "InterestDistributed": [],
+    "LiquiditySupplied": [],
+    "LiquidityWithdrawn": [],
+    "LoanDefaulted": [],
+    "LoanDisbursed": [],
+    "LoanRepaid": [],
+    "LoanRequested": [],
+    "OwnershipTransferred": [],
+    "Paused": [],
+    "PoolAccountingReset": [],
+    "PoolCreated": [],
+    "Unpaused": []
+  },
+  "eventCounts": {
+    "InterestDistributed": 0,
+    "LiquiditySupplied": 0,
+    "LiquidityWithdrawn": 0,
+    "LoanDefaulted": 0,
+    "LoanDisbursed": 0,
+    "LoanRepaid": 0,
+    "LoanRequested": 0,
+    "OwnershipTransferred": 0,
+    "Paused": 0,
+    "PoolAccountingReset": 0,
+    "PoolCreated": 0,
+    "Unpaused": 0
+  },
+  "total": 0
+}

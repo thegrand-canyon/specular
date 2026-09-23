@@ -1,0 +1,174 @@
+{
+  "scenario": "S2",
+  "startedAt": "2026-09-20T17:34:09.445Z",
+  "finishedAt": "2026-09-20T17:35:53.588Z",
+  "passed": 30,
+  "failed": 0,
+  "blocked": 0,
+  "checks": [
+    {
+      "label": "L1 starting position",
+      "ok": null,
+      "detail": "amount 100.0 pending 0.0 depositTs 1789925510"
+    },
+    {
+      "label": "L1 qualified for loan #1 == full pre-loan position",
+      "ok": true,
+      "detail": "100000000"
+    },
+    {
+      "label": "canTopUp(A, L1) true before first top-up (no pending tranche → case b)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "case (b): base tranche timestamp unchanged, pending = 20 stamped now",
+      "ok": true,
+      "detail": "pendingTs 1789925670 loan1.start 1789925659"
+    },
+    {
+      "label": "position.amount += 20",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "L1 qualified for loan #1 UNCHANGED after top-up (F-02 fixed)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "canTopUp still true (no active loan started since pending stamp → case d)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "case (d): pending merged to 30 and re-stamped; base ts unchanged",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "L1 qualified for loan #1 still unchanged",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "loan #2 started after pending stamp",
+      "ok": true,
+      "detail": "1789925694 > 1789925682"
+    },
+    {
+      "label": "L1 qualified for loan #2 == base + pending (130)",
+      "ok": true,
+      "detail": "130000000"
+    },
+    {
+      "label": "canTopUp(A, L1) == false (case e)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "SDK canTopUp mirrors contract",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "direct supplyLiquidity reverts \"Top-up would forfeit in-flight interest\"",
+      "ok": true,
+      "detail": "Top-up would forfeit in-flight interest | execution reverted: \"Top-up would forfeit in-flight interest\" | execution reve"
+    },
+    {
+      "label": "SDK supply() refuses before sending (pre-check message)",
+      "ok": true,
+      "detail": "SpecularQuickstart.supply: topping up pool #46 from 0x72E015693Af147231957895F36Ef5893c8b583d8 now would forfeit in-flight interest and the "
+    },
+    {
+      "label": "a NEW lender is never refused (L3 with 0 principal can supply)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "failed top-up changed nothing",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "loan #1 interest: L1 share uses base-only qualified amount (pending 30 excluded)",
+      "ok": true,
+      "detail": "L1 +94931 expected 94931 (q 100000000/150000000)"
+    },
+    {
+      "label": "loan #1 interest: L2 share exact",
+      "ok": true,
+      "detail": "47465"
+    },
+    {
+      "label": "canTopUp(A, L1) true again after loan #1 closed (case c)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "case (c): pending := 10 (new money only), old pending folded into base, base ts unchanged",
+      "ok": true,
+      "detail": "amount 140.0 pending 10.0"
+    },
+    {
+      "label": "L1 qualified for loan #2 UNCHANGED by the fold (lossless)",
+      "ok": true,
+      "detail": "130000000 == 130000000"
+    },
+    {
+      "label": "pending ⊆ amount invariant",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "loan #2 interest: L1 share == lenderInterest × 130/180 exact",
+      "ok": true,
+      "detail": "+61705 (q 130000000/180000000)"
+    },
+    {
+      "label": "loan #2 interest: L2 share exact",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "fees += 1% of both interests + dust",
+      "ok": true,
+      "detail": "dust 2"
+    },
+    {
+      "label": "activeLoanCount 0, getActiveLoanIds empty",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "case (a): pending cleared, depositTimestamp re-stamped to the top-up block",
+      "ok": true,
+      "detail": "ts 1789925742 block 1789925742"
+    },
+    {
+      "label": "PendingTrancheUpdated(…,0,0) emitted on clear",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "per-pool conservation holds",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "GLOBAL solvency exact",
+      "ok": true,
+      "detail": "surplus 0"
+    }
+  ],
+  "spent": {
+    "nativeFromDeployer": "0.0510003",
+    "usdcMinted": "0.0"
+  },
+  "agentId": 46,
+  "loans": [
+    4,
+    5
+  ]
+}

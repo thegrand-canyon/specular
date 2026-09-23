@@ -1,0 +1,25 @@
+=== POST-WORLDCLASS V6 SMOKE TEST ===
+V6: 0x7a0560551b2370ee87458186c0b1eFCc38c7c57a
+  owner: 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+  paused: false
+  migrationFinalized: false
+  MAX_LENDERS_PER_POOL: 50
+  MAX_ACTIVE_LOANS_PER_AGENT: 10
+  platformFeeRate: 100
+  bytecode keccak: 0x5666cde0f8873c6d9754ca4f72462d27e7d93dda91c68db8561dc5db24c42f4a
+
+[W2 live] setPlatformFeeRate(150) — expect PlatformFeeRateChanged event
+  ✓ event emitted: old=100, new=150
+
+[W4 live] code length: 12431 bytes (compiled paris)
+
+[Fix 3 live] requestLoan(0, 7) should revert with Amount must be > 0
+  ✓ reverted: execution reverted: "Amount must be > 0"
+
+[Fix 4 live] withdrawLiquidity(_, 0) should revert
+  ✓ reverted: execution reverted: "Amount must be > 0"
+
+[Fix 1 live] seedPool with random address should revert
+  ✓ reverted: execution reverted: "agentAddress/agentId mismatch"
+
+=== SMOKE TEST DONE ===

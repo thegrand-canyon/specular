@@ -1,6 +1,13 @@
 /**
  * Network Configuration for Specular API
- * Supports: Arc Testnet, Base Mainnet, Arbitrum One
+ * Supports: Arc Testnet, Arc Mainnet, Base Mainnet, Arbitrum One
+ *
+ * ⚠️ NOT THE SOURCE OF TRUTH. Nothing currently imports this module (verified
+ * 2026-09-21); the live APIs read `src/config/*-addresses.json` instead, and the
+ * hosted agent server (mcp-server/) resolves addresses ONLY from those files.
+ * If you revive this module, re-check every address against src/config/ first —
+ * these were stale and pointed Base at a PAUSED archived marketplace until
+ * 2026-09-21.
  */
 
 export const NETWORKS = {
@@ -18,6 +25,22 @@ export const NETWORKS = {
     isTestnet: true
   },
 
+  // Arc Mainnet (chainId 5042). USDC is the native gas token; the 6-decimal
+  // ERC-20 view at 0x3600…0000 is what the protocol uses.
+  'arc-mainnet': {
+    name: 'Arc Mainnet',
+    chainId: 5042,
+    rpcUrl: process.env.ARC_MAINNET_RPC_URL || 'https://rpc.mainnet.arc.io',
+    explorer: 'https://explorer.arc.io',
+    contracts: {
+      registry: '0x6F1EbF50290f6D4A9947E9EB77f98a683684fBF5',
+      reputation: '0x1577Eb9985CcA859F25ED2EDaeD16A464ADFaE5e',
+      marketplace: '0x358c5E69f712A4b3558333090a45A054bAeEb282', // V6.1
+      usdc: '0x3600000000000000000000000000000000000000'
+    },
+    isTestnet: false
+  },
+
   base: {
     name: 'Base Mainnet',
     chainId: 8453,
@@ -26,7 +49,10 @@ export const NETWORKS = {
     contracts: {
       registry: '0xb9996de05fD514A0cB2B81fa25448EECD4559Aaa',
       reputation: '0xf19b1780A84668C8dfB6b4E84C08e457dB3B0527',
-      marketplace: '0xd7b4dEE74C61844DFA75aEbe224e4635463b1C8f',
+      // Canonical Base V6 (2026-05-17 migration). The previous value here,
+      // 0xd7b4dEE74C61844DFA75aEbe224e4635463b1C8f, is the v4 marketplace that
+      // has been PAUSED since that migration — using it would have failed every write.
+      marketplace: '0x0a4e3C745aB95aceb45B05C28D89fe4Db8815F9a',
       usdc: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'
     },
     isTestnet: false

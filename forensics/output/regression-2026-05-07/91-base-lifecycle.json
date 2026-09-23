@@ -1,0 +1,17 @@
+{
+  "timestamp": "2026-05-20T15:21:10.999Z",
+  "v6": "0x0a4e3C745aB95aceb45B05C28D89fe4Db8815F9a",
+  "loanId": "1",
+  "requestTx": "0x8cc90831bae1826854df88835f5eeaafa53e3a361ac8a094cbfa76952140bbad",
+  "repayTx": "0xd94f9eb59c27f3875182ff3f7ac3126edf2ff938ab31e520dc146246dc8669ec",
+  "finalPoolState": {
+    "totalLiquidity": "1500000",
+    "availableLiquidity": "1500285",
+    "totalLoaned": "0",
+    "totalEarned": "285"
+  },
+  "finalPosition": {
+    "amount": "1500000",
+    "earnedInterest": "285"
+  }
+}

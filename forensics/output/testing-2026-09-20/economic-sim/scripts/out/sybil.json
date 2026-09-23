@@ -1,0 +1,225 @@
+{
+  "generatedAt": "2026-09-21T23:28:38.813Z",
+  "sybilNew": {
+    "N": 5,
+    "targetScore": 600,
+    "levers": "NEW (Arc mainnet post-audit)",
+    "m1Enabled": true,
+    "m1CrossPoolBorrow": "n/a (requestLoan always draws the caller's OWN pool)",
+    "days": 100.012,
+    "cycles": 100,
+    "perAgent": [
+      {
+        "agent": "sybil0",
+        "agentId": 1,
+        "score": 600,
+        "creditLimitUsdc": 25000,
+        "lockedUsdc": 62.4657,
+        "gas": "69415158"
+      },
+      {
+        "agent": "sybil1",
+        "agentId": 2,
+        "score": 600,
+        "creditLimitUsdc": 25000,
+        "lockedUsdc": 62.4657,
+        "gas": "69363870"
+      },
+      {
+        "agent": "sybil2",
+        "agentId": 3,
+        "score": 600,
+        "creditLimitUsdc": 25000,
+        "lockedUsdc": 62.4657,
+        "gas": "69363870"
+      },
+      {
+        "agent": "sybil3",
+        "agentId": 4,
+        "score": 600,
+        "creditLimitUsdc": 25000,
+        "lockedUsdc": 62.4657,
+        "gas": "69363870"
+      },
+      {
+        "agent": "sybil4",
+        "agentId": 5,
+        "score": 600,
+        "creditLimitUsdc": 25000,
+        "lockedUsdc": 62.4657,
+        "gas": "69363870"
+      }
+    ],
+    "totalCreditUnlockedUsdc": 125000,
+    "totalCapitalLockedUsdc": 312.3285,
+    "totalFeesUsdc": 0.623,
+    "totalGas": "346870638",
+    "trajectorySample": [
+      {
+        "cycle": 1,
+        "day": 1,
+        "scores": [
+          105,
+          105,
+          105,
+          105,
+          105
+        ]
+      },
+      {
+        "cycle": 11,
+        "day": 11.001,
+        "scores": [
+          155,
+          155,
+          155,
+          155,
+          155
+        ]
+      },
+      {
+        "cycle": 21,
+        "day": 21.002,
+        "scores": [
+          205,
+          205,
+          205,
+          205,
+          205
+        ]
+      },
+      {
+        "cycle": 31,
+        "day": 31.004,
+        "scores": [
+          255,
+          255,
+          255,
+          255,
+          255
+        ]
+      },
+      {
+        "cycle": 41,
+        "day": 41.005,
+        "scores": [
+          305,
+          305,
+          305,
+          305,
+          305
+        ]
+      },
+      {
+        "cycle": 51,
+        "day": 51.006,
+        "scores": [
+          355,
+          355,
+          355,
+          355,
+          355
+        ]
+      },
+      {
+        "cycle": 61,
+        "day": 61.007,
+        "scores": [
+          405,
+          405,
+          405,
+          405,
+          405
+        ]
+      },
+      {
+        "cycle": 71,
+        "day": 71.008,
+        "scores": [
+          455,
+          455,
+          455,
+          455,
+          455
+        ]
+      },
+      {
+        "cycle": 81,
+        "day": 81.009,
+        "scores": [
+          505,
+          505,
+          505,
+          505,
+          505
+        ]
+      },
+      {
+        "cycle": 91,
+        "day": 91.011,
+        "scores": [
+          555,
+          555,
+          555,
+          555,
+          555
+        ]
+      },
+      {
+        "cycle": 100,
+        "day": 100.012,
+        "scores": [
+          600,
+          600,
+          600,
+          600,
+          600
+        ]
+      }
+    ]
+  },
+  "repeatBustNew": {
+    "levers": "NEW (Arc mainnet post-audit)",
+    "rounds": 3,
+    "log": [
+      {
+        "round": 1,
+        "climbCycles": 140,
+        "dayReached800": 140,
+        "dayOfDefault": 148,
+        "creditLimitUsdc": 50000,
+        "extractedUsdc": 50000,
+        "scoreAfter": 700,
+        "cumExtractedUsdc": 50000,
+        "cumFeesUsdc": 0.15144
+      },
+      {
+        "round": 2,
+        "climbCycles": 20,
+        "dayReached800": 168,
+        "dayOfDefault": 176,
+        "creditLimitUsdc": 50000,
+        "extractedUsdc": 50000,
+        "scoreAfter": 700,
+        "cumExtractedUsdc": 100000,
+        "cumFeesUsdc": 0.16486
+      },
+      {
+        "round": 3,
+        "climbCycles": 20,
+        "dayReached800": 196,
+        "dayOfDefault": 204,
+        "creditLimitUsdc": 50000,
+        "extractedUsdc": 50000,
+        "scoreAfter": 700,
+        "cumExtractedUsdc": 150000,
+        "cumFeesUsdc": 0.17828
+      }
+    ],
+    "totalDays": 204,
+    "totalExtractedUsdc": 150000,
+    "totalFeesUsdc": 0.17828,
+    "usdcPerDay": 735.28,
+    "steadyStateUsdcPerDay": 1785.71
+  }
+}

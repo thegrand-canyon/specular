@@ -57,4 +57,4 @@ async function main() {
     console.log('Run: npx hardhat run scripts/arc-create-agents-v2.js --network arcTestnet\n');
 }
 
-main().catch(console.error);
+main().catch((e) => { console.error(e); process.exit(1); });

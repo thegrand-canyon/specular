@@ -1,0 +1,134 @@
+{
+  "cases": [
+    {
+      "name": "supply 0 amount",
+      "result": "REVERT",
+      "message": "execution reverted: \"Amount must be > 0\""
+    },
+    {
+      "name": "supply to non-existent agent (id=999)",
+      "result": "REVERT",
+      "message": "execution reverted: \"Pool not active\""
+    },
+    {
+      "name": "supply 1 base unit",
+      "result": "OK",
+      "detail": "WOULD SUCCEED"
+    },
+    {
+      "name": "withdraw 0 amount",
+      "result": "OK",
+      "detail": "WOULD SUCCEED"
+    },
+    {
+      "name": "withdraw more than position",
+      "result": "REVERT",
+      "message": "execution reverted: \"Insufficient balance\""
+    },
+    {
+      "name": "withdraw from agent with no position",
+      "result": "REVERT",
+      "message": "execution reverted: \"Insufficient balance\""
+    },
+    {
+      "name": "request 0 amount",
+      "result": "OK",
+      "detail": "WOULD SUCCEED"
+    },
+    {
+      "name": "request loan, durationDays = 0",
+      "result": "REVERT",
+      "message": "execution reverted: \"Insufficient pool liquidity\""
+    },
+    {
+      "name": "request loan, durationDays = 6",
+      "result": "REVERT",
+      "message": "execution reverted: \"Insufficient pool liquidity\""
+    },
+    {
+      "name": "request loan, durationDays = 7 (MIN)",
+      "result": "REVERT",
+      "message": "execution reverted: \"Insufficient pool liquidity\""
+    },
+    {
+      "name": "request loan, durationDays = 365 (MAX)",
+      "result": "REVERT",
+      "message": "execution reverted: \"Insufficient pool liquidity\""
+    },
+    {
+      "name": "request loan, durationDays = 366",
+      "result": "REVERT",
+      "message": "execution reverted: \"Insufficient pool liquidity\""
+    },
+    {
+      "name": "request loan, durationDays = 604800 (seconds shape)",
+      "result": "REVERT",
+      "message": "execution reverted: \"Insufficient pool liquidity\""
+    },
+    {
+      "name": "request loan, durationDays = 2^256-1 (max uint)",
+      "result": "REVERT",
+      "message": "execution reverted: \"Insufficient pool liquidity\""
+    },
+    {
+      "name": "request amount > credit limit (1001 USDC, limit is 1000)",
+      "result": "REVERT",
+      "message": "execution reverted: \"Insufficient pool liquidity\""
+    },
+    {
+      "name": "request loan, agent has no pool",
+      "result": "REVERT",
+      "message": "execution reverted: \"Not a registered agent\""
+    },
+    {
+      "name": "repay non-existent loan (id=99999)",
+      "result": "REVERT",
+      "message": "execution reverted: \"Not the borrower\""
+    },
+    {
+      "name": "repay loanId = 0",
+      "result": "REVERT",
+      "message": "execution reverted: \"Not the borrower\""
+    },
+    {
+      "name": "claim on agent with no position",
+      "result": "REVERT",
+      "message": "execution reverted: \"No interest to claim\""
+    },
+    {
+      "name": "claim on own pool with 0 earned",
+      "result": "REVERT",
+      "message": "execution reverted: \"No interest to claim\""
+    },
+    {
+      "name": "create pool when agent has none (using fresh signer)",
+      "result": "REVERT",
+      "message": "execution reverted: \"Not a registered agent\""
+    },
+    {
+      "name": "create pool that already exists (agent #49)",
+      "result": "REVERT",
+      "message": "execution reverted: \"Pool already exists\""
+    },
+    {
+      "name": "non-owner pause()",
+      "result": "REVERT",
+      "message": "execution reverted (unknown custom error)"
+    },
+    {
+      "name": "non-owner seedPool()",
+      "result": "REVERT",
+      "message": "execution reverted (unknown custom error)"
+    },
+    {
+      "name": "non-owner setMigrationFinalized()",
+      "result": "REVERT",
+      "message": "execution reverted (unknown custom error)"
+    },
+    {
+      "name": "non-owner withdrawFees(1)",
+      "result": "REVERT",
+      "message": "execution reverted (unknown custom error)"
+    }
+  ]
+}

@@ -12,7 +12,7 @@ const { ethers } = require('ethers');
 const addresses = require('../src/config/arc-testnet-addresses.json');
 
 const RPC_URL = process.env.ARC_TESTNET_RPC_URL || 'https://arc-testnet.drpc.org';
-const LENDER_KEY = process.env.LENDER_KEY || 'process.env.TEST_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000'';
+const LENDER_KEY = process.env.LENDER_KEY || process.env.TEST_KEY;
 const AMOUNT_TO_ADD = process.env.AMOUNT || '500'; // USDC to add
 
 async function main() {

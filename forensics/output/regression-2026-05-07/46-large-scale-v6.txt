@@ -1,0 +1,51 @@
+=== TRACK 3: LARGE-SCALE V6 STRESS ===
+Owner: 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+V6: 0x05f359D663fa8E70C49b3D69f65dA7C059b0cC7a
+Reputation: 1000, credit limit: 50000 USDC
+Start: 325.942993411047390069 ETH, 2998165.137345 USDC
+
+[1] Generating + funding 3 lenders × 50000 USDC each
+  funded lender 1/3
+  funded lender 2/3
+  funded lender 3/3
+
+[2] Each lender supplies 50000 USDC
+  lender 1 supplied, gas 169075
+  lender 2 supplied, gas 151975
+  lender 3 supplied, gas 151975
+
+Pool 49 after supplies: totalLiq=150000, avail=150000.07592, lenderCount=4
+
+[3] Owner takes 1000 USDC loan (max credit limit), 365 days
+  loan tx: 0x11c0609500e2de0fc9fac15808b20b79d33d4c10d7ed00fb35b84aa1dbb87255, gas: 371738
+  loanId: 82
+  expected interest (365d × 15%): 150 USDC
+
+[4] Repay loan — interest distributed across 3 lenders at $50k+ scale
+  repay tx: 0x4576b5f37db7bbef01b742f8b0ae10e85422994d49063cf179667533cd08ec44, gas: 206841
+  ✅ no panic across 3 lenders + 150 USDC interest distribution
+
+[5] §S1 + interest distribution check
+  Σ earned across lenders: 49.5
+  expected lender interest:  148.5
+  match? ❌ mismatch
+    0x03CCd8Bb... supplied=50000, earned=16.50000000
+    0x5CC51813... supplied=50000, earned=16.50000000
+    0xe7a1a2A2... supplied=50000, earned=16.50000000
+
+[6] Each lender claims
+  lender 1 claimed
+  lender 2 claimed
+  lender 3 claimed
+  pool avail Δ: 49.5 (expected: 49.5)
+  §S1: avail (150000.07592) ≤ mpBal (150000.57664)? ✅
+
+[7] Cleanup
+  lender 1 cleaned
+  lender 2 cleaned
+  lender 3 cleaned
+
+End: 325.626504426639390069 ETH (Δ -0.316488984408)
+USDC: 2998164.637345 (Δ -0.500000)
+
+Saved.

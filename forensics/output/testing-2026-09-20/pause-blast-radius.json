@@ -1,0 +1,110 @@
+[
+  {
+    "operation": "lender: withdrawLiquidity (exit their principal)",
+    "unpaused": "works",
+    "paused": "BLOCKED: EnforcedPause()",
+    "brokenByPause": true
+  },
+  {
+    "operation": "lender: claimInterest (take earned interest)",
+    "unpaused": "works",
+    "paused": "BLOCKED: EnforcedPause()",
+    "brokenByPause": true
+  },
+  {
+    "operation": "lender: supplyLiquidity (add more)",
+    "unpaused": "works",
+    "paused": "BLOCKED: EnforcedPause()",
+    "brokenByPause": true
+  },
+  {
+    "operation": "borrower: repayLoan (clear their debt)",
+    "unpaused": "works",
+    "paused": "BLOCKED: EnforcedPause()",
+    "brokenByPause": true
+  },
+  {
+    "operation": "borrower: requestLoan (new credit)",
+    "unpaused": "works",
+    "paused": "BLOCKED: EnforcedPause()",
+    "brokenByPause": true
+  },
+  {
+    "operation": "agent: createAgentPool",
+    "unpaused": "blocked: Not a registered agent",
+    "paused": "BLOCKED: EnforcedPause()",
+    "brokenByPause": false
+  },
+  {
+    "operation": "OWNER: liquidateLoan (default an overdue loan)",
+    "unpaused": "works",
+    "paused": "BLOCKED: EnforcedPause()",
+    "brokenByPause": true
+  },
+  {
+    "operation": "OWNER: withdrawFees",
+    "unpaused": "works",
+    "paused": "works",
+    "brokenByPause": false
+  },
+  {
+    "operation": "OWNER: setPlatformFeeRate",
+    "unpaused": "works",
+    "paused": "works",
+    "brokenByPause": false
+  },
+  {
+    "operation": "OWNER: setMinSupplyAmount",
+    "unpaused": "works",
+    "paused": "works",
+    "brokenByPause": false
+  },
+  {
+    "operation": "OWNER: setBindBorrowToPoolCreator",
+    "unpaused": "works",
+    "paused": "works",
+    "brokenByPause": false
+  },
+  {
+    "operation": "OWNER: setMinHoldForReputationReward",
+    "unpaused": "works",
+    "paused": "works",
+    "brokenByPause": false
+  },
+  {
+    "operation": "OWNER: compactPoolLenders",
+    "unpaused": "works",
+    "paused": "works",
+    "brokenByPause": false
+  },
+  {
+    "operation": "OWNER: resetPoolAccounting",
+    "unpaused": "works",
+    "paused": "works",
+    "brokenByPause": false
+  },
+  {
+    "operation": "OWNER: transferOwnership",
+    "unpaused": "works",
+    "paused": "works",
+    "brokenByPause": false
+  },
+  {
+    "operation": "registry: register a new agent",
+    "unpaused": "works",
+    "paused": "works",
+    "brokenByPause": false
+  },
+  {
+    "operation": "registry: transfer agent NFT",
+    "unpaused": "works",
+    "paused": "works",
+    "brokenByPause": false
+  },
+  {
+    "operation": "faucet: claim",
+    "unpaused": "blocked: Faucet empty",
+    "paused": "BLOCKED: Faucet empty",
+    "brokenByPause": false
+  }
+]

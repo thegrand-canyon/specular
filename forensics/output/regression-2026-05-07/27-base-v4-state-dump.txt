@@ -1,0 +1,142 @@
+{
+  "capturedAt": "2026-05-08T14:19:27.831Z",
+  "network": "Base mainnet",
+  "marketplace": "0xd7b4dEE74C61844DFA75aEbe224e4635463b1C8f",
+  "marketplace_state": {
+    "owner": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+    "paused": false,
+    "nextLoanId": "5",
+    "totalPools": 1,
+    "accumulatedFees": 0,
+    "platformFeeRate": 100,
+    "MAX_LENDERS_PER_POOL": 50,
+    "MAX_ACTIVE_LOANS_PER_AGENT": 10,
+    "usdc_balance": 1.5
+  },
+  "registry_state": {
+    "totalAgents": 3
+  },
+  "pool_1": {
+    "agentAddress": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+    "totalLiquidity": 1.5,
+    "availableLiquidity": 1.200002,
+    "totalLoaned": 0.3,
+    "totalEarned": 0.000002,
+    "utilizationRate": 2000,
+    "lenderCount": 2,
+    "lenders": [
+      {
+        "slot": 0,
+        "address": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+        "supplied": 1.5,
+        "earnedInterest": 0,
+        "depositTimestamp": "1777921803",
+        "depositDate": "2026-05-04T19:10:03.000Z"
+      },
+      {
+        "slot": 1,
+        "address": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+        "supplied": 1.5,
+        "earnedInterest": 0,
+        "depositTimestamp": "1777921803",
+        "depositDate": "2026-05-04T19:10:03.000Z"
+      }
+    ],
+    "unique_lenders": 1,
+    "duplicate_count": 1
+  },
+  "loans": [
+    {
+      "id": 1,
+      "state": "REPAID",
+      "agentId": "1",
+      "borrower": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+      "amount": 0.001,
+      "collateralAmount": 0.001,
+      "interestRate_bps": 1500,
+      "startTime": "2026-05-03T17:29:53.000Z",
+      "endTime": "2026-05-10T17:29:53.000Z",
+      "duration_days": 7,
+      "staticCall_repayLoan": "execution reverted: \"Loan not active\""
+    },
+    {
+      "id": 2,
+      "state": "ACTIVE",
+      "agentId": "1",
+      "borrower": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+      "amount": 0.1,
+      "collateralAmount": 0.1,
+      "interestRate_bps": 1500,
+      "startTime": "2026-05-04T19:10:09.000Z",
+      "endTime": "2026-05-11T19:10:09.000Z",
+      "duration_days": 7,
+      "staticCall_repayLoan": "Panic(0x11)_§B1"
+    },
+    {
+      "id": 3,
+      "state": "ACTIVE",
+      "agentId": "1",
+      "borrower": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+      "amount": 0.1,
+      "collateralAmount": 0.1,
+      "interestRate_bps": 1500,
+      "startTime": "2026-05-04T19:10:15.000Z",
+      "endTime": "2026-05-11T19:10:15.000Z",
+      "duration_days": 7,
+      "staticCall_repayLoan": "Panic(0x11)_§B1"
+    },
+    {
+      "id": 4,
+      "state": "ACTIVE",
+      "agentId": "1",
+      "borrower": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+      "amount": 0.1,
+      "collateralAmount": 0.1,
+      "interestRate_bps": 1500,
+      "startTime": "2026-05-04T19:10:29.000Z",
+      "endTime": "2026-05-11T19:10:29.000Z",
+      "duration_days": 7,
+      "staticCall_repayLoan": "Panic(0x11)_§B1"
+    }
+  ],
+  "agent_1": {
+    "owner": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+    "agentWallet": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+    "agentURI": "https://specular.network/agents/base-mainnet/0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+    "reputationScore": 10,
+    "creditLimit": 1000,
+    "interestRate_bps": 1500,
+    "collateralRequirement_pct": 100
+  },
+  "b1_analysis": {
+    "finding": "pool #1 has 2 entries in poolLenders[] but only 1 unique address(es)",
+    "duplicate_address": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+    "mechanism_per_contract_logic": [
+      "1. Lender supplied to pool #1 → pushed to poolLenders[] (entry 0)",
+      "2. Lender called withdrawLiquidity for FULL position → position.amount = 0, but poolLenders[0] NOT removed (this is the v4 bug)",
+      "3. Lender supplied AGAIN → since position.amount == 0, push fired again (entry 1)",
+      "Result: poolLenders[] = [lender, lender], position.amount = newSupply",
+      "Subsequent repayLoan with non-zero interest panics in _distributeInterest:",
+      "  share[iter1] = pos.amount * interest / totalLiquidity",
+      "  share[iter2] = pos.amount * interest / totalLiquidity (same mapping read)",
+      "  distributed = 2 × share > interest",
+      "  dust = interest - distributed → underflow → Panic(0x11)"
+    ],
+    "loans_blocked_by_b1": [
+      2,
+      3,
+      4
+    ]
+  },
+  "s1_check": {
+    "totalLiquidity": 1.5,
+    "availableLiquidity": 1.200002,
+    "totalLoaned": 0.3,
+    "derived_avail": 1.2,
+    "accounting_slack": -0.000002000000000002,
+    "mp_balance": 1.5,
+    "solvency_check": true
+  }
+}
+
+Saved to forensics/output/regression-2026-05-07/27-base-v4-state-dump.json

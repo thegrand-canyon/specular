@@ -1,0 +1,10 @@
+=== x402 agent (network=arc, target=http://localhost:4700/transcribe) ===
+Agent wallet: 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+USDC before: 902110.191473
+
+[CALL] → http://localhost:4700/transcribe
+[CALL] ← HTTP 200 in 184ms
+Response body (first 200 chars): {"ok":true,"result":"transcription: \"the quick brown fox\"","paid":"eyJ4NDAyVmVyc2lvbiI6MSwic2NoZW1lIjoiZXhh..."}
+USDC after: 902110.191473 (spent: 0.0 USDC)
+
+✅ x402 + Specular agent flow complete

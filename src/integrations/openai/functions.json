@@ -1,0 +1,169 @@
+{
+  "functions": [
+    {
+      "name": "specular_check_credit",
+      "description": "Check the credit score and reputation of an agent on Specular Protocol. Returns score (0-1000), credit tier, maximum loan amount, and interest rate based on on-chain behavior.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "The Ethereum address of the agent to check (must start with 0x)"
+          }
+        },
+        "required": ["address"]
+      }
+    },
+    {
+      "name": "specular_get_liquidity",
+      "description": "Get available liquidity pools on Specular Protocol. Shows which pools have USDC available for borrowing, their liquidity amounts, and utilization rates.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "minLiquidity": {
+            "type": "number",
+            "description": "Optional: Only return pools with at least this many USDC available"
+          }
+        }
+      }
+    },
+    {
+      "name": "specular_request_loan",
+      "description": "Request a USDC loan from Specular Protocol based on the agent's reputation. The agent must be registered and have sufficient credit score. Requires wallet access.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "description": "The loan amount in USDC (e.g., 100 for 100 USDC)"
+          },
+          "durationDays": {
+            "type": "number",
+            "description": "How many days until the loan is due (e.g., 7, 14, 30)"
+          }
+        },
+        "required": ["amount", "durationDays"]
+      }
+    },
+    {
+      "name": "specular_get_loan_status",
+      "description": "Get the current status of a specific loan by its ID. Returns borrower, principal amount, interest rate, due date, and repayment status.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "loanId": {
+            "type": "number",
+            "description": "The ID of the loan to query"
+          }
+        },
+        "required": ["loanId"]
+      }
+    },
+    {
+      "name": "specular_repay_loan",
+      "description": "Repay an active loan on Specular Protocol. Automatically calculates interest and repays the full amount. Improves the agent's reputation score. Requires wallet access.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "loanId": {
+            "type": "number",
+            "description": "The ID of the loan to repay"
+          }
+        },
+        "required": ["loanId"]
+      }
+    },
+    {
+      "name": "specular_register_agent",
+      "description": "Register as a new agent on Specular Protocol. Required before requesting loans. Creates an on-chain identity with initial reputation score. Requires wallet access.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "A name or identifier for this agent"
+          },
+          "metadata": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Optional array of metadata strings"
+          }
+        },
+        "required": ["name"]
+      }
+    },
+    {
+      "name": "specular_get_protocol_stats",
+      "description": "Get overall statistics for Specular Protocol including total value locked, number of active pools, total loans processed, and current network.",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "specular_supply_liquidity",
+      "description": "Supply USDC to an agent's pool to earn yield. Become a lender and earn interest from borrowers. Requires wallet access.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "agentId": {
+            "type": "number",
+            "description": "The ID of the agent whose pool to supply liquidity to"
+          },
+          "amount": {
+            "type": "number",
+            "description": "Amount of USDC to supply (e.g., 1000 for 1000 USDC)"
+          }
+        },
+        "required": ["agentId", "amount"]
+      }
+    },
+    {
+      "name": "specular_withdraw_liquidity",
+      "description": "Withdraw supplied liquidity plus earned interest from a pool. Returns principal and interest to your wallet. Requires wallet access.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "poolId": {
+            "type": "number",
+            "description": "The ID of the pool to withdraw from"
+          },
+          "amount": {
+            "type": "number",
+            "description": "Amount of USDC to withdraw"
+          }
+        },
+        "required": ["poolId", "amount"]
+      }
+    },
+    {
+      "name": "specular_get_lending_positions",
+      "description": "View all active lending positions for an address. Shows supplied amounts, earned interest, current APY, and pool utilization for each position.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "The Ethereum address to check lending positions for (optional, defaults to connected wallet)"
+          }
+        }
+      }
+    },
+    {
+      "name": "specular_get_pool_details",
+      "description": "Get detailed information about a specific lending pool including agent reputation, total liquidity, utilization rate, APY, and number of lenders.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "poolId": {
+            "type": "number",
+            "description": "The ID of the pool to query"
+          }
+        },
+        "required": ["poolId"]
+      }
+    }
+  ]
+}

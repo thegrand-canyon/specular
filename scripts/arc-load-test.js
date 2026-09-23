@@ -21,10 +21,10 @@ const mpAbi = loadAbi('AgentLiquidityMarketplace');
 const usdcAbi = loadAbi('MockUSDC');
 
 const agents = [
-    { name: 'Main Agent', key: process.env.PRIVATE_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000' },
-    { name: 'Fresh 1', key: 'process.env.TEST_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000'' },
-    { name: 'Fresh 2', key: 'process.env.TEST_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000'' },
-    { name: 'Fresh 3', key: 'process.env.TEST_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000'' }
+    { name: 'Main Agent', key: process.env.PRIVATE_KEY },
+    { name: 'Fresh 1', key: process.env.TEST_KEY },
+    { name: 'Fresh 2', key: process.env.TEST_KEY },
+    { name: 'Fresh 3', key: process.env.TEST_KEY }
 ];
 
 const LOAN_AMOUNT = ethers.parseUnits((process.env.LOAN_AMOUNT || '20'), 6);
@@ -202,4 +202,4 @@ async function main() {
     });
 }
 
-main().catch(console.error);
+main().catch((e) => { console.error(e); process.exit(1); });

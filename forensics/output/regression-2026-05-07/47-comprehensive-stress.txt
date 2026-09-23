@@ -1,0 +1,156 @@
+=== COMPREHENSIVE V6 STRESS SIMULATION ===
+Owner: 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+Start: 325.626504426639390069 ETH, 2998164.637345 USDC
+
+[1] Generate 5 lenders + 3 borrowers
+
+[2] Fund wallets
+  funded 8 wallets
+
+[3] Each borrower registers + creates own V6 pool
+  borrower 1: agentId=113
+  borrower 2: agentId=114
+  borrower 3: agentId=115
+
+[4] Each lender supplies 33333.333333333336 USDC to each borrower's pool
+  per-pool supply per lender: 33333.333333 USDC
+  lender 1 supplied to all 3 pools
+  lender 2 supplied to all 3 pools
+  lender 3 supplied to all 3 pools
+  lender 4 supplied to all 3 pools
+  lender 5 supplied to all 3 pools
+  ✅ [post-supply] §B1 OK, §S1 OK (Σavail=500000.00, mpBal=500000.58, slack=0.576640)
+
+[5] Each borrower does 30 loan/repay cycles concurrently (round-robin)
+  cycle 1 borrower 1: execution reverted (unknown custom error)
+  cycle 1 borrower 2: execution reverted (unknown custom error)
+  cycle 1 borrower 3: execution reverted (unknown custom error)
+  cycle 2 borrower 1: execution reverted (unknown custom error)
+  cycle 2 borrower 2: execution reverted (unknown custom error)
+  cycle 2 borrower 3: execution reverted (unknown custom error)
+  cycle 3 borrower 1: execution reverted (unknown custom error)
+  cycle 3 borrower 2: execution reverted (unknown custom error)
+  cycle 3 borrower 3: execution reverted (unknown custom error)
+  cycle 4 borrower 1: execution reverted (unknown custom error)
+  cycle 4 borrower 2: execution reverted (unknown custom error)
+  cycle 4 borrower 3: execution reverted (unknown custom error)
+  cycle 5 borrower 1: execution reverted (unknown custom error)
+  cycle 5 borrower 2: execution reverted (unknown custom error)
+  cycle 5 borrower 3: execution reverted (unknown custom error)
+  cycle 5/30: 0 loans completed; first 5 loan gas 267766.8, last 5 267766.8
+  ✅ [cycle 5] §B1 OK, §S1 OK (Σavail=499700.00, mpBal=500000.58, slack=300.576640)
+  cycle 6 borrower 1: execution reverted (unknown custom error)
+  cycle 6 borrower 2: execution reverted (unknown custom error)
+  cycle 6 borrower 3: execution reverted (unknown custom error)
+  cycle 7 borrower 1: execution reverted (unknown custom error)
+  cycle 7 borrower 2: execution reverted (unknown custom error)
+  cycle 7 borrower 3: execution reverted (unknown custom error)
+  cycle 8 borrower 1: execution reverted (unknown custom error)
+  cycle 8 borrower 2: execution reverted (unknown custom error)
+  cycle 8 borrower 3: execution reverted (unknown custom error)
+  cycle 9 borrower 1: execution reverted (unknown custom error)
+  cycle 9 borrower 2: execution reverted (unknown custom error)
+  cycle 9 borrower 3: execution reverted (unknown custom error)
+  cycle 10 borrower 1: execution reverted (unknown custom error)
+  cycle 10 borrower 2: execution reverted (unknown custom error)
+  cycle 10 borrower 3: execution reverted (unknown custom error)
+  cycle 10/30: 0 loans completed; first 5 loan gas 267766.8, last 5 267766.8
+  ✅ [cycle 10] §B1 OK, §S1 OK (Σavail=499700.00, mpBal=500000.58, slack=300.576640)
+  cycle 11 borrower 1: execution reverted (unknown custom error)
+  cycle 11 borrower 2: execution reverted (unknown custom error)
+  cycle 11 borrower 3: execution reverted (unknown custom error)
+  cycle 12 borrower 1: execution reverted (unknown custom error)
+  cycle 12 borrower 2: execution reverted (unknown custom error)
+  cycle 12 borrower 3: execution reverted (unknown custom error)
+  cycle 13 borrower 1: execution reverted (unknown custom error)
+  cycle 13 borrower 2: execution reverted (unknown custom error)
+  cycle 13 borrower 3: execution reverted (unknown custom error)
+  cycle 14 borrower 1: execution reverted (unknown custom error)
+  cycle 14 borrower 2: execution reverted (unknown custom error)
+  cycle 14 borrower 3: execution reverted (unknown custom error)
+  cycle 15 borrower 1: execution reverted (unknown custom error)
+  cycle 15 borrower 2: execution reverted (unknown custom error)
+  cycle 15 borrower 3: execution reverted (unknown custom error)
+  cycle 15/30: 0 loans completed; first 5 loan gas 267766.8, last 5 267766.8
+  ✅ [cycle 15] §B1 OK, §S1 OK (Σavail=499700.00, mpBal=500000.58, slack=300.576640)
+  cycle 16 borrower 1: execution reverted (unknown custom error)
+  cycle 16 borrower 2: execution reverted (unknown custom error)
+  cycle 16 borrower 3: execution reverted (unknown custom error)
+  cycle 17 borrower 1: execution reverted (unknown custom error)
+  cycle 17 borrower 2: execution reverted (unknown custom error)
+  cycle 17 borrower 3: execution reverted (unknown custom error)
+  cycle 18 borrower 1: execution reverted (unknown custom error)
+  cycle 18 borrower 2: execution reverted (unknown custom error)
+  cycle 18 borrower 3: execution reverted (unknown custom error)
+  cycle 19 borrower 1: execution reverted (unknown custom error)
+  cycle 19 borrower 2: execution reverted (unknown custom error)
+  cycle 19 borrower 3: execution reverted (unknown custom error)
+  cycle 20 borrower 1: execution reverted (unknown custom error)
+  cycle 20 borrower 2: execution reverted (unknown custom error)
+  cycle 20 borrower 3: execution reverted (unknown custom error)
+  cycle 20/30: 0 loans completed; first 5 loan gas 267766.8, last 5 267766.8
+  ✅ [cycle 20] §B1 OK, §S1 OK (Σavail=499700.00, mpBal=500000.58, slack=300.576640)
+  cycle 21 borrower 1: execution reverted (unknown custom error)
+  cycle 21 borrower 2: execution reverted (unknown custom error)
+  cycle 21 borrower 3: execution reverted (unknown custom error)
+  cycle 22 borrower 1: execution reverted (unknown custom error)
+  cycle 22 borrower 2: execution reverted (unknown custom error)
+  cycle 22 borrower 3: execution reverted (unknown custom error)
+  cycle 23 borrower 1: execution reverted (unknown custom error)
+  cycle 23 borrower 2: execution reverted (unknown custom error)
+  cycle 23 borrower 3: execution reverted (unknown custom error)
+  cycle 24 borrower 1: execution reverted (unknown custom error)
+  cycle 24 borrower 2: execution reverted (unknown custom error)
+  cycle 24 borrower 3: execution reverted (unknown custom error)
+  cycle 25 borrower 1: execution reverted (unknown custom error)
+  cycle 25 borrower 2: execution reverted (unknown custom error)
+  cycle 25 borrower 3: execution reverted (unknown custom error)
+  cycle 25/30: 0 loans completed; first 5 loan gas 267766.8, last 5 267766.8
+  ✅ [cycle 25] §B1 OK, §S1 OK (Σavail=499700.00, mpBal=500000.58, slack=300.576640)
+  cycle 26 borrower 1: execution reverted (unknown custom error)
+  cycle 26 borrower 2: execution reverted (unknown custom error)
+  cycle 26 borrower 3: execution reverted (unknown custom error)
+  cycle 27 borrower 1: execution reverted (unknown custom error)
+  cycle 27 borrower 2: execution reverted (unknown custom error)
+  cycle 27 borrower 3: execution reverted (unknown custom error)
+  cycle 28 borrower 1: execution reverted (unknown custom error)
+  cycle 28 borrower 2: execution reverted (unknown custom error)
+  cycle 28 borrower 3: execution reverted (unknown custom error)
+  cycle 29 borrower 1: execution reverted (unknown custom error)
+  cycle 29 borrower 2: execution reverted (unknown custom error)
+  cycle 29 borrower 3: execution reverted (unknown custom error)
+  cycle 30 borrower 1: execution reverted (unknown custom error)
+  cycle 30 borrower 2: execution reverted (unknown custom error)
+  cycle 30 borrower 3: execution reverted (unknown custom error)
+  cycle 30/30: 0 loans completed; first 5 loan gas 267766.8, last 5 267766.8
+  ✅ [cycle 30] §B1 OK, §S1 OK (Σavail=499700.00, mpBal=500000.58, slack=300.576640)
+
+  Total loans completed: 0
+
+[6] Each lender claims interest from each pool
+  total interest claimed: 0 USDC
+  ✅ [post-claim] §B1 OK, §S1 OK (Σavail=499700.00, mpBal=500000.58, slack=300.576640)
+
+[7] §B1 stress: each lender does supply→withdraw 5× on borrower 0's pool
+  L0 cycle 0: execution reverted (unknown custom error)
+  lender 1: 5 supply→withdraw cycles done
+  L1 cycle 0: execution reverted (unknown custom error)
+  lender 2: 5 supply→withdraw cycles done
+  L2 cycle 0: execution reverted (unknown custom error)
+  lender 3: 5 supply→withdraw cycles done
+  L3 cycle 0: execution reverted (unknown custom error)
+  lender 4: 5 supply→withdraw cycles done
+  L4 cycle 0: execution reverted (unknown custom error)
+  lender 5: 5 supply→withdraw cycles done
+  pool 113 lenderCount: 5, unique: 5 ✅ §B1 holds
+
+Loan gas: first10=133883, last10=133883, ratio=1.000 ✅ §S5 OK
+
+[8] Cleanup
+  cleanup done
+
+End: 321.614930609257627613 ETH (Δ -4.011573817381762456)
+USDC: 2898164.637346 (Δ -100000.00)
+Invariant checks during run: 6
+
+Saved.

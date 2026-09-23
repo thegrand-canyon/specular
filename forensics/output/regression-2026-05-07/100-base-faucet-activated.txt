@@ -1,0 +1,19 @@
+=== Activating Base mainnet faucet ===
+Faucet: 0x990f7495528bFC2ebcb8CbD6EeBd2Bc32B450164
+Owner USDC: 283.509551
+Faucet USDC pre-fund: 0.0
+
+[1] Transfer 100 USDC to faucet...
+  tx: 0x654220e81186170868c35402b9ee28a685fe6e725535b5e225f0162fe29787f3
+  ✓ funded
+
+[2] Current maxEligibleAgentId: 0
+  setMaxEligibleAgentId(200) tx: 0x5b4971d2f99e0a240e8bc2066847a11a0908b192fd6b3a293045f09cca9835dd
+
+[3] isEligible() checks
+  agentId 1: true
+  agentId 50: true
+  agentId 100: true
+  agentId 201: false
+
+✅ Base mainnet faucet activated. Agents 1-200 can claim 10 USDC each.

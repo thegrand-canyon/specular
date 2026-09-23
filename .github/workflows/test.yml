@@ -1,0 +1,43 @@
+name: hardhat tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install
+        run: npm ci
+
+      - name: Compile
+        run: npx hardhat compile
+
+      - name: Test (unit + integration)
+        run: npx hardhat test
+
+      - name: API tx-builder tests
+        run: npx mocha test/api/*.test.js
+        # API tests spawn the server process; mocha runs them top-level
+
+      - name: Report
+        if: always()
+        run: |
+          echo "::notice title=Test count::See test output above for passing/failing count"

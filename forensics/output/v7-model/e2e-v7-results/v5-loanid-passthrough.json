@@ -1,0 +1,154 @@
+{
+  "scenario": "v5-loanid-passthrough",
+  "title": "M2-d loanId pass-through: concurrent equal-size loans, out-of-order repayment (on-chain)",
+  "chainId": 5042002,
+  "marketplace": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+  "reputation": "0xD7906fDFBf69BA89a4c2FE148797e24f386fE3d2",
+  "startedAt": "2026-09-23T00:31:28.052Z",
+  "finishedAt": "2026-09-23T00:33:45.809Z",
+  "passed": 17,
+  "failed": 0,
+  "blocked": 0,
+  "checks": [
+    {
+      "label": "loanId agent (score headroom required)",
+      "ok": null,
+      "detail": "V5LOANID-1 #60 0xcecE1c4884cfdefDd55613AE34162530F6978182 score 224/1000, two concurrent loans of 450.0 USDC"
+    },
+    {
+      "label": "the agent has reputation head-room for the bonus deltas this proof measures",
+      "ok": true,
+      "detail": "score 224 + 100 <= 1000"
+    },
+    {
+      "label": "two concurrent equal loans fit under the live credit limit",
+      "ok": true,
+      "detail": "per-loan 450.0, limit 900.0"
+    },
+    {
+      "label": "bonus levers for this run",
+      "ok": null,
+      "detail": "onTimeBonus 50, bonusReferenceAmount 1.0 USDC, refDuration 600s → bonus = 50·min(held,600)/600"
+    },
+    {
+      "label": "precondition: no active loans on agent B",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "both loans are the SAME amount (the case amount-matching cannot resolve)",
+      "ok": true,
+      "detail": "450.0 == 450.0"
+    },
+    {
+      "label": "recordBorrow created a per-loanId open-loan record for EACH loan",
+      "ok": true,
+      "detail": "X{start 1790123509, amt 450.0, agent 60}  Y{start 1790123574, amt 450.0, agent 60}"
+    },
+    {
+      "label": "the younger loan has a strictly later recordBorrow timestamp",
+      "ok": true,
+      "detail": "1790123509 -> 1790123574 (+65s)"
+    },
+    {
+      "label": "both loans are ACTIVE concurrently",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "LoanCompleted carries the repaid loanId (indexed), not an amount match",
+      "ok": true,
+      "detail": "loanId 107"
+    },
+    {
+      "label": "score delta on repaying Y == bonus from Y's OWN hold time (42s → 3 pts)",
+      "ok": true,
+      "detail": "delta 3, expected 3"
+    },
+    {
+      "label": "FIFO/amount-matching counterfactual would have paid 8 pts (X's 107s hold) — strictly more, so attribution is by loanId",
+      "ok": true,
+      "detail": "byLoanId 3 < FIFO 8"
+    },
+    {
+      "label": "openLoans(Y) deleted by the repayment",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "openLoans(X) UNTOUCHED: same start, amount and agentId as at recordBorrow",
+      "ok": true,
+      "detail": "start 1790123509 amt 450.0"
+    },
+    {
+      "label": "the older loan is still ACTIVE on the marketplace",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "LoanCompleted for the older loan carries ITS loanId",
+      "ok": true,
+      "detail": "loanId 106"
+    },
+    {
+      "label": "score delta on repaying X == bonus from X's own 112s hold (9 pts)",
+      "ok": true,
+      "detail": "delta 9, expected 9"
+    },
+    {
+      "label": "openLoans(X) deleted; no open-loan records remain for this agent",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "per-pool conservation exact at the end",
+      "ok": true,
+      "detail": "Σamt 1200.0 Σearned 7.974246"
+    }
+  ],
+  "txs": [
+    {
+      "label": "requestLoan X -> #106",
+      "hash": "0xa384af51d0f27e74dbdb42d14eaba746a5b0f06cf724572dbc710249ec275a70",
+      "gasUsed": "527274"
+    },
+    {
+      "label": "requestLoan Y -> #107",
+      "hash": "0x44cc9f620a3af9412e0a3cf004b3a3849489446e49c92dc6a5f2aabde95b7e13",
+      "gasUsed": "458874"
+    },
+    {
+      "label": "repay Y (#107)",
+      "hash": "0x8f01475814390cdc52a972bc37fd2f5f832df69e61be8e3d85eade1736c21172",
+      "gasUsed": "237985"
+    },
+    {
+      "label": "repay X (#106)",
+      "hash": "0x3f011d903c4277bec12f8c59ddf9a2358b71b1fd79999db84db45f80c098ec70",
+      "gasUsed": "211955"
+    }
+  ],
+  "cumulativeSpend": {
+    "nativeFromDeployer": "18.739985775",
+    "usdcMinted": "33560.0"
+  },
+  "agentId": 60,
+  "agentRole": "V5LOANID-1",
+  "perLoanAmount": "450.0",
+  "loanX": 106,
+  "loanY": 107,
+  "timings": {
+    "startX": 1790123509,
+    "startY": 1790123574,
+    "repayY": 1790123616,
+    "repayX": 1790123621,
+    "heldY": 42,
+    "heldX": 112,
+    "heldFifoCounterfactual": 107
+  },
+  "bonuses": {
+    "byLoanId": "3",
+    "fifoCounterfactual": "8",
+    "olderLoan": "9"
+  }
+}

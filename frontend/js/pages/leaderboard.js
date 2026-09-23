@@ -1,5 +1,5 @@
 import { marketplace, registry, reputation } from '../contracts.js';
-import { formatUSDC, utilizationPct, reputationTier, agentName, shortAddr, showToast } from '../utils.js';
+import { formatUSDC, utilizationPct, reputationTier, agentName, shortAddr, showToast, escapeHtml } from '../utils.js';
 import { api } from '../api.js';
 
 // Auto-refresh handle
@@ -137,7 +137,8 @@ function renderApiPools(pools, content) {
         const poolId = p.id ?? p.agentId;
         const tier   = apiTier(p.creditTier ?? p.tier);
         const score  = p.reputationScore ?? p.reputation?.score ?? '—';
-        const name   = p.name || p.agentName || `Agent #${poolId}`;
+        // p.name / p.agentName come from the API (untrusted) → escape before innerHTML.
+        const name   = escapeHtml(p.name || p.agentName || `Agent #${poolId}`);
         const avail  = p.availableLiquidityUsdc ?? 0;
         const total  = p.totalLiquidityUsdc ?? 0;
         const earned = p.totalEarnedUsdc ?? 0;
@@ -351,6 +352,8 @@ function apiTier(tier) {
         case 'SUBPRIME':  return { label: 'Subprime',  css: 'tier-average'   };
         case 'HIGH_RISK': return { label: 'High Risk', css: 'tier-below'     };
         case 'UNRATED':   return { label: 'Unrated',   css: 'tier-risk'      };
-        default:          return { label: tier || '—', css: 'tier-risk'      };
+        // Unknown tier: the raw value is untrusted (API-supplied) and is
+        // interpolated into innerHTML — escape it.
+        default:          return { label: escapeHtml(tier || '—'), css: 'tier-risk' };
     }
 }

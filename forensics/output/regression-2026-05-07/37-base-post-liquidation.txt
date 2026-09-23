@@ -1,0 +1,29 @@
+Wallet: 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+Base v4 marketplace: 0xd7b4dEE74C61844DFA75aEbe224e4635463b1C8f
+
+=== Pool 1 state ===
+  totalLiquidity: 1.5
+  availableLiquidity: 1.500002
+  lenderCount: 2 (still has §B1 duplicate)
+  poolLenders: ["0x800e305a0cadde6289dfdfedf38218f45c06f72c","0x800e305a0cadde6289dfdfedf38218f45c06f72c"]
+  unique: 1 (duplicate of 1)
+
+=== Test 1: static-call requestLoan(0.05 USDC, 7 days) ===
+  ✅ requestLoan would succeed
+  expected interest for hypothetical loan: 0.000143 USDC = 143 base units
+  §B1 panic threshold: lenderInterest ≥ 1 base unit
+  ⚠ would panic on repay (§B1 STILL ACTIVE)
+
+=== Test 3: v4 admin tools available ===
+  v4 admin functions: liquidateLoan, pause, paused, resetPoolAccounting, setPlatformFeeRate, unpause, withdrawFees, withdrawLiquidity
+  → v4 has NO compactPoolLenders. The §B1 duplicate cannot be removed without contract replacement.
+  → resetPoolAccounting only recomputes totalLoaned, doesn't touch poolLenders[]
+
+=== CONCLUSION ===
+Pool #1 on Base canonical is now operationally clean (no active loans)
+but the §B1 duplicate poolLenders entries REMAIN.
+Any new loan with non-trivial interest WILL still panic on repay.
+Only V6 migration (or contract replacement) can clear the §B1 state.
+Practical implication: pool #1 is unusable for borrowing until V6 migration.
+
+Saved.

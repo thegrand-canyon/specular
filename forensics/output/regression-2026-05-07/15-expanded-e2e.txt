@@ -1,0 +1,58 @@
+
+===== 1. DURATION EDGE CASES (Arc) =====
+pool 49 avail: 0.008544 USDC
+Supplying 1 USDC to pool 49 for duration testing...
+  tx: 0x7db28394b9b533a1b7af7e963f22e7af93aaf43e7050a2ef753a57fa53f578b1
+  durationDays=0: ❌ execution reverted: "Invalid duration"
+  durationDays=1: ❌ execution reverted: "Invalid duration"
+  durationDays=6: ❌ execution reverted: "Invalid duration"
+  durationDays=7: ✅ would succeed
+  durationDays=8: ✅ would succeed
+  durationDays=30: ✅ would succeed
+  durationDays=100: ✅ would succeed
+  durationDays=365: ✅ would succeed
+  durationDays=366: ❌ execution reverted: "Invalid duration"
+  durationDays=1000: ❌ execution reverted: "Invalid duration"
+  durationDays=86400: ❌ execution reverted: "Invalid duration"
+  durationDays=604800: ❌ execution reverted: "Invalid duration"
+Cleanup: withdrawing supplied USDC from pool 49...
+  withdrew 1 USDC, tx: 0x9ef757a0ebe2c0ca1d304199a471d5c07aaad34308e62511112c630ae4a64d7b
+
+===== 2. LIQUIDATE PRE-FLIGHT (Base, static-call) =====
+  loan 2: wait (95.28h remaining) — staticCall: execution reverted: "Loan not overdue"
+  loan 3: wait (95.28h remaining) — staticCall: execution reverted: "Loan not overdue"
+  loan 4: wait (95.28h remaining) — staticCall: execution reverted: "Loan not overdue"
+
+===== 3. CROSS-NETWORK STATE SNAPSHOT =====
+Arc pool 49: {
+  "totalLiq": 0,
+  "avail": 0.008544,
+  "totalEarned": 0.008544,
+  "lenderCount": 2,
+  "poolLenders": [
+    "0x800e305a0cadde6289dfdfedf38218f45c06f72c",
+    "0x800e305a0cadde6289dfdfedf38218f45c06f72c"
+  ],
+  "myPosition": {
+    "supplied": 0,
+    "earnedInt": 0
+  },
+  "sigma_phantom": 0.008544
+}
+Base pool 1: {
+  "totalLiq": 1.5,
+  "avail": 1.200002,
+  "totalEarned": 0.000002,
+  "lenderCount": 2,
+  "poolLenders": [
+    "0x800e305a0cadde6289dfdfedf38218f45c06f72c",
+    "0x800e305a0cadde6289dfdfedf38218f45c06f72c"
+  ],
+  "myPosition": {
+    "supplied": 1.5,
+    "earnedInt": 0
+  },
+  "duplicate_count": 1
+}
+
+Saved: ./forensics/output/regression-2026-05-07/15-expanded-e2e.json

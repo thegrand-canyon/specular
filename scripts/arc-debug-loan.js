@@ -66,4 +66,4 @@ async function main() {
     console.log('✅ Debug complete!\n');
 }
 
-main().catch(console.error);
+main().catch((e) => { console.error(e); process.exit(1); });

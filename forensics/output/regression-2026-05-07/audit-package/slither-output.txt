@@ -1,0 +1,450 @@
+/Users/peterschroeder/.local/share/uv/tools/slither-analyzer/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+'solc --version' running
+'solc @openzeppelin=node_modules/@openzeppelin contracts/core/AgentLiquidityMarketplaceV6.sol --combined-json abi,ast,bin,bin-runtime,srcmap,srcmap-runtime,userdoc,devdoc,hashes --via-ir --optimize --optimize-runs=200 --allow-paths .,/Users/peterschroeder/Specular/contracts/core' running
+Compilation warnings/errors on contracts/core/AgentLiquidityMarketplaceV6.sol:
+/Users/peterschroeder/.local/share/uv/tools/solc-select/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+Warning: Function state mutability can be restricted to pure
+   --> contracts/core/AgentLiquidityMarketplaceV6.sol:502:5:
+    |
+502 |     function getActiveAgents() external view returns (uint256[] memory) {
+    |     ^ (Relevant source part starts here and spans across multiple lines).
+
+
+
+Detector: incorrect-exp
+Math.mulDiv(uint256,uint256,uint256) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#204-275) has bitwise-xor operator ^ instead of the exponentiation operator **: 
+	 - inverse = (3 * denominator) ^ 2 (node_modules/@openzeppelin/contracts/utils/math/Math.sol#257)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#incorrect-exponentiation
+
+Detector: divide-before-multiply
+AgentLiquidityMarketplaceV6.calculateInterest(uint256,uint256,uint256) (contracts/core/AgentLiquidityMarketplaceV6.sol#437-445) performs a multiplication on the result of a division:
+	- annualInterest = (principal * annualRateBPS) / 10000 (contracts/core/AgentLiquidityMarketplaceV6.sol#442)
+	- interest = (annualInterest * durationSeconds) / 31536000 (contracts/core/AgentLiquidityMarketplaceV6.sol#443)
+Math.mulDiv(uint256,uint256,uint256) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#204-275) performs a multiplication on the result of a division:
+	- denominator = denominator / twos (node_modules/@openzeppelin/contracts/utils/math/Math.sol#242)
+	- inverse = (3 * denominator) ^ 2 (node_modules/@openzeppelin/contracts/utils/math/Math.sol#257)
+Math.mulDiv(uint256,uint256,uint256) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#204-275) performs a multiplication on the result of a division:
+	- denominator = denominator / twos (node_modules/@openzeppelin/contracts/utils/math/Math.sol#242)
+	- inverse *= 2 - denominator * inverse (node_modules/@openzeppelin/contracts/utils/math/Math.sol#261)
+Math.mulDiv(uint256,uint256,uint256) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#204-275) performs a multiplication on the result of a division:
+	- denominator = denominator / twos (node_modules/@openzeppelin/contracts/utils/math/Math.sol#242)
+	- inverse *= 2 - denominator * inverse (node_modules/@openzeppelin/contracts/utils/math/Math.sol#262)
+Math.mulDiv(uint256,uint256,uint256) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#204-275) performs a multiplication on the result of a division:
+	- denominator = denominator / twos (node_modules/@openzeppelin/contracts/utils/math/Math.sol#242)
+	- inverse *= 2 - denominator * inverse (node_modules/@openzeppelin/contracts/utils/math/Math.sol#263)
+Math.mulDiv(uint256,uint256,uint256) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#204-275) performs a multiplication on the result of a division:
+	- denominator = denominator / twos (node_modules/@openzeppelin/contracts/utils/math/Math.sol#242)
+	- inverse *= 2 - denominator * inverse (node_modules/@openzeppelin/contracts/utils/math/Math.sol#264)
+Math.mulDiv(uint256,uint256,uint256) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#204-275) performs a multiplication on the result of a division:
+	- denominator = denominator / twos (node_modules/@openzeppelin/contracts/utils/math/Math.sol#242)
+	- inverse *= 2 - denominator * inverse (node_modules/@openzeppelin/contracts/utils/math/Math.sol#265)
+Math.mulDiv(uint256,uint256,uint256) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#204-275) performs a multiplication on the result of a division:
+	- denominator = denominator / twos (node_modules/@openzeppelin/contracts/utils/math/Math.sol#242)
+	- inverse *= 2 - denominator * inverse (node_modules/@openzeppelin/contracts/utils/math/Math.sol#266)
+Math.mulDiv(uint256,uint256,uint256) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#204-275) performs a multiplication on the result of a division:
+	- low = low / twos (node_modules/@openzeppelin/contracts/utils/math/Math.sol#245)
+	- result = low * inverse (node_modules/@openzeppelin/contracts/utils/math/Math.sol#272)
+Math.invMod(uint256,uint256) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#315-361) performs a multiplication on the result of a division:
+	- quotient = gcd / remainder (node_modules/@openzeppelin/contracts/utils/math/Math.sol#337)
+	- (gcd,remainder) = (remainder,gcd - remainder * quotient) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#339-346)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#divide-before-multiply
+
+Detector: incorrect-equality
+AgentLiquidityMarketplaceV6._countActiveLoansFromArray(address) (contracts/core/AgentLiquidityMarketplaceV6.sol#705-716) uses a dangerous strict equality:
+	- loans[loanIds[i]].state == LoanState.ACTIVE (contracts/core/AgentLiquidityMarketplaceV6.sol#710)
+ValidationRegistry.getSummary(uint256,address[],string) (contracts/core/ValidationRegistry.sol#303-365) uses a dangerous strict equality:
+	- validation.status == ValidationStatus.PENDING || validation.status == ValidationStatus.DISPUTED (contracts/core/ValidationRegistry.sol#326-327)
+ValidationRegistry.getSummary(uint256,address[],string) (contracts/core/ValidationRegistry.sol#303-365) uses a dangerous strict equality:
+	- validation.status == ValidationStatus.APPROVED (contracts/core/ValidationRegistry.sol#352)
+ValidationRegistry.getSummary(uint256,address[],string) (contracts/core/ValidationRegistry.sol#303-365) uses a dangerous strict equality:
+	- validation.status == ValidationStatus.REJECTED (contracts/core/ValidationRegistry.sol#354)
+ValidationRegistry.validationRequest(address,uint256,string,bytes32) (contracts/core/ValidationRegistry.sol#151-207) uses a dangerous strict equality:
+	- require(bool,string)(validations[requestHash].timestamp == 0,Validation request already exists) (contracts/core/ValidationRegistry.sol#174-177)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#dangerous-strict-equalities
+
+Detector: reentrancy-no-eth
+Reentrancy in AgentRegistryV2.register(string,AgentRegistryV2.MetadataEntry[]) (contracts/core/AgentRegistryV2.sol#71-105):
+	External calls:
+	- _safeMint(msg.sender,agentId) (contracts/core/AgentRegistryV2.sol#81)
+		- ERC721Utils.checkOnERC721Received(_msgSender(),address(0),to,tokenId,data) (node_modules/@openzeppelin/contracts/token/ERC721/ERC721.sol#289)
+		- retval = IERC721Receiver(to).onERC721Received(operator,from,tokenId,data) (node_modules/@openzeppelin/contracts/token/ERC721/utils/ERC721Utils.sol#33-47)
+	State variables written after the call(s):
+	- addressToAgentId[msg.sender] = agentId (contracts/core/AgentRegistryV2.sol#94)
+	AgentRegistryV2.addressToAgentId (contracts/core/AgentRegistryV2.sol#37) can be used in cross function reentrancies:
+	- AgentRegistryV2._update(address,uint256,address) (contracts/core/AgentRegistryV2.sol#286-303)
+	- AgentRegistryV2.addressToAgentId (contracts/core/AgentRegistryV2.sol#37)
+	- AgentRegistryV2.getAgentInfo(address) (contracts/core/AgentRegistryV2.sol#238-246)
+	- AgentRegistryV2.isAgentActive(address) (contracts/core/AgentRegistryV2.sol#228-231)
+	- AgentRegistryV2.isRegistered(address) (contracts/core/AgentRegistryV2.sol#219-221)
+	- AgentRegistryV2.register(string,AgentRegistryV2.MetadataEntry[]) (contracts/core/AgentRegistryV2.sol#71-105)
+	- agents[agentId] = Agent({agentId:agentId,owner:msg.sender,agentWallet:msg.sender,agentURI:agentURI,registrationTime:block.timestamp,isActive:true}) (contracts/core/AgentRegistryV2.sol#85-92)
+	AgentRegistryV2.agents (contracts/core/AgentRegistryV2.sol#36) can be used in cross function reentrancies:
+	- AgentRegistryV2._update(address,uint256,address) (contracts/core/AgentRegistryV2.sol#286-303)
+	- AgentRegistryV2.agents (contracts/core/AgentRegistryV2.sol#36)
+	- AgentRegistryV2.deactivateAgent(uint256) (contracts/core/AgentRegistryV2.sol#190-197)
+	- AgentRegistryV2.getAgentInfo(address) (contracts/core/AgentRegistryV2.sol#238-246)
+	- AgentRegistryV2.getAgentInfoById(uint256) (contracts/core/AgentRegistryV2.sol#253-260)
+	- AgentRegistryV2.isAgentActive(address) (contracts/core/AgentRegistryV2.sol#228-231)
+	- AgentRegistryV2.reactivateAgent(uint256) (contracts/core/AgentRegistryV2.sol#203-210)
+	- AgentRegistryV2.register(string,AgentRegistryV2.MetadataEntry[]) (contracts/core/AgentRegistryV2.sol#71-105)
+	- AgentRegistryV2.setAgentURI(uint256,string) (contracts/core/AgentRegistryV2.sol#112-120)
+	- AgentRegistryV2.setAgentWallet(uint256,address,uint256,bytes) (contracts/core/AgentRegistryV2.sol#129-150)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-1
+
+Detector: unused-return
+ReputationManagerV3.calculateCreditLimit(address) (contracts/core/ReputationManagerV3.sol#223-243) ignores return value by (None,None,None,avgScore) = validationRegistry.getSummary(agentId,new address[](0),) (contracts/core/ReputationManagerV3.sol#236)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#unused-return
+
+Detector: events-maths
+AgentLiquidityMarketplaceV6.withdrawFees(uint256) (contracts/core/AgentLiquidityMarketplaceV6.sol#534-538) should emit an event for: 
+	- accumulatedFees -= amount (contracts/core/AgentLiquidityMarketplaceV6.sol#536) 
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#missing-events-arithmetic
+
+Detector: reentrancy-benign
+Reentrancy in AgentRegistryV2.register(string,AgentRegistryV2.MetadataEntry[]) (contracts/core/AgentRegistryV2.sol#71-105):
+	External calls:
+	- _safeMint(msg.sender,agentId) (contracts/core/AgentRegistryV2.sol#81)
+		- ERC721Utils.checkOnERC721Received(_msgSender(),address(0),to,tokenId,data) (node_modules/@openzeppelin/contracts/token/ERC721/ERC721.sol#289)
+		- retval = IERC721Receiver(to).onERC721Received(operator,from,tokenId,data) (node_modules/@openzeppelin/contracts/token/ERC721/utils/ERC721Utils.sol#33-47)
+	State variables written after the call(s):
+	- _setTokenURI(agentId,agentURI) (contracts/core/AgentRegistryV2.sol#82)
+		- _tokenURIs[tokenId] = _tokenURI (node_modules/@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol#55)
+	- agentMetadata[agentId][metadata[i].key] = metadata[i].value (contracts/core/AgentRegistryV2.sol#98)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-2
+
+Detector: reentrancy-events
+Reentrancy in AgentRegistryV2.register(string,AgentRegistryV2.MetadataEntry[]) (contracts/core/AgentRegistryV2.sol#71-105):
+	External calls:
+	- _safeMint(msg.sender,agentId) (contracts/core/AgentRegistryV2.sol#81)
+		- ERC721Utils.checkOnERC721Received(_msgSender(),address(0),to,tokenId,data) (node_modules/@openzeppelin/contracts/token/ERC721/ERC721.sol#289)
+		- retval = IERC721Receiver(to).onERC721Received(operator,from,tokenId,data) (node_modules/@openzeppelin/contracts/token/ERC721/utils/ERC721Utils.sol#33-47)
+	Event emitted after the call(s):
+	- AgentRegistered(agentId,msg.sender,agentURI,block.timestamp) (contracts/core/AgentRegistryV2.sol#102)
+	- MetadataUpdate(tokenId) (node_modules/@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol#56)
+		- _setTokenURI(agentId,agentURI) (contracts/core/AgentRegistryV2.sol#82)
+	- MetadataUpdated(agentId,metadata[i].key,metadata[i].value) (contracts/core/AgentRegistryV2.sol#99)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-3
+
+Detector: timestamp
+AgentLiquidityMarketplaceV6.withdrawLiquidity(uint256,uint256) (contracts/core/AgentLiquidityMarketplaceV6.sol#201-219) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(position.amount >= amount,Insufficient balance) (contracts/core/AgentLiquidityMarketplaceV6.sol#205)
+AgentLiquidityMarketplaceV6._disburseLoan(uint256) (contracts/core/AgentLiquidityMarketplaceV6.sol#285-310) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(loan.state == LoanState.REQUESTED,Invalid loan state) (contracts/core/AgentLiquidityMarketplaceV6.sol#289)
+AgentLiquidityMarketplaceV6.repayLoan(uint256) (contracts/core/AgentLiquidityMarketplaceV6.sol#315-364) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(msg.sender == loan.borrower,Not the borrower) (contracts/core/AgentLiquidityMarketplaceV6.sol#317)
+	- require(bool,string)(loan.state == LoanState.ACTIVE,Loan not active) (contracts/core/AgentLiquidityMarketplaceV6.sol#318)
+	- onTime = block.timestamp <= loan.endTime (contracts/core/AgentLiquidityMarketplaceV6.sol#360)
+AgentLiquidityMarketplaceV6.liquidateLoan(uint256) (contracts/core/AgentLiquidityMarketplaceV6.sol#400-432) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(loan.state == LoanState.ACTIVE,Loan not active) (contracts/core/AgentLiquidityMarketplaceV6.sol#402)
+	- require(bool,string)(block.timestamp > loan.endTime,Loan not overdue) (contracts/core/AgentLiquidityMarketplaceV6.sol#403)
+AgentLiquidityMarketplaceV6._countActiveLoansFromArray(address) (contracts/core/AgentLiquidityMarketplaceV6.sol#705-716) uses timestamp for comparisons
+	Dangerous comparisons:
+	- loans[loanIds[i]].state == LoanState.ACTIVE (contracts/core/AgentLiquidityMarketplaceV6.sol#710)
+AgentRegistryV2.setAgentWallet(uint256,address,uint256,bytes) (contracts/core/AgentRegistryV2.sol#129-150) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(block.timestamp <= deadline,Signature expired) (contracts/core/AgentRegistryV2.sol#135)
+AgentRegistryV2.deactivateAgent(uint256) (contracts/core/AgentRegistryV2.sol#190-197) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(agents[agentId].isActive,Agent already deactivated) (contracts/core/AgentRegistryV2.sol#192)
+AgentRegistryV2.reactivateAgent(uint256) (contracts/core/AgentRegistryV2.sol#203-210) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(! agents[agentId].isActive,Agent already active) (contracts/core/AgentRegistryV2.sol#205)
+AgentRegistryV2.isAgentActive(address) (contracts/core/AgentRegistryV2.sol#228-231) uses timestamp for comparisons
+	Dangerous comparisons:
+	- agentId != 0 && agents[agentId].isActive (contracts/core/AgentRegistryV2.sol#230)
+ValidationRegistry.validationRequest(address,uint256,string,bytes32) (contracts/core/ValidationRegistry.sol#151-207) uses timestamp for comparisons
+	Dangerous comparisons:
+	- requestHash == bytes32(0) (contracts/core/ValidationRegistry.sol#161)
+	- require(bool,string)(validations[requestHash].timestamp == 0,Validation request already exists) (contracts/core/ValidationRegistry.sol#174-177)
+ValidationRegistry.validationResponse(bytes32,uint8,string,bytes32,string) (contracts/core/ValidationRegistry.sol#217-252) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(validation.timestamp != 0,Validation request does not exist) (contracts/core/ValidationRegistry.sol#226)
+	- require(bool,string)(msg.sender == validation.validatorAddress,Not the assigned validator) (contracts/core/ValidationRegistry.sol#227-230)
+	- require(bool,string)(validation.status == ValidationStatus.PENDING,Validation already completed) (contracts/core/ValidationRegistry.sol#231-234)
+ValidationRegistry.disputeValidation(bytes32) (contracts/core/ValidationRegistry.sol#258-277) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(validation.timestamp != 0,Validation does not exist) (contracts/core/ValidationRegistry.sol#261)
+	- require(bool,string)(msg.sender == validation.requester || msg.sender == agentRegistry.ownerOf(validation.agentId),Not authorized to dispute) (contracts/core/ValidationRegistry.sol#262-266)
+	- require(bool,string)(validation.status == ValidationStatus.APPROVED || validation.status == ValidationStatus.REJECTED,Can only dispute completed validations) (contracts/core/ValidationRegistry.sol#267-271)
+ValidationRegistry.getValidationStatus(bytes32) (contracts/core/ValidationRegistry.sol#284-291) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(validations[requestHash].timestamp != 0,Validation does not exist) (contracts/core/ValidationRegistry.sol#289)
+ValidationRegistry.getSummary(uint256,address[],string) (contracts/core/ValidationRegistry.sol#303-365) uses timestamp for comparisons
+	Dangerous comparisons:
+	- validation.status == ValidationStatus.PENDING || validation.status == ValidationStatus.DISPUTED (contracts/core/ValidationRegistry.sol#326-327)
+	- validation.validatorAddress == validatorAddresses[j] (contracts/core/ValidationRegistry.sol#335)
+	- keccak256(bytes)(bytes(validation.tag)) != keccak256(bytes)(bytes(tag)) (contracts/core/ValidationRegistry.sol#344)
+	- validation.status == ValidationStatus.APPROVED (contracts/core/ValidationRegistry.sol#352)
+	- validation.status == ValidationStatus.REJECTED (contracts/core/ValidationRegistry.sol#354)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#block-timestamp
+
+Detector: assembly
+SafeERC20._callOptionalReturn(IERC20,bytes) (node_modules/@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol#173-191) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol#176-186)
+SafeERC20._callOptionalReturnBool(IERC20,bytes) (node_modules/@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol#201-211) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol#205-209)
+ERC721Utils.checkOnERC721Received(address,address,address,uint256,bytes) (node_modules/@openzeppelin/contracts/token/ERC721/utils/ERC721Utils.sol#25-49) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/token/ERC721/utils/ERC721Utils.sol#43-45)
+Panic.panic(uint256) (node_modules/@openzeppelin/contracts/utils/Panic.sol#50-56) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/Panic.sol#51-55)
+ShortStrings.toString(ShortString) (node_modules/@openzeppelin/contracts/utils/ShortStrings.sol#63-72) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/ShortStrings.sol#67-70)
+StorageSlot.getAddressSlot(bytes32) (node_modules/@openzeppelin/contracts/utils/StorageSlot.sol#66-70) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/StorageSlot.sol#67-69)
+StorageSlot.getBooleanSlot(bytes32) (node_modules/@openzeppelin/contracts/utils/StorageSlot.sol#75-79) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/StorageSlot.sol#76-78)
+StorageSlot.getBytes32Slot(bytes32) (node_modules/@openzeppelin/contracts/utils/StorageSlot.sol#84-88) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/StorageSlot.sol#85-87)
+StorageSlot.getUint256Slot(bytes32) (node_modules/@openzeppelin/contracts/utils/StorageSlot.sol#93-97) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/StorageSlot.sol#94-96)
+StorageSlot.getInt256Slot(bytes32) (node_modules/@openzeppelin/contracts/utils/StorageSlot.sol#102-106) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/StorageSlot.sol#103-105)
+StorageSlot.getStringSlot(bytes32) (node_modules/@openzeppelin/contracts/utils/StorageSlot.sol#111-115) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/StorageSlot.sol#112-114)
+StorageSlot.getStringSlot(string) (node_modules/@openzeppelin/contracts/utils/StorageSlot.sol#120-124) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/StorageSlot.sol#121-123)
+StorageSlot.getBytesSlot(bytes32) (node_modules/@openzeppelin/contracts/utils/StorageSlot.sol#129-133) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/StorageSlot.sol#130-132)
+StorageSlot.getBytesSlot(bytes) (node_modules/@openzeppelin/contracts/utils/StorageSlot.sol#138-142) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/StorageSlot.sol#139-141)
+Strings.toString(uint256) (node_modules/@openzeppelin/contracts/utils/Strings.sol#45-63) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/Strings.sol#50-52)
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/Strings.sol#55-57)
+Strings.toChecksumHexString(address) (node_modules/@openzeppelin/contracts/utils/Strings.sol#111-129) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/Strings.sol#116-118)
+Strings.escapeJSON(string) (node_modules/@openzeppelin/contracts/utils/Strings.sol#446-476) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/Strings.sol#470-473)
+Strings._unsafeReadBytesOffset(bytes,uint256) (node_modules/@openzeppelin/contracts/utils/Strings.sol#484-489) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/Strings.sol#486-488)
+ECDSA.tryRecover(bytes32,bytes) (node_modules/@openzeppelin/contracts/utils/cryptography/ECDSA.sol#56-75) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/cryptography/ECDSA.sol#66-70)
+MessageHashUtils.toEthSignedMessageHash(bytes32) (node_modules/@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol#30-36) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol#31-35)
+MessageHashUtils.toDataWithIntendedValidatorHash(address,bytes32) (node_modules/@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol#69-79) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol#73-78)
+MessageHashUtils.toTypedDataHash(bytes32,bytes32) (node_modules/@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol#90-98) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol#91-97)
+Math.add512(uint256,uint256) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#25-30) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/math/Math.sol#26-29)
+Math.mul512(uint256,uint256) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#37-46) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/math/Math.sol#41-45)
+Math.tryMul(uint256,uint256) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#73-84) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/math/Math.sol#76-80)
+Math.tryDiv(uint256,uint256) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#89-97) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/math/Math.sol#92-95)
+Math.tryMod(uint256,uint256) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#102-110) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/math/Math.sol#105-108)
+Math.mulDiv(uint256,uint256,uint256) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#204-275) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/math/Math.sol#227-234)
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/math/Math.sol#240-249)
+Math.tryModExp(uint256,uint256,uint256) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#409-433) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/math/Math.sol#411-432)
+Math.tryModExp(bytes,bytes,bytes) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#449-471) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/math/Math.sol#461-470)
+Math.log2(uint256) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#612-651) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/math/Math.sol#648-650)
+SafeCast.toUint(bool) (node_modules/@openzeppelin/contracts/utils/math/SafeCast.sol#1157-1161) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/math/SafeCast.sol#1158-1160)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#assembly-usage
+
+Detector: pragma
+5 different versions of Solidity are used:
+	- Version constraint ^0.8.20 is used by:
+		-^0.8.20 (contracts/core/AgentLiquidityMarketplaceV6.sol#2)
+		-^0.8.20 (contracts/core/AgentRegistryV2.sol#2)
+		-^0.8.20 (contracts/core/ReputationManagerV3.sol#2)
+		-^0.8.20 (contracts/core/ValidationRegistry.sol#2)
+		-^0.8.20 (node_modules/@openzeppelin/contracts/access/Ownable.sol#4)
+		-^0.8.20 (node_modules/@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol#4)
+		-^0.8.20 (node_modules/@openzeppelin/contracts/token/ERC721/ERC721.sol#4)
+		-^0.8.20 (node_modules/@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol#4)
+		-^0.8.20 (node_modules/@openzeppelin/contracts/token/ERC721/utils/ERC721Utils.sol#4)
+		-^0.8.20 (node_modules/@openzeppelin/contracts/utils/Context.sol#4)
+		-^0.8.20 (node_modules/@openzeppelin/contracts/utils/Panic.sol#4)
+		-^0.8.20 (node_modules/@openzeppelin/contracts/utils/Pausable.sol#4)
+		-^0.8.20 (node_modules/@openzeppelin/contracts/utils/ReentrancyGuard.sol#4)
+		-^0.8.20 (node_modules/@openzeppelin/contracts/utils/ShortStrings.sol#4)
+		-^0.8.20 (node_modules/@openzeppelin/contracts/utils/StorageSlot.sol#5)
+		-^0.8.20 (node_modules/@openzeppelin/contracts/utils/Strings.sol#4)
+		-^0.8.20 (node_modules/@openzeppelin/contracts/utils/cryptography/ECDSA.sol#4)
+		-^0.8.20 (node_modules/@openzeppelin/contracts/utils/cryptography/EIP712.sol#4)
+		-^0.8.20 (node_modules/@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol#4)
+		-^0.8.20 (node_modules/@openzeppelin/contracts/utils/introspection/ERC165.sol#4)
+		-^0.8.20 (node_modules/@openzeppelin/contracts/utils/math/Math.sol#4)
+		-^0.8.20 (node_modules/@openzeppelin/contracts/utils/math/SafeCast.sol#5)
+		-^0.8.20 (node_modules/@openzeppelin/contracts/utils/math/SignedMath.sol#4)
+	- Version constraint >=0.6.2 is used by:
+		->=0.6.2 (node_modules/@openzeppelin/contracts/interfaces/IERC1363.sol#4)
+		->=0.6.2 (node_modules/@openzeppelin/contracts/interfaces/IERC4906.sol#4)
+		->=0.6.2 (node_modules/@openzeppelin/contracts/interfaces/IERC721.sol#4)
+		->=0.6.2 (node_modules/@openzeppelin/contracts/token/ERC721/IERC721.sol#4)
+		->=0.6.2 (node_modules/@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol#4)
+	- Version constraint >=0.4.16 is used by:
+		->=0.4.16 (node_modules/@openzeppelin/contracts/interfaces/IERC165.sol#4)
+		->=0.4.16 (node_modules/@openzeppelin/contracts/interfaces/IERC20.sol#4)
+		->=0.4.16 (node_modules/@openzeppelin/contracts/interfaces/IERC5267.sol#4)
+		->=0.4.16 (node_modules/@openzeppelin/contracts/token/ERC20/IERC20.sol#4)
+		->=0.4.16 (node_modules/@openzeppelin/contracts/utils/introspection/IERC165.sol#4)
+	- Version constraint >=0.8.4 is used by:
+		->=0.8.4 (node_modules/@openzeppelin/contracts/interfaces/draft-IERC6093.sol#3)
+	- Version constraint >=0.5.0 is used by:
+		->=0.5.0 (node_modules/@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol#4)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#different-pragma-directives-are-used
+
+Detector: dead-code
+AgentLiquidityMarketplaceV6._countActiveLoansFromArray(address) (contracts/core/AgentLiquidityMarketplaceV6.sol#705-716) is never used and should be removed
+Context._contextSuffixLength() (node_modules/@openzeppelin/contracts/utils/Context.sol#25-27) is never used and should be removed
+Context._msgData() (node_modules/@openzeppelin/contracts/utils/Context.sol#21-23) is never used and should be removed
+ERC721._burn(uint256) (node_modules/@openzeppelin/contracts/token/ERC721/ERC721.sol#303-308) is never used and should be removed
+ERC721._increaseBalance(address,uint128) (node_modules/@openzeppelin/contracts/token/ERC721/ERC721.sol#199-203) is never used and should be removed
+ERC721._safeTransfer(address,address,uint256) (node_modules/@openzeppelin/contracts/token/ERC721/ERC721.sol#352-354) is never used and should be removed
+ERC721._safeTransfer(address,address,uint256,bytes) (node_modules/@openzeppelin/contracts/token/ERC721/ERC721.sol#360-363) is never used and should be removed
+ERC721._transfer(address,address,uint256) (node_modules/@openzeppelin/contracts/token/ERC721/ERC721.sol#321-331) is never used and should be removed
+ReentrancyGuard._reentrancyGuardEntered() (node_modules/@openzeppelin/contracts/utils/ReentrancyGuard.sol#84-86) is never used and should be removed
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#dead-code
+
+Detector: solc-version
+Version constraint ^0.8.20 contains known severe issues (https://solidity.readthedocs.io/en/latest/bugs.html)
+	- VerbatimInvalidDeduplication
+	- FullInlinerNonExpressionSplitArgumentEvaluationOrder
+	- MissingSideEffectsOnSelectorAccess.
+It is used by:
+	- ^0.8.20 (contracts/core/AgentLiquidityMarketplaceV6.sol#2)
+	- ^0.8.20 (contracts/core/AgentRegistryV2.sol#2)
+	- ^0.8.20 (contracts/core/ReputationManagerV3.sol#2)
+	- ^0.8.20 (contracts/core/ValidationRegistry.sol#2)
+	- ^0.8.20 (node_modules/@openzeppelin/contracts/access/Ownable.sol#4)
+	- ^0.8.20 (node_modules/@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol#4)
+	- ^0.8.20 (node_modules/@openzeppelin/contracts/token/ERC721/ERC721.sol#4)
+	- ^0.8.20 (node_modules/@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol#4)
+	- ^0.8.20 (node_modules/@openzeppelin/contracts/token/ERC721/utils/ERC721Utils.sol#4)
+	- ^0.8.20 (node_modules/@openzeppelin/contracts/utils/Context.sol#4)
+	- ^0.8.20 (node_modules/@openzeppelin/contracts/utils/Panic.sol#4)
+	- ^0.8.20 (node_modules/@openzeppelin/contracts/utils/Pausable.sol#4)
+	- ^0.8.20 (node_modules/@openzeppelin/contracts/utils/ReentrancyGuard.sol#4)
+	- ^0.8.20 (node_modules/@openzeppelin/contracts/utils/ShortStrings.sol#4)
+	- ^0.8.20 (node_modules/@openzeppelin/contracts/utils/StorageSlot.sol#5)
+	- ^0.8.20 (node_modules/@openzeppelin/contracts/utils/Strings.sol#4)
+	- ^0.8.20 (node_modules/@openzeppelin/contracts/utils/cryptography/ECDSA.sol#4)
+	- ^0.8.20 (node_modules/@openzeppelin/contracts/utils/cryptography/EIP712.sol#4)
+	- ^0.8.20 (node_modules/@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol#4)
+	- ^0.8.20 (node_modules/@openzeppelin/contracts/utils/introspection/ERC165.sol#4)
+	- ^0.8.20 (node_modules/@openzeppelin/contracts/utils/math/Math.sol#4)
+	- ^0.8.20 (node_modules/@openzeppelin/contracts/utils/math/SafeCast.sol#5)
+	- ^0.8.20 (node_modules/@openzeppelin/contracts/utils/math/SignedMath.sol#4)
+Version constraint >=0.6.2 contains known severe issues (https://solidity.readthedocs.io/en/latest/bugs.html)
+	- MissingSideEffectsOnSelectorAccess
+	- AbiReencodingHeadOverflowWithStaticArrayCleanup
+	- DirtyBytesArrayToStorage
+	- NestedCalldataArrayAbiReencodingSizeValidation
+	- ABIDecodeTwoDimensionalArrayMemory
+	- KeccakCaching
+	- EmptyByteArrayCopy
+	- DynamicArrayCleanup
+	- MissingEscapingInFormatting
+	- ArraySliceDynamicallyEncodedBaseType
+	- ImplicitConstructorCallvalueCheck
+	- TupleAssignmentMultiStackSlotComponents
+	- MemoryArrayCreationOverflow.
+It is used by:
+	- >=0.6.2 (node_modules/@openzeppelin/contracts/interfaces/IERC1363.sol#4)
+	- >=0.6.2 (node_modules/@openzeppelin/contracts/interfaces/IERC4906.sol#4)
+	- >=0.6.2 (node_modules/@openzeppelin/contracts/interfaces/IERC721.sol#4)
+	- >=0.6.2 (node_modules/@openzeppelin/contracts/token/ERC721/IERC721.sol#4)
+	- >=0.6.2 (node_modules/@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol#4)
+Version constraint >=0.4.16 contains known severe issues (https://solidity.readthedocs.io/en/latest/bugs.html)
+	- DirtyBytesArrayToStorage
+	- ABIDecodeTwoDimensionalArrayMemory
+	- KeccakCaching
+	- EmptyByteArrayCopy
+	- DynamicArrayCleanup
+	- ImplicitConstructorCallvalueCheck
+	- TupleAssignmentMultiStackSlotComponents
+	- MemoryArrayCreationOverflow
+	- privateCanBeOverridden
+	- SignedArrayStorageCopy
+	- ABIEncoderV2StorageArrayWithMultiSlotElement
+	- DynamicConstructorArgumentsClippedABIV2
+	- UninitializedFunctionPointerInConstructor_0.4.x
+	- IncorrectEventSignatureInLibraries_0.4.x
+	- ExpExponentCleanup
+	- NestedArrayFunctionCallDecoder
+	- ZeroFunctionSelector.
+It is used by:
+	- >=0.4.16 (node_modules/@openzeppelin/contracts/interfaces/IERC165.sol#4)
+	- >=0.4.16 (node_modules/@openzeppelin/contracts/interfaces/IERC20.sol#4)
+	- >=0.4.16 (node_modules/@openzeppelin/contracts/interfaces/IERC5267.sol#4)
+	- >=0.4.16 (node_modules/@openzeppelin/contracts/token/ERC20/IERC20.sol#4)
+	- >=0.4.16 (node_modules/@openzeppelin/contracts/utils/introspection/IERC165.sol#4)
+Version constraint >=0.8.4 contains known severe issues (https://solidity.readthedocs.io/en/latest/bugs.html)
+	- FullInlinerNonExpressionSplitArgumentEvaluationOrder
+	- MissingSideEffectsOnSelectorAccess
+	- AbiReencodingHeadOverflowWithStaticArrayCleanup
+	- DirtyBytesArrayToStorage
+	- DataLocationChangeInInternalOverride
+	- NestedCalldataArrayAbiReencodingSizeValidation
+	- SignedImmutables.
+It is used by:
+	- >=0.8.4 (node_modules/@openzeppelin/contracts/interfaces/draft-IERC6093.sol#3)
+Version constraint >=0.5.0 contains known severe issues (https://solidity.readthedocs.io/en/latest/bugs.html)
+	- DirtyBytesArrayToStorage
+	- ABIDecodeTwoDimensionalArrayMemory
+	- KeccakCaching
+	- EmptyByteArrayCopy
+	- DynamicArrayCleanup
+	- ImplicitConstructorCallvalueCheck
+	- TupleAssignmentMultiStackSlotComponents
+	- MemoryArrayCreationOverflow
+	- privateCanBeOverridden
+	- SignedArrayStorageCopy
+	- ABIEncoderV2StorageArrayWithMultiSlotElement
+	- DynamicConstructorArgumentsClippedABIV2
+	- UninitializedFunctionPointerInConstructor
+	- IncorrectEventSignatureInLibraries
+	- ABIEncoderV2PackedStorage.
+It is used by:
+	- >=0.5.0 (node_modules/@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol#4)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#incorrect-versions-of-solidity
+
+Detector: naming-convention
+Parameter ReputationManagerV3.setValidationRegistry(address)._validationRegistry (contracts/core/ReputationManagerV3.sol#79) is not in mixedCase
+Parameter ReputationManagerV3.setScoringParameters(uint256,uint256,uint256,uint256)._onTimeBonus (contracts/core/ReputationManagerV3.sol#88) is not in mixedCase
+Parameter ReputationManagerV3.setScoringParameters(uint256,uint256,uint256,uint256)._defaultPenaltyBase (contracts/core/ReputationManagerV3.sol#89) is not in mixedCase
+Parameter ReputationManagerV3.setScoringParameters(uint256,uint256,uint256,uint256)._defaultPenaltyLarge (contracts/core/ReputationManagerV3.sol#90) is not in mixedCase
+Parameter ReputationManagerV3.setScoringParameters(uint256,uint256,uint256,uint256)._largeLoanThreshold (contracts/core/ReputationManagerV3.sol#91) is not in mixedCase
+Parameter ReputationManagerV3.setValidationBonusParameters(uint256,uint256)._bonusThreshold (contracts/core/ReputationManagerV3.sol#107) is not in mixedCase
+Parameter ReputationManagerV3.setValidationBonusParameters(uint256,uint256)._creditBonus (contracts/core/ReputationManagerV3.sol#108) is not in mixedCase
+Function EIP712._EIP712Name() (node_modules/@openzeppelin/contracts/utils/cryptography/EIP712.sol#146-148) is not in mixedCase
+Function EIP712._EIP712Version() (node_modules/@openzeppelin/contracts/utils/cryptography/EIP712.sol#157-159) is not in mixedCase
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#conformance-to-solidity-naming-conventions
+
+Detector: too-many-digits
+ShortStrings.slitherConstructorConstantVariables() (node_modules/@openzeppelin/contracts/utils/ShortStrings.sol#40-122) uses literals with too many digits:
+	- FALLBACK_SENTINEL = 0x00000000000000000000000000000000000000000000000000000000000000FF (node_modules/@openzeppelin/contracts/utils/ShortStrings.sol#42)
+Math.log2(uint256) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#612-651) uses literals with too many digits:
+	- r = r | byte(uint256,uint256)(x >> r,0x0000010102020202030303030303030300000000000000000000000000000000) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#649)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#too-many-digits
+
+Detector: unindexed-event-address
+Event Pausable.Paused(address) (node_modules/@openzeppelin/contracts/utils/Pausable.sol#23) has address parameters but no indexed parameters
+Event Pausable.Unpaused(address) (node_modules/@openzeppelin/contracts/utils/Pausable.sol#28) has address parameters but no indexed parameters
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#unindexed-event-address-parameters
+
+Detector: cache-array-length
+Loop condition i < approvedValidators.length (contracts/core/ValidationRegistry.sol#124) should use cached array length instead of referencing `length` member of the storage array.
+ Loop condition i_scope_0 < approvedValidators.length (contracts/core/ValidationRegistry.sol#132) should use cached array length instead of referencing `length` member of the storage array.
+ Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#cache-array-length
+
+Detector: immutable-states
+AgentLiquidityMarketplaceV6.agentRegistry (contracts/core/AgentLiquidityMarketplaceV6.sol#35) should be immutable 
+AgentLiquidityMarketplaceV6.reputationManager (contracts/core/AgentLiquidityMarketplaceV6.sol#36) should be immutable 
+AgentLiquidityMarketplaceV6.usdcToken (contracts/core/AgentLiquidityMarketplaceV6.sol#37) should be immutable 
+ReputationManagerV3.agentRegistry (contracts/core/ReputationManagerV3.sol#14) should be immutable 
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#state-variables-that-could-be-declared-immutable
+contracts/core/AgentLiquidityMarketplaceV6.sol analyzed (34 contracts with 100 detectors), 101 result(s) found

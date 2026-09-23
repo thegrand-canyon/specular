@@ -1,0 +1,35 @@
+{
+  "timestamp": "2026-05-20T14:56:52.561Z",
+  "arc": {
+    "owner": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+    "paused": false,
+    "migrationFinalized": false,
+    "MAX_LENDERS_PER_POOL": "50",
+    "MAX_ACTIVE_LOANS_PER_AGENT": "10",
+    "MIN_LOAN_DURATION": "604800",
+    "MAX_LOAN_DURATION": "31536000",
+    "MAX_INTEREST_RATE": "2000",
+    "platformFeeRate": "100",
+    "agentRegistry": "0x741C03c0d95d2c15E479CE1c7E69B3196d86faD7",
+    "reputationManager": "0x94F2fa47c4488202a46dAA9038Ed9C9c4c07467F",
+    "usdcToken": "0xf2807051e292e945751A25616705a9aadfb39895",
+    "bytecodeHash": "0x5666cde0f8873c6d9754ca4f72462d27e7d93dda91c68db8561dc5db24c42f4a",
+    "bytecodeSize": 12431
+  },
+  "base": {
+    "owner": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+    "paused": false,
+    "migrationFinalized": true,
+    "MAX_LENDERS_PER_POOL": "50",
+    "MAX_ACTIVE_LOANS_PER_AGENT": "10",
+    "MIN_LOAN_DURATION": "604800",
+    "MAX_LOAN_DURATION": "31536000",
+    "MAX_INTEREST_RATE": "2000",
+    "platformFeeRate": "100",
+    "agentRegistry": "0xb9996de05fD514A0cB2B81fa25448EECD4559Aaa",
+    "reputationManager": "0xf19b1780A84668C8dfB6b4E84C08e457dB3B0527",
+    "usdcToken": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    "bytecodeHash": "0x60b97777d75d4766ae13a673d8c1fc4a42c016feaac9a2f885c0991835b6c118",
+    "bytecodeSize": 12431
+  }
+}

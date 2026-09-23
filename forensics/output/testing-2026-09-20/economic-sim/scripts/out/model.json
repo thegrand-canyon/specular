@@ -1,0 +1,285 @@
+{
+  "generatedAt": "2026-09-21T23:42:38.737Z",
+  "m1Attacker": {
+    "climb": {
+      "days": 131,
+      "score": 635,
+      "creditLimitUsdc": 25000,
+      "maxRepaidUsdc": 16650,
+      "peakCapitalUsdc": 9020.744034,
+      "sybilLenderAddresses": 24,
+      "trajectory": [
+        {
+          "day": 1,
+          "score": 100,
+          "creditLimitUsdc": 100,
+          "maxRepaidUsdc": 0,
+          "capitalUsdc": 200
+        },
+        {
+          "day": 2,
+          "score": 100,
+          "creditLimitUsdc": 100,
+          "maxRepaidUsdc": 0,
+          "capitalUsdc": 200
+        },
+        {
+          "day": 3,
+          "score": 100,
+          "creditLimitUsdc": 100,
+          "maxRepaidUsdc": 0,
+          "capitalUsdc": 200
+        },
+        {
+          "day": 4,
+          "score": 100,
+          "creditLimitUsdc": 100,
+          "maxRepaidUsdc": 0,
+          "capitalUsdc": 200
+        },
+        {
+          "day": 10,
+          "score": 105,
+          "creditLimitUsdc": 200,
+          "maxRepaidUsdc": 100,
+          "capitalUsdc": 200.328767
+        },
+        {
+          "day": 20,
+          "score": 110,
+          "creditLimitUsdc": 400,
+          "maxRepaidUsdc": 200,
+          "capitalUsdc": 400.009862
+        },
+        {
+          "day": 30,
+          "score": 125,
+          "creditLimitUsdc": 900,
+          "maxRepaidUsdc": 450,
+          "capitalUsdc": 900.203838
+        },
+        {
+          "day": 40,
+          "score": 175,
+          "creditLimitUsdc": 1000,
+          "maxRepaidUsdc": 600,
+          "capitalUsdc": 903.655887
+        },
+        {
+          "day": 50,
+          "score": 225,
+          "creditLimitUsdc": 1200,
+          "maxRepaidUsdc": 600,
+          "capitalUsdc": 1200.905813
+        },
+        {
+          "day": 60,
+          "score": 275,
+          "creditLimitUsdc": 2300,
+          "maxRepaidUsdc": 1150,
+          "capitalUsdc": 2000.337102
+        },
+        {
+          "day": 70,
+          "score": 325,
+          "creditLimitUsdc": 3300,
+          "maxRepaidUsdc": 1650,
+          "capitalUsdc": 3000.896041
+        },
+        {
+          "day": 80,
+          "score": 375,
+          "creditLimitUsdc": 5000,
+          "maxRepaidUsdc": 2650,
+          "capitalUsdc": 3011.252199
+        },
+        {
+          "day": 90,
+          "score": 425,
+          "creditLimitUsdc": 5300,
+          "maxRepaidUsdc": 2650,
+          "capitalUsdc": 5001.179007
+        },
+        {
+          "day": 100,
+          "score": 475,
+          "creditLimitUsdc": 10000,
+          "maxRepaidUsdc": 8650,
+          "capitalUsdc": 9020.305678
+        },
+        {
+          "day": 110,
+          "score": 525,
+          "creditLimitUsdc": 10000,
+          "maxRepaidUsdc": 8650,
+          "capitalUsdc": 8796.401568
+        },
+        {
+          "day": 120,
+          "score": 575,
+          "creditLimitUsdc": 10000,
+          "maxRepaidUsdc": 8650,
+          "capitalUsdc": 8759.997458
+        },
+        {
+          "day": 130,
+          "score": 625,
+          "creditLimitUsdc": 17300,
+          "maxRepaidUsdc": 8650,
+          "capitalUsdc": 13.744185
+        }
+      ]
+    },
+    "daysToUnlock25k": 131,
+    "peakCapitalLockedUsdc": 9020.744034,
+    "feesPaidUsdc": 0.963787,
+    "gas": "118050830",
+    "bustOut": {
+      "creditLimitUsdc": 25000,
+      "drawnUsdc": 25000,
+      "attackerGainUsdc": 25000,
+      "scoreBefore": 635,
+      "scoreAfter": 385,
+      "penaltyPoints": 250,
+      "creditLimitAfterUsdc": 0,
+      "maxRepaidAfterUsdc": 0,
+      "lockoutDays": 180
+    },
+    "repeatCadenceDays": 180,
+    "note": "repeat cadence = post-default lockout + a fresh capacity ladder (maxRepaidPrincipal is reset to 0); score re-climb overlaps the lockout"
+  },
+  "m1HonestH1": {
+    "days": 839.2,
+    "finalScore": 580,
+    "realisedCostUsdc": 15.102675,
+    "note": "H1 holds to term already, so the principal-TIME change costs it nothing"
+  },
+  "m1HonestTo25k": {
+    "totalDays": 131,
+    "finalScore": 635,
+    "creditLimitUsdc": 25000,
+    "interestPaidUsdc": 96.273929,
+    "trajectory": [
+      {
+        "day": 1,
+        "score": 100,
+        "creditLimitUsdc": 100,
+        "maxRepaidUsdc": 0,
+        "capitalUsdc": 200
+      },
+      {
+        "day": 2,
+        "score": 100,
+        "creditLimitUsdc": 100,
+        "maxRepaidUsdc": 0,
+        "capitalUsdc": 200
+      },
+      {
+        "day": 3,
+        "score": 100,
+        "creditLimitUsdc": 100,
+        "maxRepaidUsdc": 0,
+        "capitalUsdc": 200
+      },
+      {
+        "day": 4,
+        "score": 100,
+        "creditLimitUsdc": 100,
+        "maxRepaidUsdc": 0,
+        "capitalUsdc": 200
+      },
+      {
+        "day": 10,
+        "score": 105,
+        "creditLimitUsdc": 200,
+        "maxRepaidUsdc": 100,
+        "capitalUsdc": 200.328767
+      },
+      {
+        "day": 20,
+        "score": 110,
+        "creditLimitUsdc": 400,
+        "maxRepaidUsdc": 200,
+        "capitalUsdc": 400.009862
+      },
+      {
+        "day": 30,
+        "score": 125,
+        "creditLimitUsdc": 900,
+        "maxRepaidUsdc": 450,
+        "capitalUsdc": 900.203838
+      },
+      {
+        "day": 40,
+        "score": 175,
+        "creditLimitUsdc": 1000,
+        "maxRepaidUsdc": 600,
+        "capitalUsdc": 903.655887
+      },
+      {
+        "day": 50,
+        "score": 225,
+        "creditLimitUsdc": 1200,
+        "maxRepaidUsdc": 600,
+        "capitalUsdc": 1200.905813
+      },
+      {
+        "day": 60,
+        "score": 275,
+        "creditLimitUsdc": 2300,
+        "maxRepaidUsdc": 1150,
+        "capitalUsdc": 2000.337102
+      },
+      {
+        "day": 70,
+        "score": 325,
+        "creditLimitUsdc": 3300,
+        "maxRepaidUsdc": 1650,
+        "capitalUsdc": 3000.896041
+      },
+      {
+        "day": 80,
+        "score": 375,
+        "creditLimitUsdc": 5000,
+        "maxRepaidUsdc": 2650,
+        "capitalUsdc": 3011.252199
+      },
+      {
+        "day": 90,
+        "score": 425,
+        "creditLimitUsdc": 5300,
+        "maxRepaidUsdc": 2650,
+        "capitalUsdc": 5001.179007
+      },
+      {
+        "day": 100,
+        "score": 475,
+        "creditLimitUsdc": 10000,
+        "maxRepaidUsdc": 8650,
+        "capitalUsdc": 9020.305678
+      },
+      {
+        "day": 110,
+        "score": 525,
+        "creditLimitUsdc": 10000,
+        "maxRepaidUsdc": 8650,
+        "capitalUsdc": 8796.401568
+      },
+      {
+        "day": 120,
+        "score": 575,
+        "creditLimitUsdc": 10000,
+        "maxRepaidUsdc": 8650,
+        "capitalUsdc": 8759.997458
+      },
+      {
+        "day": 130,
+        "score": 625,
+        "creditLimitUsdc": 17300,
+        "maxRepaidUsdc": 8650,
+        "capitalUsdc": 13.744185
+      }
+    ],
+    "note": "same trajectory as the attacker; the difference is WHO supplies the pool capital (here real lenders, there the attacker itself)"
+  }
+}

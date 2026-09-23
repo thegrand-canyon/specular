@@ -1,0 +1,43 @@
+Agent address: 0xFA036c78f47A28Ba441F3050e8213f1A0e693584
+Agent funded (0.5 ETH + 100 USDC for collateral)
+
+[1] Onboarding…
+  agentId: 188
+  registerTx: 0x57d176c89a6867f216cc67ef6dd8fe3c210628500a5cce3fac17032ac9af483d
+  poolTx: 0xccf79ea04c780f4fb1ebfcd1d4c396ab3f0658eb02d33ffe291404d713b87d67
+  approveTx: 0x7cb78e2390e32edc209d0c0a0e6073d5d372b9f8c160e626922531d51fa44e53
+
+[2] Credit info:
+   {
+  "score": 0,
+  "creditLimit": "1000.0",
+  "collateralPct": 100,
+  "interestRateBps": 1500,
+  "interestRateAPR": 15
+}
+
+[3] Sponsor supplies 100 USDC liquidity to the agent's pool (so the agent can borrow)
+  supplied 100 USDC
+
+[4] Agent borrows 10 USDC for 7 days…
+  loanId: 134
+  tx: https://testnet.arcscan.app/tx/0xcc01f29fa1dddaf44300d5630da5bf36f6b15cfc89ea30fa657bf14aabab0995
+
+[5] Active loans:
+   [
+  {
+    "id": 134,
+    "amount": "10.0",
+    "interestRate": 1500,
+    "state": "ACTIVE",
+    "endTime": 1780076295
+  }
+]
+
+[6] Agent repays loan…
+  tx: https://testnet.arcscan.app/tx/0x1c010a8af2a394f68e80b70eced81cea9fe6245f5c459d73d96341316b6f3b3b
+
+[7] Credit info after repayment:
+  score: 10 (was 0) — +10 from on-time repayment
+
+✅ Quickstart complete

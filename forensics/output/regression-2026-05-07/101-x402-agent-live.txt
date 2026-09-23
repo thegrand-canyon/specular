@@ -1,0 +1,18 @@
+=== x402 agent (network=arc, target=http://localhost:4040/transcribe) ===
+Agent wallet: 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+USDC before: 902153.127907
+
+[CALL] → http://localhost:4040/transcribe
+[CALL] ← HTTP 200 in 200ms
+Response body (first 200 chars): {"ok":true,"result":"transcription: \"the quick brown fox\"","paid":"eyJ4NDAyVmVyc2lvbiI6MSwic2NoZW1lIjoiZXhh..."}
+USDC after: 902153.127907 (spent: 0.0 USDC)
+
+✅ x402 + Specular agent flow complete
+
+NOTES:
+- Stub server accepts the EIP-3009 payment signature but doesn't settle on-chain
+  (production would use Coinbase's hosted x402 facilitator at docs.cdp.coinbase.com/x402).
+- USDC "spent" = 0 here because stub doesn't settle. In production a real
+  facilitator would deduct ~0.5 USDC per call.
+- Specular auto-borrow path did not trigger (wallet had 902k USDC).
+  Unit-test coverage and the api-payer template stress that branch instead.

@@ -1,0 +1,91 @@
+===========================================================
+  V6 STRANDED USDC RECOVERY
+===========================================================
+Master wallet: 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+Master USDC before: 17573.294107
+Probe: 26 recoverable positions (12159.25 USDC), 94 orphan (1110399.999999 USDC)
+Plan: migrate orphans in 8 pools → master, then withdraw
+  Planned recovery: 909999.999999 USDC (skipping pool 124 = 200400 USDC at cap)
+
+=== PHASE B: Orphan position migration ===
+
+Pool 116 (1 orphans)
+  zeroed 0xd0f795ac... (33333.333333 USDC) → master now 33333.333333 USDC
+
+Pool 117 (1 orphans)
+  zeroed 0xd0f795ac... (33333.333333 USDC) → master now 33333.333333 USDC
+
+Pool 118 (1 orphans)
+  zeroed 0xd0f795ac... (33333.333333 USDC) → master now 33333.333333 USDC
+
+Pool 125 (10 orphans)
+  zeroed 0x9a88ca1b... (20000 USDC) → master now 20000 USDC
+  zeroed 0x210e766b... (20000 USDC) → master now 40000 USDC
+  zeroed 0xfb3bd49b... (20000 USDC) → master now 60000 USDC
+  zeroed 0xe1d91c1b... (20000 USDC) → master now 80000 USDC
+  zeroed 0xc3494d1f... (20000 USDC) → master now 100000 USDC
+  zeroed 0x76c57b8d... (20000 USDC) → master now 120000 USDC
+  zeroed 0x3f0356cc... (20000 USDC) → master now 140000 USDC
+  zeroed 0x844d8def... (20000 USDC) → master now 160000 USDC
+  zeroed 0x48cdaaf1... (20000 USDC) → master now 180000 USDC
+  zeroed 0x33a01547... (20000 USDC) → master now 200000 USDC
+
+Pool 126 (10 orphans)
+  zeroed 0x9a88ca1b... (20000 USDC) → master now 20000 USDC
+  zeroed 0x210e766b... (20000 USDC) → master now 40000 USDC
+  zeroed 0xfb3bd49b... (20000 USDC) → master now 60000 USDC
+  zeroed 0xe1d91c1b... (20000 USDC) → master now 80000 USDC
+  zeroed 0xc3494d1f... (20000 USDC) → master now 100000 USDC
+  zeroed 0x76c57b8d... (20000 USDC) → master now 120000 USDC
+  zeroed 0x3f0356cc... (20000 USDC) → master now 140000 USDC
+  zeroed 0x844d8def... (20000 USDC) → master now 160000 USDC
+  zeroed 0x48cdaaf1... (20000 USDC) → master now 180000 USDC
+  zeroed 0x33a01547... (20000 USDC) → master now 200000 USDC
+
+Pool 127 (10 orphans)
+  zeroed 0x9a88ca1b... (20000 USDC) → master now 20000 USDC
+  zeroed 0x210e766b... (20000 USDC) → master now 40000 USDC
+  zeroed 0xfb3bd49b... (20000 USDC) → master now 60000 USDC
+  zeroed 0xe1d91c1b... (20000 USDC) → master now 80000 USDC
+  zeroed 0xc3494d1f... (20000 USDC) → master now 100000 USDC
+  zeroed 0x76c57b8d... (20000 USDC) → master now 120000 USDC
+  zeroed 0x3f0356cc... (20000 USDC) → master now 140000 USDC
+  zeroed 0x844d8def... (20000 USDC) → master now 160000 USDC
+  zeroed 0x48cdaaf1... (20000 USDC) → master now 180000 USDC
+  zeroed 0x33a01547... (20000 USDC) → master now 200000 USDC
+
+Pool 128 (10 orphans)
+  zeroed 0x9a88ca1b... (20000 USDC) → master now 20000 USDC
+  zeroed 0x210e766b... (20000 USDC) → master now 40000 USDC
+  zeroed 0xfb3bd49b... (20000 USDC) → master now 60000 USDC
+  zeroed 0xe1d91c1b... (20000 USDC) → master now 80000 USDC
+  zeroed 0xc3494d1f... (20000 USDC) → master now 100000 USDC
+  zeroed 0x76c57b8d... (20000 USDC) → master now 120000 USDC
+  zeroed 0x3f0356cc... (20000 USDC) → master now 140000 USDC
+  zeroed 0x844d8def... (20000 USDC) → master now 160000 USDC
+  zeroed 0x48cdaaf1... (20000 USDC) → master now 180000 USDC
+  zeroed 0x33a01547... (20000 USDC) → master now 200000 USDC
+
+Pool 137 (1 orphans)
+  zeroed 0xaa52e866... (10000 USDC) → master now 10000 USDC
+
+=== PHASE C: Master withdraws from migrated pools ===
+  pool 116: withdrew 33233.333333 USDC (partial — 100 locked in active loans)
+  pool 117: withdrew 33233.333333 USDC (partial — 100 locked in active loans)
+  pool 118: withdrew 33233.333333 USDC (partial — 100 locked in active loans)
+  pool 125: withdrew 199950.501972 USDC (partial — 49.498028 locked in active loans)
+  pool 126: withdrew 200000 USDC 
+  pool 127: withdrew 200000 USDC 
+  pool 128: withdrew 200000 USDC 
+  pool 137: withdrew 9997.558577 USDC (partial — 2.441423 locked in active loans)
+
+=== PHASE A: Verify persisted-key positions are drained ===
+  leftover in persisted-key positions: 12159.25 USDC (likely partial-withdraw residuals; can re-run recover_mega_stress_wallets if needed)
+
+===========================================================
+  Recovery complete
+  Master USDC delta: +909648.060548 USDC
+  Master final balance: 927221.354655 USDC
+  Withdrawn from migrated pools: 909648.060548 USDC
+  Stranded (pool 124 at cap): 200400 USDC
+===========================================================

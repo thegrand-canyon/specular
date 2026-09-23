@@ -1,0 +1,7 @@
+PRE : {"label":"pre","totalLiq":0,"avail":0.008544,"totalLoaned":0,"totalEarned":0.008544,"lenderCount":1}
+staticCall resetPoolAccounting(49)...
+  ✅ would succeed
+broadcasting...
+  tx: 0xa07ebc130c90ed18251a289c57e9ff1f70c83fc1ff6f7e8a26d7f21eed6a19a5
+  mined block 41040952 gas 45927
+POST: {"label":"post","totalLiq":0,"avail":0.008544,"totalLoaned":0,"totalEarned":0.008544,"lenderCount":1}

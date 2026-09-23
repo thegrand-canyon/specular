@@ -1,0 +1,45 @@
+{
+  "name": "@specular/eliza-plugin",
+  "version": "1.0.0",
+  "description": "Specular Protocol plugin for Eliza AI agents - on-chain credit without collateral",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build"
+  },
+  "keywords": [
+    "eliza",
+    "ai-agent",
+    "defi",
+    "credit",
+    "lending",
+    "specular",
+    "base",
+    "usdc",
+    "reputation"
+  ],
+  "author": "Specular Protocol",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/specular-finance/specular"
+  },
+  "peerDependencies": {
+    "@ai16z/eliza": ">=0.1.0"
+  },
+  "dependencies": {
+    "ethers": "^6.16.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ]
+}

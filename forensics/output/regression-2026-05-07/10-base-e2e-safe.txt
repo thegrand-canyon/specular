@@ -1,0 +1,77 @@
+Wallet: 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C (agent 1)
+Network: Base Mainnet (chainId 8453)
+Base ETH: 0.010357581937189584
+
+--- PRE ---
+{
+  "label": "pre",
+  "ts": "2026-05-07T18:40:07.616Z",
+  "wallet_usdc": 283.511169,
+  "mp_usdc": 1.5,
+  "own_pool": {
+    "totalLiq": 1.5,
+    "avail": 1.200002,
+    "totalLoaned": 0.3,
+    "totalEarned": 0.000002,
+    "lenderCount": 2
+  },
+  "poolLenders": [
+    "0x800e305a0cadde6289dfdfedf38218f45c06f72c",
+    "0x800e305a0cadde6289dfdfedf38218f45c06f72c"
+  ],
+  "my_position": {
+    "supplied": 1.5,
+    "earnedInterest": 0
+  }
+}
+
+[A] §B1 LIVE PANIC EVIDENCE (static-call simulations)
+  loan 2: 🚨 Panic(0x11) ← §B1 — execution reverted: Panic due to OVERFLOW(17)
+  loan 3: 🚨 Panic(0x11) ← §B1 — execution reverted: Panic due to OVERFLOW(17)
+  loan 4: 🚨 Panic(0x11) ← §B1 — execution reverted: Panic due to OVERFLOW(17)
+
+[B] Allowance sufficient: 0.3
+
+[C] Supply 0.1 USDC to own pool (position already 1.5 → no new poolLenders push)
+  tx: 0xafcb15e377c0bb3478b5a6a5a176ef0f4cd6090883babecf0180913a0134fe62
+  mined block 45694932 gas 80808
+  poolLenders count: 2 (was 2)
+  expected: unchanged (no push because position>0)
+
+[D] Withdraw 0.1 USDC
+  tx: 0xdb6dab61b043a2122ca88a891ec0250536e860eb150fc6f8d02c37f54b9d6e99
+  mined block 45694935 gas 72397
+
+--- POST ---
+{
+  "label": "post",
+  "ts": "2026-05-07T18:40:21.594Z",
+  "wallet_usdc": 283.511169,
+  "mp_usdc": 1.5,
+  "own_pool": {
+    "totalLiq": 1.5,
+    "avail": 1.200002,
+    "totalLoaned": 0.3,
+    "totalEarned": 0.000002,
+    "lenderCount": 2
+  },
+  "poolLenders": [
+    "0x800e305a0cadde6289dfdfedf38218f45c06f72c",
+    "0x800e305a0cadde6289dfdfedf38218f45c06f72c"
+  ],
+  "my_position": {
+    "supplied": 1.5,
+    "earnedInterest": 0
+  }
+}
+
+--- DIFF ---
+wallet USDC:  283.511169 → 283.511169    Δ 0.000000
+MP USDC:      1.5 → 1.5    Δ 0.000000
+pool avail:   1.200002 → 1.200002
+lenderCount:  2 → 2
+my supplied:  1.5 → 1.5
+pre poolLenders:  ["0x800e305a0cadde6289dfdfedf38218f45c06f72c","0x800e305a0cadde6289dfdfedf38218f45c06f72c"]
+post poolLenders: ["0x800e305a0cadde6289dfdfedf38218f45c06f72c","0x800e305a0cadde6289dfdfedf38218f45c06f72c"]
+
+Saved.

@@ -13,6 +13,11 @@ const OPTIMISM_SEPOLIA_RPC_URL = process.env.OPTIMISM_SEPOLIA_RPC_URL || "https:
 const POLYGON_RPC_URL = process.env.POLYGON_RPC_URL || "https://polygon-rpc.com";
 const POLYGON_AMOY_RPC_URL = process.env.POLYGON_AMOY_RPC_URL || "https://rpc-amoy.polygon.technology";
 const ARC_TESTNET_RPC_URL = process.env.ARC_TESTNET_RPC_URL || "https://arc-testnet.drpc.org";
+// Arc Mainnet — params come from env (confirm against Circle's official docs
+// before deploying). No safe default RPC/chainId for a mainnet; leave unset
+// until confirmed so an accidental deploy can't target a wrong network.
+const ARC_MAINNET_RPC_URL = process.env.ARC_MAINNET_RPC_URL || "";
+const ARC_MAINNET_CHAIN_ID = process.env.ARC_MAINNET_CHAIN_ID ? Number(process.env.ARC_MAINNET_CHAIN_ID) : 0;
 
 // Private key
 const PRIVATE_KEY = process.env.PRIVATE_KEY || "0x0000000000000000000000000000000000000000000000000000000000000000";
@@ -33,7 +38,11 @@ module.exports = {
         enabled: true,
         runs: 200
       },
-      viaIR: true
+      viaIR: true,
+      // CLAUDE_AUDIT_WORLDCLASS W4: pin evm target explicitly. Without this, future
+      // compiler/Hardhat upgrades could silently emit PUSH0 (Shanghai) bytecode that
+      // breaks deployment on chains without that opcode.
+      evmVersion: "paris"
     }
   },
   networks: {
@@ -119,6 +128,16 @@ module.exports = {
       accounts: PRIVATE_KEY !== "0x0000000000000000000000000000000000000000000000000000000000000000" ? [PRIVATE_KEY] : [],
       chainId: 5042002,
       gasPrice: "auto"
+    },
+    // Arc Mainnet — only usable once ARC_MAINNET_RPC_URL + ARC_MAINNET_CHAIN_ID
+    // are set in env (see ARC_MAINNET_DEPLOY_PREP.md). Present so `hardhat verify
+    // --network arcMainnet` works after deploy. Prefer scripts/deploy-arc-mainnet.js
+    // (has mainnet safety guards) for the actual deployment.
+    arcMainnet: {
+      url: ARC_MAINNET_RPC_URL,
+      accounts: PRIVATE_KEY !== "0x0000000000000000000000000000000000000000000000000000000000000000" ? [PRIVATE_KEY] : [],
+      chainId: ARC_MAINNET_CHAIN_ID,
+      gasPrice: "auto"
     }
   },
   etherscan: {
@@ -139,7 +158,8 @@ module.exports = {
       polygon: POLYGONSCAN_API_KEY,
       polygonAmoy: POLYGONSCAN_API_KEY,
       // Arc
-      arcTestnet: "no-api-key-needed"
+      arcTestnet: "no-api-key-needed",
+      arcMainnet: "no-api-key-needed"
     },
     customChains: [
       {
@@ -189,8 +209,25 @@ module.exports = {
           apiURL: "https://testnet.arcscan.app/api",
           browserURL: "https://testnet.arcscan.app"
         }
+      },
+      {
+        // Arc Mainnet (live 2026-09-16). Explorer is Cloudflare-fronted; the
+        // /api verification endpoint is assumed Blockscout-style and unverified.
+        network: "arcMainnet",
+        chainId: 5042,
+        urls: {
+          apiURL: "https://explorer.arc.io/api",
+          browserURL: "https://explorer.arc.io"
+        }
       }
     ]
+  },
+  // Sourcify lists Arc mainnet (5042) + testnet as supported; used because the Arc
+  // explorer's own /api is Cloudflare-challenged and rejects hardhat-verify.
+  sourcify: {
+    enabled: true,
+    apiUrl: "https://sourcify.dev/server",
+    browserUrl: "https://repo.sourcify.dev"
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS === "true",

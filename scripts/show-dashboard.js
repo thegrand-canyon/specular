@@ -113,4 +113,4 @@ async function main() {
     console.log(`✅ Dashboard updated: ${new Date().toLocaleString()}\n`);
 }
 
-main().catch(console.error);
+main().catch((e) => { console.error(e); process.exit(1); });

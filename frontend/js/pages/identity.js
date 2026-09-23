@@ -9,7 +9,7 @@
  */
 
 import { renderSiwaCard, loadSiwaSession } from '../siwa.js';
-import { showToast } from '../utils.js';
+import { showToast, escapeHtml } from '../utils.js';
 import { getAccount, getSigner, isConnected } from '../wallet.js';
 import { ADDRESSES } from '../config.js';
 
@@ -319,14 +319,14 @@ function renderCreditReport(report, container) {
         <div class="card highlight-card">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
                 <h3 style="margin:0">Credit Report</h3>
-                <span class="badge ${tierCss}">${report.tier}</span>
+                <span class="badge ${tierCss}">${escapeHtml(report.tier)}</span>
             </div>
             <div class="info-row"><span>Address</span><span class="monospace">${shortAddr(report.agentAddress)}</span></div>
-            <div class="info-row"><span>Credit Score</span><span style="font-weight:700;font-size:1.1rem">${report.creditScore}</span></div>
-            <div class="info-row"><span>Credit Limit</span><span class="text-green">${report.creditLimit}</span></div>
-            <div class="info-row"><span>Interest Rate</span><span>${report.interestRate}</span></div>
-            <div class="info-row"><span>Collateral</span><span>${report.collateralRequired}</span></div>
-            <div class="info-row"><span>Recommendation</span><span class="text-accent">${report.recommendation}</span></div>
+            <div class="info-row"><span>Credit Score</span><span style="font-weight:700;font-size:1.1rem">${escapeHtml(report.creditScore)}</span></div>
+            <div class="info-row"><span>Credit Limit</span><span class="text-green">${escapeHtml(report.creditLimit)}</span></div>
+            <div class="info-row"><span>Interest Rate</span><span>${escapeHtml(report.interestRate)}</span></div>
+            <div class="info-row"><span>Collateral</span><span>${escapeHtml(report.collateralRequired)}</span></div>
+            <div class="info-row"><span>Recommendation</span><span class="text-accent">${escapeHtml(report.recommendation)}</span></div>
             <div class="info-row" style="border-top:1px solid var(--border);margin-top:0.5rem;padding-top:0.5rem">
                 <span class="hint">Assessed</span>
                 <span class="hint">${new Date(report.assessedAt).toLocaleTimeString()}</span>

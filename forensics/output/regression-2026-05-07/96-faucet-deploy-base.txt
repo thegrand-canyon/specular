@@ -1,0 +1,12 @@
+
+=== Deploy AgentCreditFaucet to base ===
+Deployer: 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+Registry: 0xb9996de05fD514A0cB2B81fa25448EECD4559Aaa
+USDC:     0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+✅ Faucet: 0x990f7495528bFC2ebcb8CbD6EeBd2Bc32B450164
+   tx: 0xc865a0f1e515b6f0e62bddc0115c04cc15648efc873418f5649019910705ea33
+✅ Updated /Users/peterschroeder/Specular/src/config/base-addresses.json
+
+Next: owner needs to
+  1. Transfer USDC to 0x990f7495528bFC2ebcb8CbD6EeBd2Bc32B450164 (e.g. 1000 USDC for 100 free claims at default 10/agent)
+  2. Call setMaxEligibleAgentId(N) to open faucet to agents 1..N

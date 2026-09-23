@@ -1,0 +1,127 @@
+
+======================================================================
+  NETWORK: ARC  (0x048363A325A5B188b7FF157d725C5e329f0171D3)
+======================================================================
+
+[T1] §B1 cache totalLoaned formula
+  pools that would emit NEGATIVE cached totalLoaned: 35 / 48
+  pools where (onChain - cacheFormula) == totalEarned: 48 / 48
+
+[T2] §S1 unclaimed interest exposure
+  total unclaimed interest across all pools: 74.865743 USDC
+  lenders with claimable interest: 40
+  → exposure if all called claimInterest: pool.availableLiquidity NOT decremented
+
+[T3] §S2 forward/reverse mapping consistency
+  sampled 6 agents, 0 inconsistencies
+
+[T4] §B2 manifest endpoint live probe
+    GET /loans                                        → 404
+    GET /leaderboard                                  → 404
+    GET /credit/0x048363A325A5B188b7FF157d725C5e329f0171D3 → 404
+    GET /tx/register                                  → 404
+    GET /virtuals/pools                               → 404
+
+[T5] §S6 validationRegistry config
+  validationRegistry: (no such function) → vector dormant
+
+[T6] §S8 getActiveAgents revert
+  reverts: execution reverted: "Use front-end to query specific agents"
+
+[T7] §B5 RPC parallel timing
+  5 parallel reads: 340 ms (batchMaxCount:1)
+
+[T8] §S4 active-loan cap
+  max active loans seen across sampled agents: 0 (cap=10)
+
+  --- solvency snapshot ---
+  MP USDC balance: 36744.766089 USDC
+  Σ available    : 36640.880525 USDC
+  slack          : 103.885564 USDC ✅
+
+======================================================================
+  NETWORK: BASE  (0xd7b4dEE74C61844DFA75aEbe224e4635463b1C8f)
+======================================================================
+
+[T1] §B1 cache totalLoaned formula
+  pools that would emit NEGATIVE cached totalLoaned: 1 / 1
+  pools where (onChain - cacheFormula) == totalEarned: 1 / 1
+
+[T2] §S1 unclaimed interest exposure
+  total unclaimed interest across all pools: 0.000000 USDC
+  lenders with claimable interest: 0
+  → exposure if all called claimInterest: pool.availableLiquidity NOT decremented
+
+[T3] §S2 forward/reverse mapping consistency
+  sampled 2 agents, 0 inconsistencies
+
+[T4] §B2 manifest endpoint live probe
+    GET /loans                                        → 404
+    GET /leaderboard                                  → 404
+    GET /credit/0xd7b4dEE74C61844DFA75aEbe224e4635463b1C8f → 404
+    GET /tx/register                                  → 404
+    GET /virtuals/pools                               → 404
+
+[T5] §S6 validationRegistry config
+  validationRegistry: unset → vector dormant
+
+[T6] §S8 getActiveAgents revert
+  reverts: execution reverted: "Use front-end to query specific agents"
+
+[T7] §B5 RPC parallel timing
+  5 parallel reads: 264 ms (batchMaxCount:1)
+
+[T8] §S4 active-loan cap
+  max active loans seen across sampled agents: 0 (cap=10)
+
+  --- solvency snapshot ---
+  MP USDC balance: 1.500000 USDC
+  Σ available    : 1.500002 USDC
+  slack          : -0.000002 USDC ❌
+
+======================================================================
+  CROSS-NETWORK COMPARISON
+======================================================================
+                                    Arc            Base
+  totalPools                     : 48             1
+  totalAgents                    : 100            3
+  T1: pools w/ negative cache    : 35             1
+  T1: pools where gap == earned  : 48             1
+  T2: unclaimed interest (USDC)  : 74.865743      0.000000
+  T2: lenders with interest      : 40             0
+  T3: mapping inconsistencies    : 0              0
+  T4: missing routes (404 / probed): 5/5          5/5
+  T5: validationRegistry         : (no such funct 0x000000000000
+  T6: getActiveAgents reverts    : true           true
+  T7: 5-parallel-read latency ms : 340            264
+  T8: max active loans observed  : 0              0
+  MP USDC balance                : 36744.77       1.50
+  Σ available                    : 36640.88       1.50
+  Solvency slack                 : 103.89         -0.00
+
+Results saved to /tmp/dual_network_probe.json
+  pool agentId=1: 2 entries, 1 unique, dups=0x800e305a...×2
+  pools with duplicate entries: 1 / 1
+  total entries: 2, unique: 1, dup overhead: 1
+
+[D] §S5 agentLoans depth on known high-volume agents
+  scanned 3 wallets
+    0x800e305a0cadde6289dfdfedf38218f45c06f72c → 4 loans
+
+[E] Per-pool lender positions (top by earnedInterest)
+  (no positions with earnedInterest > 0)
+
+======================================================================
+  CROSS-NETWORK SUMMARY
+======================================================================
+                                Arc                    Base
+  paused()                    : false                  false
+  owner()                     : 0x800e305A0caDdE6289dF 0x800e305A0caDdE6289dF
+  totalPools                  : 48                     1
+  pools w/ dup poolLenders    : 2                      1
+  dup overhead (entries-uniq) : 2                      1
+  bytecode keccak             : 0x6c5b78377df3aa1ed87d 0x95b0d1ac40336b9fbaa7
+  bytecode len                : 9254                   9254
+  max agentLoans depth        : 777                    4
+
+Saved: ./forensics/output/regression-2026-05-07/02-baseline-augment.json

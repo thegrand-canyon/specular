@@ -1,0 +1,162 @@
+{
+  "scenario": "S8",
+  "startedAt": "2026-09-20T22:23:30.573Z",
+  "finishedAt": "2026-09-20T22:43:54.705Z",
+  "passed": 13,
+  "failed": 0,
+  "blocked": 0,
+  "checks": [
+    {
+      "label": "levers",
+      "ok": null,
+      "detail": "maxReputationGainPerWindow=20 reputationGainWindow=86400s onTimeRepaymentBonus=10 bonusReferenceAmount=100.0 USDC minHold=86400s"
+    },
+    {
+      "label": "window state",
+      "ok": null,
+      "detail": "windowStart=0 gainedInWindow=0 fresh=true budget=20"
+    },
+    {
+      "label": "A start",
+      "ok": null,
+      "detail": "score 0 collateral 100% APR 1500bps limit 1000.0"
+    },
+    {
+      "label": "cycle 1: score 0 → 10 (expected +10)",
+      "ok": true,
+      "detail": "ReputationUpdated 0→10"
+    },
+    {
+      "label": "cycle 2: score 10 → 20 (expected +10)",
+      "ok": true,
+      "detail": "ReputationUpdated 10→20"
+    },
+    {
+      "label": "cycle 3: score 20 → 20 (expected +0)",
+      "ok": true,
+      "detail": "no ReputationUpdated (clamped to 0)"
+    },
+    {
+      "label": "score stopped exactly at the window limit (gainedInWindow == 20)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "tier-derived terms at score 20: collateral 100% APR 1500 limit 1000.0",
+      "ok": true,
+      "detail": "{\"score\":20,\"creditLimit\":\"1000.0\",\"collateralPct\":100,\"interestRateBps\":1500,\"interestRateAPR\":15}"
+    },
+    {
+      "label": "collateral tier crossing",
+      "ok": null,
+      "detail": "not reachable in one window (score 0→20, next boundary needs ≥ 200/500 → 9+ days at 20/day)"
+    },
+    {
+      "label": "tier walk: crossing 200 → collateral 100% APR 1500 limit 5000.0",
+      "ok": true,
+      "detail": "{\"score\":200,\"creditLimit\":\"5000.0\",\"collateralPct\":100,\"interestRateBps\":1500,\"interestRateAPR\":15}"
+    },
+    {
+      "label": "tier walk: crossing 400 → collateral 100% APR 1000 limit 10000.0",
+      "ok": true,
+      "detail": "{\"score\":400,\"creditLimit\":\"10000.0\",\"collateralPct\":100,\"interestRateBps\":1000,\"interestRateAPR\":10}"
+    },
+    {
+      "label": "tier walk: crossing 500 → collateral 25% APR 1000 limit 10000.0",
+      "ok": true,
+      "detail": "{\"score\":500,\"creditLimit\":\"10000.0\",\"collateralPct\":25,\"interestRateBps\":1000,\"interestRateAPR\":10}"
+    },
+    {
+      "label": "tier walk: collateral requirement CHANGED at 500 (100% → 25%)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "tier walk: crossing 600 → collateral 0% APR 700 limit 25000.0",
+      "ok": true,
+      "detail": "{\"score\":600,\"creditLimit\":\"25000.0\",\"collateralPct\":0,\"interestRateBps\":700,\"interestRateAPR\":7}"
+    },
+    {
+      "label": "tier walk: collateral requirement CHANGED at 600 (25% → 0%)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "loan at score 600: collateralAmount == 0% of principal, rate 700",
+      "ok": true,
+      "detail": "collateral 0.0 tx 0xd52a16de52fd3451dca64dea40fba6ea2fe12f48ff095e470b2e62ddc5409035"
+    },
+    {
+      "label": "rate limit lever restored",
+      "ok": true,
+      "detail": ""
+    }
+  ],
+  "spent": {
+    "nativeFromDeployer": "4.02127545",
+    "usdcMinted": "0.0"
+  },
+  "agentId": 46,
+  "cycles": [
+    {
+      "loanId": 15,
+      "before": 0,
+      "after": 10,
+      "expGain": 10,
+      "gainedInWindow": 10
+    },
+    {
+      "loanId": 16,
+      "before": 10,
+      "after": 20,
+      "expGain": 10,
+      "gainedInWindow": 20
+    },
+    {
+      "loanId": 17,
+      "before": 20,
+      "after": 20,
+      "expGain": 0,
+      "gainedInWindow": 20
+    }
+  ],
+  "walk": [
+    {
+      "score": 200,
+      "creditLimit": "5000.0",
+      "collateralPct": 100,
+      "interestRateBps": 1500,
+      "interestRateAPR": 15,
+      "borrowTx": "0xb920268b56492bb2454923e3fbefe3c56ede89981db5e4ac8a85a10854446b45",
+      "repayTx": "0x35fae65a3829aef69e236e3710c1f1ed4d4f3634a1ebcede69e0ee81e74febd3"
+    },
+    {
+      "score": 400,
+      "creditLimit": "10000.0",
+      "collateralPct": 100,
+      "interestRateBps": 1000,
+      "interestRateAPR": 10,
+      "borrowTx": "0x8ff4234a375a0bddcaa7281fe7ad0230a5feb42c409a505913718bab3dca9fea",
+      "repayTx": "0x2bc2ed934a3b44f4ef2ec9d56b493284d82e1a1423073a7da31a0f0956abf8c4"
+    },
+    {
+      "score": 500,
+      "creditLimit": "10000.0",
+      "collateralPct": 25,
+      "interestRateBps": 1000,
+      "interestRateAPR": 10,
+      "borrowTx": "0xd58cc621f44af74c2925037c9ba22d07305298cf6ec616d79efa765b43f2d870",
+      "repayTx": "0x6bc649081fb005eb0662fa230863ebd5186922a4cbdc241308e961d0478ede73"
+    },
+    {
+      "score": 600,
+      "creditLimit": "25000.0",
+      "collateralPct": 0,
+      "interestRateBps": 700,
+      "interestRateAPR": 7,
+      "borrowTx": "0xe807ad8cf311f4ed162b7a32309a9b57b04a8363227f427753e4b65ab1a10de2",
+      "repayTx": "0xb3305b444692f11f6d39dcf24580fa7ed13d435d91db20b5c36b334be68f20b3"
+    }
+  ],
+  "finalScore": 600
+}

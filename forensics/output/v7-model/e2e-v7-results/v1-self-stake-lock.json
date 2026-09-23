@@ -1,0 +1,124 @@
+{
+  "scenario": "v1-self-stake-lock",
+  "title": "M2-a self-stake lock while borrowing (on-chain)",
+  "chainId": 5042002,
+  "marketplace": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+  "reputation": "0xD7906fDFBf69BA89a4c2FE148797e24f386fE3d2",
+  "startedAt": "2026-09-23T00:28:35.940Z",
+  "finishedAt": "2026-09-23T00:29:01.564Z",
+  "passed": 12,
+  "failed": 0,
+  "blocked": 0,
+  "checks": [
+    {
+      "label": "agent",
+      "ok": null,
+      "detail": "B = #52 (0xCe8FF5d2150331dFfFdf15AD727747B16794a0A6), third-party lender T = 0x2c4ae434f93586C8774271b04A4FED9a006f1CAa"
+    },
+    {
+      "label": "precondition: no outstanding principal",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "selfStake().locked == false with no loan outstanding",
+      "ok": true,
+      "detail": "amount 250.0"
+    },
+    {
+      "label": "requiredSelfStake(B, 500)",
+      "ok": null,
+      "detail": "250.0 USDC  (= 500 × (100-0)/100 / k=2)"
+    },
+    {
+      "label": "creator stake now >= requiredSelfStake",
+      "ok": true,
+      "detail": "250.0 >= 250.0"
+    },
+    {
+      "label": "selfStake().locked FLIPPED to true once principal is outstanding",
+      "ok": true,
+      "detail": "amount 250.0 locked true, outstanding 500.0"
+    },
+    {
+      "label": "pool after draw",
+      "ok": null,
+      "detail": "availableLiquidity 1576.941524 totalLoaned 500.0"
+    },
+    {
+      "label": "creator withdrawLiquidity(1 unit) REVERTS \"Self-stake locked while borrowing\"",
+      "ok": true,
+      "detail": "Self-stake locked while borrowing | execution reverted: \"Self-stake locked while borrowing\" | execution reverted: \"Self-stake locked while borrowing\" "
+    },
+    {
+      "label": "creator withdrawLiquidity(whole position) REVERTS with the same reason",
+      "ok": true,
+      "detail": "Self-stake locked while borrowing | execution reverted: \"Self-stake locked while borrowing\" | execution reverted: \"Self-stake locked while borrowing\" "
+    },
+    {
+      "label": "failed withdrawals changed nothing: creator position intact",
+      "ok": true,
+      "detail": "250.0"
+    },
+    {
+      "label": "THIRD-PARTY lender can withdraw from the same pool while the creator cannot",
+      "ok": true,
+      "detail": "700.0 -> 600.0"
+    },
+    {
+      "label": "the loan is still outstanding during that third-party withdrawal",
+      "ok": true,
+      "detail": "500.0"
+    },
+    {
+      "label": "selfStake().locked FLIPPED back to false after repayment",
+      "ok": true,
+      "detail": "amount 250.0"
+    },
+    {
+      "label": "creator withdrawal SUCCEEDS once outstandingPrincipal == 0",
+      "ok": true,
+      "detail": "+250.0 USDC returned"
+    },
+    {
+      "label": "per-pool conservation exact at the end",
+      "ok": true,
+      "detail": "avail 1727.41618 + loaned 0.0 == Σamt 1700.0 + Σearned 27.41618"
+    }
+  ],
+  "txs": [
+    {
+      "label": "third-party supply",
+      "hash": "0xe33a05ba786c6c2ae6f60f34b264c49940ce48cc1860aa5b4c98caf369cf5ec8",
+      "gasUsed": "82203"
+    },
+    {
+      "label": "requestLoan 500 -> loan #99",
+      "hash": "0x1122ce1dc8c0f68ff8663f760e4f06c178eaf0f6e0192e3376fb0925c208f5a1",
+      "gasUsed": "497590"
+    },
+    {
+      "label": "third-party withdraw during the loan",
+      "hash": "0x6faa69aa811336acc1141ff4c82c97d6d69194db38ca0a6087280fe087d56593",
+      "gasUsed": "66839"
+    },
+    {
+      "label": "repayLoan 99",
+      "hash": "0x15443baa86224b29763f981562518a86a0b94a6bde78f30c5598a71c3aaac97b",
+      "gasUsed": "237354"
+    },
+    {
+      "label": "creator withdraw after repayment",
+      "hash": "0xd9cd540e208229a6a2111309708340e0509617e830a94af719154715cd9ec8dc",
+      "gasUsed": "64546"
+    }
+  ],
+  "cumulativeSpend": {
+    "nativeFromDeployer": "17.5033632",
+    "usdcMinted": "32160.0"
+  },
+  "agentId": 52,
+  "loanId": 99,
+  "requiredSelfStake": "250000000",
+  "loanAmount": "500000000"
+}

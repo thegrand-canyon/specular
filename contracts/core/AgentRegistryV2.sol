@@ -37,9 +37,14 @@ contract AgentRegistryV2 is ERC721URIStorage, Ownable, Pausable, EIP712 {
     mapping(address => uint256) public addressToAgentId; // owner address => agentId
     mapping(uint256 => mapping(string => bytes)) public agentMetadata; // agentId => key => value
 
-    // EIP-712 for setAgentWallet signatures
+    // EIP-712 for setAgentWallet signatures.
+    // [audit 2026-08 D9] Includes a per-agent nonce so a signature can't be
+    // replayed within its deadline window to force the wallet back to a prior value.
     bytes32 private constant SET_WALLET_TYPEHASH =
-        keccak256("SetWallet(uint256 agentId,address newWallet,uint256 deadline)");
+        keccak256("SetWallet(uint256 agentId,address newWallet,uint256 deadline,uint256 nonce)");
+
+    // agentId => next expected setAgentWallet nonce (incremented on each use).
+    mapping(uint256 => uint256) public walletNonce;
 
     // Events (ERC-8004 compliant)
     event AgentRegistered(
@@ -77,11 +82,12 @@ contract AgentRegistryV2 is ERC721URIStorage, Ownable, Pausable, EIP712 {
 
         uint256 agentId = _nextAgentId++;
 
-        // Mint the agent NFT to the caller
-        _safeMint(msg.sender, agentId);
-        _setTokenURI(agentId, agentURI);
-
-        // Store agent data
+        // [slither reentrancy-no-eth fix, pre-mainnet 2026-08] EFFECTS before
+        // INTERACTIONS. Agents may be smart contracts, so _safeMint()'s
+        // onERC721Received callback is attacker-reachable. Setting the
+        // registration state FIRST means a reentrant register() hits the
+        // "Agent already registered" guard above instead of minting a second
+        // orphaned agentId for the same address.
         agents[agentId] = Agent({
             agentId: agentId,
             owner: msg.sender,
@@ -90,16 +96,21 @@ contract AgentRegistryV2 is ERC721URIStorage, Ownable, Pausable, EIP712 {
             registrationTime: block.timestamp,
             isActive: true
         });
-
         addressToAgentId[msg.sender] = agentId;
+        _setTokenURI(agentId, agentURI); // storage-only in ERC721URIStorage; no external call
 
-        // Store custom metadata
+        // Store custom metadata (effects)
         for (uint256 i = 0; i < metadata.length; i++) {
             agentMetadata[agentId][metadata[i].key] = metadata[i].value;
             emit MetadataUpdated(agentId, metadata[i].key, metadata[i].value);
         }
 
         emit AgentRegistered(agentId, msg.sender, agentURI, block.timestamp);
+
+        // INTERACTION last: _safeMint may invoke the recipient's onERC721Received
+        // hook. All state is already written, so a reentrant call is a no-op
+        // (blocked by the "already registered" guard).
+        _safeMint(msg.sender, agentId);
 
         return agentId;
     }
@@ -135,15 +146,16 @@ contract AgentRegistryV2 is ERC721URIStorage, Ownable, Pausable, EIP712 {
         require(block.timestamp <= deadline, "Signature expired");
         require(newWallet != address(0), "Invalid wallet address");
 
-        // Verify EIP-712 signature
+        // Verify EIP-712 signature over the current nonce (replay protection).
         bytes32 structHash = keccak256(
-            abi.encode(SET_WALLET_TYPEHASH, agentId, newWallet, deadline)
+            abi.encode(SET_WALLET_TYPEHASH, agentId, newWallet, deadline, walletNonce[agentId])
         );
         bytes32 digest = _hashTypedDataV4(structHash);
         address signer = digest.recover(signature);
 
         require(signer == ownerOf(agentId), "Invalid signature");
 
+        walletNonce[agentId]++; // consume the nonce — the signature can't be replayed
         agents[agentId].agentWallet = newWallet;
 
         emit AgentWalletUpdated(agentId, newWallet);
@@ -293,6 +305,15 @@ contract AgentRegistryV2 is ERC721URIStorage, Ownable, Pausable, EIP712 {
         // Update mappings on transfer
         if (from != address(0)) {
             delete addressToAgentId[from];
+            // [audit 2026-08 F3] On a TRANSFER (not mint), reject a recipient that
+            // already owns a different agent. addressToAgentId is 1:1 and is the
+            // address→agentId lookup the marketplace/reputation rely on; overwriting
+            // it would silently orphan the recipient's existing agent (its
+            // reputation/pool/credit become unreachable). Mint is exempt: from==0,
+            // and register() already set the mapping via CEI before _safeMint.
+            if (to != address(0)) {
+                require(addressToAgentId[to] == 0, "Recipient already owns an agent");
+            }
         }
         if (to != address(0)) {
             addressToAgentId[to] = tokenId;

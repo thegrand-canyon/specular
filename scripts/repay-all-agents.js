@@ -21,10 +21,10 @@ const mpAbi = loadAbi('AgentLiquidityMarketplace');
 const usdcAbi = loadAbi('MockUSDC');
 
 const agents = [
-    { name: 'Main Agent', key: process.env.PRIVATE_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000' },
-    { name: 'Fresh Agent 1', key: 'process.env.TEST_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000'' },
-    { name: 'Fresh Agent 2', key: 'process.env.TEST_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000'' },
-    { name: 'Fresh Agent 3', key: 'process.env.TEST_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000'' }
+    { name: 'Main Agent', key: process.env.PRIVATE_KEY },
+    { name: 'Fresh Agent 1', key: process.env.TEST_KEY },
+    { name: 'Fresh Agent 2', key: process.env.TEST_KEY },
+    { name: 'Fresh Agent 3', key: process.env.TEST_KEY }
 ];
 
 async function repayAllLoans(wallet, marketplace, usdc) {
@@ -85,4 +85,4 @@ async function main() {
     console.log(`\n✅ Total loans repaid: ${totalRepaid}`);
 }
 
-main().catch(console.error);
+main().catch((e) => { console.error(e); process.exit(1); });

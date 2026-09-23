@@ -1,0 +1,147 @@
+{
+  "generatedAt": "2026-05-07T18:42:01.029Z",
+  "s5_liveGas": [
+    {
+      "wallet": "0x656086A21073272533c8A3f56A94c1f3D8BCFcE2",
+      "label": "agent 43 (777 loans)",
+      "gas": "3939066"
+    },
+    {
+      "wallet": "0x6df560f9DffB9bd97c4ac208ffa5a162d4c03035",
+      "label": "agent ?? (279 loans)",
+      "error": "bad address checksum"
+    },
+    {
+      "wallet": "0xd0a1761bD207c12ef63253943417e64A78D3895A",
+      "label": "agent ?? (268 loans)",
+      "error": "bad address checksum"
+    },
+    {
+      "wallet": "0xa0983956484d74af695aae4Fb5b1B90914415F37",
+      "label": "agent ?? (268 loans)",
+      "error": "bad address checksum"
+    },
+    {
+      "wallet": "0xd673e66BF1C3bf696D88a147CFddc17Aab7C9F8a",
+      "label": "agent ?? (140 loans)",
+      "error": "bad address checksum"
+    }
+  ],
+  "s5_dosProjection": {
+    "currentGas": "3939066",
+    "gasLimit": 30000000,
+    "remainingLoansToDoS": 5665
+  },
+  "s1_projection": {
+    "totalUnclaimedUsdc": 74.865743,
+    "lenderCount": 40,
+    "topLenders": [
+      {
+        "agentId": "44",
+        "lender": "0xd673e66BF1C3Bf696d88A147Cfddc17AaB7C9F8A",
+        "earnedInt": 22.936141
+      },
+      {
+        "agentId": "5",
+        "lender": "0x05E7092f2E3b303499783260DB72786a0788fb80",
+        "earnedInt": 14.170581
+      },
+      {
+        "agentId": "45",
+        "lender": "0x6Df560f9DFfB9bd97c4aC208FfA5A162D4c03035",
+        "earnedInt": 7.157983
+      },
+      {
+        "agentId": "47",
+        "lender": "0xa0983956484D74af695aAE4FB5b1b90914415F37",
+        "earnedInt": 7.120009
+      },
+      {
+        "agentId": "46",
+        "lender": "0xd0A1761bd207c12eF63253943417e64a78D3895a",
+        "earnedInt": 7.101022
+      },
+      {
+        "agentId": "43",
+        "lender": "0xd673e66BF1C3Bf696d88A147Cfddc17AaB7C9F8A",
+        "earnedInt": 6.221853
+      },
+      {
+        "agentId": "56",
+        "lender": "0x96B5D3E4b05013d1D56581DAD6C6AbFBDf9d2EBD",
+        "earnedInt": 0.42719
+      },
+      {
+        "agentId": "59",
+        "lender": "0x4bc2A7C0C689671487246e3c89B517826683FdA7",
+        "earnedInt": 0.42719
+      },
+      {
+        "agentId": "60",
+        "lender": "0x442ee05d58f38fCD774d5341f1cCFB8A5211EEE0",
+        "earnedInt": 0.42719
+      },
+      {
+        "agentId": "58",
+        "lender": "0xF408ecbD8Fc97EcE90f11eD927999556d2Ee306D",
+        "earnedInt": 0.42719
+      }
+    ]
+  },
+  "b1_evidence": {
+    "base": {
+      "loans": [
+        2,
+        3,
+        4
+      ],
+      "result": "Panic(0x11) on staticCall — captured in 10-base-e2e-safe.json"
+    },
+    "arc": {
+      "note": "arc agent 43 pool has duplicate; no live active loans with interest currently to staticCall"
+    }
+  },
+  "duration_footgun": [
+    {
+      "durationDays": 7,
+      "result": "revert",
+      "message": "execution reverted: \"Insufficient pool liquidity\""
+    },
+    {
+      "durationDays": 6,
+      "result": "revert",
+      "message": "execution reverted: \"Insufficient pool liquidity\""
+    },
+    {
+      "durationDays": 366,
+      "result": "revert",
+      "message": "execution reverted: \"Insufficient pool liquidity\""
+    },
+    {
+      "durationDays": 604800,
+      "result": "revert",
+      "message": "execution reverted: \"Insufficient pool liquidity\""
+    },
+    {
+      "durationDays": 86400,
+      "result": "revert",
+      "message": "execution reverted: \"Insufficient pool liquidity\""
+    },
+    {
+      "durationDays": 30,
+      "result": "revert",
+      "message": "execution reverted: \"Insufficient pool liquidity\""
+    }
+  ],
+  "selector_diff": {
+    "arcCount": 73,
+    "baseCount": 73,
+    "intersection": 73,
+    "onlyArc": [],
+    "onlyBase": [],
+    "bytecodeKeccakArc": "0x6c5b78377df3aa1ed87d8f26985c3bab893f40afc91096e2e1b293f85c5d6048",
+    "bytecodeKeccakBase": "0x95b0d1ac40336b9fbaa7040dd9b1f5120c18d70b7e3ffff17a70c76f69c750c7",
+    "onlyArc_named": [],
+    "onlyBase_named": []
+  }
+}

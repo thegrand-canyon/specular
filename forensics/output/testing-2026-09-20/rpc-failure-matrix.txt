@@ -1,0 +1,7 @@
+=== RPC failure matrix (2026-09-21T23:41:13Z) ===
+healthy                V6.0 exit=0 -                                      | V6.1 exit=0 -
+dead-endpoint          V6.0 exit=1 -                                      | V6.1 exit=2 [MONITOR-FAILED] 
+rpc-errors             V6.0 exit=1 -                                      | V6.1 exit=2 [MONITOR-FAILED] 
+slow-endpoint          V6.0 exit=0 -                                      | V6.1 exit=2 [MONITOR-FAILED] 
+stale-head-2h          V6.0 exit=0 -                                      | V6.1 exit=1 [FRESH] 
+frozen-head(2nd run)   V6.0 exit=0 (keeps no run-to-run state)            | V6.1 exit=1 [FRESH-STUCK] 

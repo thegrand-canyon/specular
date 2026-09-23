@@ -1,0 +1,183 @@
+{
+ "base": "http://127.0.0.1:3400",
+ "network": "arc-staging",
+ "tag": "after",
+ "at": "2026-09-22T16:22:40.731Z",
+ "rows": [
+  {
+   "case": "429 Too Many Requests (all endpoints)",
+   "first": {
+    "ms": 38,
+    "status": 503,
+    "retryAfter": "5",
+    "error": "Network \"arc-staging\" is temporarily unavailable: every configured RPC endpoint is cold. Retry in 5s."
+   },
+   "second": {
+    "ms": 12,
+    "status": 503,
+    "retryAfter": "5",
+    "error": "Network \"arc-staging\" is temporarily unavailable: every configured RPC endpoint is cold. Retry in 5s."
+   },
+   "upstreamCallsByEndpoint": [
+    {
+     "upstream": "https://rpc.testnet.arc.io",
+     "total": 147
+    },
+    {
+     "upstream": "https://arc-testnet-rpc.publicnode.com",
+     "total": 19
+    }
+   ]
+  },
+  {
+   "case": "500 upstream error (all endpoints)",
+   "first": {
+    "ms": 30,
+    "status": 503,
+    "retryAfter": "1",
+    "error": "Network \"arc-staging\" is temporarily unavailable: every configured RPC endpoint is cold. Retry in 1s."
+   },
+   "second": {
+    "ms": 11,
+    "status": 503,
+    "retryAfter": "1",
+    "error": "Network \"arc-staging\" is temporarily unavailable: every configured RPC endpoint is cold. Retry in 1s."
+   },
+   "upstreamCallsByEndpoint": [
+    {
+     "upstream": "https://rpc.testnet.arc.io",
+     "total": 175
+    },
+    {
+     "upstream": "https://arc-testnet-rpc.publicnode.com",
+     "total": 30
+    }
+   ]
+  },
+  {
+   "case": "connection refused / socket destroyed (all endpoints)",
+   "first": {
+    "ms": 35,
+    "status": 503,
+    "retryAfter": "1",
+    "error": "Network \"arc-staging\" is temporarily unavailable: every configured RPC endpoint is cold. Retry in 1s."
+   },
+   "second": {
+    "ms": 8,
+    "status": 503,
+    "retryAfter": "1",
+    "error": "Network \"arc-staging\" is temporarily unavailable: every configured RPC endpoint is cold. Retry in 1s."
+   },
+   "upstreamCallsByEndpoint": [
+    {
+     "upstream": "https://rpc.testnet.arc.io",
+     "total": 203
+    },
+    {
+     "upstream": "https://arc-testnet-rpc.publicnode.com",
+     "total": 41
+    }
+   ]
+  },
+  {
+   "case": "slow upstream, 30 s per call (all endpoints)",
+   "first": {
+    "ms": 19860,
+    "status": 502,
+    "retryAfter": null,
+    "error": "RPC endpoint timed out; try again shortly."
+   },
+   "second": {
+    "ms": 21,
+    "status": 503,
+    "retryAfter": "2",
+    "error": "Network \"arc-staging\" is temporarily unavailable: every configured RPC endpoint is cold. Retry in 2s."
+   },
+   "upstreamCallsByEndpoint": [
+    {
+     "upstream": "https://rpc.testnet.arc.io",
+     "total": 242
+    },
+    {
+     "upstream": "https://arc-testnet-rpc.publicnode.com",
+     "total": 52
+    }
+   ]
+  },
+  {
+   "case": "hung upstream, never answers (all endpoints)",
+   "first": {
+    "ms": 19859,
+    "status": 502,
+    "retryAfter": null,
+    "error": "RPC endpoint timed out; try again shortly."
+   },
+   "second": {
+    "ms": 23,
+    "status": 503,
+    "retryAfter": "2",
+    "error": "Network \"arc-staging\" is temporarily unavailable: every configured RPC endpoint is cold. Retry in 2s."
+   },
+   "upstreamCallsByEndpoint": [
+    {
+     "upstream": "https://rpc.testnet.arc.io",
+     "total": 281
+    },
+    {
+     "upstream": "https://arc-testnet-rpc.publicnode.com",
+     "total": 63
+    }
+   ]
+  },
+  {
+   "case": "primary endpoint 429, secondary healthy",
+   "first": {
+    "ms": 464,
+    "status": 200,
+    "retryAfter": null,
+    "error": null
+   },
+   "second": {
+    "ms": 3,
+    "status": 200,
+    "retryAfter": null,
+    "error": null
+   },
+   "upstreamCallsByEndpoint": [
+    {
+     "upstream": "https://rpc.testnet.arc.io",
+     "total": 309
+    },
+    {
+     "upstream": "https://arc-testnet-rpc.publicnode.com",
+     "total": 80
+    }
+   ]
+  },
+  {
+   "case": "primary endpoint hangs, secondary healthy",
+   "first": {
+    "ms": 8494,
+    "status": 200,
+    "retryAfter": null,
+    "error": null
+   },
+   "second": {
+    "ms": 2,
+    "status": 200,
+    "retryAfter": null,
+    "error": null
+   },
+   "upstreamCallsByEndpoint": [
+    {
+     "upstream": "https://rpc.testnet.arc.io",
+     "total": 337
+    },
+    {
+     "upstream": "https://arc-testnet-rpc.publicnode.com",
+     "total": 97
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,54 @@
+Owner (agent #49): 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+V6: 0xCeF77E14dB17aE0272510ddbDa97075e7Eb6EbF3
+PRE pool: lenderCount=1, lenders=["0x800e305a0cadde6289dfdfedf38218f45c06f72c"], avail=0
+lender 1: 0xdd7C4004Ff16eB0b1d655CEB8aC158380b6a7D6A
+lender 2: 0xAf8D09B303F45290CA66676925c7aB42066c41Bb
+lender 3: 0x73D4b6e58A011eaFc8e1fD9838A579C77f5426aA
+
+[1] funding lenders
+  funded all 3 lenders
+
+[2] each lender supplies to agent #49 pool
+  lender 1: supplied 0.2 USDC, tx=0xb87c5bb5c211bba7ce61f12ef1b8e5963203490a30bb8bd8e1a0032fc6223e5f, gas=188287
+  lender 2: supplied 0.15 USDC, tx=0xaa837689f9c60a0f8ca1c27111786f35f26a7b4c103d6e3527c7f81b7673059b, gas=154087
+  lender 3: supplied 0.1 USDC, tx=0xecdb50b52c91392d3341e1a7d1d752224c66fd596650e1660de4fa8a87aac2fb, gas=154087
+POST-SUPPLY: lenderCount=4 (was 1, expected +3)
+  unique lenders: 4
+  poolLenders: ["0x800e305a0cadde6289dfdfedf38218f45c06f72c","0xdd7c4004ff16eb0b1d655ceb8ac158380b6a7d6a","0xaf8d09b303f45290ca66676925c7ab42066c41bb","0x73d4b6e58a011eafc8e1fd9838a579c77f5426aa"]
+
+[3] agent #49 requests 0.3 USDC loan, 30 days
+  owner USDC balance: 18.19978
+  loan tx: 0x8809f37f96bd7fb1cc410a8dc54e66c9ce14dec93a45592ef530d315f7bea543, gas: 399505
+  loanId: 13
+
+[4] repay loan — would panic on v4 with duplicate lenders, must succeed on V6
+  repay tx: 0x3e1bbe85ff8f19df2a8bdb9f045988ea3fba6323e44f54016276f7958ea3962c, gas: 217886
+  ✅ NO PANIC — interest distribution succeeded with multiple lenders
+
+[5] verify each lender received proportional interest
+  expected total interest: 0.003698, platform fee: 0.000036, to lenders: 0.003662
+  lender 1: earned 0.00162700 (expected ~0.00162700)
+  lender 2: earned 0.00122000 (expected ~0.00122000)
+  lender 3: earned 0.00081300 (expected ~0.00081300)
+
+[6] each lender claims interest (§S1 test)
+  pre-claim avail: 0.453662
+  lender 1: claimed, tx=0xf6e2dccf083ab3e563dedfd5f8aaab6e9d949ca7aadf96ce12cfebd2d23c9a2c, gas=51052
+  lender 2: claimed, tx=0x212f2e253d8f7830ccd74dcbaf51dcb939825a1cb6149fc9e11d13400bd57d1a, gas=51052
+  lender 3: claimed, tx=0x3292dc87d3f280855900325bd2db8bbb6733747768d4a4aff426bdb0772bcc86, gas=51052
+  post-claim avail: 0.450002 (Δ -0.00366000)
+  expected Δ: -0.00366200 (≈)
+  §S1 invariant: avail=0.45000200 ≤ mpBal=0.45017200 ✅
+
+[7] cleanup
+  lender 1: withdrew 0.2
+  lender 1: returned 0.301627 USDC
+  lender 2: withdrew 0.15
+  lender 2: returned 0.30122 USDC
+  lender 3: withdrew 0.1
+  lender 3: returned 0.300813 USDC
+
+POST: lenderCount=4, avail=0.000002
+  unique lenders: 4 (should equal lenderCount: 4)
+
+Saved.

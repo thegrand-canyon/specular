@@ -20,7 +20,7 @@ async function main() {
         console.log('Usage:');
         console.log('  node scripts/transfer-eth.js <from-private-key> <to-address> <amount>\n');
         console.log('Example:');
-        console.log('  node scripts/transfer-eth.js 0x407194c9870e6a722178cda711406e7f37e44e0160628d558b0bbed2ebce0ae5 0x656086A21073272533c8A3f56A94c1f3D8BCFcE2 0.009\n');
+        console.log('  node scripts/transfer-eth.js 0x<from-private-key> 0x<to-address> 0.009\n');
         process.exit(1);
     }
 

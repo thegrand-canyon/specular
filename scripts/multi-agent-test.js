@@ -26,17 +26,17 @@ const RPC_URLS = {
 const AGENTS = [
     {
         name: 'Agent 1 (High Rep)',
-        key: process.env.PRIVATE_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000',
+        key: process.env.PRIVATE_KEY,
         loanAmount: 200, // Will request 200 USDC
     },
     {
         name: 'Agent 2 (Medium Rep)',
-        key: 'process.env.TEST_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000'',
+        key: process.env.TEST_KEY,
         loanAmount: 100, // Will request 100 USDC
     },
     {
         name: 'Agent 3 (Low Rep)',
-        key: 'process.env.TEST_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000'',
+        key: process.env.TEST_KEY,
         loanAmount: 50, // Will request 50 USDC
     },
 ];

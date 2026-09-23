@@ -150,4 +150,4 @@ async function main() {
     console.log('═'.repeat(80) + '\n');
 }
 
-main().catch(console.error);
+main().catch((e) => { console.error(e); process.exit(1); });

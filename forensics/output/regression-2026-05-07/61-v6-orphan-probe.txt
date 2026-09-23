@@ -1,0 +1,30 @@
+=========================================================
+  V6 ORPHAN PROBE — 0x56ecCB27D953a3c84463Df97e18b4E596462CbdE
+=========================================================
+Loaded 77 known wallet addresses from persisted key files
+V6 has 31 pools, USDC balance: 1122496.676204
+  pool[116]: totalLiq=33333.333333, avail=33233.333333, loaned=100, recoverable=0, ORPHAN=33333.333333
+  pool[117]: totalLiq=33333.333333, avail=33233.333333, loaned=100, recoverable=0, ORPHAN=33333.333333
+  pool[118]: totalLiq=33333.333333, avail=33233.333333, loaned=100, recoverable=0, ORPHAN=33333.333333
+  pool[124]: totalLiq=200400, avail=200250.236751, loaned=150, recoverable=0, ORPHAN=200400
+  pool[125]: totalLiq=200000, avail=199950.501972, loaned=50, recoverable=0, ORPHAN=200000
+  pool[126]: totalLiq=200000, avail=200000.501967, loaned=0, recoverable=0, ORPHAN=200000
+  pool[127]: totalLiq=200000, avail=200000.095118, loaned=0, recoverable=0, ORPHAN=200000
+  pool[128]: totalLiq=200000, avail=200000.095118, loaned=0, recoverable=0, ORPHAN=200000
+  pool[130]: totalLiq=87, avail=66.514867, loaned=21, recoverable=87, ORPHAN=0
+  pool[131]: totalLiq=3513, avail=3458.041411, loaned=56, recoverable=3513, ORPHAN=0
+  pool[132]: totalLiq=4370.25, avail=4370.25024, loaned=0, recoverable=4370.25, ORPHAN=0
+  pool[133]: totalLiq=3689, avail=3689.00024, loaned=0, recoverable=3689, ORPHAN=0
+  pool[136]: totalLiq=200, avail=200.02848, loaned=0, recoverable=200, ORPHAN=0
+  pool[137]: totalLiq=10000, avail=9997.558577, loaned=5, recoverable=0, ORPHAN=10000
+  pool[139]: totalLiq=100, avail=55.01424, loaned=45, recoverable=100, ORPHAN=0
+  pool[140]: totalLiq=100, avail=55.01424, loaned=45, recoverable=100, ORPHAN=0
+  pool[141]: totalLiq=100, avail=55.01424, loaned=45, recoverable=100, ORPHAN=0
+
+=========================================================
+  Recoverable via persisted keys (withdrawLiquidity): 12159.25 USDC across 26 positions
+  Orphan (need seedPosition migration):              1110399.999999 USDC across 94 positions
+  Total recoverable:                                 1122559.249999 USDC
+  Pools touched:                                     17
+=========================================================
+Saved to 61-v6-orphan-probe.json

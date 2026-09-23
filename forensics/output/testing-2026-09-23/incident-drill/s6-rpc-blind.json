@@ -1,0 +1,97 @@
+{
+  "scenario": "S6 — stuck or lying RPC: does the monitor say \"we are blind\"?",
+  "cases": [
+    {
+      "case": "control: healthy RPC",
+      "engineered": "none",
+      "exitCode": 0,
+      "codes": [],
+      "runtimeMs": 203,
+      "reportedBlind": false,
+      "falseOK": false,
+      "alertLatched": false,
+      "alertSeverity": null
+    },
+    {
+      "case": "dead endpoint (ECONNREFUSED)",
+      "engineered": "monitor points at a closed port",
+      "exitCode": 2,
+      "codes": [
+        "MONITOR-FAILED(CRITICAL)"
+      ],
+      "runtimeMs": 476,
+      "reportedBlind": true,
+      "falseOK": false,
+      "alertLatched": true
+    },
+    {
+      "case": "lying endpoint: every call errors",
+      "engineered": "fault-rpc --mode error",
+      "exitCode": 2,
+      "codes": [
+        "MONITOR-FAILED(CRITICAL)"
+      ],
+      "runtimeMs": 130,
+      "reportedBlind": true,
+      "falseOK": false,
+      "alertLatched": true
+    },
+    {
+      "case": "stale head (2 h old), state reads all succeed",
+      "engineered": "fault-rpc --mode stale --age 7200",
+      "exitCode": 1,
+      "codes": [
+        "FRESH(CRITICAL)"
+      ],
+      "runtimeMs": 251,
+      "reportedBlind": true,
+      "falseOK": false,
+      "alertLatched": true
+    },
+    {
+      "case": "frozen/pinned head, run 1 of 2 (no history yet)",
+      "engineered": "fault-rpc --mode frozen",
+      "exitCode": 0,
+      "codes": [],
+      "runtimeMs": 255,
+      "reportedBlind": false,
+      "falseOK": false,
+      "alertLatched": false,
+      "alertSeverity": null,
+      "note": "First run cannot know the head is pinned — there is nothing to compare against. This is the blind window."
+    },
+    {
+      "case": "frozen/pinned head, run 2 of 2 (history present)",
+      "engineered": "fault-rpc --mode frozen",
+      "exitCode": 1,
+      "codes": [
+        "FRESH-STUCK(WARN)"
+      ],
+      "runtimeMs": 223,
+      "reportedBlind": true,
+      "falseOK": false,
+      "alertLatched": true,
+      "note": "FRESH-STUCK fires only on the SECOND run, i.e. up to 30 minutes after the endpoint froze."
+    },
+    {
+      "case": "slow endpoint (8 s/call), 5 s watchdog",
+      "engineered": "fault-rpc --mode slow --delay 8000",
+      "exitCode": 2,
+      "codes": [
+        "WATCHDOG(CRITICAL)"
+      ],
+      "runtimeMs": 5125,
+      "reportedBlind": true,
+      "falseOK": false,
+      "alertLatched": true
+    }
+  ],
+  "falseOKs": [],
+  "launchdWrapper": {
+    "script": "forensics/monitor/run-with-alert.sh",
+    "exitCode": 2,
+    "alertRaised": true,
+    "verdict": "The wrapper fans a monitor failure out even when the monitor itself never got far enough to alert."
+  },
+  "verdict": "No false OKs. Every blind mode exits non-zero and latches an alert."
+}

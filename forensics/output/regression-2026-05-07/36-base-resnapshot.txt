@@ -1,0 +1,9 @@
+=== Base re-snapshot 2026-05-08 ===
+block.timestamp: 2026-05-08T21:21:13.000Z
+
+| Loan | State | endTime | Hours remaining | static-call repayLoan |
+|------|-------|---------|-----------------|------------------------|
+| #2 | ACTIVE | 2026-05-11T19:10:09 | 69.82 | Panic(0x11) §B1 |
+| #3 | ACTIVE | 2026-05-11T19:10:15 | 69.82 | Panic(0x11) §B1 |
+| #4 | ACTIVE | 2026-05-11T19:10:29 | 69.82 | Panic(0x11) §B1 |
+

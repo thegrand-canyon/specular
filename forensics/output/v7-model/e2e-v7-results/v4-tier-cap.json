@@ -1,0 +1,109 @@
+{
+  "scenario": "v4-tier-cap",
+  "title": "M1-4 tier table, immutable ceiling and setTierLimits guard (on-chain)",
+  "chainId": 5042002,
+  "marketplace": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+  "reputation": "0xD7906fDFBf69BA89a4c2FE148797e24f386fE3d2",
+  "startedAt": "2026-09-23T00:31:12.435Z",
+  "finishedAt": "2026-09-23T00:31:27.568Z",
+  "passed": 14,
+  "failed": 0,
+  "blocked": 0,
+  "checks": [
+    {
+      "label": "MAX_TIER_LIMIT == 10,000 USDC",
+      "ok": true,
+      "detail": "10000.0"
+    },
+    {
+      "label": "tierLimits read from chain == [1000, 5000, 10000, 10000, 2500, 5000] USDC",
+      "ok": true,
+      "detail": "1000.0, 5000.0, 10000.0, 10000.0, 2500.0, 5000.0"
+    },
+    {
+      "label": "every tier limit <= MAX_TIER_LIMIT",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "tierCollateralPct == [100, 100, 100, 75, 0, 0]",
+      "ok": true,
+      "detail": "100,100,100,75,0,0"
+    },
+    {
+      "label": "tierMinScore == [0, 200, 400, 500, 600, 800]",
+      "ok": true,
+      "detail": "0,200,400,500,600,800"
+    },
+    {
+      "label": "unsecuredTierExposure is monotone and capped at 5,000 USDC",
+      "ok": true,
+      "detail": "0.0,0.0,0.0,2500.0,2500.0,5000.0"
+    },
+    {
+      "label": "creditLimitOf <= tierLimit(score) <= MAX_TIER_LIMIT for every live agent, and tierLimit(score) <= ceiling across the whole 0..1000 score domain",
+      "ok": true,
+      "detail": "#51 score 300: limit 2100.0 <= tier 5000.0 <= 10000.0 | #52 score 1000: limit 2100.0 <= tier 5000.0 <= 10000.0"
+    },
+    {
+      "label": "setTierLimits with one entry at MAX_TIER_LIMIT + 1 REVERTS \"Tier limit exceeds ceiling\"",
+      "ok": true,
+      "detail": "Tier limit exceeds ceiling | execution reverted: \"Tier limit exceeds ceiling\" | execution reverted: \"Tier limit exceeds ceiling\" ("
+    },
+    {
+      "label": "setTierLimits cannot restore the old 50,000 USDC top tier",
+      "ok": true,
+      "detail": "Tier limit exceeds ceiling | execution reverted: \"Tier limit exceeds ceiling\" | execution reverted: \"Tier limit exceeds ceiling\" ("
+    },
+    {
+      "label": "setTierLimits with a zero entry REVERTS \"Tier limit must be > 0\"",
+      "ok": true,
+      "detail": "Tier limit must be > 0 | execution reverted: \"Tier limit must be > 0\" | execution reverted: \"Tier limit must be > 0\" (action=\"esti"
+    },
+    {
+      "label": "the three refused owner calls changed NOTHING on chain",
+      "ok": true,
+      "detail": "1000.0, 5000.0, 10000.0, 10000.0, 2500.0, 5000.0"
+    },
+    {
+      "label": "valid change applied and reads back",
+      "ok": true,
+      "detail": "10000.0"
+    },
+    {
+      "label": "the ceiling still bounds the changed table",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "shipped tier table restored exactly",
+      "ok": true,
+      "detail": "1000.0, 5000.0, 10000.0, 10000.0, 2500.0, 5000.0"
+    }
+  ],
+  "txs": [
+    {
+      "label": "setTierLimits (valid, tier 5 -> ceiling)",
+      "hash": "0xf1f5ec6c67d33f9059822e13a5f6ca09be6407ed6fb6390cfe2f8636e1b6382c",
+      "gasUsed": "45103"
+    },
+    {
+      "label": "setTierLimits (restore)",
+      "hash": "0x09a6e94a66aa727f24b810c1f35e120d7ac9934f6f3e0679410064df6dc61278",
+      "gasUsed": "45103"
+    }
+  ],
+  "cumulativeSpend": {
+    "nativeFromDeployer": "18.7033632",
+    "usdcMinted": "33560.0"
+  },
+  "tierLimits": [
+    "1000000000",
+    "5000000000",
+    "10000000000",
+    "10000000000",
+    "2500000000",
+    "5000000000"
+  ],
+  "maxTierLimit": "10000000000"
+}

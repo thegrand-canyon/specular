@@ -1,0 +1,315 @@
+{
+  "arc": {
+    "marketplace": "0x048363A325A5B188b7FF157d725C5e329f0171D3",
+    "paused": false,
+    "owner": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+    "bytecodeKeccak": "0x6c5b78377df3aa1ed87d8f26985c3bab893f40afc91096e2e1b293f85c5d6048",
+    "bytecodeLen": 9254,
+    "totalPools": 47,
+    "b1_totalLenderEntries": 45,
+    "b1_totalUniqueLenders": 44,
+    "b1_poolsWithDuplicates": 1,
+    "b1_duplicateDetail": [
+      {
+        "agentId": "43",
+        "lenderCount": 3,
+        "uniqueCount": 2,
+        "duplicates": [
+          [
+            "0x656086a21073272533c8a3f56a94c1f3d8bcfce2",
+            2
+          ]
+        ]
+      }
+    ],
+    "totalAgents": 94,
+    "s5_loanDepths": [
+      {
+        "wallet": "0x656086a21073272533c8a3f56a94c1f3d8bcfce2",
+        "length": 777
+      },
+      {
+        "wallet": "0x6df560f9dffb9bd97c4ac208ffa5a162d4c03035",
+        "length": 279
+      },
+      {
+        "wallet": "0xd0a1761bd207c12ef63253943417e64a78d3895a",
+        "length": 268
+      },
+      {
+        "wallet": "0xa0983956484d74af695aae4fb5b1b90914415f37",
+        "length": 268
+      },
+      {
+        "wallet": "0xd673e66bf1c3bf696d88a147cfddc17aab7c9f8a",
+        "length": 140
+      },
+      {
+        "wallet": "0x05e7092f2e3b303499783260db72786a0788fb80",
+        "length": 135
+      },
+      {
+        "wallet": "0x96b5d3e4b05013d1d56581dad6c6abfbdf9d2ebd",
+        "length": 10
+      },
+      {
+        "wallet": "0x30e57e9a9857bf2e409d3764a8183cd9c06d23c0",
+        "length": 10
+      },
+      {
+        "wallet": "0xf408ecbd8fc97ece90f11ed927999556d2ee306d",
+        "length": 10
+      },
+      {
+        "wallet": "0x4bc2a7c0c689671487246e3c89b517826683fda7",
+        "length": 10
+      },
+      {
+        "wallet": "0x442ee05d58f38fcd774d5341f1ccfb8a5211eee0",
+        "length": 10
+      },
+      {
+        "wallet": "0x6b730f863f507a9fab7d8e56ec972e5bc47ba5e9",
+        "length": 10
+      },
+      {
+        "wallet": "0xa3ce2c0d7ba39f6e5644cefbd95937769c5a87c1",
+        "length": 10
+      },
+      {
+        "wallet": "0x79b9d208839951c3a7ffa0b0c1dde470764da4b3",
+        "length": 10
+      },
+      {
+        "wallet": "0xc9af8de0c513e0abf690bd5fe69c32c9293b0198",
+        "length": 10
+      },
+      {
+        "wallet": "0x650efeb6a7bf4a80412fe8ad4abadca7e4f5d583",
+        "length": 10
+      },
+      {
+        "wallet": "0x9b1b6f4a432e0bf58a051649082e14683e814242",
+        "length": 10
+      },
+      {
+        "wallet": "0x12d67ab9933f1ce3601a3fa29bc1153069ed56f9",
+        "length": 10
+      },
+      {
+        "wallet": "0xcb03fa69fd39af4464d5359d647480ea6dccdc52",
+        "length": 10
+      },
+      {
+        "wallet": "0xaacb9bf54519c292e977ab65e7a22d7ef075d2be",
+        "length": 10
+      }
+    ],
+    "poolDetails": [
+      {
+        "agentId": "43",
+        "totalLiquidity": 501,
+        "availableLiquidity": 534.286047,
+        "totalLoaned": 0.1,
+        "totalEarned": 33.386047,
+        "lenderCount": 3,
+        "positions": [
+          {
+            "lender": "0x656086a21073272533c8a3f56a94c1f3d8bcfce2",
+            "supplied": 1,
+            "earnedInterest": 0.028978
+          },
+          {
+            "lender": "0xd673e66bf1c3bf696d88a147cfddc17aab7c9f8a",
+            "supplied": 500,
+            "earnedInterest": 6.221853
+          },
+          {
+            "lender": "0x656086a21073272533c8a3f56a94c1f3d8bcfce2",
+            "supplied": 1,
+            "earnedInterest": 0.028978
+          }
+        ]
+      },
+      {
+        "agentId": "44",
+        "totalLiquidity": 500,
+        "availableLiquidity": 522.936141,
+        "totalLoaned": 0,
+        "totalEarned": 22.936141,
+        "lenderCount": 1,
+        "positions": [
+          {
+            "lender": "0xd673e66bf1c3bf696d88a147cfddc17aab7c9f8a",
+            "supplied": 500,
+            "earnedInterest": 22.936141
+          }
+        ]
+      },
+      {
+        "agentId": "5",
+        "totalLiquidity": 500,
+        "availableLiquidity": 394.170581,
+        "totalLoaned": 120,
+        "totalEarned": 14.170581,
+        "lenderCount": 1,
+        "positions": [
+          {
+            "lender": "0x05e7092f2e3b303499783260db72786a0788fb80",
+            "supplied": 500,
+            "earnedInterest": 14.170581
+          }
+        ]
+      },
+      {
+        "agentId": "45",
+        "totalLiquidity": 10000,
+        "availableLiquidity": 9842.157983,
+        "totalLoaned": 165,
+        "totalEarned": 7.157983,
+        "lenderCount": 1,
+        "positions": [
+          {
+            "lender": "0x6df560f9dffb9bd97c4ac208ffa5a162d4c03035",
+            "supplied": 10000,
+            "earnedInterest": 7.157983
+          }
+        ]
+      },
+      {
+        "agentId": "46",
+        "totalLiquidity": 10000,
+        "availableLiquidity": 9967.101022,
+        "totalLoaned": 40,
+        "totalEarned": 7.101022,
+        "lenderCount": 1,
+        "positions": [
+          {
+            "lender": "0xd0a1761bd207c12ef63253943417e64a78d3895a",
+            "supplied": 10000,
+            "earnedInterest": 7.101022
+          }
+        ]
+      },
+      {
+        "agentId": "47",
+        "totalLiquidity": 10005,
+        "availableLiquidity": 9992.120009,
+        "totalLoaned": 20,
+        "totalEarned": 7.120009,
+        "lenderCount": 2,
+        "positions": [
+          {
+            "lender": "0xa0983956484d74af695aae4fb5b1b90914415f37",
+            "supplied": 10000,
+            "earnedInterest": 7.120009
+          },
+          {
+            "lender": "0x656086a21073272533c8a3f56a94c1f3d8bcfce2",
+            "supplied": 5,
+            "earnedInterest": 0
+          }
+        ]
+      },
+      {
+        "agentId": "48",
+        "totalLiquidity": 30,
+        "availableLiquidity": 20,
+        "totalLoaned": 10,
+        "totalEarned": 0,
+        "lenderCount": 1,
+        "positions": [
+          {
+            "lender": "0x800e305a0cadde6289dfdfedf38218f45c06f72c",
+            "supplied": 30,
+            "earnedInterest": 0
+          }
+        ]
+      },
+      {
+        "agentId": "53",
+        "totalLiquidity": 100,
+        "availableLiquidity": 100.08544,
+        "totalLoaned": 0,
+        "totalEarned": 0.08544,
+        "lenderCount": 1,
+        "positions": [
+          {
+            "lender": "0xba76fa98fe5fcc09eec2c6ecea245dc98ca82676",
+            "supplied": 100,
+            "earnedInterest": 0.08544
+          }
+        ]
+      },
+      {
+        "agentId": "64",
+        "totalLiquidity": 200,
+        "availableLiquidity": 200.42719,
+        "totalLoaned": 0,
+        "totalEarned": 0.42719,
+        "lenderCount": 1,
+        "positions": [
+          {
+            "lender": "0xc9af8de0c513e0abf690bd5fe69c32c9293b0198",
+            "supplied": 200,
+            "earnedInterest": 0.42719
+          }
+        ]
+      }
+    ]
+  },
+  "base": {
+    "marketplace": "0xd7b4dEE74C61844DFA75aEbe224e4635463b1C8f",
+    "paused": false,
+    "owner": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+    "bytecodeKeccak": "0x95b0d1ac40336b9fbaa7040dd9b1f5120c18d70b7e3ffff17a70c76f69c750c7",
+    "bytecodeLen": 9254,
+    "totalPools": 1,
+    "b1_totalLenderEntries": 2,
+    "b1_totalUniqueLenders": 1,
+    "b1_poolsWithDuplicates": 1,
+    "b1_duplicateDetail": [
+      {
+        "agentId": "1",
+        "lenderCount": 2,
+        "uniqueCount": 1,
+        "duplicates": [
+          [
+            "0x800e305a0cadde6289dfdfedf38218f45c06f72c",
+            2
+          ]
+        ]
+      }
+    ],
+    "totalAgents": 3,
+    "s5_loanDepths": [
+      {
+        "wallet": "0x800e305a0cadde6289dfdfedf38218f45c06f72c",
+        "length": 4
+      }
+    ],
+    "poolDetails": [
+      {
+        "agentId": "1",
+        "totalLiquidity": 1.5,
+        "availableLiquidity": 1.200002,
+        "totalLoaned": 0.3,
+        "totalEarned": 0.000002,
+        "lenderCount": 2,
+        "positions": [
+          {
+            "lender": "0x800e305a0cadde6289dfdfedf38218f45c06f72c",
+            "supplied": 1.5,
+            "earnedInterest": 0
+          },
+          {
+            "lender": "0x800e305a0cadde6289dfdfedf38218f45c06f72c",
+            "supplied": 1.5,
+            "earnedInterest": 0
+          }
+        ]
+      }
+    ]
+  },
+  "generatedAt": "2026-05-07T17:15:46.572Z"
+}

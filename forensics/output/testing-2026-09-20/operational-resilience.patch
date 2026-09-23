@@ -1,0 +1,2895 @@
+diff --git a/.gitignore b/.gitignore
+index b225ee5..e047f26 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -45,3 +45,15 @@ forensics/output/**/*-agent.json
+ forensics/output/**/*-lender.json
+ __pycache__/
+ *.pyc
++
++# Invariant-monitor runtime artifacts (2026-09-20 operational-resilience round).
++# monitor.env holds the opt-in SPECULAR_ALERT_WEBHOOK URL — never commit it.
++forensics/monitor/monitor.env
++forensics/monitor/*.log
++forensics/monitor/*.log.[0-9]
++forensics/monitor/ALERT-ACTIVE.json
++forensics/monitor/alerts.log
++forensics/monitor/heartbeat-*.json
++forensics/monitor/state-*.json
++# local hardhat harness output
++src/config/local-addresses.json
+diff --git a/forensics/monitor/INCIDENT_RUNBOOK.md b/forensics/monitor/INCIDENT_RUNBOOK.md
+new file mode 100644
+index 0000000..ec8d955
+--- /dev/null
++++ b/forensics/monitor/INCIDENT_RUNBOOK.md
+@@ -0,0 +1,270 @@
++# Specular Invariant Monitor — Incident Runbook
++
++**Scope:** what a human does when `com.specular.v6-invariants-*` fires.
++**Owner:** the holder of the secure wallet `0x800e305A0caDdE6289dFDFEDF38218f45C06F72C`.
++**Written:** 2026-09-20 (operational-resilience round). Lever values verified on-chain 2026-09-22.
++
++> **Read this first, before you touch anything:**
++> **`pause()` FREEZES LENDER EXITS.** It also freezes borrower repayments *and your own
++> `liquidateLoan`.* It is not a "make it safe" button — it is a "stop the world, including
++> the recovery tools" button. Measured blast radius is in §5. Do not reach for it reflexively.
++
++---
++
++## 0. TL;DR triage card
++
++| You see | First move | Then |
++|---|---|---|
++| `SOLV` / `POOL` / `S1` (money doesn't add up) | **Do not pause yet.** Snapshot state (§2.1). Confirm with a second RPC. | §3.1 |
++| `OWN` / `OWN-PENDING` (ownership moved) | **Assume key compromise.** §3.2 — this is the only case where you act in seconds. | §3.2 |
++| `PAUS` (paused and you didn't do it) | Same as `OWN` — someone else has the key. | §3.2 |
++| `B1` / `S5-*` / `ALI` / `PT` / `LATE-*` (state corruption) | Snapshot, stop new inflow, no pause. | §3.3 |
++| `FRESH` / `FRESH-STUCK` / `MONITOR-FAILED` / `MONITOR-DOWN` | You are **blind**, not necessarily broken. | §3.4 |
++| `NFT-MOVED` (WARN) | Informational credit event. | §3.5 |
++| `SOLV-SURPLUS` / `POOL-SLACK` (WARN) | Usually a donation or rounding. | §3.6 |
++
++---
++
++## 1. How an alert reaches you
++
++Every 30 minutes `launchd` runs `forensics/monitor/run-with-alert.sh <network>`, which runs
++`v6-invariants.js` and fans **any** non-zero exit out to:
++
++1. `forensics/monitor/ALERT-ACTIVE.json` — a **latch**. Its existence means "unacknowledged
++   incident". It is never cleared automatically.
++2. `~/SPECULAR-ALERT.txt` — plain text in your home directory.
++3. A macOS notification banner (plus a spoken alert for CRITICAL).
++4. `forensics/monitor/alerts.log` — append-only JSONL history.
++5. `SPECULAR_ALERT_WEBHOOK` — **only if you set it** in `forensics/monitor/monitor.env`
++   (gitignored). Nothing is hardcoded; with the variable unset the webhook channel is a no-op.
++
++Check state at any time:
++
++```bash
++export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
++node forensics/monitor/alert.js --status     # latch + per-network heartbeats
++node forensics/monitor/alert.js --self-test  # prove the channels still work
++node forensics/monitor/alert.js --ack        # clear the latch AFTER you have handled it
++```
++
++**Exit codes:** `0` clear · `1` invariant violation (or a sibling monitor is down) ·
++`2` the monitor could not complete — RPC dead/slow/stale, config broken. **Treat 2 as
++seriously as 1**: it means the deployment is unmonitored, not that it is fine.
++
++---
++
++## 2. Triage — do these before deciding anything
++
++### 2.1 Snapshot the truth
++
++```bash
++export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
++cd ~/Specular
++
++# full, verbose, un-quieted run against mainnet
++V6_MONITOR_NETWORK=arc-mainnet V6_EXPECTED_OWNER=0x800e305A0caDdE6289dFDFEDF38218f45C06F72C \
++  node forensics/monitor/v6-invariants.js --verbose --no-alert | tee /tmp/incident-$(date +%s).json
++
++# every owner lever and balance, read-only
++node scripts/op-resilience/read-mainnet-levers.js
++```
++
++### 2.2 Rule out the monitor before you believe the alert
++
++A false alarm from a bad RPC is more likely than a broken contract. Re-run against a
++**different** endpoint:
++
++```bash
++ARC_MAINNET_RPC_URL=<second endpoint> V6_MONITOR_NETWORK=arc-mainnet \
++  node forensics/monitor/v6-invariants.js --no-alert
++```
++
++Two independent endpoints agreeing is the bar for acting. One endpoint disagreeing with
++the other is itself the finding (§3.4).
++
++### 2.3 Size the exposure before choosing a lever
++
++From the snapshot: `usdcBalance`, `sumAvail`, `sumActiveCollateral`, number of ACTIVE loans,
++number of distinct lenders. **If total third-party lender principal is zero, almost nothing is
++urgent** — take the slow, reversible path. As of 2026-09-22 Arc mainnet holds 0.000014 USDC,
++1 pool, 0 active loans, 1 agent: there is nothing to lose and no reason to pause.
++
++---
++
++## 3. Playbooks by finding
++
++### 3.1 Money doesn't add up — `SOLV`, `POOL`, `S1`, `FEE`, `LOAN-TOTAL`, `LOAN-OUTSTANDING`
++
++These mean lender claims exceed backing somewhere. Order of operations:
++
++1. **Confirm on a second RPC** (§2.2). Arc's USDC is the native token exposed through an
++   ERC-20 view; a forced native donation inflates the balance and shows up as
++   `SOLV-SURPLUS`, not a shortfall. A *shortfall* is real.
++2. **Stop the bleeding without pausing.** `setMinSupplyAmount(100e6)` (the contract's maximum)
++   makes a new lender slot cost 100 USDC — it does **not** stop top-ups by existing lenders and
++   does **not** block anything else. This is the cheapest "slow it down" lever.
++3. **Do not run `resetPoolAccounting`.** Audit finding I-2: on a pool whose loss exceeded
++   principal, it rebuilds `availableLiquidity` from booked interest and *re-creates* phantom
++   liquidity. It is a migration tool, not a repair tool.
++4. Identify the pool from the `POOL` row (`agentId`, `claims` vs `backing`). If exactly one
++   pool is wrong and it has one borrower, the targeted action is to close that borrower's
++   loans (§3.1a), not to pause the whole marketplace.
++5. **Pause only if** the delta is growing between two consecutive monitor runs **and**
++   third-party lender principal is at risk. Read §5 first, and tell lenders immediately —
++   pausing traps their money.
++
++**3.1a Closing a bad loan:** `liquidateLoan(loanId)` is owner-only, requires the loan to be
++`ACTIVE` and `block.timestamp > endTime`, **and requires the contract to be UNPAUSED**. It
++seizes collateral into `availableLiquidity`, socialises the shortfall pro-rata across lender
++principal (and, V6.1 F-05, across unclaimed interest), decrements the counters, and records a
++default (−50 pts, −100 above 10,000 USDC) against the **current NFT holder**.
++
++### 3.2 Ownership or pause changed underneath you — `OWN`, `OWN-PENDING`, `PAUS`
++
++This is the only scenario measured in seconds. If the owner is not the secure wallet, or a
++`pendingOwner` is set that you did not set, or the contract is paused and you did not pause it:
++
++1. Assume the secure wallet's key is compromised.
++2. If you **still control** the owner key: `transferOwnership(<fresh cold wallet>)` immediately,
++   then `acceptOwnership()` from that wallet (Ownable2Step — both steps are required).
++   `renounceOwnership` is disabled in V6.1 (it is a `view` override), so nobody can orphan the
++   contract.
++3. If you **do not** control it any more: you cannot regain it. Publish a disclosure, tell every
++   lender to `withdrawLiquidity` **while the contract is still unpaused**, and treat the
++   deployment as lost. There is no timelock and no multisig on this deployment — see §6.
++4. Registry, ReputationManager and Faucet are separate one-step `Ownable` contracts (audit I-1).
++   Check all four owners in the `read-mainnet-levers.js` output, not just the marketplace.
++
++### 3.3 State corruption — `B1`, `S5-COUNTER`, `S5-CAP`, `ALI`, `ALI-LEN`, `PT`, `PT-TS`, `QUAL-REVERT`, `LATE-*`
++
++V6.1's code cannot produce these states, so if one appears the cause is either a monitor bug
++(check `scripts/op-resilience/storage.js` still matches the deployed layout) or something
++genuinely novel. Nothing here is fixable with a lever except:
++
++- `B1` duplicate lenders → `compactPoolLenders(agentId)` dedups in place, works **even while
++  paused**, bounded to 50 iterations. Safe.
++- `QUAL-REVERT` is the serious one: `qualifiedAmountAt` reverting means `_distributeInterest`
++  reverts too, so **every repayment on that pool is bricked**. Borrowers cannot close loans.
++  There is no lever for this; it needs a redeploy and a migration.
++- `S5-CAP`/`ALI` corruption means the concurrency limit is not being enforced — stop new
++  borrowing. V6.1 enforces `isActive` in `createAgentPool`/`requestLoan` (audit F-07 fixed), so
++  `registry.deactivateAgent(agentId)` **is** a per-agent kill switch on this deployment.
++
++### 3.4 You are blind — `FRESH`, `FRESH-STUCK`, `FRESH-REORG`, `MONITOR-FAILED`, `MONITOR-DOWN`, `[WATCHDOG]`
++
++| Code | Meaning | Action |
++|---|---|---|
++| `MONITOR-FAILED` | RPC dead, erroring, or slower than `V6_RPC_TIMEOUT_MS` | Try a second endpoint. If both fail, the chain or your network is down — re-run manually every few minutes until it clears. |
++| `[WATCHDOG]` | Run exceeded `V6_MAX_RUNTIME_SEC` (600 s) | The endpoint is degraded. A run that outlives the interval also *delays the next one* — launchd schedules the next start from the previous process's exit. |
++| `FRESH` | Chain head older than `V6_MAX_BLOCK_AGE_SEC` (1800 s) | Endpoint is serving stale data, or the chain has stalled. Compare block height against a block explorer. |
++| `FRESH-STUCK` | Head identical to the previous run | Endpoint pinned to a snapshot. **Every state read still succeeds and looks self-consistent** — this is the most dangerous failure mode, because without this check the monitor reports OK for ever. Switch endpoints. Arc mainnet advances 1,400–4,800 blocks per 30-min cycle, so this never fires on a healthy chain. |
++| `FRESH-REORG` | Head went backwards | Either a reorg or the RPC is answering for a different chain. Verify `chainId == 5042`. |
++| `MONITOR-DOWN` | A *sibling* network's job has not stamped a heartbeat in 90 min | `launchctl list \| grep specular`; reload the plist. |
++
++**Nothing detects all jobs being dead at once.** The jobs cross-check each other, but if the
++Mac is asleep, powered off, or the repo has moved, everything is silent. Do a weekly manual
++`node forensics/monitor/alert.js --status` and confirm both heartbeats are fresh. (§6 gap 1.)
++
++### 3.5 `NFT-MOVED` (WARN)
++
++An agent NFT is held by an address that is not the borrower of its ACTIVE loan. V6.1's F-01 fix
++means the loan can still be repaid and liquidated (the marketplace resolves the agent by
++`agentId` through `ownerOf`), so this is **not** the frozen-loan bug. But it is a real credit
++event: the reputation outcome and the right to repay moved to the buyer, while the collateral
++still returns to the original borrower. Note who moved what, and watch that loan to maturity.
++
++### 3.6 `SOLV-SURPLUS` / `POOL-SLACK` (WARN)
++
++More USDC in the contract than accounted for. On Arc, USDC is the native token, so a forced
++native transfer lands as an unexplained surplus (audit I-3). Not a loss. Confirm the delta is
++static; if it grows monotonically in step with activity, it is an accounting bug, not a
++donation — escalate to §3.1.
++
++---
++
++## 4. Owner levers on V6.1 — what each one actually does
++
++Values read on-chain 2026-09-22 (`forensics/output/testing-2026-09-20/arc-mainnet-levers.json`).
++
++| Lever | Current | Effect | Side effects / cost |
++|---|---|---|---|
++| **`pause()`** | unpaused | Blocks **6 of 18** measured operations | **Freezes lender `withdrawLiquidity` AND `claimInterest`. Freezes borrower `repayLoan`. Freezes your own `liquidateLoan`.** Also blocks `supplyLiquidity`, `requestLoan`, `createAgentPool`. Interest keeps accruing on live loans up to `LATE_INTEREST_CAP` (30 days) while borrowers cannot pay. Reversible with `unpause()`. **Full table in §5.** |
++| `unpause()` | — | Restores everything | None. |
++| `setPlatformFeeRate(bps)` | 100 (1 %) | Protocol cut of interest | Capped at 500. **Applies retroactively** — the fee is computed at repay, so already-active loans pay the new rate (audit I-4). Raising it mid-loan silently changes lender yield. |
++| `setMinSupplyAmount(wei6)` | 10 USDC | Minimum for a **new** lender slot | Capped at 100 USDC. Does **not** apply to top-ups by existing lenders. Raising it to 100 makes a 50-slot squat cost 5,000 USDC (audit F-06) but also locks out small lenders. |
++| `setMinHoldForReputationReward(sec)` | 86 400 | Minimum loan life before an on-time repay earns points | 0 disables. Slows reputation farming; no effect on money. |
++| `setBindBorrowToPoolCreator(bool)` | true | Only the pool's creator address may borrow from it | Leaving it true means an NFT sale does not hand the buyer borrowing rights. Turning it off widens the blast radius of a stolen agent. |
++| `reputation.setReputationRateLimit(max, window)` | 5 pts / 86 400 s | Caps reputation gain per window | The main brake on D1/F-04 farming. 5/day ⇒ ~100 days from score 100 to the 0 %-collateral tier. Lowering further slows honest agents equally. |
++| `reputation.setScoringParameters(bonus, penaltyBase, penaltyLarge, largeThreshold)` | 10 / 50 / 100 / 10 000 USDC | Bonus and default penalties | Raising penalties makes a bust-out cost more calendar time to re-farm. Not retroactive. |
++| `reputation.setBonusReferenceAmount(wei6)` | 100 USDC | Loan size that earns the full bonus | Raising it forces larger loans (and larger fees) per reputation point. |
++| **`reputation.revokePool(address)`** | marketplace authorized | De-authorises the marketplace from writing reputation | **Blunt.** After this, `repayLoan` and `liquidateLoan` revert (both call into the reputation manager) — it bricks loan closing exactly like a pause, but *without* a pause flag to make it obvious to anyone. Use only if the reputation manager itself is being abused; unwind with `authorizePool`. |
++| `registry.deactivateAgent(agentId)` | — | V6.1 enforces `isActive` in `createAgentPool`/`requestLoan` | **The per-agent kill switch.** Stops one bad agent from borrowing without touching anyone else. Preferred over `pause()` for a single-actor incident. Does not affect its existing loans. |
++| `registry.pause()` | unpaused | Blocks registration | Does **not** block NFT transfers. |
++| `liquidateLoan(loanId)` | — | Default an overdue loan | Owner-only, `ACTIVE` + past `endTime` + **not paused**. Seizes collateral, socialises the shortfall pro-rata, records a default. Irreversible. |
++| `withdrawFees(amount)` | 0.000014 USDC | Move protocol fees out | **Works while paused** (no `whenNotPaused`). |
++| `compactPoolLenders(agentId)` | — | Dedup `poolLenders[]` | Safe, bounded, works while paused. |
++| `resetPoolAccounting(agentId)` | — | Rebuild `totalLoaned`/`availableLiquidity` | **DANGEROUS** — audit I-2: after an under-recovered liquidation it re-creates phantom liquidity. Do not use during a solvency incident. |
++| `seedPool` / `seedPosition` | **disabled** | — | `migrationFinalized == true` on Arc mainnet (F-08 closed at deploy). Both revert. |
++| `transferOwnership` / `acceptOwnership` | owner = secure wallet | Two-step handover | `renounceOwnership` disabled in V6.1. Registry/Reputation/Faucet are **one-step** `Ownable` (audit I-1) — a mistyped address there is unrecoverable. |
++| `faucet.drain(amount)` | balance 19 USDC | Empty the faucet | Use if the faucet is being farmed. |
++
++---
++
++## 5. Pause blast radius (measured, not assumed)
++
++Local hardhat replay of the exact V6.1 stack; every call attempted from the correct caller both
++unpaused and paused (`scripts/op-resilience/pause-blast-radius.js`, results in
++`forensics/output/testing-2026-09-20/pause-blast-radius.json`):
++
++| Operation | Unpaused | Paused |
++|---|---|---|
++| lender: `withdrawLiquidity` | works | **BLOCKED** `EnforcedPause()` |
++| lender: `claimInterest` | works | **BLOCKED** `EnforcedPause()` |
++| lender: `supplyLiquidity` | works | **BLOCKED** `EnforcedPause()` |
++| borrower: `repayLoan` | works | **BLOCKED** `EnforcedPause()` |
++| borrower: `requestLoan` | works | **BLOCKED** `EnforcedPause()` |
++| **owner: `liquidateLoan`** | works | **BLOCKED** `EnforcedPause()` |
++| owner: `withdrawFees` | works | works |
++| owner: `setPlatformFeeRate` / `setMinSupplyAmount` / `setMinHoldForReputationReward` / `setBindBorrowToPoolCreator` | works | works |
++| owner: `compactPoolLenders` / `resetPoolAccounting` | works | works |
++| owner: `transferOwnership` | works | works |
++| registry: `register` | works | works |
++| registry: agent NFT `transferFrom` | works | works |
++
++**Reading:** pausing takes away every user action *and your primary recovery action*, while
++leaving every risk-parameter lever and ownership change available. `pause()` is therefore the
++right call only when you need to stop **new** loans and supply and you have already decided you
++cannot liquidate your way out. In every other case a targeted lever (`deactivateAgent`,
++`setMinSupplyAmount`, `setReputationRateLimit`) does less damage.
++
++Note what pause does **not** stop: agent NFTs keep moving, new agents keep registering, and
++reputation stays readable. A pause does not freeze identity.
++
++---
++
++## 6. Standing gaps you should know about before an incident
++
++1. **No all-jobs-dead detector.** The monitor jobs cross-check each other's heartbeats, but a
++   sleeping/off Mac silences both. Weekly `alert.js --status` is the only backstop today.
++2. **Single owner EOA, no timelock, no multisig.** Every lever in §4 is one key away, and §3.2
++   has no good branch if that key is gone.
++3. **Registry / Reputation / Faucet are one-step `Ownable`** (audit I-1) — a typo in
++   `transferOwnership` on those three is permanent.
++4. **`pause()` traps lender funds** (audit I-5). There is no withdraw-only mode. If you pause,
++   you owe lenders an immediate, public explanation and a time-bound plan.
++5. **Late repayment still earns no reputation penalty.** V6.1 charges elapsed-time interest
++   (F-03 fix) and records `lateRepayCount`/`lateSecondsTotal` on-chain, but ReputationManagerV3
++   has no late hook — scoring off that data is an off-chain job today.
++6. **`revokePool` bricks loan closing silently.** Treat it as a pause with no pause flag.
++
++---
++
++## 7. After the incident
++
++1. `node forensics/monitor/alert.js --ack` — only once the underlying condition is gone.
++2. Confirm two consecutive clean runs (`exitCode: 0`) in
++   `forensics/monitor/v6-invariants-arc-mainnet.log`.
++3. Append a dated entry to this file: what fired, what was true, what you did, what it cost.
++4. If the monitor missed it or cried wolf, add a scenario to
++   `scripts/op-resilience/scenarios.js` and re-run `run-detection-matrix.js` — that matrix is
++   the regression suite for the monitor itself.
+diff --git a/forensics/monitor/alert.js b/forensics/monitor/alert.js
+new file mode 100755
+index 0000000..1f449ac
+--- /dev/null
++++ b/forensics/monitor/alert.js
+@@ -0,0 +1,214 @@
++#!/usr/bin/env node
++//
++// Specular alert fan-out — the "somebody actually finds out" layer.
++//
++// Before this existed a violation wrote a JSON line into a log file nobody reads
++// and exited non-zero into launchd, which discards the status. This module is the
++// single place that turns a detected violation into something a human sees.
++//
++// Channels (all best-effort, all free, all local — no paid service required):
++//   1. ALERT-ACTIVE.json  — a latched file in forensics/monitor/. Its presence means
++//                           "there is an unacknowledged incident". Never auto-deleted;
++//                           an operator clears it with `node alert.js --ack`.
++//   2. alerts.log         — append-only JSONL history of every alert ever raised.
++//   3. macOS notification — osascript banner + (for CRITICAL) a spoken alert, so a
++//                           logged-in operator is interrupted rather than informed.
++//   4. ~/SPECULAR-ALERT.txt — plain-text file in the home dir, hard to miss in a shell.
++//   5. Webhook            — ONLY if SPECULAR_ALERT_WEBHOOK is set. Opt-in, no default,
++//                           nothing hardcoded. Slack/Discord-compatible JSON body.
++//
++// Also implements a dead-man's switch: every monitor run stamps a heartbeat file, and
++// every run checks ALL known heartbeats. If a sibling job stops running, the next run
++// of any other job raises a MONITOR_DOWN alert. (Nothing catches the case where every
++// job is dead — see INCIDENT_RUNBOOK.md; that is what the weekly manual check is for.)
++//
++// CLI:
++//   node alert.js <SEVERITY> <title> [jsonDetails]   raise an alert
++//   node alert.js --ack                              clear the latch
++//   node alert.js --status                           print latch + heartbeat state
++//   node alert.js --self-test                        raise a harmless TEST alert
++//
++// Env:
++//   SPECULAR_ALERT_WEBHOOK   opt-in webhook URL (POST application/json)
++//   SPECULAR_ALERT_QUIET=1   suppress the macOS banner/voice (used by test harnesses)
++//   SPECULAR_ALERT_DIR       override the directory holding the alert artifacts
++
++const fs = require('fs');
++const path = require('path');
++const os = require('os');
++const { execFile } = require('child_process');
++
++const DIR = process.env.SPECULAR_ALERT_DIR || __dirname;
++const ACTIVE = path.join(DIR, 'ALERT-ACTIVE.json');
++const HISTORY = path.join(DIR, 'alerts.log');
++const HOME_FLAG = path.join(os.homedir(), 'SPECULAR-ALERT.txt');
++const HEARTBEAT_DIR = DIR;
++
++const QUIET = process.env.SPECULAR_ALERT_QUIET === '1';
++
++function notifyMac(severity, title, line) {
++    if (QUIET || process.platform !== 'darwin') return;
++    const safe = s => String(s).replace(/["\\]/g, ' ').slice(0, 200);
++    const script = `display notification "${safe(line)}" with title "Specular ${safe(severity)}" subtitle "${safe(title)}" sound name "Basso"`;
++    try { execFile('/usr/bin/osascript', ['-e', script], () => {}); } catch {}
++    if (severity === 'CRITICAL') {
++        try { execFile('/usr/bin/say', ['-v', 'Samantha', 'Specular critical invariant alert'], () => {}); } catch {}
++    }
++}
++
++async function postWebhook(severity, title, details) {
++    const url = process.env.SPECULAR_ALERT_WEBHOOK;
++    if (!url) return { sent: false, reason: 'SPECULAR_ALERT_WEBHOOK unset' };
++    const body = {
++        text: `Specular ${severity}: ${title}`,
++        username: 'specular-monitor',
++        attachments: [{
++            color: severity === 'CRITICAL' ? 'danger' : 'warning',
++            title,
++            text: '```' + JSON.stringify(details, null, 2).slice(0, 3000) + '```',
++            ts: Math.floor(Date.now() / 1000),
++        }],
++    };
++    try {
++        const ctl = AbortSignal.timeout ? AbortSignal.timeout(8000) : undefined;
++        const r = await fetch(url, {
++            method: 'POST',
++            headers: { 'Content-Type': 'application/json' },
++            body: JSON.stringify(body),
++            signal: ctl,
++        });
++        return { sent: r.ok, status: r.status };
++    } catch (e) {
++        return { sent: false, reason: e.message };
++    }
++}
++
++/**
++ * Raise an alert on every configured channel. Never throws — an alerting failure
++ * must not mask the violation that triggered it.
++ */
++async function raise(severity, title, details = {}, opts = {}) {
++    const entry = {
++        ts: new Date().toISOString(),
++        severity,
++        title,
++        network: details.network || process.env.V6_MONITOR_NETWORK || 'unknown',
++        host: os.hostname(),
++        details,
++    };
++    const channels = {};
++
++    try { fs.appendFileSync(HISTORY, JSON.stringify(entry) + '\n'); channels.history = true; }
++    catch (e) { channels.history = e.message; }
++
++    // Latch: keep the FIRST unacknowledged alert, but record repeat count + latest.
++    try {
++        let latch = { firstSeen: entry.ts, count: 0, first: entry };
++        if (fs.existsSync(ACTIVE)) {
++            try { latch = JSON.parse(fs.readFileSync(ACTIVE, 'utf8')); } catch {}
++        }
++        latch.count = (latch.count || 0) + 1;
++        latch.lastSeen = entry.ts;
++        latch.latest = entry;
++        latch.acknowledged = false;
++        fs.writeFileSync(ACTIVE, JSON.stringify(latch, null, 2));
++        channels.latch = true;
++    } catch (e) { channels.latch = e.message; }
++
++    const line = `${entry.ts} [${severity}] ${entry.network}: ${title}`;
++    try {
++        fs.appendFileSync(HOME_FLAG,
++            `${line}\n${JSON.stringify(details, null, 2)}\n` +
++            `-> runbook: forensics/monitor/INCIDENT_RUNBOOK.md\n` +
++            `-> clear with: node forensics/monitor/alert.js --ack\n\n`);
++        channels.homeFlag = HOME_FLAG;
++    } catch (e) { channels.homeFlag = e.message; }
++
++    notifyMac(severity, title, line);
++    channels.macNotification = !QUIET && process.platform === 'darwin';
++
++    channels.webhook = await postWebhook(severity, title, details);
++
++    if (!opts.silent) console.log(JSON.stringify({ alert: entry, channels }));
++    return { entry, channels };
++}
++
++// ---- heartbeat / dead-man's switch -------------------------------------------------
++
++function heartbeatPath(network) { return path.join(HEARTBEAT_DIR, `heartbeat-${network}.json`); }
++
++function stamp(network, extra = {}) {
++    try {
++        fs.writeFileSync(heartbeatPath(network), JSON.stringify({
++            network, ts: new Date().toISOString(), epoch: Date.now(), ...extra,
++        }, null, 2));
++    } catch {}
++}
++
++/**
++ * Check every heartbeat file in the directory. Any heartbeat older than
++ * `maxAgeSec` means that monitor job has stopped running (launchd unloaded, node
++ * missing, machine asleep past the window, …) — which is itself an incident,
++ * because a monitor that is not running reports no violations.
++ */
++async function checkHeartbeats(maxAgeSec = 5400, selfNetwork = null) {
++    const stale = [];
++    let files = [];
++    try { files = fs.readdirSync(HEARTBEAT_DIR).filter(f => /^heartbeat-.*\.json$/.test(f)); } catch {}
++    for (const f of files) {
++        const net = f.replace(/^heartbeat-/, '').replace(/\.json$/, '');
++        if (net === selfNetwork) continue; // just stamped
++        try {
++            const hb = JSON.parse(fs.readFileSync(path.join(HEARTBEAT_DIR, f), 'utf8'));
++            const ageSec = Math.round((Date.now() - hb.epoch) / 1000);
++            if (ageSec > maxAgeSec) stale.push({ network: net, lastRun: hb.ts, ageSec, maxAgeSec });
++        } catch {}
++    }
++    if (stale.length) {
++        await raise('CRITICAL', 'MONITOR_DOWN: a sibling invariant monitor stopped running', { stale }, { silent: true });
++    }
++    return stale;
++}
++
++// ---- CLI ---------------------------------------------------------------------------
++
++if (require.main === module) {
++    const [a, b, c] = process.argv.slice(2);
++    (async () => {
++        if (a === '--ack') {
++            let out = { acknowledged: false };
++            if (fs.existsSync(ACTIVE)) {
++                const latch = JSON.parse(fs.readFileSync(ACTIVE, 'utf8'));
++                latch.acknowledged = true;
++                latch.acknowledgedAt = new Date().toISOString();
++                fs.appendFileSync(HISTORY, JSON.stringify({ ts: latch.acknowledgedAt, severity: 'INFO', title: 'ALERT ACKNOWLEDGED', details: { count: latch.count } }) + '\n');
++                fs.unlinkSync(ACTIVE);
++                out = { acknowledged: true, clearedCount: latch.count };
++            }
++            try { if (fs.existsSync(HOME_FLAG)) fs.unlinkSync(HOME_FLAG); } catch {}
++            console.log(JSON.stringify(out));
++            return;
++        }
++        if (a === '--status') {
++            const latch = fs.existsSync(ACTIVE) ? JSON.parse(fs.readFileSync(ACTIVE, 'utf8')) : null;
++            const beats = {};
++            for (const f of (fs.existsSync(HEARTBEAT_DIR) ? fs.readdirSync(HEARTBEAT_DIR) : [])) {
++                if (!/^heartbeat-.*\.json$/.test(f)) continue;
++                const hb = JSON.parse(fs.readFileSync(path.join(HEARTBEAT_DIR, f), 'utf8'));
++                beats[hb.network] = { lastRun: hb.ts, ageSec: Math.round((Date.now() - hb.epoch) / 1000), ...(hb.lastExitCode !== undefined ? { lastExitCode: hb.lastExitCode } : {}) };
++            }
++            console.log(JSON.stringify({ activeAlert: latch, heartbeats: beats, webhookConfigured: !!process.env.SPECULAR_ALERT_WEBHOOK }, null, 2));
++            return;
++        }
++        if (a === '--self-test') {
++            await raise('WARN', 'SELF TEST — alert path verification (not a real incident)', { note: 'triggered by --self-test' });
++            return;
++        }
++        if (!a) { console.error('usage: alert.js <SEVERITY> <title> [jsonDetails] | --ack | --status | --self-test'); process.exit(64); }
++        let details = {};
++        if (c) { try { details = JSON.parse(c); } catch { details = { raw: c }; } }
++        await raise(a, b || '(no title)', details);
++    })();
++}
++
++module.exports = { raise, stamp, checkHeartbeats, ACTIVE, HISTORY, HOME_FLAG, heartbeatPath };
+diff --git a/forensics/monitor/com.specular.v6-invariants-arc-mainnet.plist b/forensics/monitor/com.specular.v6-invariants-arc-mainnet.plist
+new file mode 100644
+index 0000000..4cffd6a
+--- /dev/null
++++ b/forensics/monitor/com.specular.v6-invariants-arc-mainnet.plist
+@@ -0,0 +1,69 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
++<!--
++  Arc MAINNET invariant monitor.
++
++  Changes vs the plist currently installed in ~/Library/LaunchAgents (2026-09-20):
++    * runs run-with-alert.sh instead of the bare monitor, so a non-zero exit
++      (violation, RPC failure, crash, watchdog) actually reaches a human
++    * RunAtLoad true — a reboot or a reload should produce a check immediately,
++      not up to 30 minutes later
++    * V6_EXPECTED_OWNER pinned so an ownership change is detectable without
++      relying on addresses.json (which an attacker with repo write could edit)
++    * ProcessType Background + LowPriorityIO so it never fights the UI
++    * stdout/stderr still captured, but they are now a backstop, not the channel
++
++  Install:
++    cp forensics/monitor/com.specular.v6-invariants-arc-mainnet.plist ~/Library/LaunchAgents/
++    launchctl unload ~/Library/LaunchAgents/com.specular.v6-invariants-arc-mainnet.plist
++    launchctl load   ~/Library/LaunchAgents/com.specular.v6-invariants-arc-mainnet.plist
++
++  The webhook URL, if any, goes in forensics/monitor/monitor.env (gitignored),
++  never in this file.
++-->
++<plist version="1.0">
++<dict>
++    <key>Label</key>
++    <string>com.specular.v6-invariants-arc-mainnet</string>
++
++    <key>ProgramArguments</key>
++    <array>
++        <string>/bin/bash</string>
++        <string>/Users/peterschroeder/Specular/forensics/monitor/run-with-alert.sh</string>
++        <string>arc-mainnet</string>
++    </array>
++
++    <key>EnvironmentVariables</key>
++    <dict>
++        <key>SPECULAR_REPO</key>
++        <string>/Users/peterschroeder/Specular</string>
++        <key>V6_EXPECTED_OWNER</key>
++        <string>0x800e305A0caDdE6289dFDFEDF38218f45C06F72C</string>
++        <key>V6_MAX_BLOCK_AGE_SEC</key>
++        <string>1800</string>
++        <key>V6_MAX_RUNTIME_SEC</key>
++        <string>600</string>
++    </dict>
++
++    <key>StartInterval</key>
++    <integer>1800</integer>
++
++    <key>RunAtLoad</key>
++    <true/>
++
++    <key>StandardOutPath</key>
++    <string>/Users/peterschroeder/Specular/forensics/monitor/v6-invariants-arc-mainnet-stdout.log</string>
++
++    <key>StandardErrorPath</key>
++    <string>/Users/peterschroeder/Specular/forensics/monitor/v6-invariants-arc-mainnet-stderr.log</string>
++
++    <key>WorkingDirectory</key>
++    <string>/Users/peterschroeder/Specular</string>
++
++    <key>ProcessType</key>
++    <string>Background</string>
++
++    <key>LowPriorityIO</key>
++    <true/>
++</dict>
++</plist>
+diff --git a/forensics/monitor/run-with-alert.sh b/forensics/monitor/run-with-alert.sh
+new file mode 100755
+index 0000000..2214056
+--- /dev/null
++++ b/forensics/monitor/run-with-alert.sh
+@@ -0,0 +1,55 @@
++#!/usr/bin/env bash
++#
++# launchd entry point for the invariant monitor.
++#
++# Why this exists: launchd discards a job's exit status. Before this wrapper, a
++# violation wrote a JSON line into a log file and exited 1 into a void — and a
++# CRASH (unhandled rejection on an RPC failure, which has happened 15 times on
++# arc-testnet) wrote nothing at all. This wrapper guarantees that ANY non-zero
++# exit — violation, monitor failure, crash, watchdog timeout — reaches alert.js,
++# which latches a file, writes ~/SPECULAR-ALERT.txt, raises a macOS banner and
++# POSTs to SPECULAR_ALERT_WEBHOOK when that is set.
++#
++# Usage (plist ProgramArguments):
++#   /bin/bash /Users/peterschroeder/Specular/forensics/monitor/run-with-alert.sh arc-mainnet
++#
++# Env (set in the plist's EnvironmentVariables, or a sourced env file):
++#   SPECULAR_ALERT_WEBHOOK   opt-in webhook URL — never hardcode one here
++#   V6_EXPECTED_OWNER        expected owner address for the network
++#   ARC_MAINNET_RPC_URL / ARC_TESTNET_RPC_URL
++set -u
++
++NETWORK="${1:-arc-testnet}"
++REPO="${SPECULAR_REPO:-/Users/peterschroeder/Specular}"
++export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
++cd "$REPO" || exit 3
++
++# An env file lets secrets (webhook URL) stay out of the plist and out of git.
++# shellcheck disable=SC1091
++[ -f "$REPO/forensics/monitor/monitor.env" ] && . "$REPO/forensics/monitor/monitor.env"
++
++CAPTURE="$(mktemp -t specular-monitor)"
++V6_MONITOR_NETWORK="$NETWORK" node forensics/monitor/v6-invariants.js --quiet > "$CAPTURE" 2>&1
++CODE=$?
++
++cat "$CAPTURE"
++
++if [ "$CODE" -ne 0 ]; then
++    # The monitor alerts on its own for findings it understands, and records that
++    # in its heartbeat. This branch is the catch-all for everything it CANNOT
++    # report on: a crash before it logged anything, OOM, node missing, repo moved.
++    HB="${SPECULAR_ALERT_DIR:-$REPO/forensics/monitor}/heartbeat-$NETWORK.json"
++    ALREADY=""
++    if [ -f "$HB" ]; then
++        ALREADY=$(node -e 'try{const h=require(process.argv[1]);process.stdout.write(h.alerted&&(Date.now()-h.epoch)<120000?"1":"")}catch(e){}' "$HB" 2>/dev/null)
++    fi
++    if [ -z "$ALREADY" ]; then
++        TAIL="$(tail -c 1500 "$CAPTURE" | tr '\n' ' ' | tr -d '"')"
++        node forensics/monitor/alert.js CRITICAL \
++            "invariant monitor exited $CODE on $NETWORK with no alert of its own (crash?)" \
++            "{\"network\":\"$NETWORK\",\"exitCode\":$CODE,\"output\":\"$TAIL\"}" >/dev/null 2>&1
++    fi
++fi
++
++rm -f "$CAPTURE"
++exit "$CODE"
+diff --git a/forensics/monitor/v6-invariants.js b/forensics/monitor/v6-invariants.js
+index 310cc4f..e9bf6cd 100755
+--- a/forensics/monitor/v6-invariants.js
++++ b/forensics/monitor/v6-invariants.js
+@@ -1,33 +1,84 @@
+ #!/usr/bin/env node
+ //
+-// V6 invariant snapshot — single-run check of §B1, §S1, §S5 invariants on Arc V6.
++// V6 invariant snapshot — single-run check of the marketplace's accounting,
++// identity and control-plane invariants.
+ //
+-// Designed to be run periodically (e.g. via cron) during the V6 soak period.
+-// Writes append-only JSONL log to `forensics/monitor/v6-invariants.log`.
+-// Exit code: 0 if all invariants hold, 1 if any violation detected.
++// 2026-09-20 REWRITE (operational-resilience round). The V6.0 version checked
++// three things (§B1/§S1/§S5) and, as proven on a local hardhat rig with
++// engineered violations, MISSED most real failure modes:
++//   * §S5 read `activeLoanCount(agentWallet)` — V6.1 keys that mapping by
++//     **agentId**, so the call always returned 0 and the check was a no-op.
++//   * §S1 only compared Σ availableLiquidity against the contract's USDC balance,
++//     so phantom liquidity smaller than the escrowed collateral was invisible.
++//   * Nothing checked solvency, per-pool conservation, totalLoaned vs ACTIVE
++//     loans, ownership, pause state, or accumulatedFees vs balance.
++//   * Nothing checked the V6.1 state at all (pendingTranche, activeLoanIds,
++//     qualified amounts, lateness records).
++//   * A dead or stalled RPC produced a clean exit-0 "OK" on the previous run's
++//     assumptions; block staleness is now an alertable condition.
++//
++// Checks (each reports OK / VIOLATION with a severity):
++//   B1   duplicate addresses in poolLenders[]              CRITICAL
++//   S1   Σ availableLiquidity ≤ USDC balance               CRITICAL
++//   S5   activeLoanCount ≤ MAX_ACTIVE_LOANS_PER_AGENT      CRITICAL
++//        + counter == |ACTIVE loans| == |activeLoanIds|
++//   SOLV USDC balance ≥ Σ avail + fees + Σ active collateral   CRITICAL
++//        (surplus beyond a threshold → WARN; forced native donations on Arc make
++//         strict equality unusable — see audit I-3)
++//   POOL per-pool conservation:
++//        Σ positions.amount + Σ earnedInterest == availableLiquidity + totalLoaned  CRITICAL
++//   LOAN pool.totalLoaned == Σ ACTIVE loan principal == outstandingPrincipal        CRITICAL
++//   OWN  owner == expected secure wallet, pendingOwner == 0                          CRITICAL/WARN
++//   PAUS paused == expected                                                          CRITICAL
++//   FEE  accumulatedFees ≤ USDC balance                                              CRITICAL
++//   PT   pendingTranche.amount ≤ position.amount [V6.1]                              CRITICAL
++//   QUAL Σ qualifiedAmountAt(loan.startTime) ≤ Σ positions.amount [V6.1]             CRITICAL
++//   LATE lateRepayCount/lateSecondsTotal monotonic + consistent with records [V6.1]  WARN/CRITICAL
++//   FRESH latest block is recent and strictly newer than the previous run            CRITICAL
++//   NFT  agent NFT moved while that agent had an ACTIVE loan (F-01 detector)         WARN
++//
++// Exit code: 0 all clear · 1 invariant violation · 2 the monitor could not
++// complete (RPC failure, stale chain, config error). BOTH non-zero codes are
++// incidents: 2 means "we are blind", which is not better than 1.
++//
++// Alerting: every violation is fanned out through ./alert.js (latch file, home-dir
++// flag, macOS banner, append-only history, opt-in SPECULAR_ALERT_WEBHOOK). The
++// launchd job should invoke ./run-with-alert.sh, which also alerts on a crash.
+ //
+ // Usage:
+-//   ARC_TESTNET_RPC_URL=... node forensics/monitor/v6-invariants.js
+-//   node forensics/monitor/v6-invariants.js --quiet      # only logs to file, not stdout
++//   V6_MONITOR_NETWORK=arc-mainnet node forensics/monitor/v6-invariants.js
++//   node forensics/monitor/v6-invariants.js --quiet      # only logs to file
+ //   node forensics/monitor/v6-invariants.js --verbose    # extra debug detail
++//   node forensics/monitor/v6-invariants.js --no-alert   # suppress fan-out (tests)
+ //
+-// Cron example (every 30 min):
+-//   */30 * * * * cd ~/Specular && PATH=/opt/homebrew/opt/node@22/bin:$PATH node forensics/monitor/v6-invariants.js >> /tmp/v6-cron.log 2>&1
++// Env:
++//   V6_MONITOR_NETWORK      arc-testnet (default) | arc-staging | arc-mainnet | local
++//   ARC_MAINNET_RPC_URL / ARC_TESTNET_RPC_URL / LOCAL_RPC_URL
++//   V6_EXPECTED_OWNER       expected owner address (default: addresses.json `deployer`)
++//   V6_EXPECT_PAUSED        "1" if the contract is intentionally paused (default 0)
++//   V6_MAX_BLOCK_AGE_SEC    staleness threshold, 0 disables (default 1800)
++//   V6_SURPLUS_WARN_USDC    unexplained-surplus warn threshold (default 1.0)
++//   V6_RPC_TIMEOUT_MS       per-request timeout (default 20000)
++//   V6_LOG_MAX_BYTES        rotate the JSONL log past this size (default 5 MiB)
+ 
+ const { ethers } = require('ethers');
+ const fs = require('fs');
+ const path = require('path');
+ 
+ const ROOT = path.resolve(__dirname, '..', '..');
+-// Network selector: V6_MONITOR_NETWORK=arc-testnet (default) | arc-staging | arc-mainnet.
+-// Each maps to an addresses file + default RPC + its own log file so histories don't mix.
++// Network selector. Each maps to an addresses file + default RPC + its own log
++// file so histories don't mix.
+ const NETWORKS = {
+     'arc-testnet': { addresses: 'src/config/arc-testnet-addresses.json',    rpcEnv: 'ARC_TESTNET_RPC_URL', rpc: 'https://arc-testnet.drpc.org',   log: 'v6-invariants.log' },
+     'arc-staging': { addresses: 'src/config/arc-testnet-v6-addresses.json', rpcEnv: 'ARC_TESTNET_RPC_URL', rpc: 'https://arc-testnet.drpc.org',   log: 'v6-invariants-arc-staging.log' },
+     'arc-mainnet': { addresses: 'src/config/arc-mainnet-addresses.json',    rpcEnv: 'ARC_MAINNET_RPC_URL', rpc: 'https://rpc.mainnet.arc.io',     log: 'v6-invariants-arc-mainnet.log' },
++    // [2026-09-20] Local hardhat target — lets the monitor be exercised against
++    // engineered violation states before it is trusted on mainnet. Same code path.
++    'local':       { addresses: 'src/config/local-addresses.json',          rpcEnv: 'LOCAL_RPC_URL',       rpc: 'http://127.0.0.1:8545',          log: 'v6-invariants-local.log' },
+ };
+-const NET = NETWORKS[process.env.V6_MONITOR_NETWORK || 'arc-testnet'];
+-if (!NET) { console.error(`Unknown V6_MONITOR_NETWORK; expected one of ${Object.keys(NETWORKS).join(', ')}`); process.exit(1); }
++const NETNAME = process.env.V6_MONITOR_NETWORK || 'arc-testnet';
++const NET = NETWORKS[NETNAME];
++if (!NET) { console.error(`Unknown V6_MONITOR_NETWORK; expected one of ${Object.keys(NETWORKS).join(', ')}`); process.exit(2); }
+ const ADDR = JSON.parse(fs.readFileSync(path.join(ROOT, NET.addresses)));
+ const ABI = JSON.parse(fs.readFileSync(
+     path.join(ROOT, 'artifacts/contracts/core/AgentLiquidityMarketplaceV6.sol/AgentLiquidityMarketplaceV6.json'))).abi;
+@@ -38,179 +89,560 @@ const RPC = process.env[NET.rpcEnv] || NET.rpc;
+ const V6 = ADDR.agentLiquidityMarketplace_v6;
+ const QUIET = process.argv.includes('--quiet');
+ const VERBOSE = process.argv.includes('--verbose');
++const NO_ALERT = process.argv.includes('--no-alert');
+ const LOGFILE = path.join(__dirname, NET.log);
++const STATEFILE = path.join(__dirname, `state-${NETNAME}.json`);
++
++const EXPECTED_OWNER = (process.env.V6_EXPECTED_OWNER || ADDR.deployer || '').toLowerCase();
++const EXPECT_PAUSED = process.env.V6_EXPECT_PAUSED === '1';
++const MAX_BLOCK_AGE_SEC = process.env.V6_MAX_BLOCK_AGE_SEC !== undefined ? Number(process.env.V6_MAX_BLOCK_AGE_SEC) : 1800;
++const SURPLUS_WARN = BigInt(Math.round(Number(process.env.V6_SURPLUS_WARN_USDC || '1') * 1e6));
++const RPC_TIMEOUT_MS = Number(process.env.V6_RPC_TIMEOUT_MS || 20000);
++const LOG_MAX_BYTES = Number(process.env.V6_LOG_MAX_BYTES || 5 * 1024 * 1024);
++const LOG_KEEP = 5;
++// Hard wall-clock budget. launchd will not start the next scheduled run while the
++// previous one is alive, so a monitor that blocks on a slow endpoint silently turns
++// "checked every 30 minutes" into "checked once, hours ago". Give up loudly instead.
++const MAX_RUNTIME_SEC = Number(process.env.V6_MAX_RUNTIME_SEC || 300);
++
++const alerts = NO_ALERT ? null : require('./alert.js');
+ 
+ const fmt = v => Number(ethers.formatUnits(v, 6));
++
++// --- log rotation ------------------------------------------------------------------
++// The V6.0 monitor appended for ever: the arc-testnet log reached 1.4 MB over 137
++// days with no rotation configured anywhere on the box. Rotate in-process so the
++// fix travels with the script instead of depending on newsyslog/logrotate setup.
++function rotateIfNeeded() {
++    try {
++        if (!fs.existsSync(LOGFILE)) return;
++        if (fs.statSync(LOGFILE).size < LOG_MAX_BYTES) return;
++        for (let i = LOG_KEEP - 1; i >= 1; i--) {
++            const from = `${LOGFILE}.${i}`, to = `${LOGFILE}.${i + 1}`;
++            if (fs.existsSync(from)) fs.renameSync(from, to);
++        }
++        fs.renameSync(LOGFILE, `${LOGFILE}.1`);
++    } catch { /* rotation must never block a check */ }
++}
++
+ const log = (level, msg, data = {}) => {
+-    const entry = { ts: new Date().toISOString(), level, msg, ...data };
+-    fs.appendFileSync(LOGFILE, JSON.stringify(entry) + '\n');
++    const entry = { ts: new Date().toISOString(), level, msg, net: NETNAME, ...data };
++    try { fs.appendFileSync(LOGFILE, JSON.stringify(entry) + '\n'); } catch {}
+     if (!QUIET || level === 'ERROR' || level === 'WARN') console.log(JSON.stringify(entry));
+ };
+ 
+ const sleep = ms => new Promise(r => setTimeout(r, ms));
+ async function withRetry(fn, label, attempts = 5) {
+     for (let i = 0; i < attempts; i++) {
+-        try { return await fn(); }
+-        catch (e) {
++        try {
++            return await Promise.race([
++                fn(),
++                new Promise((_, rej) => setTimeout(() => rej(new Error(`timeout after ${RPC_TIMEOUT_MS}ms (${label})`)), RPC_TIMEOUT_MS)),
++            ]);
++        } catch (e) {
+             const m = (e.shortMessage || e.message || '');
+-            const isRate = m.includes('408') || m.includes('410') || m.includes('429') || m.includes('-32016') || m.includes('rate') || m.includes('timeout');
+-            if (i === attempts - 1 || !isRate) throw e;
+-            await sleep(2000 * Math.pow(2, i));
++            const isRetryable = m.includes('408') || m.includes('410') || m.includes('429') || m.includes('-32016')
++                || m.includes('rate') || m.includes('timeout') || m.includes('ECONNREFUSED') || m.includes('ENOTFOUND')
++                || m.includes('SERVER_ERROR') || m.includes('network');
++            if (i === attempts - 1 || !isRetryable) throw e;
++            await sleep(1000 * Math.pow(2, i));
+         }
+     }
+ }
+ 
+-async function checkB1(mp) {
+-    // §B1: no pool may have duplicate addresses in poolLenders[]
++// Findings accumulator. A check that cannot be evaluated is itself a finding —
++// silently skipping is how a monitor reports a false OK.
++const findings = [];
++const violate = (severity, code, msg, data) => { findings.push({ severity, code, msg, data }); };
++
++// -----------------------------------------------------------------------------------
++// Snapshot: read everything once, then evaluate invariants over the snapshot.
++// -----------------------------------------------------------------------------------
++async function snapshot(mp, reg, usdc) {
+     const totalPools = Number(await withRetry(() => mp.totalPools(), 'totalPools'));
+-    let violations = [];
++    const nextLoanId = Number(await withRetry(() => mp.nextLoanId(), 'nextLoanId'));
++    const mpBal = await withRetry(() => usdc.balanceOf(V6), 'mpBal');
++    const fees = await withRetry(() => mp.accumulatedFees(), 'accumulatedFees');
++    const owner = await withRetry(() => mp.owner(), 'owner');
++    let pendingOwner = ethers.ZeroAddress;
++    try { pendingOwner = await withRetry(() => mp.pendingOwner(), 'pendingOwner'); } catch {}
++    const paused = await withRetry(() => mp.paused(), 'paused');
++    const cap = Number(await withRetry(() => mp.MAX_ACTIVE_LOANS_PER_AGENT(), 'cap'));
++
++    // Loans (nextLoanId is monotonic and small on every live deployment; this is a
++    // full walk on purpose — the totalLoaned/activeLoanIds checks need ground truth).
++    const loans = [];
++    for (let id = 1; id < nextLoanId; id++) {
++        const l = await withRetry(() => mp.loans(id), `loans[${id}]`);
++        const rec = await withRetry(() => mp.repayments(id), `repayments[${id}]`);
++        loans.push({
++            id, borrower: l.borrower, agentId: l.agentId, amount: l.amount,
++            collateral: l.collateralAmount, startTime: l.startTime, endTime: l.endTime,
++            duration: l.duration, state: Number(l.state),
++            repaidAt: rec.repaidAt, interestPaid: rec.interestPaid, lateSeconds: rec.lateSeconds,
++        });
++    }
++
++    const pools = [];
+     for (let i = 0; i < totalPools; i++) {
+-        try {
+-            const aid = await withRetry(() => mp.agentPoolIds(i), `agentPoolIds[${i}]`);
+-            const pool = await withRetry(() => mp.getAgentPool(aid), `getAgentPool[${aid}]`);
+-            const lc = Number(pool[6]);
+-            if (lc === 0) continue;
+-            const lenders = [];
+-            for (let j = 0; j < lc; j++) {
+-                lenders.push((await withRetry(() => mp.poolLenders(aid, j), `pl[${aid}][${j}]`)).toLowerCase());
+-            }
+-            const unique = new Set(lenders);
+-            if (lenders.length !== unique.size) {
+-                violations.push({ agentId: aid.toString(), lenderCount: lc, uniqueCount: unique.size });
+-            }
+-        } catch (e) { if (VERBOSE) log('DEBUG', 'pool iter error', { i, msg: (e.shortMessage || e.message).slice(0, 80) }); }
++        const aid = await withRetry(() => mp.agentPoolIds(i), `agentPoolIds[${i}]`);
++        const p = await withRetry(() => mp.getAgentPool(aid), `getAgentPool[${aid}]`);
++        const lenderCount = Number(p[6]);
++        const lenders = [];
++        for (let j = 0; j < lenderCount; j++) {
++            const addr = await withRetry(() => mp.poolLenders(aid, j), `poolLenders[${aid}][${j}]`);
++            const pos = await withRetry(() => mp.positions(aid, addr), `positions[${aid}][${addr}]`);
++            const pt = await withRetry(() => mp.pendingTranche(aid, addr), `pendingTranche[${aid}][${addr}]`);
++            lenders.push({
++                index: j, address: addr,
++                amount: pos.amount, earnedInterest: pos.earnedInterest, depositTimestamp: pos.depositTimestamp,
++                pendingAmount: pt.amount, pendingTimestamp: pt.timestamp,
++            });
++        }
++        pools.push({
++            agentId: aid, agentAddress: p[0],
++            totalLiquidity: p[1], availableLiquidity: p[2], totalLoaned: p[3], totalEarned: p[4],
++            lenderCount, lenders,
++            activeLoanCount: await withRetry(() => mp.activeLoanCount(aid), `activeLoanCount[${aid}]`),
++            outstandingPrincipal: await withRetry(() => mp.outstandingPrincipal(aid), `outstandingPrincipal[${aid}]`),
++            activeLoanIds: (await withRetry(() => mp.getActiveLoanIds(aid), `activeLoanIds[${aid}]`)).map(x => Number(x)),
++            lateRepayCount: await withRetry(() => mp.lateRepayCount(aid), `lateRepayCount[${aid}]`),
++            lateSecondsTotal: await withRetry(() => mp.lateSecondsTotal(aid), `lateSecondsTotal[${aid}]`),
++        });
+     }
+-    return { totalPools, violations };
++
++    let totalAgents = 0;
++    try { totalAgents = Number(await withRetry(() => reg.totalAgents(), 'totalAgents')); } catch {}
++
++    return { totalPools, nextLoanId, mpBal, fees, owner, pendingOwner, paused, cap, loans, pools, totalAgents };
+ }
+ 
+-async function checkS1(mp, usdc) {
+-    // §S1: pool.availableLiquidity should never exceed actual USDC balance
+-    // Also: Σ(pool.availableLiquidity + pool.totalLoaned) ≤ usdc.balanceOf(MP) + Σ(unclaimed earnedInterest)
+-    const totalPools = Number(await withRetry(() => mp.totalPools(), 'totalPools'));
+-    const mpBal = await withRetry(() => usdc.balanceOf(V6), 'mpBal');
+-    let sumAvail = 0n, sumLoaned = 0n, sumUnclaimedInterest = 0n;
+-    let perPool = [];
+-    for (let i = 0; i < totalPools; i++) {
+-        try {
+-            const aid = await withRetry(() => mp.agentPoolIds(i), `pid[${i}]`);
+-            const pool = await withRetry(() => mp.getAgentPool(aid), `pool[${aid}]`);
+-            sumAvail += pool[2];
+-            sumLoaned += pool[3];
+-            const lc = Number(pool[6]);
+-            for (let j = 0; j < lc; j++) {
+-                const lender = await withRetry(() => mp.poolLenders(aid, j), `pl[${aid}][${j}]`);
+-                const pos = await withRetry(() => mp.positions(aid, lender), `pos[${aid}][${lender}]`);
+-                sumUnclaimedInterest += pos[1];
+-            }
+-            perPool.push({ agentId: aid.toString(), avail: fmt(pool[2]), loaned: fmt(pool[3]) });
+-        } catch (e) { if (VERBOSE) log('DEBUG', 'S1 iter error', { i }); }
+-    }
+-    // Invariant: USDC balance of contract ≥ sumAvail + sumLoaned − repaid principals (already in avail)
+-    // Practical check: sumAvail ≤ mpBal − (locked collateral) ≤ mpBal in absence of active collateral data.
+-    // Simpler: sumAvail ≤ mpBal is the conservative invariant (collateral is in contract too).
+-    const slack = mpBal - sumAvail;
+-    return {
+-        mpBal: fmt(mpBal),
+-        sumAvail: fmt(sumAvail),
+-        sumLoaned: fmt(sumLoaned),
+-        sumUnclaimedInterest: fmt(sumUnclaimedInterest),
+-        slack: fmt(slack),
++// -----------------------------------------------------------------------------------
++// Invariants
++// -----------------------------------------------------------------------------------
++
++function checkB1(s) {
++    const v = [];
++    for (const p of s.pools) {
++        const addrs = p.lenders.map(l => l.address.toLowerCase());
++        const uniq = new Set(addrs);
++        if (addrs.length !== uniq.size) {
++            const dupes = addrs.filter((a, i) => addrs.indexOf(a) !== i);
++            v.push({ agentId: p.agentId.toString(), lenderCount: addrs.length, uniqueCount: uniq.size, duplicates: [...new Set(dupes)] });
++        }
++    }
++    if (v.length) violate('CRITICAL', 'B1', '§B1 VIOLATION: duplicate poolLenders detected', { violations: v });
++    return { totalPools: s.totalPools, violations: v };
++}
++
++function checkS1(s) {
++    let sumAvail = 0n, sumLoaned = 0n, sumUnclaimed = 0n, sumPositions = 0n;
++    for (const p of s.pools) {
++        sumAvail += p.availableLiquidity; sumLoaned += p.totalLoaned;
++        for (const l of p.lenders) { sumUnclaimed += l.earnedInterest; sumPositions += l.amount; }
++    }
++    const slack = s.mpBal - sumAvail;
++    const r = {
++        mpBal: fmt(s.mpBal), sumAvail: fmt(sumAvail), sumLoaned: fmt(sumLoaned),
++        sumUnclaimedInterest: fmt(sumUnclaimed), sumPositions: fmt(sumPositions), slack: fmt(slack),
+         violates: slack < 0n,
+     };
++    if (r.violates) violate('CRITICAL', 'S1', '§S1 VIOLATION: Σ availableLiquidity > USDC balance (phantom liquidity)', r);
++    return { ...r, sumAvailRaw: sumAvail, sumLoanedRaw: sumLoaned };
+ }
+ 
+-async function checkS5(mp, reg) {
+-    // §S5: no agent should have activeLoanCount > MAX_ACTIVE_LOANS_PER_AGENT
+-    //      and the counter must match the array walk (correctness of §S5 fix)
+-    const totalAgents = Number(await withRetry(() => reg.totalAgents(), 'totalAgents'));
+-    const cap = Number(await withRetry(() => mp.MAX_ACTIVE_LOANS_PER_AGENT(), 'cap'));
+-    let violations = [];
+-    let highest = { count: 0, addr: null };
+-    for (let id = 1; id <= totalAgents; id++) {
++// SOLVENCY — the check the V6.0 monitor never had. §S1 alone is masked by escrowed
++// collateral: phantom liquidity smaller than Σ collateral keeps `sumAvail ≤ mpBal`
++// true. The real identity is
++//     balance == Σ availableLiquidity + accumulatedFees + Σ ACTIVE-loan collateral
++// (loaned principal has left the contract; unclaimed interest lives inside
++// availableLiquidity). `<` is insolvency. `>` is an unexplained surplus — on Arc a
++// forced native donation can cause it (audit I-3), so it warns rather than pages.
++function checkSolvency(s) {
++    let sumAvail = 0n, sumCollateral = 0n;
++    for (const p of s.pools) sumAvail += p.availableLiquidity;
++    for (const l of s.loans) if (l.state === 1) sumCollateral += l.collateral;
++    const expected = sumAvail + s.fees + sumCollateral;
++    const delta = s.mpBal - expected;
++    const r = {
++        mpBal: fmt(s.mpBal), sumAvail: fmt(sumAvail), fees: fmt(s.fees),
++        sumActiveCollateral: fmt(sumCollateral), expected: fmt(expected), delta: fmt(delta),
++    };
++    if (delta < 0n) violate('CRITICAL', 'SOLV', 'INSOLVENT: USDC balance < Σ availableLiquidity + fees + active collateral', r);
++    else if (delta > SURPLUS_WARN) violate('WARN', 'SOLV-SURPLUS', 'Unexplained USDC surplus in marketplace (donation? untracked inflow?)', r);
++    return r;
++}
++
++// Per-pool conservation. Every state transition moves the same value on both sides:
++//     Σ positions.amount + Σ earnedInterest == availableLiquidity + totalLoaned
++// LHS > RHS means lenders collectively claim more than the pool holds (the shape a
++// real §S1/D4 accounting bug takes inside a single pool, even when global solvency
++// still looks fine because of collateral).
++function checkPoolConservation(s) {
++    const rows = [];
++    for (const p of s.pools) {
++        let claims = 0n;
++        for (const l of p.lenders) claims += l.amount + l.earnedInterest;
++        const backing = p.availableLiquidity + p.totalLoaned;
++        const delta = backing - claims;
++        const row = { agentId: p.agentId.toString(), claims: fmt(claims), backing: fmt(backing), delta: fmt(delta) };
++        rows.push(row);
++        if (delta < 0n) violate('CRITICAL', 'POOL', 'Pool conservation VIOLATION: Σ lender claims > availableLiquidity + totalLoaned', row);
++        else if (delta > 0n) violate('WARN', 'POOL-SLACK', 'Pool holds more than lenders claim (orphaned liquidity)', row);
++    }
++    return rows;
++}
++
++// totalLoaned / outstandingPrincipal vs the actual ACTIVE loans.
++function checkLoanAccounting(s) {
++    const byAgent = new Map();
++    for (const l of s.loans) {
++        if (l.state !== 1) continue;
++        const k = l.agentId.toString();
++        const cur = byAgent.get(k) || { sum: 0n, ids: [] };
++        cur.sum += l.amount; cur.ids.push(l.id);
++        byAgent.set(k, cur);
++    }
++    const rows = [];
++    for (const p of s.pools) {
++        const k = p.agentId.toString();
++        const actual = byAgent.get(k) || { sum: 0n, ids: [] };
++        const row = {
++            agentId: k,
++            poolTotalLoaned: fmt(p.totalLoaned), sumActiveLoans: fmt(actual.sum),
++            outstandingPrincipal: fmt(p.outstandingPrincipal),
++            activeLoanCount: Number(p.activeLoanCount), actualActiveLoans: actual.ids.length,
++            activeLoanIds: p.activeLoanIds, actualActiveLoanIds: actual.ids,
++        };
++        rows.push(row);
++        if (p.totalLoaned !== actual.sum) violate('CRITICAL', 'LOAN-TOTAL', 'pool.totalLoaned disagrees with Σ ACTIVE loan principal', row);
++        if (p.outstandingPrincipal !== actual.sum) violate('CRITICAL', 'LOAN-OUTSTANDING', 'outstandingPrincipal disagrees with Σ ACTIVE loan principal', row);
++        // §S5: counter correctness AND the cap
++        if (Number(p.activeLoanCount) !== actual.ids.length) violate('CRITICAL', 'S5-COUNTER', '§S5 VIOLATION: activeLoanCount disagrees with the actual ACTIVE loans', row);
++        if (Number(p.activeLoanCount) > s.cap) violate('CRITICAL', 'S5-CAP', '§S5 VIOLATION: activeLoanCount above MAX_ACTIVE_LOANS_PER_AGENT', { ...row, cap: s.cap });
++        // [V6.1] activeLoanIds must be exactly the ACTIVE set — no stale, no missing, no dupes
++        const idSet = new Set(p.activeLoanIds);
++        const missing = actual.ids.filter(i => !idSet.has(i));
++        const stale = p.activeLoanIds.filter(i => !actual.ids.includes(i));
++        if (idSet.size !== p.activeLoanIds.length || missing.length || stale.length) {
++            violate('CRITICAL', 'ALI', '[V6.1] activeLoanIds inconsistent with the actual ACTIVE loan set', { ...row, missing, stale, hasDuplicates: idSet.size !== p.activeLoanIds.length });
++        }
++        if (p.activeLoanIds.length !== Number(p.activeLoanCount)) {
++            violate('CRITICAL', 'ALI-LEN', '[V6.1] activeLoanIds length != activeLoanCount', row);
++        }
++    }
++    // A loan whose agent has no pool at all
++    const poolIds = new Set(s.pools.map(p => p.agentId.toString()));
++    for (const [k, v] of byAgent) if (!poolIds.has(k)) violate('CRITICAL', 'LOAN-ORPHAN', 'ACTIVE loans against an agent with no pool', { agentId: k, loanIds: v.ids });
++    return rows;
++}
++
++function checkControlPlane(s) {
++    const r = { owner: s.owner, expectedOwner: EXPECTED_OWNER, pendingOwner: s.pendingOwner, paused: s.paused, expectPaused: EXPECT_PAUSED };
++    if (!EXPECTED_OWNER) {
++        violate('WARN', 'OWN-UNKNOWN', 'No expected owner configured (set V6_EXPECTED_OWNER) — ownership cannot be verified', r);
++    } else if (s.owner.toLowerCase() !== EXPECTED_OWNER) {
++        violate('CRITICAL', 'OWN', 'OWNERSHIP CHANGED: marketplace owner is not the expected secure wallet', r);
++    }
++    if (s.pendingOwner && s.pendingOwner !== ethers.ZeroAddress) {
++        violate('CRITICAL', 'OWN-PENDING', 'Ownership transfer PENDING (Ownable2Step) — an acceptOwnership call would take control', r);
++    }
++    if (s.paused !== EXPECT_PAUSED) {
++        violate('CRITICAL', 'PAUS', s.paused ? 'Contract is PAUSED and was not expected to be' : 'Contract is UNPAUSED and was expected to be paused', r);
++    }
++    return r;
++}
++
++function checkFees(s) {
++    const r = { accumulatedFees: fmt(s.fees), mpBal: fmt(s.mpBal) };
++    if (s.fees > s.mpBal) violate('CRITICAL', 'FEE', 'accumulatedFees exceeds the contract USDC balance', r);
++    return r;
++}
++
++// [V6.1] pendingTranche is by construction a subset of the position principal;
++// withdraw/socialise paths shrink it pro-rata. If it ever exceeds position.amount
++// the qualification maths under-counts the base tranche (p.amount − pending
++// underflows in qualifiedAmountAt) and interest distribution reverts or misprices.
++function checkPendingTranche(s) {
++    const rows = [];
++    for (const p of s.pools) {
++        for (const l of p.lenders) {
++            if (l.pendingAmount === 0n && l.pendingTimestamp === 0n) continue;
++            const row = {
++                agentId: p.agentId.toString(), lender: l.address,
++                amount: fmt(l.amount), pendingAmount: fmt(l.pendingAmount),
++                depositTimestamp: Number(l.depositTimestamp), pendingTimestamp: Number(l.pendingTimestamp),
++            };
++            rows.push(row);
++            if (l.pendingAmount > l.amount) violate('CRITICAL', 'PT', '[V6.1] pendingTranche.amount exceeds position.amount', row);
++            if (l.pendingAmount > 0n && l.pendingTimestamp < l.depositTimestamp) {
++                violate('CRITICAL', 'PT-TS', '[V6.1] pendingTranche timestamp is older than the base tranche timestamp', row);
++            }
++            if (l.pendingAmount === 0n && l.pendingTimestamp !== 0n) {
++                violate('WARN', 'PT-GHOST', '[V6.1] pendingTranche has a timestamp but zero amount (stale slot)', row);
++            }
++        }
++    }
++    return rows;
++}
++
++// [V6.1] Qualified-amount sanity: for every ACTIVE loan, the principal that
++// qualifies for its interest must not exceed the principal that actually exists in
++// the pool. `_distributeInterest` divides by this sum, so an inflated value silently
++// misprices every lender's share (or reverts).
++function checkQualified(s, mp) {
++    const rows = [];
++    const promises = [];
++    for (const p of s.pools) {
++        for (const loanId of p.activeLoanIds) {
++            const loan = s.loans.find(l => l.id === loanId);
++            if (!loan) continue;
++            let sumPos = 0n;
++            for (const l of p.lenders) sumPos += l.amount;
++            promises.push((async () => {
++                let sumQ = 0n;
++                for (const l of p.lenders) {
++                    let q;
++                    try {
++                        q = await withRetry(() => mp.qualifiedAmountAt(p.agentId, l.address, loan.startTime), `qual[${p.agentId}][${l.address}]`);
++                    } catch (e) {
++                        // A revert here is itself the finding: `qualifiedAmountAt`
++                        // computes `amount − pending`, so it can only revert when the
++                        // position is already corrupt — and `_distributeInterest`
++                        // would revert the same way, freezing every repayment on this
++                        // pool. Record and continue; never abort the whole run.
++                        violate('CRITICAL', 'QUAL-REVERT', '[V6.1] qualifiedAmountAt REVERTS for a lender — interest distribution on this pool would revert too', {
++                            agentId: p.agentId.toString(), lender: l.address, loanId,
++                            amount: fmt(l.amount), pendingAmount: fmt(l.pendingAmount),
++                            error: (e.shortMessage || e.message || '').slice(0, 120),
++                        });
++                        continue;
++                    }
++                    if (q > l.amount) violate('CRITICAL', 'QUAL-LENDER', '[V6.1] qualified amount exceeds the lender position', {
++                        agentId: p.agentId.toString(), lender: l.address, loanId, qualified: fmt(q), amount: fmt(l.amount),
++                    });
++                    sumQ += q;
++                }
++                const row = { agentId: p.agentId.toString(), loanId, sumQualified: fmt(sumQ), sumPositions: fmt(sumPos) };
++                rows.push(row);
++                if (sumQ > sumPos) violate('CRITICAL', 'QUAL', '[V6.1] Σ qualified amounts exceed Σ lender positions for an ACTIVE loan', row);
++            })());
++        }
++    }
++    return Promise.all(promises).then(() => rows);
++}
++
++// [V6.1] Lateness bookkeeping. Counters are cumulative and must only ever grow;
++// a decrease means storage was rewritten (upgrade, corruption, or a wrong-contract
++// read). They must also agree with the per-loan RepaymentRecords.
++function checkLateness(s, prevState) {
++    const rows = [];
++    for (const p of s.pools) {
++        const k = p.agentId.toString();
++        const lateLoans = s.loans.filter(l => l.agentId.toString() === k && l.state === 2 && l.lateSeconds > 0n);
++        const recSum = lateLoans.reduce((a, l) => a + l.lateSeconds, 0n);
++        const closed = s.loans.filter(l => l.agentId.toString() === k && (l.state === 2 || l.state === 3)).length;
++        const row = {
++            agentId: k, lateRepayCount: Number(p.lateRepayCount), lateSecondsTotal: Number(p.lateSecondsTotal),
++            lateLoansFromRecords: lateLoans.length, lateSecondsFromRecords: Number(recSum), closedLoans: closed,
++        };
++        rows.push(row);
++        if (Number(p.lateRepayCount) !== lateLoans.length) {
++            violate('CRITICAL', 'LATE-COUNT', '[V6.1] lateRepayCount disagrees with the per-loan repayment records', row);
++        }
++        if (p.lateSecondsTotal !== recSum) {
++            violate('CRITICAL', 'LATE-SECONDS', '[V6.1] lateSecondsTotal disagrees with the per-loan repayment records', row);
++        }
++        if (Number(p.lateRepayCount) > closed) {
++            violate('CRITICAL', 'LATE-EXCESS', '[V6.1] lateRepayCount exceeds the number of closed loans', row);
++        }
++        if (p.lateRepayCount > 0n && p.lateSecondsTotal < p.lateRepayCount) {
++            violate('CRITICAL', 'LATE-ZERO', '[V6.1] lateSecondsTotal < lateRepayCount (a late repayment with 0 late seconds)', row);
++        }
++        const prev = prevState && prevState.lateness && prevState.lateness[k];
++        if (prev) {
++            if (Number(p.lateRepayCount) < prev.count) violate('CRITICAL', 'LATE-MONO', '[V6.1] lateRepayCount DECREASED since the previous run', { ...row, previous: prev });
++            if (Number(p.lateSecondsTotal) < prev.seconds) violate('CRITICAL', 'LATE-MONO-S', '[V6.1] lateSecondsTotal DECREASED since the previous run', { ...row, previous: prev });
++        }
++    }
++    return rows;
++}
++
++// [F-01 detector, audit 2026-09 recommendation 6] The V6.1 marketplace resolves the
++// agent through ownerOf so a transfer no longer bricks a loan, but a transfer while
++// a loan is open is still a material credit event: the reputation bonus and the
++// repay right move to the buyer while the collateral stays with the seller.
++async function checkNftMoves(s, reg) {
++    const rows = [];
++    for (const p of s.pools) {
++        if (Number(p.activeLoanCount) === 0) continue;
+         try {
+-            const a = await withRetry(() => reg.agents(id), `agents[${id}]`);
+-            if (a.owner === ethers.ZeroAddress) continue;
+-            const w = a.agentWallet;
+-            const counter = Number(await withRetry(() => mp.activeLoanCount(w), `alc[${w}]`));
+-            if (counter > cap) {
+-                violations.push({ agentId: id, wallet: w, counter, cap });
++            const holder = await withRetry(() => reg.ownerOf(p.agentId), `ownerOf[${p.agentId}]`);
++            const activeBorrowers = s.loans.filter(l => l.state === 1 && l.agentId === p.agentId).map(l => l.borrower.toLowerCase());
++            const row = { agentId: p.agentId.toString(), holder, poolAgentAddress: p.agentAddress, activeBorrowers };
++            rows.push(row);
++            if (activeBorrowers.length && !activeBorrowers.includes(holder.toLowerCase())) {
++                violate('WARN', 'NFT-MOVED', 'Agent NFT is held by an address that is not the borrower of its ACTIVE loan(s)', row);
+             }
+-            if (counter > highest.count) highest = { count: counter, addr: w };
+-        } catch {}
++        } catch (e) { if (VERBOSE) log('DEBUG', 'ownerOf failed', { agentId: p.agentId.toString() }); }
+     }
+-    return { totalAgents, cap, violations, highest };
++    return rows;
+ }
+ 
+-async function alert(severity, title, details) {
+-    const webhook = process.env.WEBHOOK_URL;
+-    if (!webhook) return; // no-op when unset
+-    const payload = {
+-        text: `🚨 Specular V6 invariant alert [${severity}]: ${title}`,
+-        attachments: [{
+-            color: severity === 'CRITICAL' ? 'danger' : 'warning',
+-            title,
+-            text: '```' + JSON.stringify(details, null, 2) + '```',
+-            ts: Math.floor(Date.now() / 1000),
+-        }],
+-    };
+-    try {
+-        const r = await fetch(webhook, {
+-            method: 'POST',
+-            headers: { 'Content-Type': 'application/json' },
+-            body: JSON.stringify(payload),
+-        });
+-        if (!r.ok) log('WARN', 'Webhook returned non-ok', { status: r.status });
+-    } catch (e) {
+-        log('WARN', 'Webhook delivery failed', { error: e.message });
++// FRESHNESS — the answer to "what if the RPC is stale?". A monitor that happily
++// re-reads a frozen chain reports OK for ever.
++function checkFreshness(block, prevState) {
++    const nowSec = Math.floor(Date.now() / 1000);
++    const ageSec = nowSec - Number(block.timestamp);
++    const r = { blockNumber: block.number, blockTimestamp: Number(block.timestamp), ageSec };
++    if (MAX_BLOCK_AGE_SEC > 0) {
++        if (ageSec > MAX_BLOCK_AGE_SEC) {
++            violate('CRITICAL', 'FRESH', `RPC returned a STALE chain head (${ageSec}s old > ${MAX_BLOCK_AGE_SEC}s) — readings may not reflect current state`, r);
++        } else if (ageSec < -300) {
++            violate('WARN', 'FRESH-FUTURE', 'Chain head timestamp is in the future relative to this host (clock drift?)', r);
++        }
++    }
++    if (prevState && prevState.blockNumber !== undefined) {
++        if (block.number < prevState.blockNumber) {
++            violate('CRITICAL', 'FRESH-REORG', 'Chain head went BACKWARDS since the previous run (reorg, or RPC pointing at a different chain)', { ...r, previousBlock: prevState.blockNumber });
++        } else if (block.number === prevState.blockNumber) {
++            // Independent of the age threshold on purpose: an RPC pinned to an old
++            // snapshot answers every state read successfully and self-consistently,
++            // so this is the only signal that the readings are not current.
++            violate('WARN', 'FRESH-STUCK', 'Chain head unchanged since the previous run (frozen/pinned RPC, or a genuinely idle chain)', { ...r, previousBlock: prevState.blockNumber, previousRun: prevState.ts });
++        }
+     }
++    return r;
+ }
+ 
+-(async () => {
+-    if (!V6) { log('ERROR', 'V6 address missing in addresses.json'); process.exit(1); }
+-    const provider = new ethers.JsonRpcProvider(RPC, undefined, { batchMaxCount: 1 });
+-    const mp = new ethers.Contract(V6, ABI, provider);
+-    const reg = new ethers.Contract(ADDR.agentRegistryV2, REG_ABI, provider);
+-    const usdc = new ethers.Contract(ADDR.usdc, ['function balanceOf(address) view returns (uint256)'], provider);
++function readState() {
++    try { return JSON.parse(fs.readFileSync(STATEFILE, 'utf8')); } catch { return null; }
++}
++function writeState(s, block) {
++    const lateness = {};
++    for (const p of s.pools) lateness[p.agentId.toString()] = { count: Number(p.lateRepayCount), seconds: Number(p.lateSecondsTotal) };
++    try {
++        fs.writeFileSync(STATEFILE, JSON.stringify({
++            ts: new Date().toISOString(), blockNumber: block.number, blockTimestamp: Number(block.timestamp),
++            owner: s.owner, paused: s.paused, nextLoanId: s.nextLoanId, lateness,
++        }, null, 2));
++    } catch {}
++}
+ 
+-    const block = await withRetry(() => provider.getBlock('latest'), 'block');
+-    log('INFO', 'V6 invariant snapshot start', { block: block.number, marketplace: V6 });
++// -----------------------------------------------------------------------------------
+ 
++(async () => {
++    rotateIfNeeded();
+     let exitCode = 0;
++    let block = null;
++    const prevState = readState();
++
++    // Watchdog: never outlive the scheduling interval. Alerts, then exits 2.
++    if (MAX_RUNTIME_SEC > 0) {
++        const wd = setTimeout(async () => {
++            log('ERROR', '[WATCHDOG] monitor exceeded its runtime budget — aborting', { maxRuntimeSec: MAX_RUNTIME_SEC, rpc: RPC.replace(/\/\/.*@/, '//***@') });
++            if (alerts) {
++                try {
++                    await alerts.raise('CRITICAL', `Invariant monitor timed out on ${NETNAME} — deployment is UNMONITORED`, { network: NETNAME, maxRuntimeSec: MAX_RUNTIME_SEC }, { silent: QUIET });
++                    alerts.stamp(NETNAME, { lastExitCode: 2, watchdog: true });
++                } catch {}
++            }
++            process.exit(2);
++        }, MAX_RUNTIME_SEC * 1000);
++        wd.unref();
++    }
++
++    if (!V6) { log('ERROR', 'V6 address missing in addresses.json', { file: NET.addresses }); process.exit(2); }
++
+     try {
+-        const [b1, s1, s5] = await Promise.all([
+-            checkB1(mp),
+-            checkS1(mp, usdc),
+-            checkS5(mp, reg),
+-        ]);
+-
+-        if (b1.violations.length > 0) {
+-            log('ERROR', '§B1 VIOLATION: duplicate poolLenders detected', { violations: b1.violations });
+-            await alert('CRITICAL', '§B1 duplicate poolLenders detected on V6', { marketplace: V6, violations: b1.violations });
+-            exitCode = 1;
+-        } else {
+-            log('INFO', '§B1 OK', { totalPools: b1.totalPools });
+-        }
+-
+-        if (s1.violates) {
+-            log('ERROR', '§S1 VIOLATION: sumAvail > mpBal', s1);
+-            await alert('CRITICAL', '§S1 sumAvail > mpBal on V6', { marketplace: V6, ...s1 });
+-            exitCode = 1;
+-        } else {
+-            log('INFO', '§S1 OK', s1);
+-        }
+-
+-        if (s5.violations.length > 0) {
+-            log('ERROR', '§S5 VIOLATION: agent over MAX_ACTIVE_LOANS', { violations: s5.violations });
+-            await alert('CRITICAL', '§S5 agent over MAX_ACTIVE_LOANS on V6', { marketplace: V6, violations: s5.violations });
+-            exitCode = 1;
+-        } else {
+-            log('INFO', '§S5 OK', { totalAgents: s5.totalAgents, cap: s5.cap, highest: s5.highest });
+-        }
++        const provider = new ethers.JsonRpcProvider(RPC, undefined, { batchMaxCount: 1, staticNetwork: true });
++        const mp = new ethers.Contract(V6, ABI, provider);
++        const reg = new ethers.Contract(ADDR.agentRegistryV2, REG_ABI, provider);
++        const usdc = new ethers.Contract(ADDR.usdc, ['function balanceOf(address) view returns (uint256)'], provider);
++
++        block = await withRetry(() => provider.getBlock('latest'), 'block');
++        if (!block) throw new Error('provider returned no block');
++        log('INFO', 'V6 invariant snapshot start', { block: block.number, marketplace: V6, rpc: RPC.replace(/\/\/.*@/, '//***@') });
++
++        checkFreshness(block, prevState);
++
++        const s = await snapshot(mp, reg, usdc);
++
++        const b1 = checkB1(s);
++        const s1 = checkS1(s);
++        const solv = checkSolvency(s);
++        const pool = checkPoolConservation(s);
++        const loanAcct = checkLoanAccounting(s);
++        const ctl = checkControlPlane(s);
++        const fee = checkFees(s);
++        const pt = checkPendingTranche(s);
++        const qual = await checkQualified(s, mp);
++        const late = checkLateness(s, prevState);
++        const nft = await checkNftMoves(s, reg);
++
++        // Emit one OK line per check family so a clean run is still auditable.
++        const has = code => findings.some(f => f.code.startsWith(code));
++        const hasCritical = code => findings.some(f => f.code.startsWith(code) && f.severity === 'CRITICAL');
++        // One summary line per check family. A family with only WARN findings logs
++        // at WARN, not ERROR, so log level keeps meaning what it says.
++        const emit = (code, ok, data, prefix) => {
++            if (ok) return log('INFO', `${code} OK`, data);
++            const crit = prefix ? hasCritical(prefix) : true;
++            return log(crit ? 'ERROR' : 'WARN', `${code} ${crit ? 'VIOLATION' : 'WARNING'}`, data);
++        };
++        emit('§B1', !has('B1'), { totalPools: b1.totalPools }, 'B1');
++        emit('§S1', !has('S1'), { mpBal: s1.mpBal, sumAvail: s1.sumAvail, slack: s1.slack }, 'S1');
++        emit('§S5', !has('S5'), { cap: s.cap, pools: loanAcct.map(r => ({ agentId: r.agentId, activeLoanCount: r.activeLoanCount, actual: r.actualActiveLoans })) }, 'S5');
++        emit('SOLVENCY', !has('SOLV'), solv, 'SOLV');
++        emit('POOL', !has('POOL'), { pools: pool }, 'POOL');
++        emit('LOAN', !(has('LOAN') || has('ALI')), { pools: loanAcct }, 'LOAN');
++        emit('CONTROL', !(has('OWN') || has('PAUS')), ctl, 'OWN');
++        emit('FEES', !has('FEE'), fee, 'FEE');
++        emit('V6.1-PENDING', !has('PT'), { tranches: pt }, 'PT');
++        emit('V6.1-QUALIFIED', !has('QUAL'), { loans: qual }, 'QUAL');
++        emit('V6.1-LATENESS', !has('LATE'), { agents: late }, 'LATE');
++        emit('F-01-NFT', !has('NFT'), { agents: nft }, 'NFT');
++
++        writeState(s, block);
+     } catch (e) {
+-        log('ERROR', 'check failed', { error: e.shortMessage || e.message });
++        violate('CRITICAL', 'MONITOR-FAILED', 'The invariant monitor could not complete its checks — the deployment is UNMONITORED this cycle', {
++            error: e.shortMessage || e.message, rpc: RPC.replace(/\/\/.*@/, '//***@'),
++        });
+         exitCode = 2;
+     }
+ 
+-    log('INFO', 'V6 invariant snapshot end', { exitCode });
++    const criticals = findings.filter(f => f.severity === 'CRITICAL');
++    const warns = findings.filter(f => f.severity === 'WARN');
++    if (findings.length) {
++        for (const f of findings) log(f.severity === 'CRITICAL' ? 'ERROR' : 'WARN', `[${f.code}] ${f.msg}`, { severity: f.severity, ...f.data });
++        if (exitCode === 0) exitCode = 1;
++        if (alerts) {
++            const worst = criticals.length ? 'CRITICAL' : 'WARN';
++            const title = `${criticals.length} critical / ${warns.length} warning invariant finding(s) on ${NETNAME}`;
++            await alerts.raise(worst, title, {
++                network: NETNAME, marketplace: V6, block: block ? block.number : null,
++                findings: findings.map(f => ({ severity: f.severity, code: f.code, msg: f.msg, data: f.data })),
++            }, { silent: QUIET });
++        }
++    }
++
++    if (alerts) {
++        // `alerted` tells run-with-alert.sh that this run already fanned the
++        // incident out, so the wrapper's catch-all does not double-page.
++        alerts.stamp(NETNAME, { lastExitCode: exitCode, block: block ? block.number : null, findings: findings.length, alerted: findings.length > 0 });
++        // Dead-man's switch: if a sibling network's job has stopped running, this run
++        // says so. A monitor that is not running reports no violations, which is
++        // indistinguishable from "all clear" — so it is itself an incident, and it
++        // makes this run exit non-zero too.
++        try {
++            const stale = await alerts.checkHeartbeats(Number(process.env.V6_HEARTBEAT_MAX_AGE_SEC || 5400), NETNAME);
++            if (stale.length) {
++                log('ERROR', '[MONITOR-DOWN] a sibling invariant monitor has stopped running', { stale });
++                if (exitCode === 0) exitCode = 1;
++            }
++        } catch {}
++    }
++
++    log('INFO', 'V6 invariant snapshot end', { exitCode, critical: criticals.length, warn: warns.length });
+     process.exit(exitCode);
+ })();
+diff --git a/scripts/op-resilience/deploy-local.js b/scripts/op-resilience/deploy-local.js
+new file mode 100644
+index 0000000..e9449fb
+--- /dev/null
++++ b/scripts/op-resilience/deploy-local.js
+@@ -0,0 +1,97 @@
++// Deploy the V6.1 Arc-mainnet stack to a LOCAL hardhat node and build a realistic
++// baseline state (pools, lenders, active + repaid loans) that the invariant monitor
++// can be pointed at. Writes src/config/local-addresses.json.
++//
++// Usage: npx hardhat run --network localhost scripts/op-resilience/deploy-local.js
++
++const { ethers } = require('hardhat');
++const fs = require('fs');
++const path = require('path');
++
++const USDC = n => ethers.parseUnits(n.toString(), 6);
++const DAY = 24 * 60 * 60;
++const ROOT = path.resolve(__dirname, '..', '..');
++
++async function main() {
++    const signers = await ethers.getSigners();
++    const [owner, agentA, agentB, lender1, lender2, lender3] = signers;
++
++    const registry = await (await ethers.getContractFactory('AgentRegistryV2')).deploy();
++    const reputation = await (await ethers.getContractFactory('ReputationManagerV3')).deploy(await registry.getAddress());
++    const usdc = await (await ethers.getContractFactory('MockUSDC')).deploy();
++    const v6 = await (await ethers.getContractFactory('AgentLiquidityMarketplaceV6')).deploy(
++        await registry.getAddress(), await reputation.getAddress(), await usdc.getAddress());
++    const faucet = await (await ethers.getContractFactory('AgentCreditFaucet')).deploy(
++        await registry.getAddress(), await usdc.getAddress());
++    await reputation.authorizePool(await v6.getAddress());
++
++    // Live Arc-mainnet levers (read on-chain 2026-09-19)
++    await reputation.setReputationRateLimit(20, DAY);
++    await v6.setMinHoldForReputationReward(DAY);
++    await v6.setPlatformFeeRate(100);
++    await v6.setBindBorrowToPoolCreator(true);
++    await v6.setMinSupplyAmount(USDC(1));
++    await faucet.setMaxEligibleAgentId(100);
++    await faucet.setClaimAmount(USDC(10));
++
++    const fund = async (w, amt = USDC(1_000_000)) => {
++        await usdc.mint(w.address, amt);
++        await usdc.connect(w).approve(await v6.getAddress(), ethers.MaxUint256);
++    };
++    for (const w of [owner, agentA, agentB, lender1, lender2, lender3]) await fund(w);
++
++    const onboard = async w => {
++        await registry.connect(w).register('ipfs://agent', []);
++        const id = await registry.addressToAgentId(w.address);
++        await reputation.connect(w)['initializeReputation()']();
++        await v6.connect(w).createAgentPool();
++        return id;
++    };
++    const idA = await onboard(agentA);
++    const idB = await onboard(agentB);
++
++    // Lenders supply
++    await v6.connect(lender1).supplyLiquidity(idA, USDC(5000));
++    await v6.connect(lender2).supplyLiquidity(idA, USDC(3000));
++    await v6.connect(lender3).supplyLiquidity(idB, USDC(2000));
++
++    // Agent A: one loan taken and repaid (accrues interest + fees), one left ACTIVE
++    await v6.connect(agentA).requestLoan(USDC(500), 7);          // loan 1, 100% collateral at score 100
++    await ethers.provider.send('evm_increaseTime', [8 * DAY]);
++    await ethers.provider.send('evm_mine', []);
++    await v6.connect(agentA).repayLoan(1);
++    await v6.connect(agentA).requestLoan(USDC(400), 7);          // loan 2 -> ACTIVE
++    // Agent B: one ACTIVE loan
++    await v6.connect(agentB).requestLoan(USDC(300), 14);          // loan 3 -> ACTIVE
++
++    const addresses = {
++        network: 'local',
++        chainId: 31337,
++        rpcUrl: 'http://127.0.0.1:8545',
++        agentRegistryV2: await registry.getAddress(),
++        reputationManagerV3: await reputation.getAddress(),
++        agentLiquidityMarketplace_v6: await v6.getAddress(),
++        agentCreditFaucet: await faucet.getAddress(),
++        usdc: await usdc.getAddress(),
++        deployer: owner.address,
++        marketplaceVersion: 'V6.1 local harness',
++        deployedAt: new Date().toISOString(),
++        _testAccounts: {
++            agentA: agentA.address, agentAId: idA.toString(),
++            agentB: agentB.address, agentBId: idB.toString(),
++            lender1: lender1.address, lender2: lender2.address, lender3: lender3.address,
++        },
++    };
++    fs.writeFileSync(path.join(ROOT, 'src/config/local-addresses.json'), JSON.stringify(addresses, null, 2));
++
++    const poolA = await v6.getAgentPool(idA);
++    console.log(JSON.stringify({
++        marketplace: addresses.agentLiquidityMarketplace_v6,
++        poolA: { avail: poolA[2].toString(), loaned: poolA[3].toString(), lenders: poolA[6].toString() },
++        mpBalance: (await usdc.balanceOf(await v6.getAddress())).toString(),
++        fees: (await v6.accumulatedFees()).toString(),
++        activeLoanCountA: (await v6.activeLoanCount(idA)).toString(),
++    }, null, 2));
++}
++
++main().catch(e => { console.error(e); process.exit(1); });
+diff --git a/scripts/op-resilience/fault-rpc.js b/scripts/op-resilience/fault-rpc.js
+new file mode 100644
+index 0000000..60ac885
+--- /dev/null
++++ b/scripts/op-resilience/fault-rpc.js
+@@ -0,0 +1,74 @@
++// Fault-injecting JSON-RPC proxy, used to answer "does the monitor report a
++// false OK when the RPC is down, slow, or serving stale data?".
++//
++// Modes:
++//   stale   — forwards everything but rewrites the latest block's timestamp to
++//             `--age` seconds ago (chain head looks old; state reads still work)
++//   frozen  — always replays the FIRST block number/timestamp it ever saw
++//             (an RPC pinned to an old snapshot — the nastiest case, because every
++//              state read still succeeds and looks self-consistent)
++//   slow    — delays every response by `--delay` ms
++//   error   — returns a JSON-RPC error for every call
++//
++// Usage: node scripts/op-resilience/fault-rpc.js --mode stale --port 8555 [--age 7200] [--delay 30000]
++
++const http = require('http');
++
++const args = process.argv.slice(2);
++const arg = (k, d) => { const i = args.indexOf(`--${k}`); return i >= 0 ? args[i + 1] : d; };
++const MODE = arg('mode', 'stale');
++const PORT = Number(arg('port', 8555));
++const UPSTREAM = arg('upstream', 'http://127.0.0.1:8545');
++const AGE = Number(arg('age', 7200));
++const DELAY = Number(arg('delay', 30000));
++
++let frozenBlock = null;
++
++async function forward(body) {
++    const r = await fetch(UPSTREAM, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
++    return await r.json();
++}
++
++const server = http.createServer(async (req, res) => {
++    let raw = '';
++    req.on('data', c => raw += c);
++    req.on('end', async () => {
++        if (MODE === 'slow') await new Promise(r => setTimeout(r, DELAY));
++        let body;
++        try { body = JSON.parse(raw); } catch { res.writeHead(400).end(); return; }
++
++        if (MODE === 'error') {
++            const err = m => ({ jsonrpc: '2.0', id: m.id, error: { code: -32000, message: 'upstream unavailable' } });
++            const out = Array.isArray(body) ? body.map(err) : err(body);
++            res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify(out));
++            return;
++        }
++
++        let out;
++        try { out = await forward(body); }
++        catch (e) {
++            res.writeHead(200, { 'Content-Type': 'application/json' })
++               .end(JSON.stringify({ jsonrpc: '2.0', id: body.id, error: { code: -32000, message: e.message } }));
++            return;
++        }
++
++        const patch = (req1, resp) => {
++            if (!resp || !resp.result) return resp;
++            if (req1.method === 'eth_getBlockByNumber' || req1.method === 'eth_getBlockByHash') {
++                if (MODE === 'stale') {
++                    resp.result.timestamp = '0x' + Math.floor(Date.now() / 1000 - AGE).toString(16);
++                } else if (MODE === 'frozen') {
++                    if (!frozenBlock) frozenBlock = { number: resp.result.number, timestamp: resp.result.timestamp };
++                    resp.result.number = frozenBlock.number;
++                    resp.result.timestamp = frozenBlock.timestamp;
++                }
++            }
++            if (req1.method === 'eth_blockNumber' && MODE === 'frozen' && frozenBlock) resp.result = frozenBlock.number;
++            return resp;
++        };
++        out = Array.isArray(body) ? body.map((m, i) => patch(m, out[i])) : patch(body, out);
++        res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify(out));
++    });
++});
++
++server.listen(PORT, '127.0.0.1', () => console.error(`fault-rpc mode=${MODE} on :${PORT} -> ${UPSTREAM}`));
+diff --git a/scripts/op-resilience/pause-blast-radius.js b/scripts/op-resilience/pause-blast-radius.js
+new file mode 100644
+index 0000000..580691f
+--- /dev/null
++++ b/scripts/op-resilience/pause-blast-radius.js
+@@ -0,0 +1,119 @@
++// PAUSE BLAST RADIUS — exactly what still works and what breaks when the owner
++// hits the marketplace's main emergency lever.
++//
++// `pause()` is the only global response to a detected incident, so the operator
++// has to know its true cost before using it. Every call below is attempted twice,
++// once UNPAUSED (control) and once PAUSED, from the correct caller.
++//
++// Usage: npx hardhat run --network localhost scripts/op-resilience/pause-blast-radius.js
++
++const { ethers } = require('hardhat');
++const fs = require('fs');
++const path = require('path');
++
++const ROOT = path.resolve(__dirname, '..', '..');
++const OUT = path.join(ROOT, 'forensics/output/testing-2026-09-20');
++const USDC = n => ethers.parseUnits(n.toString(), 6);
++const DAY = 24 * 60 * 60;
++
++async function attempt(label, fn) {
++    try { await fn(); return { label, ok: true, revert: null }; }
++    catch (e) {
++        const m = e.shortMessage || e.message || '';
++        const r = /reverted with custom error '([^']+)'/.exec(m) || /reverted with reason string '([^']+)'/.exec(m);
++        return { label, ok: false, revert: r ? r[1] : m.slice(0, 90) };
++    }
++}
++
++async function main() {
++    fs.mkdirSync(OUT, { recursive: true });
++    const addr = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/config/local-addresses.json')));
++    const signers = await ethers.getSigners();
++    const [owner] = signers;
++    const v6 = await ethers.getContractAt('AgentLiquidityMarketplaceV6', addr.agentLiquidityMarketplace_v6);
++    const registry = await ethers.getContractAt('AgentRegistryV2', addr.agentRegistryV2);
++    const usdc = await ethers.getContractAt('MockUSDC', addr.usdc);
++    const faucet = await ethers.getContractAt('AgentCreditFaucet', addr.agentCreditFaucet);
++
++    const agentA = await ethers.getSigner(addr._testAccounts.agentA);
++    const agentB = await ethers.getSigner(addr._testAccounts.agentB);
++    const lender1 = await ethers.getSigner(addr._testAccounts.lender1);
++    const lender3 = await ethers.getSigner(addr._testAccounts.lender3);
++    const newLender = signers[9];
++    const idA = BigInt(addr._testAccounts.agentAId);
++    const idB = BigInt(addr._testAccounts.agentBId);
++
++    // Every operation a real participant might need during an incident.
++    const ops = ctx => ([
++        ['lender: withdrawLiquidity (exit their principal)', () => v6.connect(lender1).withdrawLiquidity(idA, USDC(10))],
++        ['lender: claimInterest (take earned interest)', () => v6.connect(lender1).claimInterest(idA)],
++        ['lender: supplyLiquidity (add more)', () => v6.connect(newLender).supplyLiquidity(idB, USDC(100))],
++        ['borrower: repayLoan (clear their debt)', () => v6.connect(agentA).repayLoan(ctx.repayLoanId)],
++        ['borrower: requestLoan (new credit)', () => v6.connect(agentB).requestLoan(USDC(50), 7)],
++        ['agent: createAgentPool', () => v6.connect(signers[10]).createAgentPool()],
++        ['OWNER: liquidateLoan (default an overdue loan)', () => v6.liquidateLoan(ctx.liquidateLoanId)],
++        ['OWNER: withdrawFees', () => v6.withdrawFees(1n)],
++        ['OWNER: setPlatformFeeRate', () => v6.setPlatformFeeRate(150)],
++        ['OWNER: setMinSupplyAmount', () => v6.setMinSupplyAmount(USDC(1))],
++        ['OWNER: setBindBorrowToPoolCreator', () => v6.setBindBorrowToPoolCreator(true)],
++        ['OWNER: setMinHoldForReputationReward', () => v6.setMinHoldForReputationReward(DAY)],
++        ['OWNER: compactPoolLenders', () => v6.compactPoolLenders(idA)],
++        ['OWNER: resetPoolAccounting', () => v6.resetPoolAccounting(idB)],
++        ['OWNER: transferOwnership', () => v6.transferOwnership(owner.address)],
++        ['registry: register a new agent', () => registry.connect(signers[11]).register('ipfs://x', [])],
++        ['registry: transfer agent NFT', () => registry.connect(agentB).transferFrom(agentB.address, signers[12].address, idB)],
++        ['faucet: claim', () => faucet.connect(agentB).claim()],
++    ]);
++
++    const results = { unpaused: [], paused: [] };
++
++    for (const phase of ['unpaused', 'paused']) {
++        const snap = await ethers.provider.send('evm_snapshot', []);
++
++        // Set up two fresh loans per phase: one repayable, one overdue for liquidation.
++        await usdc.mint(newLender.address, USDC(10000));
++        await usdc.connect(newLender).approve(await v6.getAddress(), ethers.MaxUint256);
++        await usdc.mint(signers[10].address, USDC(10000));
++        await usdc.connect(signers[10]).approve(await v6.getAddress(), ethers.MaxUint256);
++        await usdc.mint(signers[11].address, USDC(10000));
++        await usdc.mint(signers[12].address, USDC(10000));
++
++        // Loan #2 (agent A) is already ACTIVE from the baseline deploy. Push time
++        // past its endTime so the same loan is both repayable and liquidatable.
++        const ctx = { repayLoanId: 2, liquidateLoanId: 3 };
++        await ethers.provider.send('evm_increaseTime', [20 * DAY]);
++        await ethers.provider.send('evm_mine', []);
++        // lender3 must have some interest to claim for the claimInterest probe
++        await v6.connect(lender3);
++
++        if (phase === 'paused') await v6.pause();
++
++        for (const [label, fn] of ops(ctx)) {
++            const inner = await ethers.provider.send('evm_snapshot', []);
++            results[phase].push(await attempt(label, fn));
++            await ethers.provider.send('evm_revert', [inner]);
++        }
++        await ethers.provider.send('evm_revert', [snap]);
++    }
++
++    const rows = results.unpaused.map((u, i) => {
++        const p = results.paused[i];
++        return {
++            operation: u.label,
++            unpaused: u.ok ? 'works' : `blocked: ${u.revert}`,
++            paused: p.ok ? 'works' : `BLOCKED: ${p.revert}`,
++            brokenByPause: u.ok && !p.ok,
++        };
++    });
++    fs.writeFileSync(path.join(OUT, 'pause-blast-radius.json'), JSON.stringify(rows, null, 2));
++
++    const w = 52;
++    console.log('operation'.padEnd(w) + '| unpaused           | paused');
++    console.log('-'.repeat(w) + '+--------------------+' + '-'.repeat(40));
++    for (const r of rows) {
++        console.log(r.operation.padEnd(w) + '| ' + r.unpaused.slice(0, 18).padEnd(18) + ' | ' + r.paused + (r.brokenByPause ? '   <-- BROKEN BY PAUSE' : ''));
++    }
++    console.log(`\noperations broken by pause: ${rows.filter(r => r.brokenByPause).length}/${rows.length}`);
++}
++
++main().catch(e => { console.error(e); process.exit(1); });
+diff --git a/scripts/op-resilience/prove-s5-bug.js b/scripts/op-resilience/prove-s5-bug.js
+new file mode 100644
+index 0000000..4116743
+--- /dev/null
++++ b/scripts/op-resilience/prove-s5-bug.js
+@@ -0,0 +1,46 @@
++// Root-cause proof for the §S5 blind spot in the V6.0 monitor.
++//
++// V6.0 checkS5 did:   mp.activeLoanCount(agent.agentWallet)   // an ADDRESS
++// V6.1 declares:      mapping(uint256 => uint256) activeLoanCount   // keyed by agentId
++//
++// ethers coerces the address into a uint256, so the call reads the slot for
++// agentId == uint256(address) — a number no agent will ever have. It returns 0
++// every time, for every agent, no matter how corrupt the real counter is. The
++// check could not fail.
++//
++// Usage: npx hardhat run --network localhost scripts/op-resilience/prove-s5-bug.js
++
++const { ethers } = require('hardhat');
++const fs = require('fs');
++const path = require('path');
++const S = require('./storage');
++
++async function main() {
++    const ROOT = path.resolve(__dirname, '..', '..');
++    const addr = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/config/local-addresses.json')));
++    const v6 = await ethers.getContractAt('AgentLiquidityMarketplaceV6', addr.agentLiquidityMarketplace_v6);
++    const agentId = BigInt(addr._testAccounts.agentAId);
++    const wallet = addr._testAccounts.agentA;
++
++    const snap = await ethers.provider.send('evm_snapshot', []);
++    // Engineer the exact §S5 failure the check exists to catch.
++    await S.setStorage(addr.agentLiquidityMarketplace_v6, S.mapSlot(agentId, S.SLOT.activeLoanCount), 47);
++
++    const byId = await v6.activeLoanCount(agentId);
++    const byAddress = await v6.activeLoanCount(wallet);   // what V6.0's monitor did
++    const cap = await v6.MAX_ACTIVE_LOANS_PER_AGENT();
++
++    console.log(JSON.stringify({
++        agentId: agentId.toString(),
++        agentWallet: wallet,
++        addressCoercedToUint256: BigInt(wallet).toString(),
++        cap: Number(cap),
++        'activeLoanCount(agentId)  [truth]': Number(byId),
++        'activeLoanCount(wallet)   [what V6.0 read]': Number(byAddress),
++        'V6.0 would have flagged?': Number(byAddress) > Number(cap),
++        'V6.1 flags?': Number(byId) > Number(cap),
++    }, null, 2));
++
++    await ethers.provider.send('evm_revert', [snap]);
++}
++main().catch(e => { console.error(e); process.exit(1); });
+diff --git a/scripts/op-resilience/read-mainnet-levers.js b/scripts/op-resilience/read-mainnet-levers.js
+new file mode 100644
+index 0000000..4961877
+--- /dev/null
++++ b/scripts/op-resilience/read-mainnet-levers.js
+@@ -0,0 +1,74 @@
++// READ-ONLY snapshot of every owner-controlled lever on the Arc mainnet stack,
++// for the incident runbook. Sends no transactions.
++// Usage: node scripts/op-resilience/read-mainnet-levers.js
++
++const { ethers } = require('ethers');
++const fs = require('fs');
++const path = require('path');
++
++const ROOT = path.resolve(__dirname, '..', '..');
++const A = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/config/arc-mainnet-addresses.json')));
++const abi = n => JSON.parse(fs.readFileSync(path.join(ROOT, `artifacts/contracts/core/${n}.sol/${n}.json`))).abi;
++
++(async () => {
++    const p = new ethers.JsonRpcProvider(process.env.ARC_MAINNET_RPC_URL || A.rpcUrl, undefined, { batchMaxCount: 1, staticNetwork: true });
++    const v6 = new ethers.Contract(A.agentLiquidityMarketplace_v6, abi('AgentLiquidityMarketplaceV6'), p);
++    const rep = new ethers.Contract(A.reputationManagerV3, abi('ReputationManagerV3'), p);
++    const reg = new ethers.Contract(A.agentRegistryV2, abi('AgentRegistryV2'), p);
++    const fau = new ethers.Contract(A.agentCreditFaucet, abi('AgentCreditFaucet'), p);
++    const usdc = new ethers.Contract(A.usdc, ['function balanceOf(address) view returns (uint256)'], p);
++    const u = v => ethers.formatUnits(v, 6);
++
++    const out = {
++        readAt: new Date().toISOString(),
++        block: (await p.getBlock('latest')).number,
++        marketplace: {
++            address: A.agentLiquidityMarketplace_v6,
++            version: await v6.VERSION(),
++            owner: await v6.owner(),
++            pendingOwner: await v6.pendingOwner(),
++            paused: await v6.paused(),
++            migrationFinalized: await v6.migrationFinalized(),
++            platformFeeRateBps: Number(await v6.platformFeeRate()),
++            minSupplyAmount: u(await v6.minSupplyAmount()),
++            minHoldForReputationReward: Number(await v6.minHoldForReputationReward()),
++            bindBorrowToPoolCreator: await v6.bindBorrowToPoolCreator(),
++            accumulatedFees: u(await v6.accumulatedFees()),
++            usdcBalance: u(await usdc.balanceOf(A.agentLiquidityMarketplace_v6)),
++            totalPools: Number(await v6.totalPools()),
++            nextLoanId: Number(await v6.nextLoanId()),
++            MAX_ACTIVE_LOANS_PER_AGENT: Number(await v6.MAX_ACTIVE_LOANS_PER_AGENT()),
++            MAX_LENDERS_PER_POOL: Number(await v6.MAX_LENDERS_PER_POOL()),
++            LATE_INTEREST_CAP_days: Number(await v6.LATE_INTEREST_CAP()) / 86400,
++        },
++        reputation: {
++            address: A.reputationManagerV3,
++            owner: await rep.owner(),
++            marketplaceAuthorized: await rep.authorizedPools(A.agentLiquidityMarketplace_v6),
++            onTimeRepaymentBonus: Number(await rep.onTimeRepaymentBonus()),
++            defaultPenaltyBase: Number(await rep.defaultPenaltyBase()),
++            defaultPenaltyLarge: Number(await rep.defaultPenaltyLarge()),
++            largeLoanThreshold: u(await rep.largeLoanThreshold()),
++            bonusReferenceAmount: u(await rep.bonusReferenceAmount()),
++            maxReputationGainPerWindow: Number(await rep.maxReputationGainPerWindow()),
++            reputationGainWindow: Number(await rep.reputationGainWindow()),
++        },
++        registry: {
++            address: A.agentRegistryV2,
++            owner: await reg.owner(),
++            paused: await reg.paused(),
++            totalAgents: Number(await reg.totalAgents()),
++        },
++        faucet: {
++            address: A.agentCreditFaucet,
++            owner: await fau.owner(),
++            balance: u(await fau.balance()),
++            claimAmount: u(await fau.claimAmount()),
++            maxEligibleAgentId: Number(await fau.maxEligibleAgentId()),
++        },
++    };
++    console.log(JSON.stringify(out, null, 2));
++    const dir = path.join(ROOT, 'forensics/output/testing-2026-09-20');
++    fs.mkdirSync(dir, { recursive: true });
++    fs.writeFileSync(path.join(dir, 'arc-mainnet-levers.json'), JSON.stringify(out, null, 2));
++})().catch(e => { console.error(e.shortMessage || e.message); process.exit(1); });
+diff --git a/scripts/op-resilience/run-detection-matrix.js b/scripts/op-resilience/run-detection-matrix.js
+new file mode 100644
+index 0000000..e2a6d64
+--- /dev/null
++++ b/scripts/op-resilience/run-detection-matrix.js
+@@ -0,0 +1,122 @@
++// Detection-truth harness: for every engineered violation state, run BOTH the
++// frozen V6.0 monitor and the rewritten one against the same local chain, and
++// record whether each actually flagged it, at what severity, with what exit code.
++//
++// Each scenario runs inside an evm_snapshot/evm_revert pair, so scenarios do not
++// contaminate each other.
++//
++// Usage: npx hardhat run --network localhost scripts/op-resilience/run-detection-matrix.js
++
++const { ethers } = require('hardhat');
++const fs = require('fs');
++const path = require('path');
++const { execFileSync } = require('child_process');
++const { scenarios } = require('./scenarios');
++const S = require('./storage');
++
++const ROOT = path.resolve(__dirname, '..', '..');
++const OUT = path.join(ROOT, 'forensics/output/testing-2026-09-20');
++const ALERT_DIR = path.join(OUT, 'alert-sandbox');
++
++function runMonitor(script, extraEnv = {}) {
++    const env = {
++        ...process.env,
++        V6_MONITOR_NETWORK: 'local',
++        V6_MAX_BLOCK_AGE_SEC: '0',        // local chain time is advanced by evm_increaseTime
++        SPECULAR_ALERT_QUIET: '1',        // no banners/voice while batch-testing
++        SPECULAR_ALERT_DIR: ALERT_DIR,
++        ...extraEnv,
++    };
++    try {
++        const out = execFileSync('node', [script], { env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
++        return { exitCode: 0, out };
++    } catch (e) {
++        return { exitCode: e.status === undefined ? -1 : e.status, out: (e.stdout || '') + (e.stderr || '') };
++    }
++}
++
++function parseFindings(out) {
++    const codes = [];
++    let worst = null;
++    for (const line of out.split('\n')) {
++        if (!line.startsWith('{')) continue;
++        let j; try { j = JSON.parse(line); } catch { continue; }
++        if (j.alert) continue;
++        if (j.level === 'ERROR' || j.level === 'WARN') {
++            const m = /^\[([A-Z0-9-]+)\]/.exec(j.msg || '');
++            if (m) codes.push(`${m[1]}(${j.severity || j.level})`);
++            else if (/VIOLATION|check failed/.test(j.msg || '')) codes.push(`${j.msg.split(':')[0]}(${j.level})`);
++            if (j.level === 'ERROR') worst = 'CRITICAL';
++            else if (!worst) worst = 'WARN';
++        }
++    }
++    return { codes: [...new Set(codes)], worst };
++}
++
++async function main() {
++    fs.mkdirSync(OUT, { recursive: true });
++    fs.mkdirSync(ALERT_DIR, { recursive: true });
++
++    const addr = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/config/local-addresses.json')));
++    const v6 = await ethers.getContractAt('AgentLiquidityMarketplaceV6', addr.agentLiquidityMarketplace_v6);
++    const registry = await ethers.getContractAt('AgentRegistryV2', addr.agentRegistryV2);
++    const usdc = await ethers.getContractAt('MockUSDC', addr.usdc);
++    const signers = await ethers.getSigners();
++
++    const ctx = {
++        v6, registry, usdc, addr, signers,
++        v6Addr: addr.agentLiquidityMarketplace_v6,
++        agentAId: BigInt(addr._testAccounts.agentAId),
++        agentBId: BigInt(addr._testAccounts.agentBId),
++    };
++
++    // Fail fast if the slot map ever drifts from the compiled contract.
++    await S.verifySlots(v6, ctx.agentAId, addr._testAccounts.lender1);
++
++    const NEW = path.join(ROOT, 'forensics/monitor/v6-invariants.js');
++    const OLD = path.join(ROOT, 'scripts/op-resilience/v6-invariants-V60-baseline.js');
++
++    const results = [];
++    for (const sc of scenarios) {
++        const snap = await ethers.provider.send('evm_snapshot', []);
++        let applyError = null;
++        try { await sc.apply(ctx); } catch (e) { applyError = e.shortMessage || e.message; }
++
++        // Fresh state file each scenario except the ones that need history
++        // (lateness monotonicity). Those get a primed previous-run state.
++        const stateFile = path.join(ROOT, 'forensics/monitor/state-local.json');
++        try { fs.unlinkSync(stateFile); } catch {}
++        if (sc.key.startsWith('v61_lateness')) {
++            fs.writeFileSync(stateFile, JSON.stringify({
++                ts: new Date(Date.now() - 1800e3).toISOString(), blockNumber: 1, blockTimestamp: 1,
++                lateness: { [ctx.agentAId.toString()]: { count: 1, seconds: 86401 } },
++            }));
++        }
++
++        const oldRun = runMonitor(OLD);
++        const newRun = runMonitor(NEW);
++
++        results.push({
++            key: sc.key, title: sc.title, expectDetect: sc.expectDetect, applyError,
++            v60: { exitCode: oldRun.exitCode, ...parseFindings(oldRun.out) },
++            v61: { exitCode: newRun.exitCode, ...parseFindings(newRun.out) },
++        });
++        const r = results.at(-1);
++        console.log(`${r.key.padEnd(26)} old=exit${r.v60.exitCode} ${(r.v60.codes.join(',') || '-').padEnd(24)} | new=exit${r.v61.exitCode} ${r.v61.codes.join(',') || '-'}${applyError ? '  APPLY_ERROR: ' + applyError : ''}`);
++
++        await ethers.provider.send('evm_revert', [snap]);
++    }
++
++    fs.writeFileSync(path.join(OUT, 'detection-matrix.json'), JSON.stringify(results, null, 2));
++    try { fs.unlinkSync(path.join(ROOT, 'forensics/monitor/state-local.json')); } catch {}
++
++    const missedOld = results.filter(r => r.expectDetect && r.v60.exitCode === 0);
++    const missedNew = results.filter(r => r.expectDetect && r.v61.exitCode === 0);
++    const falsePos = results.filter(r => !r.expectDetect && r.v61.exitCode !== 0);
++    console.log(`\nV6.0 monitor: detected ${results.filter(r => r.expectDetect).length - missedOld.length}/${results.filter(r => r.expectDetect).length}, MISSED ${missedOld.length}`);
++    console.log(`V6.1 monitor: detected ${results.filter(r => r.expectDetect).length - missedNew.length}/${results.filter(r => r.expectDetect).length}, MISSED ${missedNew.length}`);
++    console.log(`false positives on the clean control: ${falsePos.length}`);
++    if (missedNew.length) console.log('STILL MISSED:', missedNew.map(r => r.key).join(', '));
++}
++
++main().catch(e => { console.error(e); process.exit(1); });
+diff --git a/scripts/op-resilience/run-rpc-failure-tests.sh b/scripts/op-resilience/run-rpc-failure-tests.sh
+new file mode 100755
+index 0000000..6d1f7ff
+--- /dev/null
++++ b/scripts/op-resilience/run-rpc-failure-tests.sh
+@@ -0,0 +1,83 @@
++#!/usr/bin/env bash
++# RPC-failure truth test: does the monitor report a false OK when the endpoint is
++# dead, slow, or serving stale/frozen data? Runs BOTH the frozen V6.0 monitor and
++# the rewritten one against a fault-injecting proxy in front of the local chain.
++#
++# Usage: bash scripts/op-resilience/run-rpc-failure-tests.sh
++set -u
++export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
++cd "$(dirname "$0")/../.."
++ROOT="$(pwd)"
++OUT="$ROOT/forensics/output/testing-2026-09-20"
++mkdir -p "$OUT" "$OUT/alert-sandbox"
++export SPECULAR_ALERT_QUIET=1 SPECULAR_ALERT_DIR="$OUT/alert-sandbox"
++NEW="$ROOT/forensics/monitor/v6-invariants.js"
++OLD="$ROOT/scripts/op-resilience/v6-invariants-V60-baseline.js"
++RESULT="$OUT/rpc-failure-matrix.txt"
++: > "$RESULT"
++
++run_case () {   # name, rpc_url, extra_env..., description
++  local name="$1"; shift
++  local rpc="$1"; shift
++  local maxage="$1"; shift
++  rm -f "$ROOT/forensics/monitor/state-local.json"
++  local o n
++  LOCAL_RPC_URL="$rpc" V6_MONITOR_NETWORK=local V6_MAX_BLOCK_AGE_SEC="$maxage" V6_RPC_TIMEOUT_MS=5000 \
++    node "$OLD" > "$OUT/.old.out" 2>&1; o=$?
++  LOCAL_RPC_URL="$rpc" V6_MONITOR_NETWORK=local V6_MAX_BLOCK_AGE_SEC="$maxage" V6_RPC_TIMEOUT_MS=5000 \
++    node "$NEW" > "$OUT/.new.out" 2>&1; n=$?
++  local ocodes ncodes
++  ocodes=$(grep -o '"msg":"[^"]*"' "$OUT/.old.out" | grep -iE 'VIOLATION|failed|STALE|backwards|unchanged' | head -3 | tr '\n' ' ')
++  ncodes=$(grep -oE '\[[A-Z][A-Z0-9-]+\]' "$OUT/.new.out" | sort -u | tr '\n' ' ')
++  printf '%-22s V6.0 exit=%d %-38s | V6.1 exit=%d %s\n' "$name" "$o" "${ocodes:--}" "$n" "${ncodes:--}" | tee -a "$RESULT"
++}
++
++echo "=== RPC failure matrix ($(date -u +%Y-%m-%dT%H:%M:%SZ)) ===" | tee -a "$RESULT"
++
++# 1. Healthy control
++run_case "healthy"        "http://127.0.0.1:8545" 0
++
++# 2. Dead endpoint (nothing listening)
++run_case "dead-endpoint"  "http://127.0.0.1:8599" 0
++
++# 3. Endpoint that answers with JSON-RPC errors
++node scripts/op-resilience/fault-rpc.js --mode error --port 8556 2>/dev/null &
++E=$!; sleep 1
++run_case "rpc-errors"     "http://127.0.0.1:8556" 0
++kill $E 2>/dev/null
++
++# 4. Slow endpoint (30 s per response, 5 s client timeout)
++node scripts/op-resilience/fault-rpc.js --mode slow --delay 30000 --port 8557 2>/dev/null &
++S=$!; sleep 1
++run_case "slow-endpoint"  "http://127.0.0.1:8557" 0
++kill $S 2>/dev/null
++
++# 5. Stale head: state reads fine, chain head 2 h old
++node scripts/op-resilience/fault-rpc.js --mode stale --age 7200 --port 8558 2>/dev/null &
++T=$!; sleep 1
++run_case "stale-head-2h"  "http://127.0.0.1:8558" 1800
++kill $T 2>/dev/null
++
++# 6. Frozen RPC: same block replayed for ever, every state read still succeeds.
++#    This is the case the V6.0 monitor cannot see at all — it keeps no run-to-run
++#    state, so a pinned endpoint produces a clean OK indefinitely.
++node scripts/op-resilience/fault-rpc.js --mode frozen --port 8559 2>/dev/null &
++F=$!; sleep 1
++rm -f "$ROOT/forensics/monitor/state-local.json"
++# run 1 through the proxy: it pins the current head and both sides record it
++LOCAL_RPC_URL="http://127.0.0.1:8559" V6_MONITOR_NETWORK=local V6_MAX_BLOCK_AGE_SEC=0 node "$NEW" >/dev/null 2>&1
++# the real chain moves on...
++curl -s -X POST -H 'Content-Type: application/json' \
++  --data '{"jsonrpc":"2.0","method":"hardhat_mine","params":["0x14"],"id":1}' http://127.0.0.1:8545 >/dev/null
++# run 2 through the still-frozen proxy: every read succeeds, head has not moved
++for M in "$OLD" "$NEW"; do
++  LOCAL_RPC_URL="http://127.0.0.1:8559" V6_MONITOR_NETWORK=local V6_MAX_BLOCK_AGE_SEC=0 node "$M" > "$OUT/.f.out" 2>&1
++  code=$?
++  if [ "$M" = "$OLD" ]; then fo=$code; else fn=$code; fncodes=$(grep -oE '\[[A-Z][A-Z0-9-]+\]' "$OUT/.f.out" | sort -u | tr '\n' ' '); fi
++done
++printf '%-22s V6.0 exit=%d %-38s | V6.1 exit=%d %s\n' "frozen-head(2nd run)" "$fo" "(keeps no run-to-run state)" "$fn" "${fncodes:--}" | tee -a "$RESULT"
++kill $F 2>/dev/null
++rm -f "$OUT/.f.out"
++
++rm -f "$OUT/.old.out" "$OUT/.new.out" "$ROOT/forensics/monitor/state-local.json"
++echo "written to $RESULT"
+diff --git a/scripts/op-resilience/scenarios.js b/scripts/op-resilience/scenarios.js
+new file mode 100644
+index 0000000..60e54fb
+--- /dev/null
++++ b/scripts/op-resilience/scenarios.js
+@@ -0,0 +1,254 @@
++// Engineered violation states for the invariant-monitor detection matrix.
++//
++// Each scenario mutates the LOCAL hardhat deployment into a state that a real
++// bug (or a real attack) would produce, so the monitor can be measured against
++// ground truth instead of against "it has never alerted, so it must work".
++//
++// Where a public/owner function can produce the state it is used (pause,
++// ownership transfer, seedPool). Where the contract deliberately makes the state
++// unreachable — a duplicate poolLenders entry IS the §B1 fix — the state is
++// written directly with hardhat_setStorageAt, against a slot map that is asserted
++// against the contract's own getters first (scripts/op-resilience/storage.js).
++
++const { ethers } = require('hardhat');
++const S = require('./storage');
++
++const USDC = n => ethers.parseUnits(n.toString(), 6);
++
++// packed PendingTranche{uint128 amount; uint128 timestamp}
++const packTranche = (amount, timestamp) => (BigInt(timestamp) << 128n) | BigInt(amount);
++
++/**
++ * Each scenario: { key, title, expect: what a correct monitor must flag, apply(ctx) }
++ * ctx = { v6, usdc, registry, addr, agentAId, agentBId, lender1, lender2, signers }
++ */
++const scenarios = [
++    {
++        key: 'clean',
++        title: 'Healthy baseline (control — must NOT alert)',
++        expectDetect: false,
++        async apply() { /* no-op */ },
++    },
++
++    // ---- (a) §S1 phantom liquidity -------------------------------------------------
++    {
++        key: 's1_phantom_gross',
++        title: '(a) §S1 phantom liquidity, gross: availableLiquidity far exceeds USDC backing',
++        expectDetect: true,
++        async apply(ctx) {
++            // seedPool is a live owner power while migrationFinalized == false —
++            // this is exactly the F-08 blast radius, used here as the corruption tool.
++            await ctx.v6.seedPool(ctx.agentAId, ctx.addr._testAccounts.agentA, USDC(50000), USDC(50000), 0);
++        },
++    },
++    {
++        key: 's1_phantom_masked',
++        title: '(a) §S1 phantom liquidity, MASKED: +500 USDC phantom, less than the 700 USDC of escrowed collateral',
++        expectDetect: true,
++        async apply(ctx) {
++            const base = BigInt(S.mapSlot(ctx.agentAId, S.SLOT.agentPools));
++            const cur = BigInt(await S.getStorage(ctx.v6Addr, base + 3n));
++            await S.setStorage(ctx.v6Addr, base + 3n, cur + USDC(500));
++        },
++    },
++
++    // ---- (b) §B1 duplicate lender ---------------------------------------------------
++    {
++        key: 'b1_duplicate_lender',
++        title: '(b) §B1 duplicate address in poolLenders[] (the state the §B1 fix prevents)',
++        expectDetect: true,
++        async apply(ctx) {
++            const lenSlot = BigInt(S.mapSlot(ctx.agentAId, S.SLOT.poolLenders));
++            const len = BigInt(await S.getStorage(ctx.v6Addr, lenSlot));
++            const data = BigInt(ethers.keccak256(S.h32(lenSlot)));
++            const first = await S.getStorage(ctx.v6Addr, data); // lender at index 0
++            await S.setStorage(ctx.v6Addr, data + len, first);   // duplicate it at the tail
++            await S.setStorage(ctx.v6Addr, lenSlot, len + 1n);
++        },
++    },
++
++    // ---- (c) §S5 runaway activeLoanCount -------------------------------------------
++    {
++        key: 's5_runaway_counter',
++        title: '(c) §S5 runaway activeLoanCount: 47 active loans recorded, cap is 10, 1 loan actually ACTIVE',
++        expectDetect: true,
++        async apply(ctx) {
++            await S.setStorage(ctx.v6Addr, S.mapSlot(ctx.agentAId, S.SLOT.activeLoanCount), 47);
++        },
++    },
++
++    // ---- (d) insolvency --------------------------------------------------------------
++    {
++        key: 'insolvency',
++        title: '(d) Insolvency: lender claims + fees + collateral exceed the marketplace USDC balance',
++        expectDetect: true,
++        async apply(ctx) {
++            // A lender position and its pool accounting inflated together: Σ positions
++            // and availableLiquidity both grow, but no USDC ever arrived.
++            const posBase = BigInt(S.map2Slot(ctx.agentAId, ctx.addr._testAccounts.lender1, S.SLOT.positions));
++            const curPos = BigInt(await S.getStorage(ctx.v6Addr, posBase));
++            await S.setStorage(ctx.v6Addr, posBase, curPos + USDC(2000));
++            const poolBase = BigInt(S.mapSlot(ctx.agentAId, S.SLOT.agentPools));
++            const curTl = BigInt(await S.getStorage(ctx.v6Addr, poolBase + 2n)); // totalLiquidity
++            await S.setStorage(ctx.v6Addr, poolBase + 2n, curTl + USDC(2000));
++            const curAv = BigInt(await S.getStorage(ctx.v6Addr, poolBase + 3n)); // availableLiquidity
++            await S.setStorage(ctx.v6Addr, poolBase + 3n, curAv + USDC(2000));
++        },
++    },
++    {
++        key: 'insolvency_pool_only',
++        title: '(d2) Pool-level insolvency: lender claims exceed pool backing, global balance still looks fine',
++        expectDetect: true,
++        async apply(ctx) {
++            // Only the lender position grows — the pool's availableLiquidity does not.
++            const posBase = BigInt(S.map2Slot(ctx.agentAId, ctx.addr._testAccounts.lender1, S.SLOT.positions));
++            const curPos = BigInt(await S.getStorage(ctx.v6Addr, posBase));
++            await S.setStorage(ctx.v6Addr, posBase, curPos + USDC(300));
++        },
++    },
++
++    // ---- (e) totalLoaned vs ACTIVE loans --------------------------------------------
++    {
++        key: 'totalloaned_mismatch',
++        title: '(e) pool.totalLoaned disagrees with the sum of ACTIVE loans (seedPool zeroes it under an open loan)',
++        expectDetect: true,
++        async apply(ctx) {
++            // The F-08 note: seedPool on a pool with active loans zeroes totalLoaned.
++            const p = await ctx.v6.getAgentPool(ctx.agentAId);
++            await ctx.v6.seedPool(ctx.agentAId, ctx.addr._testAccounts.agentA, p[1], p[2], p[4]);
++        },
++    },
++
++    // ---- (f) ownership change ---------------------------------------------------------
++    {
++        key: 'ownership_change',
++        title: '(f) Ownership handed to a different wallet (Ownable2Step transfer + accept)',
++        expectDetect: true,
++        async apply(ctx) {
++            const attacker = ctx.signers[7];
++            await ctx.v6.transferOwnership(attacker.address);
++            await ctx.v6.connect(attacker).acceptOwnership();
++        },
++    },
++    {
++        key: 'ownership_pending',
++        title: '(f2) Ownership transfer PENDING but not yet accepted (pendingOwner set)',
++        expectDetect: true,
++        async apply(ctx) {
++            await ctx.v6.transferOwnership(ctx.signers[7].address);
++        },
++    },
++
++    // ---- (g) unexpected pause ---------------------------------------------------------
++    {
++        key: 'unexpected_pause',
++        title: '(g) Contract paused without an operator expecting it',
++        expectDetect: true,
++        async apply(ctx) { await ctx.v6.pause(); },
++    },
++
++    // ---- (h) accumulatedFees > balance --------------------------------------------------
++    {
++        key: 'fees_exceed_balance',
++        title: '(h) accumulatedFees exceeds the marketplace USDC balance',
++        expectDetect: true,
++        async apply(ctx) {
++            await S.setStorage(ctx.v6Addr, S.SLOT.accumulatedFees, USDC(999999));
++        },
++    },
++
++    // ================= V6.1-specific state =================================================
++    {
++        key: 'v61_pending_gt_position',
++        title: '[V6.1] pendingTranche.amount exceeds position.amount',
++        expectDetect: true,
++        async apply(ctx) {
++            const posBase = BigInt(S.map2Slot(ctx.agentAId, ctx.addr._testAccounts.lender1, S.SLOT.positions));
++            const amount = BigInt(await S.getStorage(ctx.v6Addr, posBase));
++            const ts = BigInt(await S.getStorage(ctx.v6Addr, posBase + 2n));
++            const slot = S.map2Slot(ctx.agentAId, ctx.addr._testAccounts.lender1, S.SLOT.pendingTranche);
++            await S.setStorage(ctx.v6Addr, slot, packTranche(amount + USDC(1000), ts + 10n));
++        },
++    },
++    {
++        key: 'v61_pending_ts_before_base',
++        title: '[V6.1] pendingTranche timestamp older than the base tranche (re-qualifies unqualified money)',
++        expectDetect: true,
++        async apply(ctx) {
++            const posBase = BigInt(S.map2Slot(ctx.agentAId, ctx.addr._testAccounts.lender1, S.SLOT.positions));
++            const ts = BigInt(await S.getStorage(ctx.v6Addr, posBase + 2n));
++            const slot = S.map2Slot(ctx.agentAId, ctx.addr._testAccounts.lender1, S.SLOT.pendingTranche);
++            await S.setStorage(ctx.v6Addr, slot, packTranche(USDC(100), ts - 1000n));
++        },
++    },
++    {
++        key: 'v61_activeloanids_stale',
++        title: '[V6.1] activeLoanIds contains a REPAID loan id (stale entry, count still 1)',
++        expectDetect: true,
++        async apply(ctx) {
++            const lenSlot = BigInt(S.mapSlot(ctx.agentAId, S.SLOT.activeLoanIds));
++            const len = BigInt(await S.getStorage(ctx.v6Addr, lenSlot));
++            const data = BigInt(ethers.keccak256(S.h32(lenSlot)));
++            await S.setStorage(ctx.v6Addr, data + len, 1); // loan #1 is REPAID
++            await S.setStorage(ctx.v6Addr, lenSlot, len + 1n);
++        },
++    },
++    {
++        key: 'v61_activeloanids_missing',
++        title: '[V6.1] activeLoanIds emptied while activeLoanCount still says 1 (missing ACTIVE loan)',
++        expectDetect: true,
++        async apply(ctx) {
++            await S.setStorage(ctx.v6Addr, S.mapSlot(ctx.agentAId, S.SLOT.activeLoanIds), 0);
++        },
++    },
++    {
++        key: 'v61_qualified_revert',
++        title: '[V6.1] pending > amount makes qualifiedAmountAt revert — _distributeInterest would revert, freezing every repayment on the pool',
++        expectDetect: true,
++        async apply(ctx) {
++            // Give the lender a pending tranche stamped BEFORE the active loan while
++            // leaving position.amount untouched: qualifiedAmountAt returns
++            // (amount − pending) + pending = amount for the base, plus the pending
++            // again is not possible — so inflate position bookkeeping instead:
++            // set pendingTranche with an old timestamp AND shrink position.amount so
++            // the qualified sum exceeds Σ positions.
++            const lender = ctx.addr._testAccounts.lender2;
++            const posBase = BigInt(S.map2Slot(ctx.agentAId, lender, S.SLOT.positions));
++            const amount = BigInt(await S.getStorage(ctx.v6Addr, posBase));
++            const ts = BigInt(await S.getStorage(ctx.v6Addr, posBase + 2n));
++            const slot = S.map2Slot(ctx.agentAId, lender, S.SLOT.pendingTranche);
++            // pending > amount with an old timestamp: qualified = (amount-pending
++            // underflow-free in solidity? it reverts) — use pending == amount and then
++            // halve position.amount so pending > amount.
++            await S.setStorage(ctx.v6Addr, slot, packTranche(amount, ts - 100n));
++            await S.setStorage(ctx.v6Addr, posBase, amount / 2n);
++        },
++    },
++    {
++        key: 'v61_lateness_regression',
++        title: '[V6.1] lateRepayCount rewritten downwards (non-monotonic lateness record)',
++        expectDetect: true,
++        async apply(ctx) {
++            await S.setStorage(ctx.v6Addr, S.mapSlot(ctx.agentAId, S.SLOT.lateRepayCount), 0);
++        },
++    },
++    {
++        key: 'v61_lateness_inflated',
++        title: '[V6.1] lateSecondsTotal inflated beyond the per-loan repayment records',
++        expectDetect: true,
++        async apply(ctx) {
++            await S.setStorage(ctx.v6Addr, S.mapSlot(ctx.agentAId, S.SLOT.lateSecondsTotal), 99999999);
++        },
++    },
++    {
++        key: 'f01_nft_moved',
++        title: '[F-01 follow-up] Agent NFT transferred while a loan is ACTIVE',
++        expectDetect: true,
++        async apply(ctx) {
++            const agentA = await ethers.getSigner(ctx.addr._testAccounts.agentA);
++            await ctx.registry.connect(agentA).transferFrom(agentA.address, ctx.signers[8].address, ctx.agentAId);
++        },
++    },
++];
++
++module.exports = { scenarios, USDC, packTranche };
+diff --git a/scripts/op-resilience/storage.js b/scripts/op-resilience/storage.js
+new file mode 100644
+index 0000000..82b7885
+--- /dev/null
++++ b/scripts/op-resilience/storage.js
+@@ -0,0 +1,84 @@
++// Storage-slot helpers for AgentLiquidityMarketplaceV6 (V6.1).
++// Used ONLY by the local violation harness to engineer corrupt states that no
++// public function can produce (e.g. a duplicate poolLenders entry — that is
++// exactly what the §B1 fix prevents). Every slot is asserted against the
++// contract's own view getters before it is written (see verifySlots).
++
++const { ethers } = require('hardhat');
++
++// Declaration order: Ownable(_owner) Ownable2Step(_pendingOwner)
++// ReentrancyGuard(_status) Pausable(_paused) then V6 state.
++const SLOT = {
++    _owner: 0,
++    _pendingOwner: 1,
++    _status: 2,
++    _paused: 3,
++    agentPools: 4,
++    positions: 5,
++    poolLenders: 6,
++    loans: 7,
++    agentLoans: 8,
++    nextLoanId: 9,
++    platformFeeRate: 10,
++    accumulatedFees: 11,
++    minHoldForReputationReward: 12,
++    bindBorrowToPoolCreator: 13,
++    minSupplyAmount: 14,
++    agentPoolIds: 15,
++    activeLoanCount: 16,
++    outstandingPrincipal: 17,
++    isInPoolLenders: 18,
++    migrationFinalized: 19,
++    pendingTranche: 20,
++    activeLoanIds: 21,
++    repayments: 22,
++    lateRepayCount: 23,
++    lateSecondsTotal: 24,
++};
++
++const h32 = v => ethers.toBeHex(v, 32);
++const mapSlot = (key, slot) => ethers.keccak256(ethers.concat([h32(key), h32(slot)]));
++const map2Slot = (k1, k2, slot) => ethers.keccak256(ethers.concat([h32(k2), mapSlot(k1, slot)]));
++const arrayData = slot => BigInt(ethers.keccak256(h32(slot)));
++
++async function getStorage(addr, slot) {
++    return await ethers.provider.send('eth_getStorageAt', [addr, h32(slot), 'latest']);
++}
++async function setStorage(addr, slot, value) {
++    await ethers.provider.send('hardhat_setStorageAt', [addr, h32(slot), h32(value)]);
++}
++
++// Assert the slot map against the contract's public getters. Throws on mismatch,
++// so a harness run can never silently corrupt the wrong slot.
++async function verifySlots(v6, agentId, lender) {
++    const addr = await v6.getAddress();
++    const checks = [];
++    const eq = (name, got, want) => checks.push({ name, got: got.toString(), want: want.toString(), ok: BigInt(got) === BigInt(want) });
++
++    eq('_owner', BigInt(await getStorage(addr, SLOT._owner)), BigInt(await v6.owner()));
++    eq('_paused', BigInt(await getStorage(addr, SLOT._paused)), (await v6.paused()) ? 1n : 0n);
++    eq('nextLoanId', BigInt(await getStorage(addr, SLOT.nextLoanId)), await v6.nextLoanId());
++    eq('accumulatedFees', BigInt(await getStorage(addr, SLOT.accumulatedFees)), await v6.accumulatedFees());
++    eq('minSupplyAmount', BigInt(await getStorage(addr, SLOT.minSupplyAmount)), await v6.minSupplyAmount());
++    eq('activeLoanCount', BigInt(await getStorage(addr, mapSlot(agentId, SLOT.activeLoanCount))), await v6.activeLoanCount(agentId));
++    eq('outstandingPrincipal', BigInt(await getStorage(addr, mapSlot(agentId, SLOT.outstandingPrincipal))), await v6.outstandingPrincipal(agentId));
++    // agentPools[agentId].availableLiquidity is field #3 (0-based) of the struct
++    const poolBase = BigInt(mapSlot(agentId, SLOT.agentPools));
++    eq('pool.availableLiquidity', BigInt(await getStorage(addr, poolBase + 3n)), (await v6.getAgentPool(agentId))[2]);
++    eq('pool.totalLoaned', BigInt(await getStorage(addr, poolBase + 4n)), (await v6.getAgentPool(agentId))[3]);
++    // poolLenders[agentId].length
++    eq('poolLenders.length', BigInt(await getStorage(addr, mapSlot(agentId, SLOT.poolLenders))), (await v6.getAgentPool(agentId))[6]);
++    // positions[agentId][lender].amount
++    const posBase = BigInt(map2Slot(agentId, lender, SLOT.positions));
++    eq('position.amount', BigInt(await getStorage(addr, posBase)), (await v6.positions(agentId, lender)).amount);
++    // activeLoanIds[agentId].length
++    eq('activeLoanIds.length', BigInt(await getStorage(addr, mapSlot(agentId, SLOT.activeLoanIds))), BigInt((await v6.getActiveLoanIds(agentId)).length));
++    // lateRepayCount[agentId]
++    eq('lateRepayCount', BigInt(await getStorage(addr, mapSlot(agentId, SLOT.lateRepayCount))), await v6.lateRepayCount(agentId));
++
++    const bad = checks.filter(c => !c.ok);
++    if (bad.length) throw new Error('storage slot map MISMATCH: ' + JSON.stringify(bad, null, 2));
++    return checks;
++}
++
++module.exports = { SLOT, h32, mapSlot, map2Slot, arrayData, getStorage, setStorage, verifySlots };
+diff --git a/scripts/op-resilience/time-slow-rpc.sh b/scripts/op-resilience/time-slow-rpc.sh
+new file mode 100755
+index 0000000..3e80d32
+--- /dev/null
++++ b/scripts/op-resilience/time-slow-rpc.sh
+@@ -0,0 +1,29 @@
++#!/usr/bin/env bash
++# How long does each monitor take before it gives up on a slow RPC?
++# The V6.0 monitor has no per-request timeout at all, so it blocks for as long as
++# the endpoint takes — and launchd will not start the next scheduled run while the
++# previous one is still alive, which is how "monitored every 30 min" silently
++# becomes "monitored once, hours ago".
++set -u
++export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
++cd "$(dirname "$0")/../.."
++ROOT="$(pwd)"
++DELAY="${1:-20000}"
++PORT=8561
++
++node scripts/op-resilience/fault-rpc.js --mode slow --delay "$DELAY" --port "$PORT" 2>/dev/null &
++PROXY=$!
++sleep 1
++
++start=$SECONDS
++LOCAL_RPC_URL="http://127.0.0.1:$PORT" V6_MONITOR_NETWORK=local \
++  node scripts/op-resilience/v6-invariants-V60-baseline.js >/dev/null 2>&1
++echo "V6.0 exit=$? elapsed=$((SECONDS - start))s  (per-call delay ${DELAY}ms, no client timeout)"
++
++start=$SECONDS
++LOCAL_RPC_URL="http://127.0.0.1:$PORT" V6_MONITOR_NETWORK=local V6_RPC_TIMEOUT_MS=5000 \
++  V6_MAX_BLOCK_AGE_SEC=0 SPECULAR_ALERT_QUIET=1 SPECULAR_ALERT_DIR="$ROOT/forensics/output/testing-2026-09-20/alert-sandbox" \
++  node forensics/monitor/v6-invariants.js >/dev/null 2>&1
++echo "V6.1 exit=$? elapsed=$((SECONDS - start))s  (5s timeout + bounded retries)"
++
++kill $PROXY 2>/dev/null
+diff --git a/scripts/op-resilience/v6-invariants-V60-baseline.js b/scripts/op-resilience/v6-invariants-V60-baseline.js
+new file mode 100755
+index 0000000..1bf0d1f
+--- /dev/null
++++ b/scripts/op-resilience/v6-invariants-V60-baseline.js
+@@ -0,0 +1,220 @@
++#!/usr/bin/env node
++//
++// V6 invariant snapshot — single-run check of §B1, §S1, §S5 invariants on Arc V6.
++//
++// Designed to be run periodically (e.g. via cron) during the V6 soak period.
++// Writes append-only JSONL log to `forensics/monitor/v6-invariants.log`.
++// Exit code: 0 if all invariants hold, 1 if any violation detected.
++//
++// Usage:
++//   ARC_TESTNET_RPC_URL=... node forensics/monitor/v6-invariants.js
++//   node forensics/monitor/v6-invariants.js --quiet      # only logs to file, not stdout
++//   node forensics/monitor/v6-invariants.js --verbose    # extra debug detail
++//
++// Cron example (every 30 min):
++//   */30 * * * * cd ~/Specular && PATH=/opt/homebrew/opt/node@22/bin:$PATH node forensics/monitor/v6-invariants.js >> /tmp/v6-cron.log 2>&1
++
++const { ethers } = require('ethers');
++const fs = require('fs');
++const path = require('path');
++
++const ROOT = path.resolve(__dirname, '..', '..');
++// Network selector: V6_MONITOR_NETWORK=arc-testnet (default) | arc-staging | arc-mainnet.
++// Each maps to an addresses file + default RPC + its own log file so histories don't mix.
++const NETWORKS = {
++    'arc-testnet': { addresses: 'src/config/arc-testnet-addresses.json',    rpcEnv: 'ARC_TESTNET_RPC_URL', rpc: 'https://arc-testnet.drpc.org',   log: 'v6-invariants.log' },
++    'arc-staging': { addresses: 'src/config/arc-testnet-v6-addresses.json', rpcEnv: 'ARC_TESTNET_RPC_URL', rpc: 'https://arc-testnet.drpc.org',   log: 'v6-invariants-arc-staging.log' },
++    'arc-mainnet': { addresses: 'src/config/arc-mainnet-addresses.json',    rpcEnv: 'ARC_MAINNET_RPC_URL', rpc: 'https://rpc.mainnet.arc.io',     log: 'v6-invariants-arc-mainnet.log' },
++    // [TEST ARTIFACT ONLY] added so the detection matrix can run the FROZEN V6.0
++    // monitor against the same local chain as the rewritten one. Nothing else in
++    // this file differs from the pre-2026-09-20 production monitor.
++    'local':       { addresses: 'src/config/local-addresses.json',          rpcEnv: 'LOCAL_RPC_URL',       rpc: 'http://127.0.0.1:8545',          log: 'v6-invariants-local-V60.log' },
++};
++const NET = NETWORKS[process.env.V6_MONITOR_NETWORK || 'arc-testnet'];
++if (!NET) { console.error(`Unknown V6_MONITOR_NETWORK; expected one of ${Object.keys(NETWORKS).join(', ')}`); process.exit(1); }
++const ADDR = JSON.parse(fs.readFileSync(path.join(ROOT, NET.addresses)));
++const ABI = JSON.parse(fs.readFileSync(
++    path.join(ROOT, 'artifacts/contracts/core/AgentLiquidityMarketplaceV6.sol/AgentLiquidityMarketplaceV6.json'))).abi;
++const REG_ABI = JSON.parse(fs.readFileSync(
++    path.join(ROOT, 'artifacts/contracts/core/AgentRegistryV2.sol/AgentRegistryV2.json'))).abi;
++
++const RPC = process.env[NET.rpcEnv] || NET.rpc;
++const V6 = ADDR.agentLiquidityMarketplace_v6;
++const QUIET = process.argv.includes('--quiet');
++const VERBOSE = process.argv.includes('--verbose');
++const LOGFILE = path.join(__dirname, NET.log);
++
++const fmt = v => Number(ethers.formatUnits(v, 6));
++const log = (level, msg, data = {}) => {
++    const entry = { ts: new Date().toISOString(), level, msg, ...data };
++    fs.appendFileSync(LOGFILE, JSON.stringify(entry) + '\n');
++    if (!QUIET || level === 'ERROR' || level === 'WARN') console.log(JSON.stringify(entry));
++};
++
++const sleep = ms => new Promise(r => setTimeout(r, ms));
++async function withRetry(fn, label, attempts = 5) {
++    for (let i = 0; i < attempts; i++) {
++        try { return await fn(); }
++        catch (e) {
++            const m = (e.shortMessage || e.message || '');
++            const isRate = m.includes('408') || m.includes('410') || m.includes('429') || m.includes('-32016') || m.includes('rate') || m.includes('timeout');
++            if (i === attempts - 1 || !isRate) throw e;
++            await sleep(2000 * Math.pow(2, i));
++        }
++    }
++}
++
++async function checkB1(mp) {
++    // §B1: no pool may have duplicate addresses in poolLenders[]
++    const totalPools = Number(await withRetry(() => mp.totalPools(), 'totalPools'));
++    let violations = [];
++    for (let i = 0; i < totalPools; i++) {
++        try {
++            const aid = await withRetry(() => mp.agentPoolIds(i), `agentPoolIds[${i}]`);
++            const pool = await withRetry(() => mp.getAgentPool(aid), `getAgentPool[${aid}]`);
++            const lc = Number(pool[6]);
++            if (lc === 0) continue;
++            const lenders = [];
++            for (let j = 0; j < lc; j++) {
++                lenders.push((await withRetry(() => mp.poolLenders(aid, j), `pl[${aid}][${j}]`)).toLowerCase());
++            }
++            const unique = new Set(lenders);
++            if (lenders.length !== unique.size) {
++                violations.push({ agentId: aid.toString(), lenderCount: lc, uniqueCount: unique.size });
++            }
++        } catch (e) { if (VERBOSE) log('DEBUG', 'pool iter error', { i, msg: (e.shortMessage || e.message).slice(0, 80) }); }
++    }
++    return { totalPools, violations };
++}
++
++async function checkS1(mp, usdc) {
++    // §S1: pool.availableLiquidity should never exceed actual USDC balance
++    // Also: Σ(pool.availableLiquidity + pool.totalLoaned) ≤ usdc.balanceOf(MP) + Σ(unclaimed earnedInterest)
++    const totalPools = Number(await withRetry(() => mp.totalPools(), 'totalPools'));
++    const mpBal = await withRetry(() => usdc.balanceOf(V6), 'mpBal');
++    let sumAvail = 0n, sumLoaned = 0n, sumUnclaimedInterest = 0n;
++    let perPool = [];
++    for (let i = 0; i < totalPools; i++) {
++        try {
++            const aid = await withRetry(() => mp.agentPoolIds(i), `pid[${i}]`);
++            const pool = await withRetry(() => mp.getAgentPool(aid), `pool[${aid}]`);
++            sumAvail += pool[2];
++            sumLoaned += pool[3];
++            const lc = Number(pool[6]);
++            for (let j = 0; j < lc; j++) {
++                const lender = await withRetry(() => mp.poolLenders(aid, j), `pl[${aid}][${j}]`);
++                const pos = await withRetry(() => mp.positions(aid, lender), `pos[${aid}][${lender}]`);
++                sumUnclaimedInterest += pos[1];
++            }
++            perPool.push({ agentId: aid.toString(), avail: fmt(pool[2]), loaned: fmt(pool[3]) });
++        } catch (e) { if (VERBOSE) log('DEBUG', 'S1 iter error', { i }); }
++    }
++    // Invariant: USDC balance of contract ≥ sumAvail + sumLoaned − repaid principals (already in avail)
++    // Practical check: sumAvail ≤ mpBal − (locked collateral) ≤ mpBal in absence of active collateral data.
++    // Simpler: sumAvail ≤ mpBal is the conservative invariant (collateral is in contract too).
++    const slack = mpBal - sumAvail;
++    return {
++        mpBal: fmt(mpBal),
++        sumAvail: fmt(sumAvail),
++        sumLoaned: fmt(sumLoaned),
++        sumUnclaimedInterest: fmt(sumUnclaimedInterest),
++        slack: fmt(slack),
++        violates: slack < 0n,
++    };
++}
++
++async function checkS5(mp, reg) {
++    // §S5: no agent should have activeLoanCount > MAX_ACTIVE_LOANS_PER_AGENT
++    //      and the counter must match the array walk (correctness of §S5 fix)
++    const totalAgents = Number(await withRetry(() => reg.totalAgents(), 'totalAgents'));
++    const cap = Number(await withRetry(() => mp.MAX_ACTIVE_LOANS_PER_AGENT(), 'cap'));
++    let violations = [];
++    let highest = { count: 0, addr: null };
++    for (let id = 1; id <= totalAgents; id++) {
++        try {
++            const a = await withRetry(() => reg.agents(id), `agents[${id}]`);
++            if (a.owner === ethers.ZeroAddress) continue;
++            const w = a.agentWallet;
++            const counter = Number(await withRetry(() => mp.activeLoanCount(w), `alc[${w}]`));
++            if (counter > cap) {
++                violations.push({ agentId: id, wallet: w, counter, cap });
++            }
++            if (counter > highest.count) highest = { count: counter, addr: w };
++        } catch {}
++    }
++    return { totalAgents, cap, violations, highest };
++}
++
++async function alert(severity, title, details) {
++    const webhook = process.env.WEBHOOK_URL;
++    if (!webhook) return; // no-op when unset
++    const payload = {
++        text: `🚨 Specular V6 invariant alert [${severity}]: ${title}`,
++        attachments: [{
++            color: severity === 'CRITICAL' ? 'danger' : 'warning',
++            title,
++            text: '```' + JSON.stringify(details, null, 2) + '```',
++            ts: Math.floor(Date.now() / 1000),
++        }],
++    };
++    try {
++        const r = await fetch(webhook, {
++            method: 'POST',
++            headers: { 'Content-Type': 'application/json' },
++            body: JSON.stringify(payload),
++        });
++        if (!r.ok) log('WARN', 'Webhook returned non-ok', { status: r.status });
++    } catch (e) {
++        log('WARN', 'Webhook delivery failed', { error: e.message });
++    }
++}
++
++(async () => {
++    if (!V6) { log('ERROR', 'V6 address missing in addresses.json'); process.exit(1); }
++    const provider = new ethers.JsonRpcProvider(RPC, undefined, { batchMaxCount: 1 });
++    const mp = new ethers.Contract(V6, ABI, provider);
++    const reg = new ethers.Contract(ADDR.agentRegistryV2, REG_ABI, provider);
++    const usdc = new ethers.Contract(ADDR.usdc, ['function balanceOf(address) view returns (uint256)'], provider);
++
++    const block = await withRetry(() => provider.getBlock('latest'), 'block');
++    log('INFO', 'V6 invariant snapshot start', { block: block.number, marketplace: V6 });
++
++    let exitCode = 0;
++    try {
++        const [b1, s1, s5] = await Promise.all([
++            checkB1(mp),
++            checkS1(mp, usdc),
++            checkS5(mp, reg),
++        ]);
++
++        if (b1.violations.length > 0) {
++            log('ERROR', '§B1 VIOLATION: duplicate poolLenders detected', { violations: b1.violations });
++            await alert('CRITICAL', '§B1 duplicate poolLenders detected on V6', { marketplace: V6, violations: b1.violations });
++            exitCode = 1;
++        } else {
++            log('INFO', '§B1 OK', { totalPools: b1.totalPools });
++        }
++
++        if (s1.violates) {
++            log('ERROR', '§S1 VIOLATION: sumAvail > mpBal', s1);
++            await alert('CRITICAL', '§S1 sumAvail > mpBal on V6', { marketplace: V6, ...s1 });
++            exitCode = 1;
++        } else {
++            log('INFO', '§S1 OK', s1);
++        }
++
++        if (s5.violations.length > 0) {
++            log('ERROR', '§S5 VIOLATION: agent over MAX_ACTIVE_LOANS', { violations: s5.violations });
++            await alert('CRITICAL', '§S5 agent over MAX_ACTIVE_LOANS on V6', { marketplace: V6, violations: s5.violations });
++            exitCode = 1;
++        } else {
++            log('INFO', '§S5 OK', { totalAgents: s5.totalAgents, cap: s5.cap, highest: s5.highest });
++        }
++    } catch (e) {
++        log('ERROR', 'check failed', { error: e.shortMessage || e.message });
++        exitCode = 2;
++    }
++
++    log('INFO', 'V6 invariant snapshot end', { exitCode });
++    process.exit(exitCode);
++})();
+diff --git a/scripts/op-resilience/verify-alert-path.js b/scripts/op-resilience/verify-alert-path.js
+new file mode 100644
+index 0000000..d148fb5
+--- /dev/null
++++ b/scripts/op-resilience/verify-alert-path.js
+@@ -0,0 +1,110 @@
++// End-to-end proof that a real violation reaches a human.
++//
++// Engineers an ACTUAL violation on the local chain (owner pauses the marketplace),
++// runs the production launchd entry point (run-with-alert.sh) against it, and then
++// asserts that every alert channel fired: latch file, ~/SPECULAR-ALERT.txt equivalent,
++// history log, webhook POST (received by a throwaway local HTTP server), and a
++// non-zero exit propagated out of the wrapper.
++//
++// Usage: npx hardhat run --network localhost scripts/op-resilience/verify-alert-path.js
++
++const { ethers } = require('hardhat');
++const fs = require('fs');
++const os = require('os');
++const path = require('path');
++const http = require('http');
++const { execFileSync } = require('child_process');
++
++const ROOT = path.resolve(__dirname, '..', '..');
++const OUT = path.join(ROOT, 'forensics/output/testing-2026-09-20');
++const SANDBOX = path.join(OUT, 'alert-e2e');
++
++async function main() {
++    fs.rmSync(SANDBOX, { recursive: true, force: true });
++    fs.mkdirSync(SANDBOX, { recursive: true });
++
++    // 1. throwaway webhook receiver — proves the opt-in webhook path without any
++    //    real service and without a URL committed anywhere.
++    const received = [];
++    const server = http.createServer((req, res) => {
++        let b = ''; req.on('data', c => b += c);
++        req.on('end', () => { received.push({ headers: req.headers, body: b }); res.writeHead(200).end('ok'); });
++    });
++    await new Promise(r => server.listen(0, '127.0.0.1', r));
++    const webhookUrl = `http://127.0.0.1:${server.address().port}/hook`;
++
++    const addr = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/config/local-addresses.json')));
++    const v6 = await ethers.getContractAt('AgentLiquidityMarketplaceV6', addr.agentLiquidityMarketplace_v6);
++
++    const snap = await ethers.provider.send('evm_snapshot', []);
++    const results = {};
++    try {
++        // 2. a genuine violation: the marketplace is paused, the operator did not expect it
++        await v6.pause();
++        console.log('engineered violation: marketplace paused =', await v6.paused());
++
++        // 3. run the REAL launchd entry point
++        const env = {
++            ...process.env,
++            SPECULAR_REPO: ROOT,
++            SPECULAR_ALERT_DIR: SANDBOX,
++            SPECULAR_ALERT_WEBHOOK: webhookUrl,
++            SPECULAR_ALERT_QUIET: process.env.ALERT_E2E_LOUD === '1' ? '0' : '1',
++            V6_MAX_BLOCK_AGE_SEC: '0',
++            LOCAL_RPC_URL: 'http://127.0.0.1:8545',
++        };
++        let exitCode = 0;
++        try {
++            execFileSync('/bin/bash', [path.join(ROOT, 'forensics/monitor/run-with-alert.sh'), 'local'],
++                { env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
++        } catch (e) { exitCode = e.status; }
++        results.wrapperExitCode = exitCode;
++
++        await new Promise(r => setTimeout(r, 1500)); // let the webhook POST land
++
++        // 4. assert every channel
++        const latchPath = path.join(SANDBOX, 'ALERT-ACTIVE.json');
++        const histPath = path.join(SANDBOX, 'alerts.log');
++        const homeFlag = path.join(os.homedir(), 'SPECULAR-ALERT.txt');
++        results.latchExists = fs.existsSync(latchPath);
++        results.latch = results.latchExists ? JSON.parse(fs.readFileSync(latchPath, 'utf8')) : null;
++        results.historyLines = fs.existsSync(histPath) ? fs.readFileSync(histPath, 'utf8').trim().split('\n').length : 0;
++        results.homeFlagExists = fs.existsSync(homeFlag);
++        results.homeFlagTail = results.homeFlagExists ? fs.readFileSync(homeFlag, 'utf8').trim().split('\n').slice(-6).join('\n') : null;
++        results.webhookDeliveries = received.length;
++        results.webhookBodySample = received[0] ? JSON.parse(received[0].body).text : null;
++        results.heartbeatExists = fs.existsSync(path.join(SANDBOX, 'heartbeat-local.json'));
++        results.heartbeat = results.heartbeatExists ? JSON.parse(fs.readFileSync(path.join(SANDBOX, 'heartbeat-local.json'), 'utf8')) : null;
++
++        const src = results.latch && (results.latch.first || results.latch.latest);
++        results.findingCodes = ((src && src.details && src.details.findings) || []).map(f => f.code);
++        results.alertsRaised = results.latch ? results.latch.count : 0;
++
++        // 5. acknowledgement clears the latch and the home flag
++        execFileSync('node', [path.join(ROOT, 'forensics/monitor/alert.js'), '--ack'],
++            { env: { ...env }, encoding: 'utf8' });
++        results.latchClearedAfterAck = !fs.existsSync(latchPath);
++        results.homeFlagClearedAfterAck = !fs.existsSync(homeFlag);
++    } finally {
++        await ethers.provider.send('evm_revert', [snap]);
++        server.close();
++    }
++
++    const pass =
++        results.wrapperExitCode !== 0 &&
++        results.latchExists &&
++        results.historyLines > 0 &&
++        results.homeFlagExists &&
++        results.webhookDeliveries > 0 &&
++        results.heartbeatExists &&
++        results.findingCodes.includes('PAUS') &&
++        results.latchClearedAfterAck &&
++        results.homeFlagClearedAfterAck;
++
++    results.VERDICT = pass ? 'ALERT PATH VERIFIED END-TO-END' : 'ALERT PATH INCOMPLETE';
++    fs.writeFileSync(path.join(OUT, 'alert-e2e-result.json'), JSON.stringify(results, null, 2));
++    console.log(JSON.stringify(results, null, 2));
++    if (!pass) process.exit(1);
++}
++
++main().catch(e => { console.error(e); process.exit(1); });
+diff --git a/scripts/op-resilience/verify-deadman.sh b/scripts/op-resilience/verify-deadman.sh
+new file mode 100755
+index 0000000..080137e
+--- /dev/null
++++ b/scripts/op-resilience/verify-deadman.sh
+@@ -0,0 +1,36 @@
++#!/usr/bin/env bash
++# Dead-man's switch test: if one network's monitor job stops running, does any
++# other job notice? (Nothing in the V6.0 setup did — a job that stops simply stops,
++# and the silence looks exactly like "all clear".)
++set -u
++export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
++cd "$(dirname "$0")/../.."
++ROOT="$(pwd)"
++SANDBOX="$ROOT/forensics/output/testing-2026-09-20/deadman-sandbox"
++rm -rf "$SANDBOX"; mkdir -p "$SANDBOX"
++export SPECULAR_ALERT_DIR="$SANDBOX" SPECULAR_ALERT_QUIET=1
++
++# A sibling job that last ran 4 hours ago (threshold 90 min)
++node -e '
++const fs=require("fs");
++fs.writeFileSync(process.argv[1]+"/heartbeat-arc-mainnet.json", JSON.stringify({
++  network:"arc-mainnet", ts:new Date(Date.now()-4*3600e3).toISOString(), epoch:Date.now()-4*3600e3, lastExitCode:0
++}));' "$SANDBOX"
++
++rm -f "$ROOT/forensics/monitor/state-local.json"
++V6_MONITOR_NETWORK=local V6_MAX_BLOCK_AGE_SEC=0 LOCAL_RPC_URL=http://127.0.0.1:8545 \
++  node forensics/monitor/v6-invariants.js --quiet >/dev/null 2>&1
++echo "local monitor exit=$? (healthy chain, so its OWN checks pass)"
++
++echo "--- alerts raised by the dead-man's switch ---"
++if [ -f "$SANDBOX/alerts.log" ]; then
++  node -e '
++  const fs=require("fs");
++  for (const l of fs.readFileSync(process.argv[1],"utf8").trim().split("\n")) {
++    const a=JSON.parse(l);
++    console.log(a.severity, "|", a.title, "|", JSON.stringify(a.details));
++  }' "$SANDBOX/alerts.log"
++else
++  echo "NONE — dead-man switch did not fire"
++fi
++rm -f "$ROOT/forensics/monitor/state-local.json"
+diff --git a/scripts/op-resilience/verify-slots.js b/scripts/op-resilience/verify-slots.js
+new file mode 100644
+index 0000000..ef4f1c2
+--- /dev/null
++++ b/scripts/op-resilience/verify-slots.js
+@@ -0,0 +1,15 @@
++// Sanity-check the storage slot map against the live local deployment.
++// Usage: npx hardhat run --network localhost scripts/op-resilience/verify-slots.js
++const { ethers } = require('hardhat');
++const fs = require('fs');
++const path = require('path');
++const { verifySlots } = require('./storage');
++
++async function main() {
++    const ADDR = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../src/config/local-addresses.json')));
++    const v6 = await ethers.getContractAt('AgentLiquidityMarketplaceV6', ADDR.agentLiquidityMarketplace_v6);
++    const checks = await verifySlots(v6, BigInt(ADDR._testAccounts.agentAId), ADDR._testAccounts.lender1);
++    console.log('All slots verified:', checks.length);
++    for (const c of checks) console.log(' ', c.name, '=', c.want);
++}
++main().catch(e => { console.error(e.message); process.exit(1); });

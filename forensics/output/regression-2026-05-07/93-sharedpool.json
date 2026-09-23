@@ -1,0 +1,75 @@
+{
+  "timestamp": "2026-05-22T17:10:41.200Z",
+  "v6": "0x7a0560551b2370ee87458186c0b1eFCc38c7c57a",
+  "agentId": 186,
+  "totalLoans": 30,
+  "snapshots": [
+    {
+      "cycle": 5,
+      "totalLiq": 25000,
+      "avail": 25001.423975,
+      "loaned": 0,
+      "earned": 1.423975,
+      "lc": 5,
+      "unique": 5,
+      "dups": false,
+      "mpBal": 30502.775995
+    },
+    {
+      "cycle": 10,
+      "totalLiq": 30000,
+      "avail": 30002.84795,
+      "loaned": 0,
+      "earned": 2.84795,
+      "lc": 6,
+      "unique": 6,
+      "dups": false,
+      "mpBal": 35504.21435
+    },
+    {
+      "cycle": 15,
+      "totalLiq": 35000,
+      "avail": 35004.271925,
+      "loaned": 0,
+      "earned": 4.271925,
+      "lc": 7,
+      "unique": 7,
+      "dups": false,
+      "mpBal": 40505.652705
+    },
+    {
+      "cycle": 20,
+      "totalLiq": 40000,
+      "avail": 40005.6959,
+      "loaned": 0,
+      "earned": 5.6959,
+      "lc": 8,
+      "unique": 8,
+      "dups": false,
+      "mpBal": 45507.09106
+    },
+    {
+      "cycle": 25,
+      "totalLiq": 40000,
+      "avail": 40007.119875,
+      "loaned": 0,
+      "earned": 7.119875,
+      "lc": 8,
+      "unique": 8,
+      "dups": false,
+      "mpBal": 45508.529415
+    },
+    {
+      "cycle": 30,
+      "totalLiq": 40000,
+      "avail": 40008.54385,
+      "loaned": 0,
+      "earned": 8.54385,
+      "lc": 8,
+      "unique": 8,
+      "dups": false,
+      "mpBal": 45509.96777
+    }
+  ],
+  "totalClaimed": "8543780"
+}

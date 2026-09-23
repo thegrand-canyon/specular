@@ -1,0 +1,3439 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Specular Protocol Agent API",
+    "version": "2.1.0",
+    "summary": "Non-custodial credit infrastructure for AI agents: reads execute server-side; writes are returned as unsigned transactions for your own wallet.",
+    "description": "Every route takes an explicit `network` path segment: `arc-staging` (Arc testnet V6-staging, test USDC), `base` (Base mainnet, REAL USDC) or `arc-mainnet` (Arc mainnet, REAL USDC). There is no default network. POST /v1/{network}/tx/prepare/{action} never executes anything: it returns `{chainId,to,data,value:\"0\",gasEstimate,...}` for you to sign. Approvals are always exact-amount. POST /v1/{network}/tx/broadcast relays a transaction you signed only if it targets a Specular contract on that network.",
+    "license": {
+      "name": "MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3400"
+    }
+  ],
+  "tags": [
+    {
+      "name": "read",
+      "description": "Read-only chain queries (executed server-side)"
+    },
+    {
+      "name": "prepare",
+      "description": "Build unsigned transactions (non-custodial)"
+    },
+    {
+      "name": "simulate",
+      "description": "Dry-run a transaction from your address"
+    },
+    {
+      "name": "broadcast",
+      "description": "Relay a transaction you already signed"
+    },
+    {
+      "name": "meta"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Only enforced when the server sets SPECULAR_MCP_TOKEN."
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "field": {
+            "type": "string"
+          },
+          "network": {
+            "type": "string",
+            "description": "Set on 503 when a network's upstream RPC endpoints are all cold."
+          },
+          "retryAfterSeconds": {
+            "type": "integer",
+            "description": "Set on 503/504; mirrors the Retry-After header."
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "PreparedTransaction": {
+        "type": "object",
+        "description": "An UNSIGNED transaction for the caller's own wallet to sign and broadcast.",
+        "properties": {
+          "network": {
+            "type": "string",
+            "enum": [
+              "base",
+              "arc-staging",
+              "arc-mainnet"
+            ]
+          },
+          "chainId": {
+            "type": "integer"
+          },
+          "realMoney": {
+            "type": "boolean"
+          },
+          "action": {
+            "type": "string"
+          },
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          },
+          "data": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string",
+            "const": "0"
+          },
+          "gasEstimate": {
+            "type": "string"
+          },
+          "gasEstimateSource": {
+            "type": "string",
+            "enum": [
+              "estimateGas",
+              "default"
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "humanReadableSummary": {
+            "type": "string"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "call": {
+            "type": "object"
+          },
+          "prerequisite": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PreparedTransaction"
+              }
+            ]
+          },
+          "simulation": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "ok": {
+                    "type": "boolean"
+                  },
+                  "gasEstimate": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "revertReason": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "plainLanguage": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "from": {
+                    "type": "string"
+                  }
+                }
+              }
+            ]
+          },
+          "signingInstructions": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "network",
+          "chainId",
+          "to",
+          "data",
+          "value",
+          "gasEstimate",
+          "description",
+          "humanReadableSummary",
+          "warnings"
+        ]
+      },
+      "CacheStats": {
+        "type": "object",
+        "properties": {
+          "hits": {
+            "type": "integer"
+          },
+          "misses": {
+            "type": "integer"
+          },
+          "coalesced": {
+            "type": "integer",
+            "description": "Requests that shared an in-flight upstream call instead of issuing their own."
+          },
+          "stores": {
+            "type": "integer"
+          },
+          "evictions": {
+            "type": "integer"
+          },
+          "entries": {
+            "type": "integer"
+          },
+          "hitRate": {
+            "type": "number",
+            "description": "(hits + coalesced) / (hits + misses + coalesced)"
+          }
+        }
+      },
+      "EndpointHealth": {
+        "type": "object",
+        "properties": {
+          "endpoint": {
+            "type": "string",
+            "description": "REDACTED endpoint: a well-known public default verbatim, anything operator-configured reduced to scheme://host/."
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "up",
+              "cold",
+              "probing"
+            ]
+          },
+          "consecutiveFailures": {
+            "type": "integer"
+          },
+          "coldForMs": {
+            "type": "integer",
+            "description": "Remaining backoff before this endpoint is tried again."
+          },
+          "lastErrorClass": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "rate_limited",
+              "timeout",
+              "connection",
+              "server_error",
+              "bad_response",
+              "other",
+              null
+            ]
+          },
+          "lastErrorAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "calls": {
+            "type": "integer"
+          },
+          "successes": {
+            "type": "integer"
+          },
+          "failures": {
+            "type": "integer"
+          }
+        }
+      },
+      "NetworkRpcHealth": {
+        "type": "object",
+        "properties": {
+          "network": {
+            "type": "string"
+          },
+          "endpoints": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EndpointHealth"
+            }
+          },
+          "circuitOpen": {
+            "type": "boolean",
+            "description": "True when every endpoint for this network is cold: reads fail fast with 503 rather than queueing."
+          },
+          "circuitOpens": {
+            "type": "integer"
+          },
+          "retryAfterSeconds": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    },
+    {}
+  ],
+  "paths": {
+    "/v1/networks": {
+      "get": {
+        "operationId": "list_networks",
+        "summary": "list_networks",
+        "description": "List the networks this server can serve, their chain IDs, contract addresses and whether they move real USDC. Call this first.",
+        "tags": [
+          "read"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (bad address/amount/network, unknown loan, etc.)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid bearer token (only when SPECULAR_MCP_TOKEN is configured)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (per IP)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream RPC failure (attempts across every endpoint exhausted)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Network temporarily unavailable (every RPC endpoint for this network is cold), or the server is shedding load. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "The request exceeded SPECULAR_REQUEST_DEADLINE_MS before the chain answered. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/{network}/network": {
+      "get": {
+        "operationId": "get_network_info",
+        "summary": "get_network_info",
+        "description": "Contract addresses, chainId, explorer and live RPC block/staleness for one network.",
+        "tags": [
+          "read"
+        ],
+        "parameters": [
+          {
+            "name": "network",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "base",
+                "arc-staging",
+                "arc-mainnet"
+              ]
+            },
+            "description": "REQUIRED, no default. \"arc-staging\" = Arc testnet V6-staging (test USDC, safe to experiment). \"base\" and \"arc-mainnet\" move REAL USDC."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (bad address/amount/network, unknown loan, etc.)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid bearer token (only when SPECULAR_MCP_TOKEN is configured)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (per IP)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream RPC failure (attempts across every endpoint exhausted)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Network temporarily unavailable (every RPC endpoint for this network is cold), or the server is shedding load. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "The request exceeded SPECULAR_REQUEST_DEADLINE_MS before the chain answered. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/{network}/status": {
+      "get": {
+        "operationId": "get_protocol_status",
+        "summary": "get_protocol_status",
+        "description": "Protocol-wide statistics for a network: paused flag, pools, loans, TVL, available liquidity, live parameters (min supply, fee, loan limits), the deployment capability matrix (marketplace V6 / V6.1 / V6.2 and reputation V3 / V4), and creditTiers — the CREDIT TIER TABLE read live from the contract. On ReputationManagerV4 that table is owner-settable on-chain state bounded by an immutable MAX_TIER_LIMIT, so read it from here rather than hardcoding limits.",
+        "tags": [
+          "read"
+        ],
+        "parameters": [
+          {
+            "name": "network",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "base",
+                "arc-staging",
+                "arc-mainnet"
+              ]
+            },
+            "description": "REQUIRED, no default. \"arc-staging\" = Arc testnet V6-staging (test USDC, safe to experiment). \"base\" and \"arc-mainnet\" move REAL USDC."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (bad address/amount/network, unknown loan, etc.)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid bearer token (only when SPECULAR_MCP_TOKEN is configured)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (per IP)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream RPC failure (attempts across every endpoint exhausted)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Network temporarily unavailable (every RPC endpoint for this network is cold), or the server is shedding load. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "The request exceeded SPECULAR_REQUEST_DEADLINE_MS before the chain answered. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/{network}/agents/{address}/credit": {
+      "get": {
+        "operationId": "check_credit_score",
+        "summary": "check_credit_score",
+        "description": "Credit profile of an agent wallet: registration, reputation score (0-1000) and tier, credit limit, remaining credit, collateral %, APR, active loans, plus USDC balance and current marketplace allowance. On a V7 deployment it also returns credit.model (why the limit is what it is: tier limit vs credit ladder, and whether the agent is LOCKED OUT after a default, which makes the limit exactly 0) and selfStake (the agent's own locked first-loss capital). Never assume a tier table client-side: every limit here is read from the chain.",
+        "tags": [
+          "read"
+        ],
+        "parameters": [
+          {
+            "name": "network",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "base",
+                "arc-staging",
+                "arc-mainnet"
+              ]
+            },
+            "description": "REQUIRED, no default. \"arc-staging\" = Arc testnet V6-staging (test USDC, safe to experiment). \"base\" and \"arc-mainnet\" move REAL USDC."
+          },
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^0x[0-9a-fA-F]{40}$"
+            },
+            "description": "Agent wallet address (0x-prefixed, EIP-55 checksum accepted)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (bad address/amount/network, unknown loan, etc.)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid bearer token (only when SPECULAR_MCP_TOKEN is configured)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (per IP)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream RPC failure (attempts across every endpoint exhausted)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Network temporarily unavailable (every RPC endpoint for this network is cold), or the server is shedding load. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "The request exceeded SPECULAR_REQUEST_DEADLINE_MS before the chain answered. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/{network}/pools": {
+      "get": {
+        "operationId": "get_available_liquidity",
+        "summary": "get_available_liquidity",
+        "description": "Active agent pools sorted by available USDC (for lenders choosing where to supply, or to see borrowing capacity).",
+        "tags": [
+          "read"
+        ],
+        "parameters": [
+          {
+            "name": "network",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "base",
+                "arc-staging",
+                "arc-mainnet"
+              ]
+            },
+            "description": "REQUIRED, no default. \"arc-staging\" = Arc testnet V6-staging (test USDC, safe to experiment). \"base\" and \"arc-mainnet\" move REAL USDC."
+          },
+          {
+            "name": "minAvailableUsdc",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "minimum": 0
+            },
+            "description": "Only pools with at least this much available USDC (optional)"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (bad address/amount/network, unknown loan, etc.)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid bearer token (only when SPECULAR_MCP_TOKEN is configured)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (per IP)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream RPC failure (attempts across every endpoint exhausted)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Network temporarily unavailable (every RPC endpoint for this network is cold), or the server is shedding load. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "The request exceeded SPECULAR_REQUEST_DEADLINE_MS before the chain answered. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/{network}/pools/{agentId}": {
+      "get": {
+        "operationId": "get_pool_details",
+        "summary": "get_pool_details",
+        "description": "Detailed view of one agent pool (pools are keyed by agentId): liquidity, utilization, lenders, borrower reputation and terms.",
+        "tags": [
+          "read"
+        ],
+        "parameters": [
+          {
+            "name": "network",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "base",
+                "arc-staging",
+                "arc-mainnet"
+              ]
+            },
+            "description": "REQUIRED, no default. \"arc-staging\" = Arc testnet V6-staging (test USDC, safe to experiment). \"base\" and \"arc-mainnet\" move REAL USDC."
+          },
+          {
+            "name": "agentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Agent ID whose pool to inspect"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (bad address/amount/network, unknown loan, etc.)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid bearer token (only when SPECULAR_MCP_TOKEN is configured)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (per IP)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream RPC failure (attempts across every endpoint exhausted)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Network temporarily unavailable (every RPC endpoint for this network is cold), or the server is shedding load. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "The request exceeded SPECULAR_REQUEST_DEADLINE_MS before the chain answered. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/{network}/loans/{loanId}": {
+      "get": {
+        "operationId": "get_loan_status",
+        "summary": "get_loan_status",
+        "description": "Status of a loan by ID: borrower, principal, collateral, APR, due date, state (REQUESTED/ACTIVE/REPAID/DEFAULTED) and, if active, the exact repayment amount (V6.1: previewRepayment incl. any late interest; V6: fixed-term interest).",
+        "tags": [
+          "read"
+        ],
+        "parameters": [
+          {
+            "name": "network",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "base",
+                "arc-staging",
+                "arc-mainnet"
+              ]
+            },
+            "description": "REQUIRED, no default. \"arc-staging\" = Arc testnet V6-staging (test USDC, safe to experiment). \"base\" and \"arc-mainnet\" move REAL USDC."
+          },
+          {
+            "name": "loanId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Loan ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (bad address/amount/network, unknown loan, etc.)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid bearer token (only when SPECULAR_MCP_TOKEN is configured)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (per IP)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream RPC failure (attempts across every endpoint exhausted)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Network temporarily unavailable (every RPC endpoint for this network is cold), or the server is shedding load. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "The request exceeded SPECULAR_REQUEST_DEADLINE_MS before the chain answered. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/{network}/agents/{address}/loans": {
+      "get": {
+        "operationId": "get_agent_loans",
+        "summary": "get_agent_loans",
+        "description": "Loans taken by a wallet (most recent first).",
+        "tags": [
+          "read"
+        ],
+        "parameters": [
+          {
+            "name": "network",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "base",
+                "arc-staging",
+                "arc-mainnet"
+              ]
+            },
+            "description": "REQUIRED, no default. \"arc-staging\" = Arc testnet V6-staging (test USDC, safe to experiment). \"base\" and \"arc-mainnet\" move REAL USDC."
+          },
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^0x[0-9a-fA-F]{40}$"
+            },
+            "description": "Borrower wallet address (0x-prefixed, EIP-55 checksum accepted)"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (bad address/amount/network, unknown loan, etc.)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid bearer token (only when SPECULAR_MCP_TOKEN is configured)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (per IP)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream RPC failure (attempts across every endpoint exhausted)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Network temporarily unavailable (every RPC endpoint for this network is cold), or the server is shedding load. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "The request exceeded SPECULAR_REQUEST_DEADLINE_MS before the chain answered. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/{network}/agents/{address}/positions": {
+      "get": {
+        "operationId": "get_lending_positions",
+        "summary": "get_lending_positions",
+        "description": "Lender positions of a wallet across all active pools: supplied principal and claimable interest per pool.",
+        "tags": [
+          "read"
+        ],
+        "parameters": [
+          {
+            "name": "network",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "base",
+                "arc-staging",
+                "arc-mainnet"
+              ]
+            },
+            "description": "REQUIRED, no default. \"arc-staging\" = Arc testnet V6-staging (test USDC, safe to experiment). \"base\" and \"arc-mainnet\" move REAL USDC."
+          },
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^0x[0-9a-fA-F]{40}$"
+            },
+            "description": "Lender wallet address (0x-prefixed, EIP-55 checksum accepted)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (bad address/amount/network, unknown loan, etc.)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid bearer token (only when SPECULAR_MCP_TOKEN is configured)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (per IP)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream RPC failure (attempts across every endpoint exhausted)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Network temporarily unavailable (every RPC endpoint for this network is cold), or the server is shedding load. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "The request exceeded SPECULAR_REQUEST_DEADLINE_MS before the chain answered. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/{network}/loans/{loanId}/repayment": {
+      "get": {
+        "operationId": "preview_repayment",
+        "summary": "preview_repayment",
+        "description": "The EXACT USDC amount repayLoan(loanId) would pull right now. On V6.1+ that is principal + interest on max(duration, elapsed), capped at duration + 30 days, so a late loan owes more and the figure grows per second until it caps. On a V6 deployment it is the nominal fixed-term figure, which is what V6 actually charges — `source` says which. Use this, not your own arithmetic, to size the repay approval.",
+        "tags": [
+          "read"
+        ],
+        "parameters": [
+          {
+            "name": "network",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "base",
+                "arc-staging",
+                "arc-mainnet"
+              ]
+            },
+            "description": "REQUIRED, no default. \"arc-staging\" = Arc testnet V6-staging (test USDC, safe to experiment). \"base\" and \"arc-mainnet\" move REAL USDC."
+          },
+          {
+            "name": "loanId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Loan ID (must be ACTIVE)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (bad address/amount/network, unknown loan, etc.)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid bearer token (only when SPECULAR_MCP_TOKEN is configured)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (per IP)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream RPC failure (attempts across every endpoint exhausted)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Network temporarily unavailable (every RPC endpoint for this network is cold), or the server is shedding load. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "The request exceeded SPECULAR_REQUEST_DEADLINE_MS before the chain answered. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/{network}/pools/{agentId}/can-top-up/{lender}": {
+      "get": {
+        "operationId": "can_top_up",
+        "summary": "can_top_up",
+        "description": "Whether `lender` can add to an EXISTING position in agent pool `agentId` right now without supplyLiquidity reverting \"Top-up would forfeit in-flight interest\". ADVISORY, not a guarantee: the deployed canTopUp() view is off by one block, so this server also computes the corrected predicate server-side and returns the conservative answer (`onChainView` and `correctedPredicate` show both, `viewDisagrees` flags a mismatch); a loan can also start between this check and your transaction. Always read `warnings` and simulate immediately before signing. A first supply is never refused. On a V6 deployment the answer is unconditionally true: that generation has no pending-tranche accounting, so supplyLiquidity never refuses a top-up on those grounds.",
+        "tags": [
+          "read"
+        ],
+        "parameters": [
+          {
+            "name": "network",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "base",
+                "arc-staging",
+                "arc-mainnet"
+              ]
+            },
+            "description": "REQUIRED, no default. \"arc-staging\" = Arc testnet V6-staging (test USDC, safe to experiment). \"base\" and \"arc-mainnet\" move REAL USDC."
+          },
+          {
+            "name": "agentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Agent ID of the pool"
+          },
+          {
+            "name": "lender",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^0x[0-9a-fA-F]{40}$"
+            },
+            "description": "Lender wallet address (the one that would send supplyLiquidity) (0x-prefixed, EIP-55 checksum accepted)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (bad address/amount/network, unknown loan, etc.)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid bearer token (only when SPECULAR_MCP_TOKEN is configured)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (per IP)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream RPC failure (attempts across every endpoint exhausted)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Network temporarily unavailable (every RPC endpoint for this network is cold), or the server is shedding load. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "The request exceeded SPECULAR_REQUEST_DEADLINE_MS before the chain answered. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/{network}/agents/{agentId}/active-loans": {
+      "get": {
+        "operationId": "get_active_loan_ids",
+        "summary": "get_active_loan_ids",
+        "description": "IDs (and status) of an agent's currently ACTIVE loans. On V6.1+ this comes straight from the contract's bounded active set (at most MAX_ACTIVE_LOANS_PER_AGENT); on a V6 deployment it is computed by walking the pool creator's agentLoans[] and keeping the ACTIVE ones. `source` says which.",
+        "tags": [
+          "read"
+        ],
+        "parameters": [
+          {
+            "name": "network",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "base",
+                "arc-staging",
+                "arc-mainnet"
+              ]
+            },
+            "description": "REQUIRED, no default. \"arc-staging\" = Arc testnet V6-staging (test USDC, safe to experiment). \"base\" and \"arc-mainnet\" move REAL USDC."
+          },
+          {
+            "name": "agentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Agent ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (bad address/amount/network, unknown loan, etc.)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid bearer token (only when SPECULAR_MCP_TOKEN is configured)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (per IP)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream RPC failure (attempts across every endpoint exhausted)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Network temporarily unavailable (every RPC endpoint for this network is cold), or the server is shedding load. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "The request exceeded SPECULAR_REQUEST_DEADLINE_MS before the chain answered. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/{network}/agents/{agentId}/required-self-stake": {
+      "get": {
+        "operationId": "required_self_stake",
+        "summary": "required_self_stake",
+        "description": "V6.2 (V7 credit model) only: how much of its OWN first-loss capital an agent must already hold in its OWN pool before it could borrow `additionalAmount` more. Any exposure the collateral percentage does not cover must be backed at creditMultiple leverage, or requestLoan reverts \"Insufficient self-stake\". Returns the requirement, what the agent currently holds and the exact shortfall to supply. Pass additionalAmount 0 to price the exposure already outstanding. Returns a \"not supported\" error on V6 / V6.1 deployments, which have no such requirement (Base mainnet and the current Arc deployments are in that group).",
+        "tags": [
+          "read"
+        ],
+        "parameters": [
+          {
+            "name": "network",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "base",
+                "arc-staging",
+                "arc-mainnet"
+              ]
+            },
+            "description": "REQUIRED, no default. \"arc-staging\" = Arc testnet V6-staging (test USDC, safe to experiment). \"base\" and \"arc-mainnet\" move REAL USDC."
+          },
+          {
+            "name": "agentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Agent ID whose pool holds the self-stake"
+          },
+          {
+            "name": "additionalAmount",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "number",
+                "string"
+              ],
+              "default": 0
+            },
+            "description": "Additional principal the agent wants to borrow in USDC display units (e.g. 12.5 = 12.5 USDC, max 6 decimals). Capped per call by the server."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (bad address/amount/network, unknown loan, etc.)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid bearer token (only when SPECULAR_MCP_TOKEN is configured)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (per IP)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream RPC failure (attempts across every endpoint exhausted)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Network temporarily unavailable (every RPC endpoint for this network is cold), or the server is shedding load. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "The request exceeded SPECULAR_REQUEST_DEADLINE_MS before the chain answered. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/{network}/agents/{agentId}/self-stake": {
+      "get": {
+        "operationId": "get_self_stake",
+        "summary": "get_self_stake",
+        "description": "V6.2 (V7 credit model) only: the pool creator's own position in its own pool — the agent's first-loss capital — and whether it is currently LOCKED. It is locked for as long as the agent carries outstanding principal (withdrawLiquidity then reverts \"Self-stake locked while borrowing\") and on a default it absorbs the loss BEFORE any third-party lender. Use this before prepare_withdraw_liquidity, and to render an agent's own position as subordinated capital rather than ordinary liquidity. Returns a \"not supported\" error on V6 / V6.1 deployments.",
+        "tags": [
+          "read"
+        ],
+        "parameters": [
+          {
+            "name": "network",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "base",
+                "arc-staging",
+                "arc-mainnet"
+              ]
+            },
+            "description": "REQUIRED, no default. \"arc-staging\" = Arc testnet V6-staging (test USDC, safe to experiment). \"base\" and \"arc-mainnet\" move REAL USDC."
+          },
+          {
+            "name": "agentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Agent ID of the pool"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (bad address/amount/network, unknown loan, etc.)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid bearer token (only when SPECULAR_MCP_TOKEN is configured)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (per IP)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream RPC failure (attempts across every endpoint exhausted)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Network temporarily unavailable (every RPC endpoint for this network is cold), or the server is shedding load. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "The request exceeded SPECULAR_REQUEST_DEADLINE_MS before the chain answered. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/{network}/tx/{hash}": {
+      "get": {
+        "operationId": "get_transaction",
+        "summary": "get_transaction",
+        "description": "Look up a transaction hash: pending/confirmed/reverted plus decoded Specular events (e.g. LoanRequested with the new loanId).",
+        "tags": [
+          "read"
+        ],
+        "parameters": [
+          {
+            "name": "network",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "base",
+                "arc-staging",
+                "arc-mainnet"
+              ]
+            },
+            "description": "REQUIRED, no default. \"arc-staging\" = Arc testnet V6-staging (test USDC, safe to experiment). \"base\" and \"arc-mainnet\" move REAL USDC."
+          },
+          {
+            "name": "hash",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^0x[0-9a-fA-F]{64}$"
+            },
+            "description": "Transaction hash"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (bad address/amount/network, unknown loan, etc.)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid bearer token (only when SPECULAR_MCP_TOKEN is configured)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (per IP)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream RPC failure (attempts across every endpoint exhausted)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Network temporarily unavailable (every RPC endpoint for this network is cold), or the server is shedding load. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "The request exceeded SPECULAR_REQUEST_DEADLINE_MS before the chain answered. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/{network}/tx/prepare/register_agent": {
+      "post": {
+        "operationId": "prepare_register_agent",
+        "summary": "prepare_register_agent",
+        "description": "Prepare the one-time agent registration for `from`. Returns an UNSIGNED transaction {chainId,to,data,value:\"0\",gasEstimate,...} for YOUR wallet to sign; never executes anything. If a USDC approval is needed first, an exact-amount approve is returned in `prerequisite`.",
+        "tags": [
+          "prepare"
+        ],
+        "parameters": [
+          {
+            "name": "network",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "base",
+                "arc-staging",
+                "arc-mainnet"
+              ]
+            },
+            "description": "REQUIRED, no default. \"arc-staging\" = Arc testnet V6-staging (test USDC, safe to experiment). \"base\" and \"arc-mainnet\" move REAL USDC."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreparedTransaction"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (bad address/amount/network, unknown loan, etc.)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid bearer token (only when SPECULAR_MCP_TOKEN is configured)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (per IP)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream RPC failure (attempts across every endpoint exhausted)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Network temporarily unavailable (every RPC endpoint for this network is cold), or the server is shedding load. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "The request exceeded SPECULAR_REQUEST_DEADLINE_MS before the chain answered. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "from": {
+                    "type": "string",
+                    "pattern": "^0x[0-9a-fA-F]{40}$",
+                    "description": "The address of YOUR wallet that will sign and send this transaction. The server never sees your key."
+                  },
+                  "agentURI": {
+                    "type": "string",
+                    "maxLength": 512,
+                    "description": "Metadata URI for the agent (default: specular://<from>)"
+                  },
+                  "metadata": {
+                    "type": "array",
+                    "maxItems": 16,
+                    "description": "Optional key/value metadata stored on-chain",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "key": {
+                          "type": "string",
+                          "maxLength": 64
+                        },
+                        "value": {
+                          "type": "string",
+                          "maxLength": 1024
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "value"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "simulate": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "If true, run eth_call + estimateGas from `from` and report success or the revert reason in plain language."
+                  }
+                },
+                "required": [
+                  "from"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/{network}/tx/prepare/create_pool": {
+      "post": {
+        "operationId": "prepare_create_pool",
+        "summary": "prepare_create_pool",
+        "description": "Prepare creation of the agent liquidity pool for `from` (required once after registration, before borrowing). Returns an UNSIGNED transaction {chainId,to,data,value:\"0\",gasEstimate,...} for YOUR wallet to sign; never executes anything. If a USDC approval is needed first, an exact-amount approve is returned in `prerequisite`.",
+        "tags": [
+          "prepare"
+        ],
+        "parameters": [
+          {
+            "name": "network",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "base",
+                "arc-staging",
+                "arc-mainnet"
+              ]
+            },
+            "description": "REQUIRED, no default. \"arc-staging\" = Arc testnet V6-staging (test USDC, safe to experiment). \"base\" and \"arc-mainnet\" move REAL USDC."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreparedTransaction"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (bad address/amount/network, unknown loan, etc.)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid bearer token (only when SPECULAR_MCP_TOKEN is configured)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (per IP)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream RPC failure (attempts across every endpoint exhausted)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Network temporarily unavailable (every RPC endpoint for this network is cold), or the server is shedding load. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "The request exceeded SPECULAR_REQUEST_DEADLINE_MS before the chain answered. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "from": {
+                    "type": "string",
+                    "pattern": "^0x[0-9a-fA-F]{40}$",
+                    "description": "The address of YOUR wallet that will sign and send this transaction. The server never sees your key."
+                  },
+                  "simulate": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "If true, run eth_call + estimateGas from `from` and report success or the revert reason in plain language."
+                  }
+                },
+                "required": [
+                  "from"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/{network}/tx/prepare/approve_usdc": {
+      "post": {
+        "operationId": "prepare_approve_usdc",
+        "summary": "prepare_approve_usdc",
+        "description": "Prepare an EXACT-amount USDC approval to the Specular marketplace (0 revokes). Unlimited approvals are never produced. Returns an UNSIGNED transaction {chainId,to,data,value:\"0\",gasEstimate,...} for YOUR wallet to sign; never executes anything. If a USDC approval is needed first, an exact-amount approve is returned in `prerequisite`.",
+        "tags": [
+          "prepare"
+        ],
+        "parameters": [
+          {
+            "name": "network",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "base",
+                "arc-staging",
+                "arc-mainnet"
+              ]
+            },
+            "description": "REQUIRED, no default. \"arc-staging\" = Arc testnet V6-staging (test USDC, safe to experiment). \"base\" and \"arc-mainnet\" move REAL USDC."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreparedTransaction"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (bad address/amount/network, unknown loan, etc.)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid bearer token (only when SPECULAR_MCP_TOKEN is configured)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (per IP)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream RPC failure (attempts across every endpoint exhausted)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Network temporarily unavailable (every RPC endpoint for this network is cold), or the server is shedding load. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "The request exceeded SPECULAR_REQUEST_DEADLINE_MS before the chain answered. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "from": {
+                    "type": "string",
+                    "pattern": "^0x[0-9a-fA-F]{40}$",
+                    "description": "The address of YOUR wallet that will sign and send this transaction. The server never sees your key."
+                  },
+                  "amount": {
+                    "type": [
+                      "number",
+                      "string"
+                    ],
+                    "description": "Exact amount to approve in USDC display units (e.g. 12.5 = 12.5 USDC, max 6 decimals). Capped per call by the server."
+                  },
+                  "simulate": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "If true, run eth_call + estimateGas from `from` and report success or the revert reason in plain language."
+                  }
+                },
+                "required": [
+                  "from",
+                  "amount"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/{network}/tx/prepare/supply_liquidity": {
+      "post": {
+        "operationId": "prepare_supply_liquidity",
+        "summary": "prepare_supply_liquidity",
+        "description": "Prepare supplying USDC into an agent pool as a lender. Also the way an agent posts its OWN first-loss self-stake on a V6.2 deployment (supply into your own pool) — the pool creator is exempt from the minimum supply there, and that position is then locked while the agent borrows. Returns an UNSIGNED transaction {chainId,to,data,value:\"0\",gasEstimate,...} for YOUR wallet to sign; never executes anything. If a USDC approval is needed first, an exact-amount approve is returned in `prerequisite`.",
+        "tags": [
+          "prepare"
+        ],
+        "parameters": [
+          {
+            "name": "network",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "base",
+                "arc-staging",
+                "arc-mainnet"
+              ]
+            },
+            "description": "REQUIRED, no default. \"arc-staging\" = Arc testnet V6-staging (test USDC, safe to experiment). \"base\" and \"arc-mainnet\" move REAL USDC."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreparedTransaction"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (bad address/amount/network, unknown loan, etc.)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid bearer token (only when SPECULAR_MCP_TOKEN is configured)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (per IP)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream RPC failure (attempts across every endpoint exhausted)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Network temporarily unavailable (every RPC endpoint for this network is cold), or the server is shedding load. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "The request exceeded SPECULAR_REQUEST_DEADLINE_MS before the chain answered. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "from": {
+                    "type": "string",
+                    "pattern": "^0x[0-9a-fA-F]{40}$",
+                    "description": "The address of YOUR wallet that will sign and send this transaction. The server never sees your key."
+                  },
+                  "agentId": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "Agent ID of the pool to supply"
+                  },
+                  "amount": {
+                    "type": [
+                      "number",
+                      "string"
+                    ],
+                    "description": "Amount to supply in USDC display units (e.g. 12.5 = 12.5 USDC, max 6 decimals). Capped per call by the server."
+                  },
+                  "simulate": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "If true, run eth_call + estimateGas from `from` and report success or the revert reason in plain language."
+                  }
+                },
+                "required": [
+                  "from",
+                  "agentId",
+                  "amount"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/{network}/tx/prepare/withdraw_liquidity": {
+      "post": {
+        "operationId": "prepare_withdraw_liquidity",
+        "summary": "prepare_withdraw_liquidity",
+        "description": "Prepare withdrawal of supplied principal from an agent pool. On a V6.2 deployment a POOL CREATOR's own position is first-loss capital and is LOCKED while the agent carries outstanding principal: the response warns and the transaction would revert \"Self-stake locked while borrowing\". Ordinary lenders are never locked. Returns an UNSIGNED transaction {chainId,to,data,value:\"0\",gasEstimate,...} for YOUR wallet to sign; never executes anything. If a USDC approval is needed first, an exact-amount approve is returned in `prerequisite`.",
+        "tags": [
+          "prepare"
+        ],
+        "parameters": [
+          {
+            "name": "network",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "base",
+                "arc-staging",
+                "arc-mainnet"
+              ]
+            },
+            "description": "REQUIRED, no default. \"arc-staging\" = Arc testnet V6-staging (test USDC, safe to experiment). \"base\" and \"arc-mainnet\" move REAL USDC."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreparedTransaction"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (bad address/amount/network, unknown loan, etc.)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid bearer token (only when SPECULAR_MCP_TOKEN is configured)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (per IP)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream RPC failure (attempts across every endpoint exhausted)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Network temporarily unavailable (every RPC endpoint for this network is cold), or the server is shedding load. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "The request exceeded SPECULAR_REQUEST_DEADLINE_MS before the chain answered. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "from": {
+                    "type": "string",
+                    "pattern": "^0x[0-9a-fA-F]{40}$",
+                    "description": "The address of YOUR wallet that will sign and send this transaction. The server never sees your key."
+                  },
+                  "agentId": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "Agent ID of the pool"
+                  },
+                  "amount": {
+                    "type": [
+                      "number",
+                      "string"
+                    ],
+                    "description": "Amount to withdraw in USDC display units (e.g. 12.5 = 12.5 USDC, max 6 decimals). Capped per call by the server."
+                  },
+                  "simulate": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "If true, run eth_call + estimateGas from `from` and report success or the revert reason in plain language."
+                  }
+                },
+                "required": [
+                  "from",
+                  "agentId",
+                  "amount"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/{network}/tx/prepare/request_loan": {
+      "post": {
+        "operationId": "prepare_request_loan",
+        "summary": "prepare_request_loan",
+        "description": "Prepare a loan request against `from`'s reputation. Includes projected interest, collateral and (if needed) the exact collateral approve. On a V6.2 deployment it also checks the first-loss SELF-STAKE gate and returns requiredSelfStakeUsdc / currentSelfStakeUsdc / selfStakeShortfallUsdc, warning before the \"Insufficient self-stake\" revert; on V7 it also flags a post-default LOCKOUT, which makes the credit limit exactly 0. Returns an UNSIGNED transaction {chainId,to,data,value:\"0\",gasEstimate,...} for YOUR wallet to sign; never executes anything. If a USDC approval is needed first, an exact-amount approve is returned in `prerequisite`.",
+        "tags": [
+          "prepare"
+        ],
+        "parameters": [
+          {
+            "name": "network",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "base",
+                "arc-staging",
+                "arc-mainnet"
+              ]
+            },
+            "description": "REQUIRED, no default. \"arc-staging\" = Arc testnet V6-staging (test USDC, safe to experiment). \"base\" and \"arc-mainnet\" move REAL USDC."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreparedTransaction"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (bad address/amount/network, unknown loan, etc.)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid bearer token (only when SPECULAR_MCP_TOKEN is configured)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (per IP)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream RPC failure (attempts across every endpoint exhausted)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Network temporarily unavailable (every RPC endpoint for this network is cold), or the server is shedding load. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "The request exceeded SPECULAR_REQUEST_DEADLINE_MS before the chain answered. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "from": {
+                    "type": "string",
+                    "pattern": "^0x[0-9a-fA-F]{40}$",
+                    "description": "The address of YOUR wallet that will sign and send this transaction. The server never sees your key."
+                  },
+                  "amount": {
+                    "type": [
+                      "number",
+                      "string"
+                    ],
+                    "description": "Loan principal in USDC display units (e.g. 12.5 = 12.5 USDC, max 6 decimals). Capped per call by the server."
+                  },
+                  "durationDays": {
+                    "type": "integer",
+                    "minimum": 7,
+                    "maximum": 365,
+                    "description": "Loan term in DAYS (7-365)"
+                  },
+                  "simulate": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "If true, run eth_call + estimateGas from `from` and report success or the revert reason in plain language."
+                  }
+                },
+                "required": [
+                  "from",
+                  "amount",
+                  "durationDays"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/{network}/tx/prepare/repay_loan": {
+      "post": {
+        "operationId": "prepare_repay_loan",
+        "summary": "prepare_repay_loan",
+        "description": "Prepare full repayment of a loan (principal + interest; on V6.1 a LATE loan pays for the elapsed time, capped at duration + 30 days, sized from previewRepayment). Includes the exact approve if the allowance is short (bounded headroom only for an accruing late loan). Returns an UNSIGNED transaction {chainId,to,data,value:\"0\",gasEstimate,...} for YOUR wallet to sign; never executes anything. If a USDC approval is needed first, an exact-amount approve is returned in `prerequisite`.",
+        "tags": [
+          "prepare"
+        ],
+        "parameters": [
+          {
+            "name": "network",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "base",
+                "arc-staging",
+                "arc-mainnet"
+              ]
+            },
+            "description": "REQUIRED, no default. \"arc-staging\" = Arc testnet V6-staging (test USDC, safe to experiment). \"base\" and \"arc-mainnet\" move REAL USDC."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreparedTransaction"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (bad address/amount/network, unknown loan, etc.)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid bearer token (only when SPECULAR_MCP_TOKEN is configured)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (per IP)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream RPC failure (attempts across every endpoint exhausted)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Network temporarily unavailable (every RPC endpoint for this network is cold), or the server is shedding load. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "The request exceeded SPECULAR_REQUEST_DEADLINE_MS before the chain answered. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "from": {
+                    "type": "string",
+                    "pattern": "^0x[0-9a-fA-F]{40}$",
+                    "description": "The address of YOUR wallet that will sign and send this transaction. The server never sees your key."
+                  },
+                  "loanId": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "Loan ID to repay"
+                  },
+                  "simulate": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "If true, run eth_call + estimateGas from `from` and report success or the revert reason in plain language."
+                  }
+                },
+                "required": [
+                  "from",
+                  "loanId"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/{network}/tx/prepare/claim_interest": {
+      "post": {
+        "operationId": "prepare_claim_interest",
+        "summary": "prepare_claim_interest",
+        "description": "Prepare claiming earned lender interest from an agent pool. Returns an UNSIGNED transaction {chainId,to,data,value:\"0\",gasEstimate,...} for YOUR wallet to sign; never executes anything. If a USDC approval is needed first, an exact-amount approve is returned in `prerequisite`.",
+        "tags": [
+          "prepare"
+        ],
+        "parameters": [
+          {
+            "name": "network",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "base",
+                "arc-staging",
+                "arc-mainnet"
+              ]
+            },
+            "description": "REQUIRED, no default. \"arc-staging\" = Arc testnet V6-staging (test USDC, safe to experiment). \"base\" and \"arc-mainnet\" move REAL USDC."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreparedTransaction"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (bad address/amount/network, unknown loan, etc.)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid bearer token (only when SPECULAR_MCP_TOKEN is configured)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (per IP)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream RPC failure (attempts across every endpoint exhausted)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Network temporarily unavailable (every RPC endpoint for this network is cold), or the server is shedding load. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "The request exceeded SPECULAR_REQUEST_DEADLINE_MS before the chain answered. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "from": {
+                    "type": "string",
+                    "pattern": "^0x[0-9a-fA-F]{40}$",
+                    "description": "The address of YOUR wallet that will sign and send this transaction. The server never sees your key."
+                  },
+                  "agentId": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "Agent ID of the pool"
+                  },
+                  "simulate": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "If true, run eth_call + estimateGas from `from` and report success or the revert reason in plain language."
+                  }
+                },
+                "required": [
+                  "from",
+                  "agentId"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/{network}/tx/simulate": {
+      "post": {
+        "operationId": "simulate_transaction",
+        "summary": "simulate_transaction",
+        "description": "Dry-run any prepared Specular transaction (eth_call + estimateGas from `from`) and explain a revert in plain language. `to` must be a Specular contract on the network.",
+        "tags": [
+          "simulate"
+        ],
+        "parameters": [
+          {
+            "name": "network",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "base",
+                "arc-staging",
+                "arc-mainnet"
+              ]
+            },
+            "description": "REQUIRED, no default. \"arc-staging\" = Arc testnet V6-staging (test USDC, safe to experiment). \"base\" and \"arc-mainnet\" move REAL USDC."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (bad address/amount/network, unknown loan, etc.)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid bearer token (only when SPECULAR_MCP_TOKEN is configured)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (per IP)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream RPC failure (attempts across every endpoint exhausted)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Network temporarily unavailable (every RPC endpoint for this network is cold), or the server is shedding load. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "The request exceeded SPECULAR_REQUEST_DEADLINE_MS before the chain answered. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "from": {
+                    "type": "string",
+                    "pattern": "^0x[0-9a-fA-F]{40}$",
+                    "description": "The address of YOUR wallet that will sign and send this transaction. The server never sees your key."
+                  },
+                  "to": {
+                    "type": "string",
+                    "pattern": "^0x[0-9a-fA-F]{40}$",
+                    "description": "Target contract (marketplace, registry or USDC of that network) (0x-prefixed, EIP-55 checksum accepted)"
+                  },
+                  "data": {
+                    "type": "string",
+                    "pattern": "^0x[0-9a-fA-F]*$",
+                    "description": "Calldata from a prepared transaction"
+                  }
+                },
+                "required": [
+                  "from",
+                  "to",
+                  "data"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/{network}/tx/broadcast": {
+      "post": {
+        "operationId": "broadcast_signed_transaction",
+        "summary": "broadcast_signed_transaction",
+        "description": "Relay a transaction YOU already signed (raw hex) to the network, for agents without their own RPC. Only accepted if it calls a Specular contract on that network (or is an exact USDC approve to the Specular marketplace); everything else is rejected.",
+        "tags": [
+          "broadcast"
+        ],
+        "parameters": [
+          {
+            "name": "network",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "base",
+                "arc-staging",
+                "arc-mainnet"
+              ]
+            },
+            "description": "REQUIRED, no default. \"arc-staging\" = Arc testnet V6-staging (test USDC, safe to experiment). \"base\" and \"arc-mainnet\" move REAL USDC."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (bad address/amount/network, unknown loan, etc.)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid bearer token (only when SPECULAR_MCP_TOKEN is configured)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (per IP)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream RPC failure (attempts across every endpoint exhausted)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Network temporarily unavailable (every RPC endpoint for this network is cold), or the server is shedding load. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "The request exceeded SPECULAR_REQUEST_DEADLINE_MS before the chain answered. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "signedTransaction": {
+                    "type": "string",
+                    "pattern": "^0x[0-9a-fA-F]+$",
+                    "description": "RLP-encoded signed transaction hex"
+                  }
+                },
+                "required": [
+                  "signedTransaction"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "health",
+        "summary": "Liveness + per-network RPC staleness, with a compact upstream summary",
+        "description": "Cached for SPECULAR_HEALTH_CACHE_MS. `upstream` carries the cache hit rates and, per network, whether the circuit breaker is open and how many configured RPC endpoints are healthy.",
+        "tags": [
+          "meta"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "At least one enabled network is stale or unreachable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rpc-health": {
+      "get": {
+        "operationId": "rpcHealth",
+        "summary": "Upstream RPC observability: per-endpoint health, circuit-breaker state and cache counters",
+        "description": "Read-only and makes no upstream call. Endpoint URLs are REDACTED: a well-known public default is shown verbatim, anything operator-configured is reduced to scheme://host/ so credentials in a paid RPC URL are never published.",
+        "tags": [
+          "meta"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Upstream health snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok",
+                        "degraded"
+                      ]
+                    },
+                    "version": {
+                      "type": "string"
+                    },
+                    "caches": {
+                      "type": "object",
+                      "properties": {
+                        "jsonRpc": {
+                          "$ref": "#/components/schemas/CacheStats"
+                        },
+                        "readRoutes": {
+                          "$ref": "#/components/schemas/CacheStats"
+                        }
+                      }
+                    },
+                    "networks": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/NetworkRpcHealth"
+                      }
+                    },
+                    "config": {
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "caches",
+                    "networks",
+                    "config"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mcp": {
+      "post": {
+        "operationId": "mcp",
+        "summary": "MCP Streamable HTTP endpoint (JSON-RPC 2.0). Same tools as the REST routes.",
+        "tags": [
+          "meta"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "JSON-RPC request (initialize, tools/list, tools/call)"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "JSON-RPC response (application/json or text/event-stream depending on Accept)"
+          },
+          "400": {
+            "description": "Validation error (bad address/amount/network, unknown loan, etc.)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid bearer token (only when SPECULAR_MCP_TOKEN is configured)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (per IP)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream RPC failure (attempts across every endpoint exhausted)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Network temporarily unavailable (every RPC endpoint for this network is cold), or the server is shedding load. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "The request exceeded SPECULAR_REQUEST_DEADLINE_MS before the chain answered. Carries Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

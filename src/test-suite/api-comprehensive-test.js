@@ -52,9 +52,13 @@ async function main() {
         agent1.reputation.tier !== agent2.reputation.tier,
         `Agent #43: ${agent1.reputation.tier}, Agent #2: ${agent2.reputation.tier}`);
 
-    test('Agent #43 has maximum credit limit',
-        agent1.reputation.creditLimitUsdc >= 50000,
-        `Limit: ${agent1.reputation.creditLimitUsdc.toLocaleString()} USDC`);
+    // [V7] The top-tier limit is no longer a constant (25,000/50,000 on V3; on
+    // ReputationManagerV4 it is owner-settable on-chain state). Assert that this
+    // agent is AT the top of whatever table the deployment runs, by comparing it
+    // against the lower-tier agent rather than against a hardcoded figure.
+    test('Agent #43 has the higher credit limit of the two tiers',
+        agent1.reputation.creditLimitUsdc > agent2.reputation.creditLimitUsdc,
+        `Limit: ${agent1.reputation.creditLimitUsdc.toLocaleString()} USDC vs ${agent2.reputation.creditLimitUsdc.toLocaleString()} USDC`);
 
     test('Agent #43 has best interest rate',
         agent1.reputation.interestRatePct === 5,

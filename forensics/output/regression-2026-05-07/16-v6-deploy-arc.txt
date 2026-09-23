@@ -1,0 +1,30 @@
+
+🚀 DEPLOY V6 TO ARC TESTNET
+
+═══════════════════════════════════════════════════════
+
+Deployer: 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+Network chainId: 5042002
+Native balance: 199.942185513090003689
+
+Dependencies (existing):
+  AgentRegistryV2:     0x741C03c0d95d2c15E479CE1c7E69B3196d86faD7
+  ReputationManagerV3: 0x94F2fa47c4488202a46dAA9038Ed9C9c4c07467F
+  USDC:                0xf2807051e292e945751A25616705a9aadfb39895
+
+Deploying AgentLiquidityMarketplaceV6...
+  ✅ V6: 0xCeF77E14dB17aE0272510ddbDa97075e7Eb6EbF3
+  tx: 0x72c40f3a5823e6d6d51d246e795b08f2545f1a36cc62896322440f70275ebcce
+
+Authorizing V6 with ReputationManagerV3...
+  authorizePool tx: 0x4e0b30c8126a7d82f52034ba1bd02580b43be2effb2091c0233823d330594b96
+  ✅ authorized
+
+✅ Updated /Users/peterschroeder/Specular/src/config/arc-testnet-addresses.json
+
+Next steps:
+  1. Verify on https://testnet.arcscan.app/address/0xCeF77E14dB17aE0272510ddbDa97075e7Eb6EbF3
+  2. Run migration: scripts/migrate-arc-to-v6.js (write next)
+  3. After migration: call setMigrationFinalized()
+  4. Update src/sdk/* to point at agentLiquidityMarketplace_v6
+  5. Pause v4 marketplace to prevent new state divergence

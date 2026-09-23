@@ -1,0 +1,293 @@
+{
+  "scenario": "v3-credit-ladder",
+  "title": "M1-2 credit ladder: exact rungs, strict growth, tier cap (on-chain)",
+  "chainId": 5042002,
+  "marketplace": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+  "reputation": "0xD7906fDFBf69BA89a4c2FE148797e24f386fE3d2",
+  "startedAt": "2026-09-23T00:29:37.418Z",
+  "finishedAt": "2026-09-23T00:31:07.194Z",
+  "passed": 34,
+  "failed": 0,
+  "blocked": 0,
+  "checks": [
+    {
+      "label": "ladder agent (virgin, allocated for this run)",
+      "ok": null,
+      "detail": "V3LADDER-4 #64 0xa38200f64999d56CADa61B5DC47C0B7548EF50d5"
+    },
+    {
+      "label": "shipped ladder parameters on chain: k = 2, growthStep = 100 USDC, bootstrapLimit = 100 USDC",
+      "ok": true,
+      "detail": "k=2 step=100.0 boot=100.0"
+    },
+    {
+      "label": "agent A",
+      "ok": null,
+      "detail": "#64 score 100 tier limit 1000.0 collateral 100%"
+    },
+    {
+      "label": "precondition: maxRepaidPrincipal == 0 (agent starts at the bootstrap rung)",
+      "ok": true,
+      "detail": "0.0"
+    },
+    {
+      "label": "expected rungs (computed from the shipped parameters)",
+      "ok": null,
+      "detail": "maxRepaid 0.0 -> ladder 100.0 / limit 100.0 | maxRepaid 100.0 -> ladder 300.0 / limit 300.0 | maxRepaid 300.0 -> ladder 700.0 / limit 700.0 | maxRepaid 700.0 -> ladder 1500.0 / limit 1000.0 | maxRepaid 1000.0 -> ladder 2100.0 / limit 1000.0"
+    },
+    {
+      "label": "rung 0: maxRepaidPrincipal == 0.0 USDC",
+      "ok": true,
+      "detail": "0.0"
+    },
+    {
+      "label": "rung 0: ladderLimit == max(bootstrap, k·maxRepaid + step) == 100.0 USDC",
+      "ok": true,
+      "detail": "100.0"
+    },
+    {
+      "label": "rung 0: calculateCreditLimit == min(tierLimit 1000.0, ladder 100.0) == 100.0 USDC",
+      "ok": true,
+      "detail": "100.0"
+    },
+    {
+      "label": "rung 0: creditLimit <= tier limit",
+      "ok": true,
+      "detail": "100.0 <= 1000.0"
+    },
+    {
+      "label": "rung 0: borrowing creditLimit + 1 base unit REVERTS \"Exceeds credit limit\"",
+      "ok": true,
+      "detail": "Exceeds credit limit | execution reverted: \"Exceeds credit limit\" | execution reverted: \"Exceeds credit limit\" (action=\""
+    },
+    {
+      "label": "rung 0: CreditCapacityUpdated(agent, 100.0) emitted on the on-time repayment",
+      "ok": true,
+      "detail": "100.0"
+    },
+    {
+      "label": "rung 1: maxRepaidPrincipal == 100.0 USDC",
+      "ok": true,
+      "detail": "100.0"
+    },
+    {
+      "label": "rung 1: ladderLimit == max(bootstrap, k·maxRepaid + step) == 300.0 USDC",
+      "ok": true,
+      "detail": "300.0"
+    },
+    {
+      "label": "rung 1: calculateCreditLimit == min(tierLimit 1000.0, ladder 300.0) == 300.0 USDC",
+      "ok": true,
+      "detail": "300.0"
+    },
+    {
+      "label": "rung 1: creditLimit <= tier limit",
+      "ok": true,
+      "detail": "300.0 <= 1000.0"
+    },
+    {
+      "label": "rung 1: CreditCapacityUpdated(agent, 300.0) emitted on the on-time repayment",
+      "ok": true,
+      "detail": "300.0"
+    },
+    {
+      "label": "rung 2: maxRepaidPrincipal == 300.0 USDC",
+      "ok": true,
+      "detail": "300.0"
+    },
+    {
+      "label": "rung 2: ladderLimit == max(bootstrap, k·maxRepaid + step) == 700.0 USDC",
+      "ok": true,
+      "detail": "700.0"
+    },
+    {
+      "label": "rung 2: calculateCreditLimit == min(tierLimit 1000.0, ladder 700.0) == 700.0 USDC",
+      "ok": true,
+      "detail": "700.0"
+    },
+    {
+      "label": "rung 2: creditLimit <= tier limit",
+      "ok": true,
+      "detail": "700.0 <= 1000.0"
+    },
+    {
+      "label": "rung 2: CreditCapacityUpdated(agent, 700.0) emitted on the on-time repayment",
+      "ok": true,
+      "detail": "700.0"
+    },
+    {
+      "label": "rung 3: maxRepaidPrincipal == 700.0 USDC",
+      "ok": true,
+      "detail": "700.0"
+    },
+    {
+      "label": "rung 3: ladderLimit == max(bootstrap, k·maxRepaid + step) == 1500.0 USDC",
+      "ok": true,
+      "detail": "1500.0"
+    },
+    {
+      "label": "rung 3: calculateCreditLimit == min(tierLimit 1000.0, ladder 1500.0) == 1000.0 USDC",
+      "ok": true,
+      "detail": "1000.0"
+    },
+    {
+      "label": "rung 3: creditLimit <= tier limit",
+      "ok": true,
+      "detail": "1000.0 <= 1000.0"
+    },
+    {
+      "label": "rung 3: CreditCapacityUpdated(agent, 1000.0) emitted on the on-time repayment",
+      "ok": true,
+      "detail": "1000.0"
+    },
+    {
+      "label": "rung 4: maxRepaidPrincipal == 1000.0 USDC",
+      "ok": true,
+      "detail": "1000.0"
+    },
+    {
+      "label": "rung 4: ladderLimit == max(bootstrap, k·maxRepaid + step) == 2100.0 USDC",
+      "ok": true,
+      "detail": "2100.0"
+    },
+    {
+      "label": "rung 4: calculateCreditLimit == min(tierLimit 1000.0, ladder 2100.0) == 1000.0 USDC",
+      "ok": true,
+      "detail": "1000.0"
+    },
+    {
+      "label": "rung 4: creditLimit <= tier limit",
+      "ok": true,
+      "detail": "1000.0 <= 1000.0"
+    },
+    {
+      "label": "the ladder STRICTLY GROWS at every rung (no k=1 deadlock)",
+      "ok": true,
+      "detail": "100 -> 300 -> 700 -> 1500 -> 2100"
+    },
+    {
+      "label": "the ladder is never bounded by itself: head-room always exceeds the record it beat",
+      "ok": true,
+      "detail": "0.0->100.0, 100.0->300.0, 300.0->700.0, 700.0->1500.0, 1000.0->2100.0"
+    },
+    {
+      "label": "credit limit never exceeded the tier limit at any rung",
+      "ok": true,
+      "detail": "100.0<=1000.0, 300.0<=1000.0, 700.0<=1000.0, 1000.0<=1000.0, 1000.0<=1000.0"
+    },
+    {
+      "label": "the TIER CAP binds at the first rung whose ladder exceeds the tier limit, and at every rung after it",
+      "ok": true,
+      "detail": "first capped rung 3: 100.0/1000.0->100.0, 300.0/1000.0->300.0, 700.0/1000.0->700.0, 1500.0/1000.0->1000.0, 2100.0/1000.0->1000.0"
+    },
+    {
+      "label": "setLadderParameters(k=1, growthStep=0) REVERTS \"growthStep must be > 0\" (deadlock guard)",
+      "ok": true,
+      "detail": "growthStep must be > 0 | execution reverted: \"growthStep must be > 0\" | execution reverted: \"growthStep must be > 0\" (ac"
+    },
+    {
+      "label": "ladder parameters unchanged by the refused call",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "per-pool conservation exact at the end",
+      "ok": true,
+      "detail": "Σamt 1100.0 Σearned 5.980685"
+    }
+  ],
+  "txs": [
+    {
+      "label": "lender supply",
+      "hash": "0xac61e1249c0f43303bc94c7826a798869f098055937875a4e9f9bb6e40031d50",
+      "gasUsed": "215718"
+    },
+    {
+      "label": "rung 0 requestLoan 100.0",
+      "hash": "0xfafedb8805b374418c829534ad2eb4fb9a49053c784bc8c8625b3b8da7317b59",
+      "gasUsed": "581309"
+    },
+    {
+      "label": "rung 0 repayLoan 102",
+      "hash": "0x06af44a205be9136ec34c6d01a752b141bcdd9bee571581bc70a941fd565966f",
+      "gasUsed": "276676"
+    },
+    {
+      "label": "rung 1 requestLoan 300.0",
+      "hash": "0x5cfb8e5a31d80589ae18e41ba8ecb0fead7883c02f6b426ec4e1510003bbcac5",
+      "gasUsed": "530009"
+    },
+    {
+      "label": "rung 1 repayLoan 103",
+      "hash": "0x8a318fa8f9dd366ed5f94e45986fa587173d96118dd20088800d268dfb145ca5",
+      "gasUsed": "208276"
+    },
+    {
+      "label": "rung 2 requestLoan 700.0",
+      "hash": "0x360952d9ec6187ac9d591e85855c06f06abb1095c35045d58816921ca6c2fdec",
+      "gasUsed": "530009"
+    },
+    {
+      "label": "rung 2 repayLoan 104",
+      "hash": "0xda97ea34dee826469dfe1ba3873f88e61f6a3f118fec504c7dd5792253167b62",
+      "gasUsed": "208276"
+    },
+    {
+      "label": "rung 3 requestLoan 1000.0",
+      "hash": "0x005d1e12e34e04968c9f6df57a0fa1f7547db65b0d8ce02d1ff40c48fb283c5c",
+      "gasUsed": "530013"
+    },
+    {
+      "label": "rung 3 repayLoan 105",
+      "hash": "0xe90dceaea36a519449a9ebb60d213e3dd392490d1a19f78f3da8e055bcf381e4",
+      "gasUsed": "208276"
+    }
+  ],
+  "cumulativeSpend": {
+    "nativeFromDeployer": "18.7033632",
+    "usdcMinted": "33560.0"
+  },
+  "agentId": 64,
+  "rungs": [
+    {
+      "rung": 0,
+      "score": "100",
+      "maxRepaid": "0.0",
+      "ladder": "100.0",
+      "tierLimit": "1000.0",
+      "creditLimit": "100.0"
+    },
+    {
+      "rung": 1,
+      "score": "100",
+      "maxRepaid": "100.0",
+      "ladder": "300.0",
+      "tierLimit": "1000.0",
+      "creditLimit": "300.0"
+    },
+    {
+      "rung": 2,
+      "score": "100",
+      "maxRepaid": "300.0",
+      "ladder": "700.0",
+      "tierLimit": "1000.0",
+      "creditLimit": "700.0"
+    },
+    {
+      "rung": 3,
+      "score": "100",
+      "maxRepaid": "700.0",
+      "ladder": "1500.0",
+      "tierLimit": "1000.0",
+      "creditLimit": "1000.0"
+    },
+    {
+      "rung": 4,
+      "score": "100",
+      "maxRepaid": "1000.0",
+      "ladder": "2100.0",
+      "tierLimit": "1000.0",
+      "creditLimit": "1000.0"
+    }
+  ]
+}

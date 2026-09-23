@@ -1,0 +1,1907 @@
+diff --git a/scripts/incident-drill/check-overdue-loans.js b/scripts/incident-drill/check-overdue-loans.js
+new file mode 100644
+index 0000000..a6fd8f5
+--- /dev/null
++++ b/scripts/incident-drill/check-overdue-loans.js
+@@ -0,0 +1,77 @@
++// READ-ONLY. Lists every ACTIVE loan that is past its endTime — i.e. every
++// liquidation candidate.
++//
++// This exists because `forensics/monitor/v6-invariants.js` has NO overdue-loan
++// check: a borrower a full day past endTime produces exit 0 with no findings
++// (measured 2026-09-23, INCIDENT_DRILL_REPORT.md §2). `liquidateLoan` is the
++// protocol's only recovery action and nothing pages anyone to run it, so this has
++// to be polled. Sends no transactions.
++//
++// Usage:
++//   node scripts/incident-drill/check-overdue-loans.js                     # arc-mainnet
++//   NET=arc-staging node scripts/incident-drill/check-overdue-loans.js
++//   NET=local       node scripts/incident-drill/check-overdue-loans.js
++//
++// Exit codes: 0 nothing overdue · 1 at least one overdue loan · 2 could not read.
++
++const { ethers } = require('ethers');
++const fs = require('fs');
++const path = require('path');
++
++const ROOT = path.resolve(__dirname, '..', '..');
++const NETS = {
++    'arc-mainnet': { file: 'src/config/arc-mainnet-addresses.json', env: 'ARC_MAINNET_RPC_URL' },
++    'arc-staging': { file: 'src/config/arc-testnet-v6-addresses.json', env: 'ARC_TESTNET_RPC_URL' },
++    'arc-testnet': { file: 'src/config/arc-testnet-addresses.json', env: 'ARC_TESTNET_RPC_URL' },
++    'local': { file: 'src/config/local-addresses.json', env: 'LOCAL_RPC_URL' },
++};
++const NET = process.env.NET || process.env.V6_MONITOR_NETWORK || 'arc-mainnet';
++const cfg = NETS[NET];
++if (!cfg) { console.error(`unknown NET; expected one of ${Object.keys(NETS).join(', ')}`); process.exit(2); }
++
++const A = JSON.parse(fs.readFileSync(path.join(ROOT, cfg.file)));
++const RPC = process.env[cfg.env] || A.rpcUrl;
++const MP = process.env.V6_MONITOR_MARKETPLACE || A.agentLiquidityMarketplace_v6;
++
++const ABI = [
++    'function nextLoanId() view returns (uint256)',
++    'function loans(uint256) view returns (uint256 loanId, address borrower, uint256 agentId, uint256 amount, uint256 collateralAmount, uint256 interestRate, uint256 startTime, uint256 endTime, uint256 duration, uint8 state)',
++    'function previewRepayment(uint256) view returns (uint256 interest, uint256 total, uint256 chargeableSeconds, uint256 lateSeconds)',
++    'function paused() view returns (bool)',
++];
++const u = v => Number(ethers.formatUnits(v, 6));
++
++(async () => {
++    const p = new ethers.JsonRpcProvider(RPC, undefined, { staticNetwork: true });
++    const mp = new ethers.Contract(MP, ABI, p);
++    const head = await p.getBlock('latest');
++    const nowTs = Number(head.timestamp);
++    const paused = await mp.paused();
++    const next = Number(await mp.nextLoanId());
++
++    const overdue = [];
++    for (let id = 1; id < next; id++) {
++        const l = await mp.loans(id);
++        if (Number(l.state) !== 1) continue;                  // 1 == ACTIVE
++        if (nowTs <= Number(l.endTime)) continue;
++        let owed = null;
++        try { const pr = await mp.previewRepayment(id); owed = { interest: u(pr[0]), total: u(pr[1]), lateSeconds: Number(pr[3]) }; } catch {}
++        overdue.push({
++            loanId: id, agentId: l.agentId.toString(), borrower: l.borrower,
++            principal: u(l.amount), collateral: u(l.collateralAmount),
++            unsecured: u(l.amount > l.collateralAmount ? l.amount - l.collateralAmount : 0n),
++            endTime: new Date(Number(l.endTime) * 1000).toISOString(),
++            daysOverdue: +((nowTs - Number(l.endTime)) / 86400).toFixed(2),
++            owedIfRepaidNow: owed,
++        });
++    }
++
++    console.log(JSON.stringify({
++        network: NET, marketplace: MP, block: head.number, chainTime: new Date(nowTs * 1000).toISOString(),
++        paused, loansScanned: next - 1, overdueCount: overdue.length, overdue,
++        action: overdue.length === 0 ? 'nothing to do'
++            : paused ? 'OVERDUE LOANS EXIST BUT THE CONTRACT IS PAUSED — liquidateLoan is blocked by pause. Unpause before liquidating.'
++            : 'liquidateLoan(loanId) as owner for each. See INCIDENT_RUNBOOK.md §3.1a for the loss waterfall.',
++    }, null, 2));
++    process.exit(overdue.length ? 1 : 0);
++})().catch(e => { console.error('READ FAILED:', e.shortMessage || e.message); process.exit(2); });
+diff --git a/scripts/incident-drill/deploy-v7-local.js b/scripts/incident-drill/deploy-v7-local.js
+new file mode 100644
+index 0000000..c3d8a46
+--- /dev/null
++++ b/scripts/incident-drill/deploy-v7-local.js
+@@ -0,0 +1,141 @@
++// Deploy the REAL V7 stack (AgentRegistryV2 + ReputationManagerV4 +
++// AgentLiquidityMarketplaceV62 + AgentCreditFaucet + MockUSDC) to a LOCAL hardhat
++// node, at the lever values read live from Arc mainnet on 2026-09-23
++// (scripts/incident-drill/read-live-levers.js), and build a baseline state the
++// invariant monitor can be pointed at.
++//
++// Writes src/config/local-addresses.json, which is the file
++// forensics/monitor/v6-invariants.js reads for V6_MONITOR_NETWORK=local. The
++// marketplace goes under the key the monitor defaults to
++// (`agentLiquidityMarketplace_v6`) so the monitor runs UNMODIFIED.
++//
++// Usage: npx hardhat run --network localhost scripts/incident-drill/deploy-v7-local.js
++
++const { ethers } = require('hardhat');
++const fs = require('fs');
++const path = require('path');
++const { USDC, DAY, advance, u } = require('./lib');
++
++const ROOT = path.resolve(__dirname, '..', '..');
++
++// Live Arc-mainnet levers, block 22287733, read 2026-09-23.
++const LIVE = {
++    platformFeeRate: 100,
++    minSupplyAmount: USDC(10),
++    minHoldForReputationReward: DAY,
++    bindBorrowToPoolCreator: true,
++    reputationRateLimit: [5, DAY],
++    faucetClaimAmount: USDC(1),
++    faucetMaxEligibleAgentId: 100,
++};
++
++async function main() {
++    const signers = await ethers.getSigners();
++    const [owner, agentA, agentB, lender1, lender2, lender3] = signers;
++
++    const registry = await (await ethers.getContractFactory('AgentRegistryV2')).deploy();
++    const rep = await (await ethers.getContractFactory('ReputationManagerV4')).deploy(await registry.getAddress());
++    const usdc = await (await ethers.getContractFactory('MockUSDC')).deploy();
++    const v6 = await (await ethers.getContractFactory('AgentLiquidityMarketplaceV62')).deploy(
++        await registry.getAddress(), await rep.getAddress(), await usdc.getAddress());
++    const faucet = await (await ethers.getContractFactory('AgentCreditFaucet')).deploy(
++        await registry.getAddress(), await usdc.getAddress());
++
++    await (await rep.authorizePool(await v6.getAddress())).wait();
++
++    // Levers exactly as they are on Arc mainnet today.
++    await (await v6.setPlatformFeeRate(LIVE.platformFeeRate)).wait();
++    await (await v6.setMinSupplyAmount(LIVE.minSupplyAmount)).wait();
++    await (await v6.setMinHoldForReputationReward(LIVE.minHoldForReputationReward)).wait();
++    await (await v6.setBindBorrowToPoolCreator(LIVE.bindBorrowToPoolCreator)).wait();
++    await (await rep.setReputationRateLimit(...LIVE.reputationRateLimit)).wait();
++    await (await faucet.setClaimAmount(LIVE.faucetClaimAmount)).wait();
++    await (await faucet.setMaxEligibleAgentId(LIVE.faucetMaxEligibleAgentId)).wait();
++    // Mainnet has migrationFinalized == true (F-08 closed at deploy). Mirror it —
++    // scenario 4 depends on seedPool/seedPosition being provably dead.
++    await (await v6.setMigrationFinalized()).wait();
++    await (await usdc.mint(await faucet.getAddress(), USDC(19))).wait();
++
++    const fund = async (w, amt = USDC(2_000_000)) => {
++        await (await usdc.mint(w.address, amt)).wait();
++        await (await usdc.connect(w).approve(await v6.getAddress(), ethers.MaxUint256)).wait();
++    };
++    for (const w of signers.slice(0, 15)) await fund(w);
++
++    const onboard = async w => {
++        await (await registry.connect(w).register('ipfs://agent', [])).wait();
++        const id = await registry.addressToAgentId(w.address);
++        await (await rep.connect(w)['initializeReputation()']()).wait();
++        await (await v6.connect(w).createAgentPool()).wait();
++        return id;
++    };
++    const idA = await onboard(agentA);
++    const idB = await onboard(agentB);
++
++    // Third-party lenders (minSupplyAmount = 10 USDC gates a NEW slot).
++    await (await v6.connect(lender1).supplyLiquidity(idA, USDC(5000))).wait();
++    await (await v6.connect(lender2).supplyLiquidity(idA, USDC(3000))).wait();
++    await (await v6.connect(lender3).supplyLiquidity(idB, USDC(2000))).wait();
++
++    // Agent A: one loan taken and repaid on time (books interest + platform fees),
++    // one left ACTIVE. Score 100 ⇒ tier 0 ⇒ 100 % collateral, ladder floor 100 USDC.
++    await (await v6.connect(agentA).requestLoan(USDC(100), 7)).wait();     // loan 1
++    await advance(7 * DAY - 900);
++    await (await v6.connect(agentA).repayLoan(1)).wait();
++    await (await v6.connect(agentA).requestLoan(USDC(100), 7)).wait();     // loan 2 -> ACTIVE
++    // Agent B: one ACTIVE loan
++    await (await v6.connect(agentB).requestLoan(USDC(100), 14)).wait();    // loan 3 -> ACTIVE
++
++    const addresses = {
++        network: 'local',
++        chainId: 31337,
++        rpcUrl: 'http://127.0.0.1:8545',
++        agentRegistryV2: await registry.getAddress(),
++        reputationManagerV4: await rep.getAddress(),
++        // The monitor's default marketplace key — keep the name so v6-invariants.js
++        // runs unmodified against the V6.2 deployment.
++        agentLiquidityMarketplace_v6: await v6.getAddress(),
++        agentLiquidityMarketplace_v62: await v6.getAddress(),
++        agentCreditFaucet: await faucet.getAddress(),
++        usdc: await usdc.getAddress(),
++        deployer: owner.address,
++        marketplaceVersion: await v6.VERSION(),
++        reputationVersion: await rep.VERSION(),
++        deployedAt: new Date().toISOString(),
++        _levers: {
++            platformFeeRate: Number(await v6.platformFeeRate()),
++            minSupplyAmount: u(await v6.minSupplyAmount()),
++            minHoldForReputationReward: Number(await v6.minHoldForReputationReward()),
++            bindBorrowToPoolCreator: await v6.bindBorrowToPoolCreator(),
++            migrationFinalized: await v6.migrationFinalized(),
++            maxReputationGainPerWindow: Number(await rep.maxReputationGainPerWindow()),
++            reputationGainWindow: Number(await rep.reputationGainWindow()),
++            creditMultiple: Number(await rep.creditMultiple()),
++            growthStep: u(await rep.growthStep()),
++            bootstrapLimit: u(await rep.bootstrapLimit()),
++            defaultLockout: Number(await rep.defaultLockout()),
++            maxTierLimit: u(await rep.MAX_TIER_LIMIT()),
++        },
++        _testAccounts: {
++            owner: owner.address,
++            agentA: agentA.address, agentAId: idA.toString(),
++            agentB: agentB.address, agentBId: idB.toString(),
++            lender1: lender1.address, lender2: lender2.address, lender3: lender3.address,
++        },
++    };
++    fs.writeFileSync(path.join(ROOT, 'src/config/local-addresses.json'), JSON.stringify(addresses, null, 2));
++
++    const pA = await v6.getAgentPool(idA);
++    console.log(JSON.stringify({
++        marketplace: addresses.agentLiquidityMarketplace_v6,
++        version: addresses.marketplaceVersion, reputation: addresses.reputationVersion,
++        levers: addresses._levers,
++        poolA: { avail: u(pA[2]), loaned: u(pA[3]), lenders: Number(pA[6]) },
++        mpBalance: u(await usdc.balanceOf(await v6.getAddress())),
++        fees: u(await v6.accumulatedFees()),
++        scoreA: Number(await rep['getReputationScore(uint256)'](idA)),
++        creditLimitA: u(await rep.calculateCreditLimit(agentA.address)),
++    }, null, 2));
++}
++
++main().catch(e => { console.error(e); process.exit(1); });
+diff --git a/scripts/incident-drill/lib.js b/scripts/incident-drill/lib.js
+new file mode 100644
+index 0000000..508fb30
+--- /dev/null
++++ b/scripts/incident-drill/lib.js
+@@ -0,0 +1,240 @@
++// Shared helpers for the 2026-09-23 incident-response drill against the V7 stack
++// (AgentRegistryV2 + ReputationManagerV4 + AgentLiquidityMarketplaceV62).
++//
++// EVERYTHING here targets a LOCAL hardhat node. Nothing in this directory holds a
++// private key or an Arc/Base RPC with a signer.
++
++const { ethers } = require('hardhat');
++const fs = require('fs');
++const path = require('path');
++const { execFileSync } = require('child_process');
++
++const ROOT = path.resolve(__dirname, '..', '..');
++const OUT = path.join(ROOT, 'forensics/output/testing-2026-09-23/incident-drill');
++const ALERT_SANDBOX = path.join(OUT, 'alert-sandbox');
++const DAY = 24 * 60 * 60;
++
++const USDC = n => ethers.parseUnits(n.toString(), 6);
++const u = v => Number(ethers.formatUnits(v, 6));
++
++function ensureOut() {
++    fs.mkdirSync(OUT, { recursive: true });
++    fs.mkdirSync(ALERT_SANDBOX, { recursive: true });
++}
++
++function writeResult(name, obj) {
++    ensureOut();
++    fs.writeFileSync(path.join(OUT, name), JSON.stringify(obj, null, 2));
++    return path.join(OUT, name);
++}
++
++function addr() {
++    return JSON.parse(fs.readFileSync(path.join(ROOT, 'src/config/local-addresses.json')));
++}
++
++// ---------------------------------------------------------------- monitor runner
++
++// Run forensics/monitor/v6-invariants.js against the local chain and return its
++// exit code plus the finding codes it emitted. `rpcUrl` lets scenario 6 point the
++// monitor at a fault-injecting proxy instead of the node.
++function runMonitor(opts = {}) {
++    ensureOut();
++    const a = addr();
++    const stateFile = path.join(ROOT, 'forensics/monitor', `state-local.json`);
++    if (opts.freshState !== false) { try { fs.unlinkSync(stateFile); } catch {} }
++    if (opts.priorState) fs.writeFileSync(stateFile, JSON.stringify(opts.priorState, null, 2));
++
++    const env = {
++        ...process.env,
++        V6_MONITOR_NETWORK: 'local',
++        // Chain time is driven by evm_increaseTime, so wall-clock freshness is
++        // meaningless here. Scenario 6 re-enables it deliberately.
++        V6_MAX_BLOCK_AGE_SEC: opts.maxBlockAge !== undefined ? String(opts.maxBlockAge) : '0',
++        V6_EXPECTED_OWNER: opts.expectedOwner || a.deployer,
++        V6_EXPECT_PAUSED: opts.expectPaused ? '1' : '0',
++        SPECULAR_ALERT_QUIET: '1',
++        SPECULAR_ALERT_DIR: opts.alertDir || ALERT_SANDBOX,
++        LOCAL_RPC_URL: opts.rpcUrl || 'http://127.0.0.1:8545',
++        V6_HEARTBEAT_MAX_AGE_SEC: '99999999',   // no sibling-network noise in the drill
++        ...(opts.env || {}),
++    };
++    const args = [path.join(ROOT, 'forensics/monitor/v6-invariants.js')];
++    if (!opts.noAlert === false) { /* alerts on by default so we can prove the path */ }
++    if (opts.noAlert) args.push('--no-alert');
++
++    const t0 = Date.now();
++    let exitCode = 0, out = '';
++    try {
++        out = execFileSync('node', args, { env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: opts.timeoutMs || 180000 });
++    } catch (e) {
++        exitCode = e.status === undefined || e.status === null ? -1 : e.status;
++        out = (e.stdout || '') + (e.stderr || '');
++    }
++    const ms = Date.now() - t0;
++    return { exitCode, ms, ...parseFindings(out), raw: out };
++}
++
++function parseFindings(out) {
++    const findings = [];
++    for (const line of out.split('\n')) {
++        if (!line.startsWith('{')) continue;
++        let j; try { j = JSON.parse(line); } catch { continue; }
++        if (j.alert) continue;
++        const m = /^\[([A-Z0-9-]+)\]/.exec(j.msg || '');
++        if (m) findings.push({ code: m[1], severity: j.severity || (j.level === 'ERROR' ? 'CRITICAL' : 'WARN'), msg: j.msg });
++    }
++    const seen = new Set();
++    const dedup = findings.filter(f => { const k = `${f.code}:${f.severity}`; if (seen.has(k)) return false; seen.add(k); return true; });
++    return {
++        codes: dedup.map(f => `${f.code}(${f.severity})`),
++        criticals: dedup.filter(f => f.severity === 'CRITICAL').map(f => f.code),
++        warns: dedup.filter(f => f.severity === 'WARN').map(f => f.code),
++        findings: dedup,
++    };
++}
++
++// Did the alert fan-out actually fire? Reads the sandboxed latch + history.
++function alertState(dir = ALERT_SANDBOX) {
++    const latchPath = path.join(dir, 'ALERT-ACTIVE.json');
++    const histPath = path.join(dir, 'alerts.log');
++    let latch = null, history = [];
++    try { latch = JSON.parse(fs.readFileSync(latchPath, 'utf8')); } catch {}
++    try {
++        history = fs.readFileSync(histPath, 'utf8').trim().split('\n').filter(Boolean).map(l => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
++    } catch {}
++    return { latchExists: latch !== null, latch, historyCount: history.length, lastHistory: history.at(-1) || null };
++}
++
++function clearAlerts(dir = ALERT_SANDBOX) {
++    for (const f of ['ALERT-ACTIVE.json', 'alerts.log']) { try { fs.unlinkSync(path.join(dir, f)); } catch {} }
++    try {
++        for (const f of fs.readdirSync(dir)) if (f.startsWith('heartbeat-')) fs.unlinkSync(path.join(dir, f));
++    } catch {}
++}
++
++// ---------------------------------------------------------------- chain helpers
++
++const snap = () => ethers.provider.send('evm_snapshot', []);
++const revert = id => ethers.provider.send('evm_revert', [id]);
++async function advance(sec) {
++    await ethers.provider.send('evm_increaseTime', [Math.floor(sec)]);
++    await ethers.provider.send('evm_mine', []);
++}
++async function now() { return (await ethers.provider.getBlock('latest')).timestamp; }
++
++// Attempt a call; classify the revert reason. Used by the pause blast-radius table.
++async function attempt(label, fn) {
++    try { const tx = await fn(); if (tx && tx.wait) await tx.wait(); return { label, ok: true, revert: null }; }
++    catch (e) {
++        const m = e.shortMessage || e.message || '';
++        const r = /reverted with custom error '([^']+)'/.exec(m)
++            || /reverted with reason string '([^']+)'/.exec(m)
++            || /reverted with the following reason:\s*(.+)/.exec(m)
++            || /reason="([^"]+)"/.exec(m);
++        return { label, ok: false, revert: r ? r[1].trim() : m.slice(0, 110) };
++    }
++}
++
++// ---------------------------------------------------------------- V7 state views
++
++async function poolSnapshot(v6, agentId) {
++    const p = await v6.getAgentPool(agentId);
++    const lenderCount = Number(p[6]);
++    const lenders = [];
++    for (let i = 0; i < lenderCount; i++) {
++        const l = await v6.poolLenders(agentId, i);
++        const pos = await v6.positions(agentId, l);
++        const pt = await v6.pendingTranche(agentId, l);
++        lenders.push({ address: l, amount: pos.amount, earnedInterest: pos.earnedInterest, depositTimestamp: pos.depositTimestamp, pending: pt.amount });
++    }
++    const ss = await v6.selfStake(agentId);
++    return {
++        agentId: agentId.toString(), agentAddress: p[0],
++        totalLiquidity: p[1], availableLiquidity: p[2], totalLoaned: p[3], totalEarned: p[4], lenderCount,
++        lenders, selfStake: ss[0], selfStakeLocked: ss[1],
++        activeLoanCount: await v6.activeLoanCount(agentId),
++        outstandingPrincipal: await v6.outstandingPrincipal(agentId),
++    };
++}
++
++function prettyPool(s) {
++    return {
++        agentId: s.agentId, agentAddress: s.agentAddress,
++        totalLiquidity: u(s.totalLiquidity), availableLiquidity: u(s.availableLiquidity),
++        totalLoaned: u(s.totalLoaned), lenderCount: s.lenderCount,
++        selfStake: u(s.selfStake), selfStakeLocked: s.selfStakeLocked,
++        outstandingPrincipal: u(s.outstandingPrincipal),
++        lenders: s.lenders.map(l => ({ address: l.address, principal: u(l.amount), unclaimedInterest: u(l.earnedInterest) })),
++    };
++}
++
++// ---------------------------------------------------------- reputation climbing
++
++// Drive `agent` up the V7 credit ladder with real on-time loan cycles, at the LIVE
++// Arc-mainnet levers (5 reputation points per day, 1-day minimum hold, 100 USDC
++// bonus reference, 7-day reference duration). No storage pokes: every point is
++// earned by a real loan, so the resulting state is one the chain could actually
++// reach.
++async function climbTo(ctx, targetScore, opts = {}) {
++    const { v6, rep, usdc, agent, agentId } = ctx;
++    const maxCycles = opts.maxCycles || 400;
++    const size = opts.loanSize || USDC(100);
++    let cycles = 0;
++    while (Number(await rep['getReputationScore(uint256)'](agentId)) < targetScore && cycles < maxCycles) {
++        const limit = await rep.calculateCreditLimit(agent.address);
++        const pool = await v6.getAgentPool(agentId);
++        let amount = size < limit ? size : limit;
++        if (amount > pool[2]) amount = pool[2];
++        if (amount === 0n) throw new Error('climbTo: no headroom (credit limit or pool liquidity is zero)');
++        const pct = await rep.calculateCollateralRequirement(agent.address);
++        if (pct < 100n) {
++            const need = await v6.requiredSelfStake(agentId, amount);
++            const have = (await v6.positions(agentId, agent.address)).amount;
++            if (have < need) { await usdc.mint(agent.address, need - have); await (await v6.connect(agent).supplyLiquidity(agentId, need - have)).wait(); }
++        }
++        await usdc.mint(agent.address, amount * 3n);
++        await (await v6.connect(agent).requestLoan(amount, 7)).wait();
++        const loanId = (await v6.nextLoanId()) - 1n;
++        // Hold ~7 days but land strictly before endTime so the repayment is ON TIME.
++        await advance(7 * DAY - 900);
++        await (await v6.connect(agent).repayLoan(loanId)).wait();
++        cycles++;
++    }
++    return { cycles, score: Number(await rep['getReputationScore(uint256)'](agentId)) };
++}
++
++// Raise `maxRepaidPrincipal` with on-time loans until the ladder head-room reaches
++// `target`. Each rung needs the agent's own M2-c self-stake in place first.
++async function climbLadderTo(ctx, target, opts = {}) {
++    const { v6, rep, usdc, agent, agentId } = ctx;
++    const rungs = [];
++    for (let i = 0; i < (opts.maxRungs || 12); i++) {
++        const limit = await rep.calculateCreditLimit(agent.address);
++        if (limit >= target) break;
++        const pool = await v6.getAgentPool(agentId);
++        let amount = limit;
++        if (amount > pool[2]) amount = pool[2];
++        if (amount === 0n) throw new Error('climbLadderTo: no headroom');
++        const pct = await rep.calculateCollateralRequirement(agent.address);
++        if (pct < 100n) {
++            const need = await v6.requiredSelfStake(agentId, amount);
++            const have = (await v6.positions(agentId, agent.address)).amount;
++            if (have < need) { await usdc.mint(agent.address, need - have); await (await v6.connect(agent).supplyLiquidity(agentId, need - have)).wait(); }
++        }
++        await usdc.mint(agent.address, amount * 3n);
++        await (await v6.connect(agent).requestLoan(amount, 7)).wait();
++        const loanId = (await v6.nextLoanId()) - 1n;
++        await advance(7 * DAY - 900);
++        await (await v6.connect(agent).repayLoan(loanId)).wait();
++        rungs.push({ amount: u(amount), maxRepaidPrincipal: u(await rep.maxRepaidPrincipal(agentId)), newLimit: u(await rep.calculateCreditLimit(agent.address)) });
++    }
++    return rungs;
++}
++
++module.exports = {
++    ROOT, OUT, ALERT_SANDBOX, DAY, USDC, u,
++    ensureOut, writeResult, addr,
++    runMonitor, parseFindings, alertState, clearAlerts,
++    snap, revert, advance, now, attempt,
++    poolSnapshot, prettyPool, climbTo, climbLadderTo,
++};
+diff --git a/scripts/incident-drill/read-live-levers.js b/scripts/incident-drill/read-live-levers.js
+new file mode 100644
+index 0000000..953af5c
+--- /dev/null
++++ b/scripts/incident-drill/read-live-levers.js
+@@ -0,0 +1,41 @@
++// READ-ONLY. Reads every owner-settable lever on the live Arc-mainnet V6.2 + V4
++// stack so the local drill can be run at the values that are actually in force.
++// Never sends a transaction — there is no signer in this file at all.
++const { ethers } = require('ethers');
++const fs = require('fs'); const path = require('path');
++const ROOT = path.resolve(__dirname, '..', '..');
++const A = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/config/arc-mainnet-addresses.json')));
++const RPC = process.env.ARC_MAINNET_RPC_URL || A.rpcUrl;
++
++const MP = ['function VERSION() view returns (string)', 'function owner() view returns (address)', 'function pendingOwner() view returns (address)', 'function paused() view returns (bool)', 'function platformFeeRate() view returns (uint256)', 'function minSupplyAmount() view returns (uint256)', 'function minHoldForReputationReward() view returns (uint256)', 'function bindBorrowToPoolCreator() view returns (bool)', 'function migrationFinalized() view returns (bool)', 'function accumulatedFees() view returns (uint256)', 'function totalPools() view returns (uint256)', 'function nextLoanId() view returns (uint256)', 'function reputationManager() view returns (address)', 'function MAX_LENDERS_PER_POOL() view returns (uint256)', 'function MAX_ACTIVE_LOANS_PER_AGENT() view returns (uint256)'];
++const RM = ['function VERSION() view returns (string)', 'function owner() view returns (address)', 'function pendingOwner() view returns (address)', 'function MAX_TIER_LIMIT() view returns (uint256)', 'function tierLimits(uint256) view returns (uint256)', 'function tierCollateralPct(uint256) view returns (uint256)', 'function tierInterestBps(uint256) view returns (uint256)', 'function creditMultiple() view returns (uint256)', 'function growthStep() view returns (uint256)', 'function bootstrapLimit() view returns (uint256)', 'function refDuration() view returns (uint256)', 'function defaultLockout() view returns (uint256)', 'function maxReputationGainPerWindow() view returns (uint256)', 'function reputationGainWindow() view returns (uint256)', 'function onTimeRepaymentBonus() view returns (uint256)', 'function defaultPenaltyBase() view returns (uint256)', 'function defaultPenaltyLarge() view returns (uint256)', 'function largeLoanThreshold() view returns (uint256)', 'function bonusReferenceAmount() view returns (uint256)', 'function latePenaltyBase() view returns (uint256)', 'function latePenaltyPerDay() view returns (uint256)', 'function latePenaltyMax() view returns (uint256)', 'function authorizedPools(address) view returns (bool)'];
++const REG = ['function owner() view returns (address)', 'function paused() view returns (bool)', 'function totalAgents() view returns (uint256)'];
++const FA = ['function owner() view returns (address)', 'function claimAmount() view returns (uint256)', 'function maxEligibleAgentId() view returns (uint256)', 'function balance() view returns (uint256)'];
++
++(async () => {
++    const p = new ethers.JsonRpcProvider(RPC, undefined, { staticNetwork: true });
++    const mp = new ethers.Contract(A.agentLiquidityMarketplace_v6, MP, p);
++    const rmAddr = await mp.reputationManager();
++    const rm = new ethers.Contract(rmAddr, RM, p);
++    const reg = new ethers.Contract(A.agentRegistryV2, REG, p);
++    const fa = new ethers.Contract(A.agentCreditFaucet, FA, p);
++    const g = async (o, k, ...a) => { try { return (await o[k](...a)).toString(); } catch (e) { return `ERR:${(e.shortMessage || e.message || '').slice(0, 60)}`; } };
++    const out = {
++        rpc: RPC, chainId: Number((await p.getNetwork()).chainId), block: await p.getBlockNumber(),
++        marketplace: { address: A.agentLiquidityMarketplace_v6 }, reputation: { address: rmAddr },
++        registry: { address: A.agentRegistryV2 }, faucet: { address: A.agentCreditFaucet },
++    };
++    for (const k of ['VERSION', 'owner', 'pendingOwner', 'paused', 'platformFeeRate', 'minSupplyAmount', 'minHoldForReputationReward', 'bindBorrowToPoolCreator', 'migrationFinalized', 'accumulatedFees', 'totalPools', 'nextLoanId', 'MAX_LENDERS_PER_POOL', 'MAX_ACTIVE_LOANS_PER_AGENT']) out.marketplace[k] = await g(mp, k);
++    for (const k of ['VERSION', 'owner', 'pendingOwner', 'MAX_TIER_LIMIT', 'creditMultiple', 'growthStep', 'bootstrapLimit', 'refDuration', 'defaultLockout', 'maxReputationGainPerWindow', 'reputationGainWindow', 'onTimeRepaymentBonus', 'defaultPenaltyBase', 'defaultPenaltyLarge', 'largeLoanThreshold', 'bonusReferenceAmount', 'latePenaltyBase', 'latePenaltyPerDay', 'latePenaltyMax']) out.reputation[k] = await g(rm, k);
++    out.reputation.tierLimits = []; out.reputation.tierCollateralPct = []; out.reputation.tierInterestBps = [];
++    for (let i = 0; i < 6; i++) {
++        out.reputation.tierLimits.push(await g(rm, 'tierLimits', i));
++        out.reputation.tierCollateralPct.push(await g(rm, 'tierCollateralPct', i));
++        out.reputation.tierInterestBps.push(await g(rm, 'tierInterestBps', i));
++    }
++    out.reputation.marketplaceAuthorized = await g(rm, 'authorizedPools', A.agentLiquidityMarketplace_v6);
++    out.reputation.legacyMarketplaceAuthorized = await g(rm, 'authorizedPools', A.agentLiquidityMarketplacePrevious);
++    for (const k of ['owner', 'paused', 'totalAgents']) out.registry[k] = await g(reg, k);
++    for (const k of ['owner', 'claimAmount', 'maxEligibleAgentId', 'balance']) out.faucet[k] = await g(fa, k);
++    console.log(JSON.stringify(out, null, 2));
++})().catch(e => { console.error('READ FAILED:', e.shortMessage || e.message); process.exit(1); });
+diff --git a/scripts/incident-drill/s0-baseline.js b/scripts/incident-drill/s0-baseline.js
+new file mode 100644
+index 0000000..6513915
+--- /dev/null
++++ b/scripts/incident-drill/s0-baseline.js
+@@ -0,0 +1,30 @@
++// Drill control: the monitor must be SILENT on the healthy V7 baseline, or every
++// later "it detected it" result is worthless.
++//
++// Usage: npx hardhat run --network localhost scripts/incident-drill/s0-baseline.js
++
++const { ethers } = require('hardhat');
++const L = require('./lib');
++
++async function main() {
++    L.clearAlerts();
++    const a = L.addr();
++    const v6 = await ethers.getContractAt('AgentLiquidityMarketplaceV62', a.agentLiquidityMarketplace_v6);
++    const before = L.alertState();
++    const run = L.runMonitor();
++    const after = L.alertState();
++
++    const result = {
++        scenario: 'S0 — control: healthy V7 baseline',
++        marketplaceVersion: await v6.VERSION(),
++        monitor: { exitCode: run.exitCode, ms: run.ms, codes: run.codes },
++        cleanRun: run.exitCode === 0 && run.criticals.length === 0,
++        alertLatchBefore: before.latchExists,
++        alertLatchAfter: after.latchExists,
++    };
++    console.log(JSON.stringify(result, null, 2));
++    if (!result.cleanRun) { console.log('--- monitor output ---\n' + run.raw); }
++    L.writeResult('s0-baseline.json', result);
++}
++
++main().catch(e => { console.error(e); process.exit(1); });
+diff --git a/scripts/incident-drill/s1-insolvency.js b/scripts/incident-drill/s1-insolvency.js
+new file mode 100644
+index 0000000..d43701b
+--- /dev/null
++++ b/scripts/incident-drill/s1-insolvency.js
+@@ -0,0 +1,254 @@
++// SCENARIO 1 — the money doesn't add up.
++//
++// Two DIFFERENT incidents hide behind the same alert codes, and the existing
++// runbook treats them as one. This drill separates them:
++//
++//   1A  PHANTOM LIQUIDITY — the books claim more than they should, the USDC is
++//       all still there. (The §S1 bug shape; V6.2 cannot produce it, so it is
++//       engineered with a storage poke, slot-verified first.)
++//   1B  REAL SHORTFALL — the books are right, the USDC has LEFT the contract.
++//       Modelled by impersonating the marketplace and moving USDC out, i.e.
++//       exactly what any future token-path bug or hostile withdrawal looks like.
++//
++// For each: does the monitor catch it, what levers exist, and can lenders be made
++// whole? Every candidate remedy is actually executed and measured.
++//
++// Usage: npx hardhat run --network localhost scripts/incident-drill/s1-insolvency.js
++
++const { ethers } = require('hardhat');
++const L = require('./lib');
++const S = require('../op-resilience/storage');
++const { USDC, u, DAY, advance, attempt } = L;
++
++async function main() {
++    const a = L.addr();
++    const signers = await ethers.getSigners();
++    const owner = signers[0];
++    const agentG = signers[6];
++    const lenderP = signers[7];
++    const lenderQ = signers[8];
++    const sink = signers[19];
++
++    const v6 = await ethers.getContractAt('AgentLiquidityMarketplaceV62', a.agentLiquidityMarketplace_v6);
++    const rep = await ethers.getContractAt('ReputationManagerV4', a.reputationManagerV4);
++    const reg = await ethers.getContractAt('AgentRegistryV2', a.agentRegistryV2);
++    const usdc = await ethers.getContractAt('MockUSDC', a.usdc);
++    const V6ADDR = a.agentLiquidityMarketplace_v6;
++
++    const outer = await L.snap();
++
++    for (const w of [agentG, lenderP, lenderQ]) {
++        await (await usdc.mint(w.address, USDC(100000))).wait();
++        await (await usdc.connect(w).approve(V6ADDR, ethers.MaxUint256)).wait();
++    }
++    await (await reg.connect(agentG).register('ipfs://g', [])).wait();
++    const idG = await reg.addressToAgentId(agentG.address);
++    await (await rep.connect(agentG)['initializeReputation()']()).wait();
++    await (await v6.connect(agentG).createAgentPool()).wait();
++    await (await v6.connect(lenderP).supplyLiquidity(idG, USDC(1000))).wait();
++    await (await v6.connect(lenderQ).supplyLiquidity(idG, USDC(1000))).wait();
++    await (await v6.connect(agentG).requestLoan(USDC(100), 7)).wait();   // one ACTIVE, 100 % collateral
++    const base = await L.snap();
++
++    // Prove the slot map before poking anything.
++    const slotCheck = await S.verifySlots(v6, idG, lenderP.address);
++    const poolBaseSlot = BigInt(S.mapSlot(idG, S.SLOT.agentPools));
++    const AVAIL_SLOT = poolBaseSlot + 3n;
++
++    const out = { scenario: 'S1 — insolvency / phantom liquidity', slotMapVerified: slotCheck.length, cases: {} };
++
++    // ================================================================ 1A phantom
++    // NOTE on snapshots: hardhat CONSUMES a snapshot id when you revert to it, and
++    // invalidates every id taken after it. Each case therefore takes its own id and
++    // re-takes one immediately after reverting.
++    {
++        const caseSnap = await L.snap();
++        const before = await L.poolSnapshot(v6, idG);
++        const bal0 = await usdc.balanceOf(V6ADDR);
++        const inflate = USDC(500);
++        await S.setStorage(V6ADDR, AVAIL_SLOT, before.availableLiquidity + inflate);
++
++        L.clearAlerts();
++        const det = L.runMonitor();
++        const alerts = L.alertState();
++
++        // Candidate remedy 1: resetPoolAccounting — the emergency repair tool.
++        const fixSnap = await L.snap();
++        const fix = await attempt('resetPoolAccounting', () => v6.connect(owner).resetPoolAccounting(idG));
++        const afterFix = await L.poolSnapshot(v6, idG);
++        const postFix = L.runMonitor();
++        // Can lenders actually get their money out afterwards?
++        const exitP = await attempt('lenderP full exit', async () => {
++            const p = (await v6.positions(idG, lenderP.address)).amount;
++            return v6.connect(lenderP).withdrawLiquidity(idG, p);
++        });
++        await L.revert(fixSnap);
++
++        out.cases['1A_phantom_liquidity'] = {
++            engineered: `pool.availableLiquidity inflated by ${u(inflate)} USDC (books wrong, USDC intact)`,
++            usdcBalanceUnchanged: u(bal0) === u(await usdc.balanceOf(V6ADDR)),
++            detection: {
++                exitCode: det.exitCode, codes: det.codes, criticals: det.criticals,
++                monitorRuntimeMs: det.ms, alertLatched: alerts.latchExists,
++                alertSeverity: alerts.latch ? alerts.latch.severity : null,
++            },
++            remedy_resetPoolAccounting: {
++                worked: fix.ok, revert: fix.revert,
++                availableLiquidityBefore: u(before.availableLiquidity),
++                availableLiquidityAfter: u(afterFix.availableLiquidity),
++                restoredExactly: afterFix.availableLiquidity === before.availableLiquidity,
++                monitorAfter: { exitCode: postFix.exitCode, codes: postFix.codes },
++                lenderCanStillExit: exitP.ok,
++            },
++            verdict: 'RECOVERABLE. The USDC never left; resetPoolAccounting rebuilds availableLiquidity from Σ positions + Σ unclaimed interest − totalLoaned and the monitor goes clean. Lenders lose nothing.',
++        };
++        await L.revert(caseSnap);
++    }
++
++    // ============================================================= 1B real shortfall
++    {
++        const caseSnap = await L.snap();
++        const before = await L.poolSnapshot(v6, idG);
++        const bal0 = await usdc.balanceOf(V6ADDR);
++
++        // The USDC leaves. Books untouched. This is what a token-path bug, a
++        // malicious upgrade of the token, or a hostile withdrawal all look like.
++        // Leave exactly 1,000 USDC in the contract. Pool G's two lenders claim 1,000
++        // each, so the first exit clears and the second finds an empty pot — the
++        // race, made visible. Note the marketplace is ONE USDC pot shared by every
++        // pool: pool G's lenders are paid out of the other pools' liquidity.
++        const steal = bal0 - USDC(1000);
++        await ethers.provider.send('hardhat_impersonateAccount', [V6ADDR]);
++        await ethers.provider.send('hardhat_setBalance', [V6ADDR, '0x56BC75E2D63100000']);
++        const mpSigner = await ethers.getSigner(V6ADDR);
++        await (await usdc.connect(mpSigner).transfer(sink.address, steal)).wait();
++        await ethers.provider.send('hardhat_stopImpersonatingAccount', [V6ADDR]);
++
++        L.clearAlerts();
++        const det = L.runMonitor();
++        const alerts = L.alertState();
++
++        const shortfall = {
++            usdcBalanceBefore: u(bal0), usdcBalanceAfter: u(await usdc.balanceOf(V6ADDR)),
++            lenderClaims: u(before.lenders.reduce((s, l) => s + l.amount + l.earnedInterest, 0n)),
++            poolAvailable: u(before.availableLiquidity),
++        };
++
++        // ---- candidate remedies, each tried in its own snapshot
++        const remedies = [];
++
++        // (i) resetPoolAccounting — does the emergency repair tool help here?
++        {
++            const s = await L.snap();
++            const r = await attempt('resetPoolAccounting', () => v6.connect(owner).resetPoolAccounting(idG));
++            const after = await L.poolSnapshot(v6, idG);
++            const m = L.runMonitor();
++            remedies.push({
++                lever: 'resetPoolAccounting(agentId)', executed: r.ok, revert: r.revert,
++                availableLiquidityAfter: u(after.availableLiquidity),
++                usdcBalanceAfter: u(await usdc.balanceOf(V6ADDR)),
++                stillInsolvent: m.criticals.includes('SOLV') || m.criticals.includes('S1'),
++                monitorAfter: { exitCode: m.exitCode, codes: m.codes },
++                verdict: 'Does NOT help. It rebuilds the books from the lender POSITIONS — i.e. from the claims — so it re-asserts liquidity the contract does not hold. It repairs bookkeeping, never a shortfall.',
++            });
++            await L.revert(s);
++        }
++
++        // (ii) the withdrawal race — first come, first served
++        {
++            const s = await L.snap();
++            const race = [];
++            for (const [name, w] of [['lenderP', lenderP], ['lenderQ', lenderQ]]) {
++                const pos = (await v6.positions(idG, w.address)).amount;
++                const avail = (await v6.getAgentPool(idG))[2];
++                const want = pos < avail ? pos : avail;
++                const bal = await usdc.balanceOf(w.address);
++                const r = await attempt(`${name} exits`, () => v6.connect(w).withdrawLiquidity(idG, want));
++                race.push({ lender: name, requested: u(want), got: r.ok ? u((await usdc.balanceOf(w.address)) - bal) : 0, ok: r.ok, revert: r.revert });
++            }
++            remedies.push({
++                lever: 'do nothing — let lenders withdraw', executed: true,
++                race,
++                verdict: 'First-come-first-served. The early lender is paid in full out of the remaining USDC; the late one reverts on the ERC-20 transfer. The socialisation logic only runs on LIQUIDATION, not on a bare shortfall, so the loss is NOT shared.',
++            });
++            await L.revert(s);
++        }
++
++        // (iii) pause — stop the race
++        {
++            const s = await L.snap();
++            await (await v6.connect(owner).pause()).wait();
++            const exit = await attempt('lenderP exits while paused', () => v6.connect(lenderP).withdrawLiquidity(idG, USDC(10)));
++            const fees = await attempt('OWNER withdrawFees while paused', () => v6.connect(owner).withdrawFees(1n));
++            const m = L.runMonitor({ expectPaused: false });
++            remedies.push({
++                lever: 'pause()', executed: true,
++                lenderExitBlocked: !exit.ok, lenderExitRevert: exit.revert,
++                ownerCanStillTakeFees: fees.ok,
++                monitorAfter: { exitCode: m.exitCode, codes: m.codes },
++                verdict: 'Stops the race by freezing EVERYONE, including repayment and your own liquidateLoan. It converts a race into a total freeze; it recovers nothing. Note the owner can still withdrawFees out of a pool that cannot pay its lenders.',
++            });
++            await L.revert(s);
++        }
++
++        // (iv) targeted containment that does NOT freeze exits
++        {
++            const s = await L.snap();
++            const mn = await attempt('setMinSupplyAmount(100 USDC)', () => v6.connect(owner).setMinSupplyAmount(USDC(100)));
++            const da = await attempt('registry.deactivateAgent', () => reg.connect(owner).deactivateAgent(idG));
++            const newLender = await attempt('a NEW lender supplies 50 USDC', () => v6.connect(sink).supplyLiquidity(idG, USDC(50)));
++            const newBorrow = await attempt('the agent opens a new loan', () => v6.connect(agentG).requestLoan(USDC(50), 7));
++            const stillExit = await attempt('an existing lender still exits', () => v6.connect(lenderP).withdrawLiquidity(idG, USDC(10)));
++            const openLoanId = (await v6.nextLoanId()) - 1n;
++            const stillRepay = await attempt('the borrower still repays', () => v6.connect(agentG).repayLoan(openLoanId));
++            remedies.push({
++                lever: 'setMinSupplyAmount(max) + registry.deactivateAgent(agentId)', executed: mn.ok && da.ok,
++                newLenderBlocked: !newLender.ok, newLenderRevert: newLender.revert,
++                newBorrowBlocked: !newBorrow.ok, newBorrowRevert: newBorrow.revert,
++                existingLenderCanStillExit: stillExit.ok,
++                borrowerCanStillRepay: stillRepay.ok,
++                verdict: 'STOPS THE BLEEDING WITHOUT FREEZING ANYONE. New money is gated and the agent can take no more credit, while exits and repayments stay open. This is the correct first move; it still recovers nothing.',
++            });
++            await L.revert(s);
++        }
++
++        out.cases['1B_real_shortfall'] = {
++            engineered: `${u(steal)} USDC moved OUT of the marketplace; every storage figure left untouched`,
++            shortfall,
++            detection: {
++                exitCode: det.exitCode, codes: det.codes, criticals: det.criticals,
++                monitorRuntimeMs: det.ms, alertLatched: alerts.latchExists,
++                alertSeverity: alerts.latch ? alerts.latch.severity : null,
++            },
++            remedies,
++            verdict: 'NOT RECOVERABLE ON-CHAIN. V6.2 has no lever that puts USDC back: withdrawFees only moves money OUT, seedPool/seedPosition are dead (migration finalized), resetPoolAccounting rewrites the books rather than the balance, and socialisation only runs inside liquidateLoan on a specific defaulted loan. The only way to make lenders whole is an off-chain top-up: send USDC to the contract. The honest answer is "you cannot repair it, you can only stop the bleeding and then decide who is paid".',
++        };
++
++        // (v) prove the off-chain top-up actually is a repair path
++        {
++            const s = await L.snap();
++            await (await usdc.mint(owner.address, steal)).wait();
++            await (await usdc.connect(owner).transfer(V6ADDR, steal)).wait();
++            const m = L.runMonitor();
++            const exitP = await attempt('lenderP full exit after the top-up', async () => {
++                const p = (await v6.positions(idG, lenderP.address)).amount;
++                const avail = (await v6.getAgentPool(idG))[2];
++                return v6.connect(lenderP).withdrawLiquidity(idG, p < avail ? p : avail);
++            });
++            out.cases['1B_real_shortfall'].offChainTopUp = {
++                lever: 'send USDC to the marketplace address from treasury',
++                amount: u(steal),
++                monitorAfter: { exitCode: m.exitCode, codes: m.codes },
++                lendersWholeAgain: exitP.ok,
++                verdict: 'The ONLY path that makes lenders whole. It is a plain ERC-20 transfer to the contract; no contract function is involved. Note the monitor then reads the restored balance as normal, not as a surplus, because the shortfall is exactly cancelled.',
++            };
++            await L.revert(s);
++        }
++    }
++
++    console.log(JSON.stringify(out, null, 2));
++    L.writeResult('s1-insolvency.json', out);
++    await L.revert(outer);
++}
++
++main().catch(e => { console.error(e); process.exit(1); });
+diff --git a/scripts/incident-drill/s2-large-default.js b/scripts/incident-drill/s2-large-default.js
+new file mode 100644
+index 0000000..aa23a8e
+--- /dev/null
++++ b/scripts/incident-drill/s2-large-default.js
+@@ -0,0 +1,203 @@
++// SCENARIO 2 — a borrower defaults large enough to socialise loss, with the
++// agent's own M2 first-loss self-stake in place.
++//
++// What this proves or disproves, on the real V6.2 + V4 code at the live Arc-mainnet
++// levers:
++//   * M2-a  the creator's own position really is LOCKED while it owes principal
++//   * M2-b  that position absorbs the loss BEFORE any other lender (ordering)
++//   * L7    a lender who joined MID-LOAN bears none of that loan's loss
++//   * M1-3  credit ladder resets to 0 and the 180-day lockout engages
++//   * detection: does the monitor page anyone about an OVERDUE loan at all?
++//   * nothing strands: every survivor can still withdraw/claim after the default
++//
++// Usage: npx hardhat run --network localhost scripts/incident-drill/s2-large-default.js
++
++const { ethers } = require('hardhat');
++const L = require('./lib');
++const { USDC, u, DAY, advance, attempt } = L;
++
++async function main() {
++    const a = L.addr();
++    const signers = await ethers.getSigners();
++    const owner = signers[0];
++    const agentC = signers[6];      // the borrower that will default
++    const victimA = signers[7];     // lender in BEFORE the loan  (qualified)
++    const victimB = signers[8];     // lender in BEFORE the loan  (qualified)
++    const lateLender = signers[9];  // lender in AFTER  the loan starts (L7: not qualified)
++
++    const v6 = await ethers.getContractAt('AgentLiquidityMarketplaceV62', a.agentLiquidityMarketplace_v6);
++    const rep = await ethers.getContractAt('ReputationManagerV4', a.reputationManagerV4);
++    const reg = await ethers.getContractAt('AgentRegistryV2', a.agentRegistryV2);
++    const usdc = await ethers.getContractAt('MockUSDC', a.usdc);
++
++    const snap = await L.snap();
++    const steps = [];
++    const S = (k, v) => { steps.push({ step: k, ...v }); console.log(`  ${k}: ${JSON.stringify(v)}`); };
++
++    // ---------------------------------------------------------------- onboarding
++    for (const w of [agentC, victimA, victimB, lateLender]) {
++        await (await usdc.mint(w.address, USDC(500000))).wait();
++        await (await usdc.connect(w).approve(await v6.getAddress(), ethers.MaxUint256)).wait();
++    }
++    await (await reg.connect(agentC).register('ipfs://agentC', [])).wait();
++    const idC = await reg.addressToAgentId(agentC.address);
++    await (await rep.connect(agentC)['initializeReputation()']()).wait();
++    await (await v6.connect(agentC).createAgentPool()).wait();
++
++    // Bootstrap: the agent seeds its OWN pool. This is the M2 self-stake; it is
++    // exempt from minSupplyAmount by design (M2-a comment in supplyLiquidity).
++    await (await v6.connect(agentC).supplyLiquidity(idC, USDC(3000))).wait();
++
++    // ------------------------------------------------- climb to the 0 %-collateral tier
++    console.log('climbing reputation to the 600 tier at the live 5 pts/day rate limit...');
++    const climb = await L.climbTo({ v6, rep, usdc, agent: agentC, agentId: idC }, 600, { loanSize: USDC(100) });
++    S('climbed', { cycles: climb.cycles, score: climb.score, collateralPct: Number(await rep.collateralRequirementOf(idC)), tierLimit: u(await rep.tierLimit(climb.score)) });
++
++    // Victim lenders arrive BEFORE any of the loans that will default.
++    await (await v6.connect(victimA).supplyLiquidity(idC, USDC(1000))).wait();
++    await (await v6.connect(victimB).supplyLiquidity(idC, USDC(500))).wait();
++
++    console.log('climbing the M1 credit ladder to the tier cap...');
++    const rungs = await L.climbLadderTo({ v6, rep, usdc, agent: agentC, agentId: idC }, USDC(2400));
++    S('ladder', { rungs, creditLimit: u(await rep.calculateCreditLimit(agentC.address)), maxRepaidPrincipal: u(await rep.maxRepaidPrincipal(idC)) });
++
++    // The attacker trims its self-stake to exactly the M2-c minimum for the loan it
++    // is about to take. Allowed only because it has no outstanding principal right
++    // now — that is M2-a doing its job.
++    const LOAN = USDC(2400);
++    const need = await v6.requiredSelfStake(idC, LOAN);
++    const have = (await v6.positions(idC, agentC.address)).amount;
++    if (have > need) await (await v6.connect(agentC).withdrawLiquidity(idC, have - need)).wait();
++    S('self-stake trimmed to the M2-c minimum', { requiredSelfStake: u(need), actual: u((await v6.positions(idC, agentC.address)).amount) });
++
++    const preLoan = await L.poolSnapshot(v6, idC);
++    const scoreBefore = Number(await rep['getReputationScore(uint256)'](idC));
++
++    // ------------------------------------------------------------ the bad loan
++    await (await v6.connect(agentC).requestLoan(LOAN, 7)).wait();
++    const loanId = (await v6.nextLoanId()) - 1n;
++    const loan = await v6.loans(loanId);
++    S('loan opened', { loanId: Number(loanId), principal: u(loan.amount), collateral: u(loan.collateralAmount), rateBps: Number(loan.interestRate) });
++
++    // M2-a: the self-stake must now be un-withdrawable.
++    const lockTest = await attempt('agent withdraws its own self-stake mid-loan', () => v6.connect(agentC).withdrawLiquidity(idC, 1n));
++    S('M2-a lock', { blocked: !lockTest.ok, revert: lockTest.revert });
++
++    // L7: a lender who arrives AFTER the loan started must bear none of its loss.
++    await advance(DAY);
++    await (await v6.connect(lateLender).supplyLiquidity(idC, USDC(500))).wait();
++    const qLate = await v6.qualifiedAmountAt(idC, lateLender.address, loan.startTime);
++    S('mid-loan lender', { supplied: 500, qualifiedForThisLoan: u(qLate) });
++
++    // ------------------------------------------------- overdue, but is anyone told?
++    await advance(8 * DAY);   // 1 day past a 7-day term
++    const overdueRun = L.runMonitor();
++    S('DETECT: monitor on an OVERDUE, unliquidated loan', {
++        exitCode: overdueRun.exitCode, codes: overdueRun.codes,
++        detected: overdueRun.exitCode !== 0,
++    });
++
++    // ------------------------------------------------------------- liquidation
++    const balBefore = {
++        agent: await usdc.balanceOf(agentC.address),
++        victimA: await usdc.balanceOf(victimA.address),
++        victimB: await usdc.balanceOf(victimB.address),
++        lateLender: await usdc.balanceOf(lateLender.address),
++    };
++    const atLoan = await L.poolSnapshot(v6, idC);
++    const tx = await (await v6.connect(owner).liquidateLoan(loanId)).wait();
++    const post = await L.poolSnapshot(v6, idC);
++
++    const ev = {};
++    for (const lg of tx.logs) {
++        try {
++            const p = v6.interface.parseLog(lg);
++            if (p) ev[p.name] = p.args.map(x => (typeof x === 'bigint' ? x.toString() : String(x)));
++        } catch {}
++    }
++
++    const posOf = async w => (await v6.positions(idC, w.address));
++    const loss = (before, after) => u(before - after);
++    const lenderRows = [];
++    for (const [name, w] of [['agent self-stake (creator)', agentC], ['victimA (in before the loan)', victimA], ['victimB (in before the loan)', victimB], ['lateLender (in AFTER loan start)', lateLender]]) {
++        const b = atLoan.lenders.find(x => x.address.toLowerCase() === w.address.toLowerCase());
++        const p = await posOf(w);
++        lenderRows.push({
++            lender: name, address: w.address,
++            principalBefore: b ? u(b.amount) : 0,
++            principalAfter: u(p.amount),
++            lost: b ? loss(b.amount, p.amount) : 0,
++            lostPct: b && b.amount > 0n ? Number((10000n * (b.amount - p.amount)) / b.amount) / 100 : 0,
++            unclaimedInterestAfter: u(p.earnedInterest),
++            qualifiedForDefaultedLoan: u(await v6.qualifiedAmountAt(idC, w.address, loan.startTime).catch(() => 0n)),
++        });
++    }
++
++    const scoreAfter = Number(await rep['getReputationScore(uint256)'](idC));
++    const lockedUntil = Number(await rep.lockedUntil(idC));
++    const chainNow = await L.now();
++
++    // Conservation after the loss: Σ principal + Σ unclaimed interest == avail + loaned
++    let claims = 0n;
++    for (const l of post.lenders) claims += l.amount + l.earnedInterest;
++    const backing = post.availableLiquidity + post.totalLoaned;
++
++    // Nothing strands: every survivor can actually get their money out.
++    const exits = [];
++    for (const [name, w] of [['victimA', victimA], ['victimB', victimB], ['lateLender', lateLender], ['agent(creator)', agentC]]) {
++        const p = await posOf(w);
++        if (p.earnedInterest > 0n) exits.push({ who: name, action: 'claimInterest', ...(await attempt('claim', () => v6.connect(w).claimInterest(idC))) });
++        if (p.amount > 0n) exits.push({ who: name, action: 'withdrawLiquidity(full)', ...(await attempt('withdraw', () => v6.connect(w).withdrawLiquidity(idC, p.amount))) });
++    }
++
++    const recovery = L.runMonitor();
++
++    const result = {
++        scenario: 'S2 — large default, M2 first-loss self-stake',
++        levers: a._levers,
++        agentId: idC.toString(),
++        climb: { cycles: climb.cycles, scoreReached: climb.score, rungs },
++        loan: { loanId: Number(loanId), principal: u(loan.amount), collateralPosted: u(loan.collateralAmount), collateralPct: 0, durationDays: 7 },
++        selfStakeLockHeld: !lockTest.ok,
++        selfStakeLockRevert: lockTest.revert,
++        detection: {
++            overdueLoanDetected: overdueRun.exitCode !== 0,
++            overdueMonitorExit: overdueRun.exitCode,
++            overdueMonitorCodes: overdueRun.codes,
++            note: 'The monitor has NO overdue-ACTIVE-loan check. Liquidation is not alert-driven.',
++        },
++        liquidation: {
++            gasUsed: Number(tx.gasUsed),
++            events: ev,
++            selfStakeAbsorbed: ev.SelfStakeAbsorbedLoss ? u(BigInt(ev.SelfStakeAbsorbedLoss[2])) : 0,
++            interestLossSocialized: ev.InterestLossSocialized ? u(BigInt(ev.InterestLossSocialized[1])) : 0,
++        },
++        m2OrderingHeld:
++            !!ev.SelfStakeAbsorbedLoss
++            && lenderRows[0].lostPct === 100
++            && lenderRows[0].lost >= lenderRows[1].lost,
++        l7Held: lenderRows[3].lost === 0 && lenderRows[3].qualifiedForDefaultedLoan === 0,
++        lenderOutcomes: lenderRows,
++        reputation: {
++            scoreBefore, scoreAfter, penaltyApplied: scoreBefore - scoreAfter,
++            expectedPenalty: Math.max(50, Math.floor(100 * u(LOAN) / 1000)),
++            maxRepaidPrincipalAfter: u(await rep.maxRepaidPrincipal(idC)),
++            creditLimitAfter: u(await rep.calculateCreditLimit(agentC.address)),
++            isLockedOut: await rep.isLockedOut(idC),
++            lockoutDays: Math.round((lockedUntil - chainNow) / DAY),
++            defaultCount: Number(await rep.defaultCount(idC)),
++        },
++        poolBefore: L.prettyPool(preLoan),
++        poolAtLoan: L.prettyPool(atLoan),
++        poolAfter: L.prettyPool(post),
++        conservationAfterLoss: { claims: u(claims), backing: u(backing), delta: u(backing - claims), holds: claims === backing },
++        nothingStranded: exits.every(e => e.ok),
++        exits,
++        monitorAfterLiquidation: { exitCode: recovery.exitCode, codes: recovery.codes },
++    };
++    console.log(JSON.stringify(result, null, 2));
++    L.writeResult('s2-large-default.json', result);
++    await L.revert(snap);
++}
++
++main().catch(e => { console.error(e); process.exit(1); });
+diff --git a/scripts/incident-drill/s3-nft-move.js b/scripts/incident-drill/s3-nft-move.js
+new file mode 100644
+index 0000000..d301345
+--- /dev/null
++++ b/scripts/incident-drill/s3-nft-move.js
+@@ -0,0 +1,153 @@
++// SCENARIO 3 — the agent NFT moves while a loan is open (the F-01 class).
++//
++// Questions the runbook has to answer and has never rehearsed on V6.2:
++//   * does the monitor's NFT-move detector actually fire, and at what severity?
++//   * is the loan still closeable, and BY WHOM?
++//   * where does the collateral go?
++//   * who takes the reputation outcome?
++//   * can the buyer borrow against the seller's locked self-stake? (M-1 lever)
++//   * does owner liquidation still work after the transfer?
++//
++// Usage: npx hardhat run --network localhost scripts/incident-drill/s3-nft-move.js
++
++const { ethers } = require('hardhat');
++const L = require('./lib');
++const { USDC, u, DAY, advance, attempt } = L;
++
++async function main() {
++    const a = L.addr();
++    const signers = await ethers.getSigners();
++    const owner = signers[0];
++    const seller = signers[10];    // registers the agent, creates the pool, borrows
++    const lender = signers[11];
++    const buyer = signers[12];     // receives the agent NFT mid-loan
++    const stranger = signers[13];
++
++    const v6 = await ethers.getContractAt('AgentLiquidityMarketplaceV62', a.agentLiquidityMarketplace_v6);
++    const rep = await ethers.getContractAt('ReputationManagerV4', a.reputationManagerV4);
++    const reg = await ethers.getContractAt('AgentRegistryV2', a.agentRegistryV2);
++    const usdc = await ethers.getContractAt('MockUSDC', a.usdc);
++
++    const outer = await L.snap();
++    for (const w of [seller, lender, buyer, stranger]) {
++        await (await usdc.mint(w.address, USDC(100000))).wait();
++        await (await usdc.connect(w).approve(await v6.getAddress(), ethers.MaxUint256)).wait();
++    }
++    await (await reg.connect(seller).register('ipfs://seller', [])).wait();
++    const id = await reg.addressToAgentId(seller.address);
++    await (await rep.connect(seller)['initializeReputation()']()).wait();
++    await (await v6.connect(seller).createAgentPool()).wait();
++    await (await v6.connect(lender).supplyLiquidity(id, USDC(1000))).wait();
++
++    // Score 100 ⇒ tier 0 ⇒ 100 % collateral, bootstrap ladder limit 100 USDC.
++    await (await v6.connect(seller).requestLoan(USDC(100), 7)).wait();
++    const loanId = (await v6.nextLoanId()) - 1n;
++    const loan = await v6.loans(loanId);
++
++    // ------------------------------------------------------------ the transfer
++    await advance(DAY);
++    const txT = await (await reg.connect(seller).transferFrom(seller.address, buyer.address, id)).wait();
++
++    const afterTransfer = {
++        ownerOf: await reg.ownerOf(id),
++        addressToAgentId_seller: Number(await reg.addressToAgentId(seller.address)),
++        addressToAgentId_buyer: Number(await reg.addressToAgentId(buyer.address)),
++        poolAgentAddress: (await v6.getAgentPool(id))[0],
++        loanBorrower: loan.borrower,
++        sellerStillHoldsLenderPosition: u((await v6.positions(id, seller.address)).amount),
++        // D13: the self-stake view must resolve by agentId, not by the (now deleted)
++        // seller address mapping.
++        requiredSelfStakeView: u(await v6.requiredSelfStake(id, 0n)),
++        transferGas: Number(txT.gasUsed),
++    };
++
++    // ---------------------------------------------------- DETECT: monitor reaction
++    L.clearAlerts();
++    const detect = L.runMonitor();
++    const alerts = L.alertState();
++
++    // ---------------------------------------------------- who can do what now
++    const probes = [];
++    const probe = async (label, fn) => {
++        const s = await L.snap();
++        probes.push({ ...(await attempt(label, fn)) });
++        await L.revert(s);
++    };
++    await probe('stranger repays the loan', () => v6.connect(stranger).repayLoan(loanId));
++    await probe('ORIGINAL borrower (seller) repays', () => v6.connect(seller).repayLoan(loanId));
++    await probe('CURRENT NFT holder (buyer) repays', () => v6.connect(buyer).repayLoan(loanId));
++    await probe('buyer requests a NEW loan (M-1 lever ON)', () => v6.connect(buyer).requestLoan(USDC(50), 7));
++    await probe('seller requests a new loan after selling the NFT', () => v6.connect(seller).requestLoan(USDC(50), 7));
++    await probe('buyer creates a pool for the transferred agent', () => v6.connect(buyer).createAgentPool());
++
++    // ------------------------------------ branch A: the BUYER closes the loan
++    const snapA = await L.snap();
++    const balA0 = { seller: await usdc.balanceOf(seller.address), buyer: await usdc.balanceOf(buyer.address) };
++    const scoreBefore = Number(await rep['getReputationScore(uint256)'](id));
++    await advance(6 * DAY - 900);
++    const rA = await (await v6.connect(buyer).repayLoan(loanId)).wait();
++    const branchA = {
++        repaidBy: 'current NFT holder (buyer)',
++        loanState: Number((await v6.loans(loanId)).state),
++        collateralReturnedTo_seller: u((await usdc.balanceOf(seller.address)) - balA0.seller),
++        buyerNetSpend: u(balA0.buyer - (await usdc.balanceOf(buyer.address))),
++        collateralAmount: u(loan.collateralAmount),
++        scoreBefore, scoreAfter: Number(await rep['getReputationScore(uint256)'](id)),
++        maxRepaidPrincipal: u(await rep.maxRepaidPrincipal(id)),
++        gasUsed: Number(rA.gasUsed),
++        monitorAfter: (() => { const r = L.runMonitor(); return { exitCode: r.exitCode, codes: r.codes }; })(),
++    };
++    await L.revert(snapA);
++
++    // ------------------------------------ branch B: the ORIGINAL borrower closes it
++    const snapB = await L.snap();
++    const balB0 = { seller: await usdc.balanceOf(seller.address) };
++    await advance(6 * DAY - 900);
++    await (await v6.connect(seller).repayLoan(loanId)).wait();
++    const branchB = {
++        repaidBy: 'original borrower (seller), who no longer owns the agent',
++        loanState: Number((await v6.loans(loanId)).state),
++        sellerNetChange: u((await usdc.balanceOf(seller.address)) - balB0.seller),
++        scoreAfter: Number(await rep['getReputationScore(uint256)'](id)),
++        note: 'reputation still accrues to the agentId — i.e. to the BUYER, who now owns it',
++    };
++    await L.revert(snapB);
++
++    // ------------------------------------ branch C: the loan goes bad after the sale
++    const snapC = await L.snap();
++    await advance(9 * DAY);
++    const liq = await attempt('owner liquidates the transferred agent\'s loan', () => v6.connect(owner).liquidateLoan(loanId));
++    const branchC = {
++        liquidationWorksAfterTransfer: liq.ok, revert: liq.revert,
++        loanState: Number((await v6.loans(loanId)).state),
++        defaultRecordedAgainstAgentId: Number(await rep.defaultCount(id)),
++        buyerLockedOut: await rep.isLockedOut(id),
++        sellerLenderPositionAfter: u((await v6.positions(id, seller.address)).amount),
++        collateralCoveredPrincipal: u(loan.collateralAmount) >= u(loan.amount),
++    };
++    await L.revert(snapC);
++
++    const result = {
++        scenario: 'S3 — agent NFT transferred mid-loan (F-01 class)',
++        agentId: id.toString(), loanId: Number(loanId),
++        loan: { principal: u(loan.amount), collateral: u(loan.collateralAmount) },
++        afterTransfer,
++        detection: {
++            exitCode: detect.exitCode, codes: detect.codes,
++            nftDetectorFired: detect.warns.includes('NFT-MOVED'),
++            severity: detect.findings.find(f => f.code === 'NFT-MOVED')?.severity || null,
++            alertLatched: alerts.latchExists,
++            alertSeverity: alerts.latch ? alerts.latch.severity : null,
++            monitorRuntimeMs: detect.ms,
++        },
++        whoCanDoWhat: probes,
++        branchA_buyerRepays: branchA,
++        branchB_sellerRepays: branchB,
++        branchC_ownerLiquidates: branchC,
++    };
++    console.log(JSON.stringify(result, null, 2));
++    L.writeResult('s3-nft-move.json', result);
++    await L.revert(outer);
++}
++
++main().catch(e => { console.error(e); process.exit(1); });
+diff --git a/scripts/incident-drill/s4-hostile-owner.js b/scripts/incident-drill/s4-hostile-owner.js
+new file mode 100644
+index 0000000..802c47f
+--- /dev/null
++++ b/scripts/incident-drill/s4-hostile-owner.js
+@@ -0,0 +1,356 @@
++// SCENARIO 4 — the owner key is hostile for one hour.
++//
++// Enumerates EVERY state-changing call the owner key can make across the four
++// contracts of the V7 stack, EXECUTES each one against a local replica, and records
++// what the invariant monitor would see. Then proves the things the key provably
++// cannot do, and measures what containment is actually available to a single EOA
++// with no timelock and no multisig.
++//
++// Usage: npx hardhat run --network localhost scripts/incident-drill/s4-hostile-owner.js
++
++const { ethers } = require('hardhat');
++const fs = require('fs');
++const path = require('path');
++const L = require('./lib');
++const { USDC, u, DAY, advance, attempt } = L;
++
++async function main() {
++    const a = L.addr();
++    const signers = await ethers.getSigners();
++    const owner = signers[0];
++    const agentH = signers[6];
++    const lenderR = signers[7];
++    const attackerEOA = signers[19];
++
++    const v6 = await ethers.getContractAt('AgentLiquidityMarketplaceV62', a.agentLiquidityMarketplace_v6);
++    const rep = await ethers.getContractAt('ReputationManagerV4', a.reputationManagerV4);
++    const reg = await ethers.getContractAt('AgentRegistryV2', a.agentRegistryV2);
++    const usdc = await ethers.getContractAt('MockUSDC', a.usdc);
++    const faucet = await ethers.getContractAt('AgentCreditFaucet', a.agentCreditFaucet);
++
++    const outer = await L.snap();
++
++    // ------------------------------------------------------------------- setup
++    for (const w of [agentH, lenderR, attackerEOA]) {
++        await (await usdc.mint(w.address, USDC(200000))).wait();
++        await (await usdc.connect(w).approve(await v6.getAddress(), ethers.MaxUint256)).wait();
++    }
++    await (await reg.connect(agentH).register('ipfs://h', [])).wait();
++    const idH = await reg.addressToAgentId(agentH.address);
++    await (await rep.connect(agentH)['initializeReputation()']()).wait();
++    await (await v6.connect(agentH).createAgentPool()).wait();
++    await (await v6.connect(lenderR).supplyLiquidity(idH, USDC(5000))).wait();
++    await (await v6.connect(agentH).requestLoan(USDC(100), 7)).wait();
++    const openLoan = (await v6.nextLoanId()) - 1n;
++
++    // A clean monitor run, so we have an authentic "previous run" state file for
++    // the change-detection checks (CP-CHANGED only fires with history).
++    L.clearAlerts();
++    L.runMonitor();
++    const cleanState = JSON.parse(fs.readFileSync(path.join(L.ROOT, 'forensics/monitor/state-local.json'), 'utf8'));
++
++    const base = await L.snap();
++
++    // Run one hostile action, then ask the monitor what it sees.
++    async function hostile(entry) {
++        const s = await L.snap();
++        const r = await attempt(entry.call, entry.fn);
++        let mon = { exitCode: null, codes: [] };
++        if (r.ok && entry.monitor !== false) {
++            const m = L.runMonitor({ priorState: cleanState, freshState: false });
++            mon = { exitCode: m.exitCode, codes: m.codes };
++        }
++        const extra = r.ok && entry.after ? await entry.after() : null;
++        await L.revert(s);
++        return {
++            contract: entry.contract, call: entry.call, bound: entry.bound || null,
++            succeeded: r.ok, revert: r.revert,
++            monitorExit: mon.exitCode, monitorCodes: mon.codes,
++            detected: mon.exitCode !== null && mon.exitCode !== 0,
++            impact: entry.impact, extra,
++        };
++    }
++
++    const actions = [
++        // ---------------------------------------------------- marketplace V6.2
++        { contract: 'MarketplaceV6.2', call: 'pause()', fn: () => v6.connect(owner).pause(),
++          impact: 'Freezes 9 of 35 operations including every lender exit, every repayment and liquidateLoan.' },
++        { contract: 'MarketplaceV6.2', call: 'setPlatformFeeRate(500)', bound: '<= 500 bps',
++          fn: () => v6.connect(owner).setPlatformFeeRate(500),
++          impact: 'Takes 5 % of ALL interest, retroactively — the fee is computed at repay, so live loans pay the new rate.' },
++        { contract: 'MarketplaceV6.2', call: 'setMinSupplyAmount(100 USDC)', bound: '<= 100 USDC',
++          fn: () => v6.connect(owner).setMinSupplyAmount(USDC(100)),
++          impact: 'Locks small lenders out of new slots. Also raises the floor a PARTIAL withdrawal must leave.' },
++        { contract: 'MarketplaceV6.2', call: 'setMinHoldForReputationReward(7d)', bound: '<= MIN_LOAN_DURATION (7d)',
++          fn: () => v6.connect(owner).setMinHoldForReputationReward(7 * DAY),
++          impact: 'Denies reputation to most repayments. Slows every honest agent; no direct money effect.' },
++        { contract: 'MarketplaceV6.2', call: 'setBindBorrowToPoolCreator(false)', bound: 'none',
++          fn: () => v6.connect(owner).setBindBorrowToPoolCreator(false),
++          impact: 'Turns M-1 OFF. A bought/stolen agent NFT can then borrow against the SELLER\'s locked self-stake and the pool\'s lenders. This is the single most damaging silent flag flip.' },
++        { contract: 'MarketplaceV6.2', call: 'withdrawFees(all)', bound: '<= accumulatedFees',
++          fn: async () => v6.connect(owner).withdrawFees(await v6.accumulatedFees()),
++          impact: 'Moves accrued protocol fees to the owner. Bounded by accumulatedFees — cannot touch lender principal.',
++          after: async () => ({ accumulatedFeesTaken: u(await v6.accumulatedFees()) }) },
++        { contract: 'MarketplaceV6.2', call: 'resetPoolAccounting(agentId)', bound: 'none',
++          fn: () => v6.connect(owner).resetPoolAccounting(idH),
++          impact: 'Rewrites totalLoaned/totalLiquidity/availableLiquidity from positions. On a healthy pool it is a no-op; on an under-recovered one it re-asserts liquidity that is not there.' },
++        { contract: 'MarketplaceV6.2', call: 'compactPoolLenders(agentId)', bound: 'none',
++          fn: () => v6.connect(owner).compactPoolLenders(idH), impact: 'Dedups the lender array. Harmless.' },
++        { contract: 'MarketplaceV6.2', call: 'transferOwnership(hostile) [step 1 of 2]', bound: 'Ownable2Step',
++          fn: () => v6.connect(owner).transferOwnership(attackerEOA.address),
++          impact: 'Sets pendingOwner. Control does NOT move until the recipient calls acceptOwnership.' },
++        { contract: 'MarketplaceV6.2', call: 'transferOwnership + acceptOwnership [both steps]', bound: 'Ownable2Step',
++          fn: async () => { await (await v6.connect(owner).transferOwnership(attackerEOA.address)).wait(); return v6.connect(attackerEOA).acceptOwnership(); },
++          impact: 'Control is gone. Irreversible without the new key.' },
++        { contract: 'MarketplaceV6.2', call: 'renounceOwnership()', bound: 'OVERRIDDEN — reverts',
++          fn: () => v6.connect(owner).renounceOwnership(), impact: 'Blocked by design (audit D5).' },
++        { contract: 'MarketplaceV6.2', call: 'seedPool(...) [F-08]', bound: 'migrationFinalized',
++          fn: () => v6.connect(owner).seedPool(idH, agentH.address, USDC(1e6), USDC(1e6), 0),
++          impact: 'The owner-drain shape. Provably dead on a finalized deployment.' },
++        { contract: 'MarketplaceV6.2', call: 'seedPosition(...) [F-08]', bound: 'migrationFinalized',
++          fn: () => v6.connect(owner).seedPosition(idH, attackerEOA.address, USDC(1e6), 0, 0),
++          impact: 'Would mint a lender position from nothing. Provably dead.' },
++
++        // ------------------------------------------------- reputation manager V4
++        { contract: 'ReputationManagerV4', call: 'setTierLimits(all at MAX_TIER_LIMIT)', bound: '<= MAX_TIER_LIMIT (10,000 USDC), immutable',
++          fn: () => rep.connect(owner).setTierLimits([USDC(10000), USDC(10000), USDC(10000), USDC(10000), USDC(10000), USDC(10000)]),
++          impact: 'Raises every tier to the hard ceiling. The ceiling itself is immutable, so the prize is bounded at 10,000 USDC of unsecured exposure per agent.' },
++        { contract: 'ReputationManagerV4', call: 'setTierLimits(above MAX_TIER_LIMIT)', bound: 'REVERTS',
++          fn: () => rep.connect(owner).setTierLimits([USDC(10001), USDC(10001), USDC(10001), USDC(10001), USDC(10001), USDC(10001)]),
++          impact: 'The immutable ceiling holds.' },
++        { contract: 'ReputationManagerV4', call: 'setLadderParameters(k=10, step=MAX, bootstrap=MAX, refDur=1s)', bound: 'k <= 10, step/bootstrap <= MAX_TIER_LIMIT',
++          fn: () => rep.connect(owner).setLadderParameters(10, USDC(10000), USDC(10000), 1),
++          impact: 'Hands every agent the full tier limit on day one AND shrinks the M2-c self-stake requirement to exposure/10. This is the lever that guts M2, and its only bound is k <= 10.' },
++        { contract: 'ReputationManagerV4', call: 'setReputationRateLimit(0, 1)', bound: 'window > 0 only',
++          fn: () => rep.connect(owner).setReputationRateLimit(0, 1),
++          impact: 'Disables the D1 rate limit entirely — unbounded reputation gain per window.' },
++        { contract: 'ReputationManagerV4', call: 'setScoringParameters(50, 0, 0, 1 wei)', bound: 'bonus<=50, penalties<=200/300, threshold>0',
++          fn: () => rep.connect(owner).setScoringParameters(50, 0, 0, 1),
++          impact: 'Maximum bonus, ZERO default penalty. Defaulting becomes free; a bust-out costs no reputation.' },
++        { contract: 'ReputationManagerV4', call: 'setDefaultLockout(0)', bound: '<= 730 days',
++          fn: () => rep.connect(owner).setDefaultLockout(0),
++          impact: 'Removes the 180-day post-default freeze. A defaulted agent can borrow again immediately.' },
++        { contract: 'ReputationManagerV4', call: 'setLatePenaltyParameters(0,0,0)', bound: 'max <= 300',
++          fn: () => rep.connect(owner).setLatePenaltyParameters(0, 0, 0), impact: 'Removes the late-repayment penalty.' },
++        { contract: 'ReputationManagerV4', call: 'setBonusReferenceAmount(1 wei)', bound: '> 0',
++          fn: () => rep.connect(owner).setBonusReferenceAmount(1),
++          impact: 'Every dust loan earns the full reputation bonus.' },
++        { contract: 'ReputationManagerV4', call: 'authorizePool(ATTACKER EOA)', bound: 'NONE — any address',
++          fn: () => rep.connect(owner).authorizePool(attackerEOA.address),
++          impact: 'THE BIG ONE. An arbitrary address becomes able to call recordBorrow / recordLoanCompletion / recordDefault, i.e. to write reputation and credit capacity for ANY agent, directly.' },
++        { contract: 'ReputationManagerV4', call: 'revokePool(the live marketplace)', bound: 'none',
++          fn: () => rep.connect(owner).revokePool(a.agentLiquidityMarketplace_v6),
++          impact: 'Bricks repayLoan AND liquidateLoan protocol-wide — both call into the manager — with NO pause flag to show for it.',
++          after: async () => {
++              const r1 = await attempt('repay', () => v6.connect(agentH).repayLoan(openLoan));
++              await advance(9 * DAY);   // make the loan genuinely overdue first
++              const r2 = await attempt('liquidate', () => v6.connect(owner).liquidateLoan(openLoan));
++              return { repayBricked: !r1.ok, repayRevert: r1.revert, liquidateBricked: !r2.ok, liquidateRevert: r2.revert };
++          } },
++        { contract: 'ReputationManagerV4', call: 'setValidationRegistry(hostile contract)', bound: 'none',
++          fn: () => rep.connect(owner).setValidationRegistry(attackerEOA.address),
++          impact: 'creditLimitOf() calls into it. A reverting/hostile registry can brick EVERY credit-limit read, hence requestLoan, for every agent.',
++          after: async () => {
++              const r = await attempt('requestLoan after hostile validation registry', () => v6.connect(agentH).requestLoan(USDC(10), 7));
++              return { requestLoanBricked: !r.ok, revert: r.revert };
++          } },
++        { contract: 'ReputationManagerV4', call: 'renounceOwnership()', bound: 'OVERRIDDEN — reverts',
++          fn: () => rep.connect(owner).renounceOwnership(), impact: 'Blocked by design.' },
++
++        // ------------------------------------------------------ registry (Ownable)
++        { contract: 'AgentRegistryV2', call: 'deactivateAgent(agentId)', bound: 'none',
++          fn: () => reg.connect(owner).deactivateAgent(idH),
++          impact: 'Per-agent kill switch. Blocks createAgentPool/requestLoan for that agent; repayment stays open.' },
++        { contract: 'AgentRegistryV2', call: 'pause()', bound: 'none',
++          fn: () => reg.connect(owner).pause(),
++          impact: 'Blocks NEW registrations. Does NOT block NFT transfers or anything on the marketplace.' },
++        { contract: 'AgentRegistryV2', call: 'transferOwnership(hostile) — ONE STEP', bound: 'plain Ownable',
++          fn: () => reg.connect(owner).transferOwnership(attackerEOA.address),
++          impact: 'Registry control moves IMMEDIATELY, in one transaction, with no acceptance step and no way back.',
++          after: async () => ({ newOwner: await reg.owner() }) },
++        { contract: 'AgentRegistryV2', call: 'renounceOwnership()', bound: 'NOT OVERRIDDEN',
++          fn: () => reg.connect(owner).renounceOwnership(),
++          impact: 'PERMANENTLY orphans the registry. deactivateAgent — the runbook\'s recommended per-agent kill switch — and registry pause are gone for ever. Nothing can restore them.',
++          after: async () => ({ ownerAfter: await reg.owner(), deactivateStillPossible: (await attempt('deactivate', () => reg.connect(owner).deactivateAgent(idH))).ok }) },
++
++        // -------------------------------------------------------- faucet (Ownable)
++        { contract: 'AgentCreditFaucet', call: 'drain(full balance)', bound: '<= faucet balance',
++          fn: async () => faucet.connect(owner).drain(await faucet.balance()),
++          impact: 'Empties the faucet to the owner. Bounded by the faucet balance (19 USDC on mainnet today).' },
++        { contract: 'AgentCreditFaucet', call: 'setClaimAmount(100 USDC)', bound: '<= 100 USDC',
++          fn: () => faucet.connect(owner).setClaimAmount(USDC(100)), impact: 'Drains the faucet faster through claims.' },
++        { contract: 'AgentCreditFaucet', call: 'setMaxEligibleAgentId(max)', bound: 'NONE',
++          fn: () => faucet.connect(owner).setMaxEligibleAgentId(ethers.MaxUint256), impact: 'Opens the faucet to every agent, present and future.' },
++        { contract: 'AgentCreditFaucet', call: 'transferOwnership(hostile) — ONE STEP', bound: 'plain Ownable',
++          fn: () => faucet.connect(owner).transferOwnership(attackerEOA.address), impact: 'Immediate, one transaction.' },
++        { contract: 'AgentCreditFaucet', call: 'renounceOwnership()', bound: 'NOT OVERRIDDEN',
++          fn: () => faucet.connect(owner).renounceOwnership(), impact: 'Permanently strands whatever USDC the faucet holds.' },
++    ];
++
++    const results = [];
++    for (const e of actions) { const r = await hostile(e); results.push(r); console.log(`  ${r.succeeded ? 'OK  ' : 'REVT'} ${r.contract.padEnd(20)} ${r.call.padEnd(56)} monitor=${r.monitorExit === null ? '-' : 'exit' + r.monitorExit} ${r.monitorCodes.join(',')}`); }
++
++    // ============================================================ the full chain
++    // The worst thing the key can actually do, executed end to end: authorize
++    // itself on the reputation manager, manufacture credit for an agent it
++    // controls, and draw a real pool down.
++    console.log('\nrunning the full hostile chain...');
++    let chain = null;
++    {
++        const s = await L.snap();
++        const txs = [];
++        const attackerAgent = attackerEOA;
++        await (await reg.connect(attackerAgent).register('ipfs://x', [])).wait();
++        const idX = await reg.addressToAgentId(attackerAgent.address);
++        await (await rep.connect(attackerAgent)['initializeReputation()']()).wait();
++        await (await v6.connect(attackerAgent).createAgentPool()).wait();
++        // an innocent third party lends into that pool
++        await (await v6.connect(lenderR).supplyLiquidity(idX, USDC(5000))).wait();
++        const victimBefore = (await v6.positions(idX, lenderR.address)).amount;
++
++        const t0 = await v6.connect(owner);
++        // 1. authorize the hostile EOA on the reputation manager
++        txs.push('rep.authorizePool(attacker)');      await (await rep.connect(owner).authorizePool(attackerAgent.address)).wait();
++        // 2. remove every brake
++        txs.push('rep.setReputationRateLimit(0,1)');  await (await rep.connect(owner).setReputationRateLimit(0, 1)).wait();
++        txs.push('rep.setScoringParameters(50,0,0,1)'); await (await rep.connect(owner).setScoringParameters(50, 0, 0, 1)).wait();
++        txs.push('rep.setBonusReferenceAmount(1 wei)'); await (await rep.connect(owner).setBonusReferenceAmount(1)).wait();
++        txs.push('rep.setDefaultLockout(0)');         await (await rep.connect(owner).setDefaultLockout(0)).wait();
++        txs.push('rep.setTierLimits(all MAX)');       await (await rep.connect(owner).setTierLimits([USDC(10000), USDC(10000), USDC(10000), USDC(10000), USDC(10000), USDC(10000)])).wait();
++        // k = 10 both accelerates the ladder and shrinks the M2-c self-stake to exposure/10
++        txs.push('rep.setLadderParameters(10, MAX, MAX, 1s)'); await (await rep.connect(owner).setLadderParameters(10, USDC(10000), USDC(10000), 1)).wait();
++        // 3. write reputation directly from the authorized EOA
++        // recordBorrow then recordLoanCompletion for the SAME id: the pair is what
++        // gives V4 a non-zero hold time, and hold time is what pays the bonus.
++        // Both are onlyAuthorizedPool, and the hostile EOA is now authorized.
++        txs.push('rep.recordBorrow + rep.recordLoanCompletion x N (forged, from the authorized EOA)');
++        let calls = 0;
++        while (Number(await rep['getReputationScore(uint256)'](idX)) < 800 && calls < 60) {
++            await (await rep.connect(attackerAgent).recordBorrow(attackerAgent.address, 900000 + calls, USDC(10000))).wait();
++            await advance(2);
++            await (await rep.connect(attackerAgent).recordLoanCompletion(attackerAgent.address, 900000 + calls, USDC(10000), true, 0)).wait();
++            calls++;
++        }
++        const forged = {
++            ownerTxCount: txs.length - 1 + calls * 2,
++            forgedRecordCallPairs: calls,
++            score: Number(await rep['getReputationScore(uint256)'](idX)),
++            maxRepaidPrincipal: u(await rep.maxRepaidPrincipal(idX)),
++            creditLimit: u(await rep.calculateCreditLimit(attackerAgent.address)),
++            collateralPct: Number(await rep.calculateCollateralRequirement(attackerAgent.address)),
++            requiredSelfStake: u(await v6.requiredSelfStake(idX, USDC(5000))),
++        };
++        // 4. draw the pool down. The attacker's own stake also counts as pool
++        //    liquidity, so the needed stake is a fixed point: iterate it.
++        let need = 0n;
++        for (let i = 0; i < 4; i++) {
++            const av = (await v6.getAgentPool(idX))[2] + need;
++            const lim = await rep.calculateCreditLimit(attackerAgent.address);
++            const d = av < lim ? av : lim;
++            const want = await v6.requiredSelfStake(idX, d);
++            if (want <= need) break;
++            need = want + USDC(10);
++        }
++        await (await usdc.mint(attackerAgent.address, need + USDC(10))).wait();
++        if (need > 0n) await (await v6.connect(attackerAgent).supplyLiquidity(idX, need)).wait();
++        const avail = (await v6.getAgentPool(idX))[2];
++        const limit = await rep.calculateCreditLimit(attackerAgent.address);
++        const draw = avail < limit ? avail : limit;
++        const balBefore = await usdc.balanceOf(attackerAgent.address);
++        const drawTx = await attempt('draw the pool', () => v6.connect(attackerAgent).requestLoan(draw, 7));
++        const balAfter = await usdc.balanceOf(attackerAgent.address);
++
++        const mon = L.runMonitor({ priorState: cleanState, freshState: false });
++        chain = {
++            transactionsFromTheOwnerKey: txs,
++            forged,
++            drawAttempted: u(draw), drawSucceeded: drawTx.ok, drawRevert: drawTx.revert,
++            attackerCashOut: u(balAfter - balBefore),
++            attackerOwnCapitalAtRisk: u(need),
++            victimLenderPrincipal: u(victimBefore),
++            monitorAfterTheWholeChain: { exitCode: mon.exitCode, codes: mon.codes },
++            timeToDetect: 'the next scheduled 30-minute monitor run, and only via CP-CHANGED (WARN) on the tier/ladder fields. authorizePool, the scoring parameters and the forged reputation writes are NOT checked at all.',
++        };
++        await L.revert(s);
++    }
++
++    // ============================================== what the key provably CANNOT do
++    const cannot = [];
++    {
++        const s = await L.snap();
++        const probes = [
++            ['raise a tier limit above the immutable MAX_TIER_LIMIT', () => rep.connect(owner).setTierLimits([USDC(10001), USDC(1000), USDC(1000), USDC(1000), USDC(1000), USDC(1000)])],
++            ['set creditMultiple above 10', () => rep.connect(owner).setLadderParameters(11, USDC(100), USDC(100), DAY)],
++            ['set growthStep above MAX_TIER_LIMIT', () => rep.connect(owner).setLadderParameters(2, USDC(10001), USDC(100), DAY)],
++            ['set the platform fee above 5 %', () => v6.connect(owner).setPlatformFeeRate(501)],
++            ['set minSupplyAmount above 100 USDC', () => v6.connect(owner).setMinSupplyAmount(USDC(101))],
++            ['set the default lockout beyond 2 years', () => rep.connect(owner).setDefaultLockout(731 * DAY)],
++            ['re-open migration (setMigrationFinalized)', () => v6.connect(owner).setMigrationFinalized()],
++            ['mint a lender position (seedPosition)', () => v6.connect(owner).seedPosition(idH, attackerEOA.address, USDC(1000), 0, 0)],
++            ['mint pool liquidity (seedPool)', () => v6.connect(owner).seedPool(idH, agentH.address, USDC(1e6), USDC(1e6), 0)],
++            ['withdraw more than accumulatedFees', async () => v6.connect(owner).withdrawFees((await v6.accumulatedFees()) + 1n)],
++            ['renounce marketplace ownership', () => v6.connect(owner).renounceOwnership()],
++            ['renounce reputation-manager ownership', () => rep.connect(owner).renounceOwnership()],
++            ['liquidate a loan that is not overdue', () => v6.connect(owner).liquidateLoan(openLoan)],
++            ['liquidate while paused', async () => { await (await v6.connect(owner).pause()).wait(); return v6.connect(owner).liquidateLoan(openLoan); }],
++            ['transfer an agent NFT it does not hold', () => reg.connect(owner).transferFrom(agentH.address, attackerEOA.address, idH)],
++            ['set a reputation score directly (no such function)', async () => { if (rep.interface.hasFunction && rep.interface.getFunction('setReputationScore')) return Promise.reject(new Error('exists')); throw new Error('no such function on ReputationManagerV4'); }],
++        ];
++        for (const [label, fn] of probes) {
++            const inner = await L.snap();
++            const r = await attempt(label, fn);
++            cannot.push({ attempt: label, blocked: !r.ok, revert: r.revert });
++            await L.revert(inner);
++        }
++        await L.revert(s);
++    }
++
++    // ==================================================== containment with one EOA
++    const containment = [];
++    {
++        const s = await L.snap();
++        const cold = signers[18];
++        // full key rotation, counted
++        const rot = [];
++        rot.push({ step: 'marketplace.transferOwnership(cold)', ...(await attempt('x', () => v6.connect(owner).transferOwnership(cold.address))) });
++        rot.push({ step: 'marketplace.acceptOwnership() FROM COLD', ...(await attempt('x', () => v6.connect(cold).acceptOwnership())) });
++        rot.push({ step: 'reputation.transferOwnership(cold)', ...(await attempt('x', () => rep.connect(owner).transferOwnership(cold.address))) });
++        rot.push({ step: 'reputation.acceptOwnership() FROM COLD', ...(await attempt('x', () => rep.connect(cold).acceptOwnership())) });
++        rot.push({ step: 'registry.transferOwnership(cold) [ONE STEP]', ...(await attempt('x', () => reg.connect(owner).transferOwnership(cold.address))) });
++        rot.push({ step: 'faucet.transferOwnership(cold) [ONE STEP]', ...(await attempt('x', () => faucet.connect(owner).transferOwnership(cold.address))) });
++        const oldKeyStillWorks = [];
++        oldKeyStillWorks.push({ call: 'marketplace.pause() from the OLD key', ...(await attempt('x', () => v6.connect(owner).pause())) });
++        oldKeyStillWorks.push({ call: 'reputation.authorizePool from the OLD key', ...(await attempt('x', () => rep.connect(owner).authorizePool(attackerEOA.address))) });
++        oldKeyStillWorks.push({ call: 'registry.deactivateAgent from the OLD key', ...(await attempt('x', () => reg.connect(owner).deactivateAgent(idH))) });
++        containment.push({
++            option: 'rotate every owner to a fresh cold wallet',
++            transactionsRequired: rot.length,
++            steps: rot.map(r => ({ step: r.step, ok: r.ok, revert: r.revert })),
++            oldKeyNeutralisedImmediately: oldKeyStillWorks.every(o => !o.ok),
++            oldKeyProbes: oldKeyStillWorks.map(o => ({ call: o.call, stillWorks: o.ok, revert: o.revert })),
++            note: 'Only possible while you STILL control the key. Six transactions, two of which must be signed by the new wallet (Ownable2Step). The registry and faucet move in one step each, so a typo there is unrecoverable.',
++        });
++        await L.revert(s);
++    }
++
++    const result = {
++        scenario: 'S4 — owner key hostile for one hour',
++        stack: { marketplace: await v6.VERSION(), reputation: await rep.VERSION(), registryOwnership: 'Ownable (ONE-STEP, renounceable)', faucetOwnership: 'Ownable (ONE-STEP, renounceable)' },
++        ownerSurface: results,
++        summary: {
++            stateChangingOwnerCallsEnumerated: results.length,
++            succeeded: results.filter(r => r.succeeded).length,
++            blockedByDesign: results.filter(r => !r.succeeded).length,
++            detectedByTheMonitor: results.filter(r => r.detected).length,
++            invisibleToTheMonitor: results.filter(r => r.succeeded && !r.detected).map(r => `${r.contract}: ${r.call}`),
++        },
++        fullHostileChain: chain,
++        provablyCannot: cannot,
++        containment,
++    };
++    console.log('\n' + JSON.stringify({ summary: result.summary, fullHostileChain: chain, containment: containment[0] }, null, 2));
++    L.writeResult('s4-hostile-owner.json', result);
++    await L.revert(outer);
++}
++
++main().catch(e => { console.error(e); process.exit(1); });
+diff --git a/scripts/incident-drill/s5-pause-blast-radius.js b/scripts/incident-drill/s5-pause-blast-radius.js
+new file mode 100644
+index 0000000..f88f30e
+--- /dev/null
++++ b/scripts/incident-drill/s5-pause-blast-radius.js
+@@ -0,0 +1,178 @@
++// SCENARIO 5 — pause blast radius on V6.2, re-measured.
++//
++// The V6.1 figure in the runbook was "6 of 18". V6.2 adds M2 (the locked
++// first-loss self-stake) and a V4 reputation manager with its own owner surface,
++// so the table has to be rebuilt rather than assumed.
++//
++// Every operation is attempted from the correct caller, twice: once UNPAUSED
++// (control) and once PAUSED, each inside its own snapshot so probes cannot
++// contaminate each other. A probe that fails in BOTH columns is a setup problem,
++// not a pause effect, and is reported as such.
++//
++// Also measures the recommended alternative lever — registry.deactivateAgent —
++// against the same operation set, so the runbook can compare blast radii.
++//
++// Usage: npx hardhat run --network localhost scripts/incident-drill/s5-pause-blast-radius.js
++
++const { ethers } = require('hardhat');
++const L = require('./lib');
++const { USDC, u, DAY, advance, attempt } = L;
++
++async function main() {
++    const a = L.addr();
++    const signers = await ethers.getSigners();
++    const owner = signers[0];
++    const agentE = signers[14];
++    const lenderX = signers[15];
++    const newLender = signers[16];
++    const freshAgent = signers[17];
++    const buyer = signers[18];
++
++    const v6 = await ethers.getContractAt('AgentLiquidityMarketplaceV62', a.agentLiquidityMarketplace_v6);
++    const rep = await ethers.getContractAt('ReputationManagerV4', a.reputationManagerV4);
++    const reg = await ethers.getContractAt('AgentRegistryV2', a.agentRegistryV2);
++    const usdc = await ethers.getContractAt('MockUSDC', a.usdc);
++    const faucet = await ethers.getContractAt('AgentCreditFaucet', a.agentCreditFaucet);
++
++    const outer = await L.snap();
++
++    // ------------------------------------------------------------------- setup
++    for (const w of [agentE, lenderX, newLender, freshAgent, buyer]) {
++        await (await usdc.mint(w.address, USDC(100000))).wait();
++        await (await usdc.connect(w).approve(await v6.getAddress(), ethers.MaxUint256)).wait();
++    }
++    await (await reg.connect(agentE).register('ipfs://e', [])).wait();
++    const idE = await reg.addressToAgentId(agentE.address);
++    await (await rep.connect(agentE)['initializeReputation()']()).wait();
++    await (await v6.connect(agentE).createAgentPool()).wait();
++    await (await v6.connect(lenderX).supplyLiquidity(idE, USDC(1000))).wait();
++    // The agent's own M2 first-loss position, so the self-stake lock can be probed.
++    await (await v6.connect(agentE).supplyLiquidity(idE, USDC(50))).wait();
++    await (await reg.connect(freshAgent).register('ipfs://fresh', [])).wait();
++    const idFresh = await reg.addressToAgentId(freshAgent.address);
++
++    // One completed cycle so lenderX has unclaimed interest and the contract has fees.
++    await (await v6.connect(agentE).requestLoan(USDC(100), 7)).wait();
++    await advance(7 * DAY - 900);
++    await (await v6.connect(agentE).repayLoan((await v6.nextLoanId()) - 1n)).wait();
++
++    // Two live loans: one to repay, one to liquidate. Both pushed past endTime so a
++    // single time-advance makes the liquidate probe legal.
++    await (await v6.connect(agentE).requestLoan(USDC(100), 7)).wait();
++    const repayId = (await v6.nextLoanId()) - 1n;
++    await (await v6.connect(agentE).requestLoan(USDC(100), 7)).wait();
++    const liqId = (await v6.nextLoanId()) - 1n;
++    await advance(9 * DAY);
++
++    const baseState = await L.snap();
++
++    const ops = () => ([
++        // --- money-moving participant operations on the marketplace
++        ['LENDER', 'withdrawLiquidity (FULL position, loans outstanding)', () => v6.connect(lenderX).withdrawLiquidity(idE, 0n)],
++        ['LENDER', 'withdrawLiquidity (max the pool can honour)', () => v6.connect(lenderX).withdrawLiquidity(idE, 0n)],
++        ['LENDER', 'withdrawLiquidity (partial)', () => v6.connect(lenderX).withdrawLiquidity(idE, USDC(10))],
++        ['AGENT-CREATOR', 'withdrawLiquidity of its own M2 self-stake', () => v6.connect(agentE).withdrawLiquidity(idE, 1n)],
++        ['LENDER', 'claimInterest', () => v6.connect(lenderX).claimInterest(idE)],
++        ['LENDER', 'supplyLiquidity (new slot)', () => v6.connect(newLender).supplyLiquidity(idE, USDC(50))],
++        ['LENDER', 'supplyLiquidity (top-up existing)', () => v6.connect(lenderX).supplyLiquidity(idE, USDC(50))],
++        ['BORROWER', 'repayLoan (clear the debt)', () => v6.connect(agentE).repayLoan(repayId)],
++        ['BORROWER', 'requestLoan (new credit)', () => v6.connect(agentE).requestLoan(USDC(50), 7)],
++        ['AGENT', 'createAgentPool', () => v6.connect(freshAgent).createAgentPool()],
++        // --- owner recovery + risk levers on the marketplace
++        ['OWNER-MP', 'liquidateLoan (the recovery tool)', () => v6.connect(owner).liquidateLoan(liqId)],
++        ['OWNER-MP', 'withdrawFees', () => v6.connect(owner).withdrawFees(1n)],
++        ['OWNER-MP', 'setPlatformFeeRate', () => v6.connect(owner).setPlatformFeeRate(150)],
++        ['OWNER-MP', 'setMinSupplyAmount', () => v6.connect(owner).setMinSupplyAmount(USDC(100))],
++        ['OWNER-MP', 'setMinHoldForReputationReward', () => v6.connect(owner).setMinHoldForReputationReward(0)],
++        ['OWNER-MP', 'setBindBorrowToPoolCreator', () => v6.connect(owner).setBindBorrowToPoolCreator(false)],
++        ['OWNER-MP', 'compactPoolLenders', () => v6.connect(owner).compactPoolLenders(idE)],
++        ['OWNER-MP', 'resetPoolAccounting', () => v6.connect(owner).resetPoolAccounting(idE)],
++        ['OWNER-MP', 'transferOwnership', () => v6.connect(owner).transferOwnership(buyer.address)],
++        ['OWNER-MP', 'unpause', () => v6.connect(owner).unpause()],
++        ['OWNER-MP', 'seedPool (migration finalized)', () => v6.connect(owner).seedPool(idE, agentE.address, USDC(1), USDC(1), 0)],
++        ['OWNER-MP', 'setMigrationFinalized (again)', () => v6.connect(owner).setMigrationFinalized()],
++        // --- registry (separate contract, separate pause flag)
++        ['REGISTRY', 'register a new agent', () => reg.connect(buyer).register('ipfs://b', [])],
++        ['REGISTRY', 'transfer agent NFT', () => reg.connect(freshAgent).transferFrom(freshAgent.address, buyer.address, idFresh)],
++        ['REGISTRY', 'owner: deactivateAgent (the per-agent kill switch)', () => reg.connect(owner).deactivateAgent(idFresh)],
++        ['REGISTRY', 'owner: reactivateAgent (undo the kill switch)', () => (async () => { await (await reg.connect(owner).deactivateAgent(idFresh)).wait(); return reg.connect(owner).reactivateAgent(idFresh); })()],
++        ['REGISTRY', 'owner: pause registry', () => reg.connect(owner).pause()],
++        ['REGISTRY', 'owner: transferOwnership (ONE-STEP Ownable)', () => reg.connect(owner).transferOwnership(buyer.address)],
++        ['REGISTRY', 'owner: renounceOwnership (ONE-STEP Ownable)', () => reg.connect(owner).renounceOwnership()],
++        // --- reputation manager V4 (separate contract, NO pause flag at all)
++        ['REPUTATION', 'agent: initializeReputation', () => rep.connect(freshAgent)['initializeReputation()']()],
++        ['REPUTATION', 'owner: setTierLimits', () => rep.connect(owner).setTierLimits([USDC(1000), USDC(1000), USDC(1000), USDC(1000), USDC(1000), USDC(1000)])],
++        ['REPUTATION', 'owner: setLadderParameters', () => rep.connect(owner).setLadderParameters(3, USDC(200), USDC(50), 3 * DAY)],
++        ['REPUTATION', 'owner: setReputationRateLimit', () => rep.connect(owner).setReputationRateLimit(1, DAY)],
++        ['REPUTATION', 'owner: setScoringParameters', () => rep.connect(owner).setScoringParameters(0, 200, 300, USDC(1))],
++        ['REPUTATION', 'owner: setDefaultLockout', () => rep.connect(owner).setDefaultLockout(730 * DAY)],
++        ['REPUTATION', 'owner: revokePool (marketplace)', () => rep.connect(owner).revokePool(a.agentLiquidityMarketplace_v6)],
++        ['REPUTATION', 'owner: authorizePool (arbitrary)', () => rep.connect(owner).authorizePool(buyer.address)],
++        // --- faucet (separate contract, no pause flag)
++        ['FAUCET', 'agent: claim', () => faucet.connect(freshAgent).claim()],
++        ['FAUCET', 'owner: drain', () => faucet.connect(owner).drain(USDC(1))],
++        ['FAUCET', 'owner: setClaimAmount', () => faucet.connect(owner).setClaimAmount(USDC(100))],
++    ]);
++
++    const results = { unpaused: [], paused: [], deactivated: [] };
++
++    for (const phase of ['unpaused', 'paused', 'deactivated']) {
++        await L.revert(baseState);
++        const re = await L.snap();
++        if (phase === 'paused') await (await v6.connect(owner).pause()).wait();
++        if (phase === 'deactivated') await (await reg.connect(owner).deactivateAgent(idE)).wait();
++
++        for (const [group, label, fn] of ops()) {
++            const inner = await L.snap();
++            // probes whose amount depends on live state
++            let call = fn;
++            if (label === 'withdrawLiquidity (FULL position, loans outstanding)') {
++                const amt = (await v6.positions(idE, lenderX.address)).amount;
++                call = () => v6.connect(lenderX).withdrawLiquidity(idE, amt);
++            } else if (label === 'withdrawLiquidity (max the pool can honour)') {
++                const avail = (await v6.getAgentPool(idE))[2];
++                call = () => v6.connect(lenderX).withdrawLiquidity(idE, avail);
++            }
++            const r = await attempt(label, call);
++            results[phase].push({ group, ...r });
++            await L.revert(inner);
++        }
++        await L.revert(re);
++    }
++
++    const rows = results.unpaused.map((un, i) => {
++        const p = results.paused[i], d = results.deactivated[i];
++        return {
++            group: un.group, operation: un.label,
++            unpaused: un.ok ? 'works' : `blocked: ${un.revert}`,
++            paused: p.ok ? 'works' : `BLOCKED: ${p.revert}`,
++            agentDeactivated: d.ok ? 'works' : `BLOCKED: ${d.revert}`,
++            brokenByPause: un.ok && !p.ok,
++            brokenByDeactivate: un.ok && !d.ok,
++            unavailableAnyway: !un.ok,
++        };
++    });
++
++    const probed = rows.filter(r => !r.unavailableAnyway);
++    const result = {
++        scenario: 'S5 — pause blast radius on V6.2 (+ the deactivateAgent comparison)',
++        marketplaceVersion: await v6.VERSION(), reputationVersion: await rep.VERSION(),
++        totals: {
++            operationsProbed: rows.length,
++            operationsAvailableUnpaused: probed.length,
++            brokenByPause: rows.filter(r => r.brokenByPause).length,
++            brokenByDeactivateAgent: rows.filter(r => r.brokenByDeactivate).length,
++            headline: `${rows.filter(r => r.brokenByPause).length} of ${probed.length} available operations are broken by pause()`,
++        },
++        brokenByPause: rows.filter(r => r.brokenByPause).map(r => `${r.group}: ${r.operation}`),
++        brokenByDeactivateAgent: rows.filter(r => r.brokenByDeactivate).map(r => `${r.group}: ${r.operation}`),
++        survivesPause: rows.filter(r => !r.brokenByPause && !r.unavailableAnyway).map(r => `${r.group}: ${r.operation}`),
++        blockedEvenUnpaused: rows.filter(r => r.unavailableAnyway).map(r => ({ operation: r.operation, reason: r.unpaused })),
++        table: rows,
++    };
++    console.log(JSON.stringify({ totals: result.totals, brokenByPause: result.brokenByPause, brokenByDeactivateAgent: result.brokenByDeactivateAgent, blockedEvenUnpaused: result.blockedEvenUnpaused }, null, 2));
++    L.writeResult('s5-pause-blast-radius.json', result);
++    await L.revert(outer);
++}
++
++main().catch(e => { console.error(e); process.exit(1); });
+diff --git a/scripts/incident-drill/s6-rpc-blind.js b/scripts/incident-drill/s6-rpc-blind.js
+new file mode 100644
+index 0000000..bd24150
+--- /dev/null
++++ b/scripts/incident-drill/s6-rpc-blind.js
+@@ -0,0 +1,168 @@
++// SCENARIO 6 — stuck or lying RPC. "We are blind" must not read as "all clear".
++//
++// Drives the monitor through a fault-injecting proxy (scripts/op-resilience/fault-rpc.js)
++// and asserts that each failure mode produces a NON-ZERO exit and a raised alert,
++// not a clean OK. Also proves the wrapper (run-with-alert.sh) fans a monitor CRASH
++// out, since that path is what launchd actually runs.
++//
++// Runs as a plain node script (no hardhat) — it only needs the chain to be up.
++// Usage: node scripts/incident-drill/s6-rpc-blind.js
++
++const { spawn, execFileSync } = require('child_process');
++const fs = require('fs');
++const path = require('path');
++
++const ROOT = path.resolve(__dirname, '..', '..');
++const OUT = path.join(ROOT, 'forensics/output/testing-2026-09-23/incident-drill');
++const SANDBOX = path.join(OUT, 'alert-sandbox-rpc');
++const MONITOR = path.join(ROOT, 'forensics/monitor/v6-invariants.js');
++const FAULT = path.join(ROOT, 'scripts/op-resilience/fault-rpc.js');
++const STATE = path.join(ROOT, 'forensics/monitor/state-local.json');
++
++const sleep = ms => new Promise(r => setTimeout(r, ms));
++
++function clearSandbox() {
++    fs.mkdirSync(SANDBOX, { recursive: true });
++    for (const f of fs.readdirSync(SANDBOX)) { try { fs.unlinkSync(path.join(SANDBOX, f)); } catch {} }
++}
++
++function runMonitor(rpcUrl, extraEnv = {}, timeoutMs = 120000) {
++    const a = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/config/local-addresses.json')));
++    const env = {
++        ...process.env,
++        V6_MONITOR_NETWORK: 'local',
++        LOCAL_RPC_URL: rpcUrl,
++        V6_EXPECTED_OWNER: a.deployer,
++        SPECULAR_ALERT_QUIET: '1',
++        SPECULAR_ALERT_DIR: SANDBOX,
++        V6_HEARTBEAT_MAX_AGE_SEC: '99999999',
++        ...extraEnv,
++    };
++    const t0 = Date.now();
++    let exitCode = 0, out = '';
++    try { out = execFileSync('node', [MONITOR], { env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: timeoutMs }); }
++    catch (e) { exitCode = e.status === undefined || e.status === null ? -1 : e.status; out = (e.stdout || '') + (e.stderr || ''); }
++    const codes = [];
++    for (const line of out.split('\n')) {
++        if (!line.startsWith('{')) continue;
++        let j; try { j = JSON.parse(line); } catch { continue; }
++        const m = /^\[([A-Z0-9-]+)\]/.exec(j.msg || '');
++        if (m) codes.push(`${m[1]}(${j.severity || (j.level === 'ERROR' ? 'CRITICAL' : 'WARN')})`);
++        if (/WATCHDOG/.test(j.msg || '')) codes.push('WATCHDOG(CRITICAL)');
++    }
++    return { exitCode, ms: Date.now() - t0, codes: [...new Set(codes)], raw: out };
++}
++
++function alertState() {
++    let latch = null, hist = 0;
++    try { latch = JSON.parse(fs.readFileSync(path.join(SANDBOX, 'ALERT-ACTIVE.json'), 'utf8')); } catch {}
++    try { hist = fs.readFileSync(path.join(SANDBOX, 'alerts.log'), 'utf8').trim().split('\n').filter(Boolean).length; } catch {}
++    return { latched: latch !== null, severity: latch ? latch.severity : null, historyLines: hist };
++}
++
++async function withProxy(mode, port, extraArgs, fn) {
++    const p = spawn('node', [FAULT, '--mode', mode, '--port', String(port), ...extraArgs], { stdio: ['ignore', 'ignore', 'pipe'] });
++    await sleep(900);
++    try { return await fn(); } finally { p.kill('SIGKILL'); await sleep(200); }
++}
++
++(async () => {
++    const cases = [];
++    // `al` must be captured immediately after ITS run — the latch is cumulative.
++    const record = (name, engineered, run, expectBlind, extra = {}, al = alertState()) => {
++        const row = {
++            case: name, engineered,
++            exitCode: run.exitCode, codes: run.codes, runtimeMs: run.ms,
++            reportedBlind: run.exitCode !== 0,
++            falseOK: run.exitCode === 0 && expectBlind,
++            alertLatched: al.latched, alertSeverity: al.severity,
++            ...extra,
++        };
++        cases.push(row);
++        console.log(`  ${row.falseOK ? 'FALSE-OK ' : 'caught   '} ${name.padEnd(42)} exit=${run.exitCode} ${run.codes.join(',')} latch=${al.latched}`);
++        return row;
++    };
++
++    // control — the real node, freshness checking ON but with a huge tolerance so
++    // hardhat's evm_increaseTime drift does not itself trip the check.
++    clearSandbox(); try { fs.unlinkSync(STATE); } catch {}
++    record('control: healthy RPC', 'none',
++        runMonitor('http://127.0.0.1:8545', { V6_MAX_BLOCK_AGE_SEC: '0' }), false);
++
++    // (1) dead endpoint — nothing listening
++    clearSandbox(); try { fs.unlinkSync(STATE); } catch {}
++    record('dead endpoint (ECONNREFUSED)', 'monitor points at a closed port',
++        runMonitor('http://127.0.0.1:8599', { V6_MAX_BLOCK_AGE_SEC: '0', V6_RPC_TIMEOUT_MS: '3000' }), true);
++
++    // (2) endpoint that answers every call with a JSON-RPC error
++    clearSandbox(); try { fs.unlinkSync(STATE); } catch {}
++    await withProxy('error', 8561, [], async () => {
++        record('lying endpoint: every call errors', 'fault-rpc --mode error',
++            runMonitor('http://127.0.0.1:8561', { V6_MAX_BLOCK_AGE_SEC: '0', V6_RPC_TIMEOUT_MS: '3000' }), true);
++    });
++
++    // (3) STALE head — every state read succeeds and is self-consistent, but the
++    //     chain head is two hours old. This is the "lying, not broken" case.
++    clearSandbox(); try { fs.unlinkSync(STATE); } catch {}
++    await withProxy('stale', 8562, ['--age', '7200'], async () => {
++        record('stale head (2 h old), state reads all succeed', 'fault-rpc --mode stale --age 7200',
++            runMonitor('http://127.0.0.1:8562', { V6_MAX_BLOCK_AGE_SEC: '1800' }), true);
++    });
++
++    // (4) FROZEN head — pinned to one snapshot. Age alone cannot catch it once the
++    //     pinned block is recent, so this tests the run-over-run comparison.
++    clearSandbox(); try { fs.unlinkSync(STATE); } catch {}
++    await withProxy('frozen', 8563, [], async () => {
++        const first = runMonitor('http://127.0.0.1:8563', { V6_MAX_BLOCK_AGE_SEC: '0' });
++        const alFirst = alertState();
++        // second run against the SAME pinned head — the state file now has history
++        const second = runMonitor('http://127.0.0.1:8563', { V6_MAX_BLOCK_AGE_SEC: '0' });
++        const alSecond = alertState();
++        record('frozen/pinned head, run 1 of 2 (no history yet)', 'fault-rpc --mode frozen', first, false,
++            { note: 'First run cannot know the head is pinned — there is nothing to compare against. This is the blind window.' }, alFirst);
++        record('frozen/pinned head, run 2 of 2 (history present)', 'fault-rpc --mode frozen', second, true,
++            { note: 'FRESH-STUCK fires only on the SECOND run, i.e. up to 30 minutes after the endpoint froze.' }, alSecond);
++    });
++
++    // (5) slow endpoint — the watchdog must fire rather than the run hanging past
++    //     its scheduling interval.
++    clearSandbox(); try { fs.unlinkSync(STATE); } catch {}
++    await withProxy('slow', 8564, ['--delay', '8000'], async () => {
++        record('slow endpoint (8 s/call), 5 s watchdog', 'fault-rpc --mode slow --delay 8000',
++            runMonitor('http://127.0.0.1:8564', { V6_MAX_BLOCK_AGE_SEC: '0', V6_RPC_TIMEOUT_MS: '3000', V6_MAX_RUNTIME_SEC: '5' }, 90000), true);
++    });
++
++    // (6) the launchd wrapper itself: a monitor CRASH (not a finding) must still page.
++    clearSandbox();
++    let wrapper = { exitCode: null, latched: false };
++    {
++        const env = { ...process.env, SPECULAR_REPO: ROOT, SPECULAR_ALERT_DIR: SANDBOX, SPECULAR_ALERT_QUIET: '1', V6_MONITOR_NETWORK: 'local', LOCAL_RPC_URL: 'http://127.0.0.1:8599', V6_RPC_TIMEOUT_MS: '3000', V6_MAX_BLOCK_AGE_SEC: '0', V6_HEARTBEAT_MAX_AGE_SEC: '99999999' };
++        let code = 0;
++        try { execFileSync('/bin/bash', [path.join(ROOT, 'forensics/monitor/run-with-alert.sh'), 'local'], { env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 120000 }); }
++        catch (e) { code = e.status === undefined ? -1 : e.status; }
++        const al = alertState();
++        wrapper = { exitCode: code, latched: al.latched, severity: al.severity, historyLines: al.historyLines };
++        console.log(`  wrapper run-with-alert.sh on a dead RPC: exit=${code} latch=${al.latched}`);
++    }
++
++    try { fs.unlinkSync(STATE); } catch {}
++
++    const result = {
++        scenario: 'S6 — stuck or lying RPC: does the monitor say "we are blind"?',
++        cases,
++        falseOKs: cases.filter(c => c.falseOK).map(c => c.case),
++        launchdWrapper: {
++            script: 'forensics/monitor/run-with-alert.sh',
++            exitCode: wrapper.exitCode,
++            alertRaised: wrapper.latched,
++            alertSeverity: wrapper.severity,
++            verdict: wrapper.latched ? 'The wrapper fans a monitor failure out even when the monitor itself never got far enough to alert.' : 'GAP: the wrapper did NOT raise an alert.',
++        },
++        verdict: cases.filter(c => c.falseOK).length === 0
++            ? 'No false OKs. Every blind mode exits non-zero and latches an alert.'
++            : 'FALSE OK DETECTED — see falseOKs.',
++    };
++    console.log('\n' + JSON.stringify({ falseOKs: result.falseOKs, launchdWrapper: result.launchdWrapper, verdict: result.verdict }, null, 2));
++    fs.mkdirSync(OUT, { recursive: true });
++    fs.writeFileSync(path.join(OUT, 's6-rpc-blind.json'), JSON.stringify(result, null, 2));
++})().catch(e => { console.error(e); process.exit(1); });

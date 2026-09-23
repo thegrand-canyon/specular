@@ -1,0 +1,394 @@
+{
+  "generatedAt": "2026-09-21T23:28:49.796Z",
+  "target": "contracts/core/AgentLiquidityMarketplaceV6.sol",
+  "subset": [
+    "test/unit/V61TrancheEdgeCases.test.js",
+    "test/unit/V61PropertyFuzz.test.js",
+    "test/audit-2026-09-fixes/F01-fix.test.js",
+    "test/audit-2026-09-fixes/F02-fix.test.js",
+    "test/audit-2026-09-fixes/F03-fix.test.js",
+    "test/audit-2026-09-fixes/F05-fix.test.js",
+    "test/audit-2026-09-fixes/F07-fix.test.js"
+  ],
+  "forge": true,
+  "killed": 17,
+  "total": 17,
+  "killedByForge": 8,
+  "sourceRestored": true,
+  "results": [
+    {
+      "id": "M01",
+      "area": "F-02 _activeLoanStartedIn",
+      "title": "half-open window becomes closed: `s < hi` → `s <= hi`",
+      "find": "            if (s >= lo && s < hi) return true;",
+      "replace": "            if (s >= lo && s <= hi) return true;",
+      "hardhat": {
+        "passing": 50,
+        "failing": 2,
+        "compileError": false,
+        "firstFailure": "same-block top-up + loan: the pending tranche (ts == loan.start) qualifies (<=), and the next top-up folds (loan at s == pending.ts is NOT in [base.ts, pending.ts))"
+      },
+      "foundry": {
+        "passed": 6,
+        "failed": 0,
+        "firstFailure": null
+      },
+      "killedByHardhat": true,
+      "killedByForge": false,
+      "killed": true,
+      "seconds": 56
+    },
+    {
+      "id": "M02",
+      "area": "F-02 qualifiedAmountAt",
+      "title": "base tranche boundary `<=` → `<` (equal-timestamp lender loses its share)",
+      "find": "        if (p.depositTimestamp <= loanStartTime) q = p.amount - pend;",
+      "replace": "        if (p.depositTimestamp < loanStartTime) q = p.amount - pend;",
+      "hardhat": {
+        "passing": 51,
+        "failing": 1,
+        "compileError": false,
+        "firstFailure": "150 random ops (seed 20260920): all V6.1 invariants hold after every op"
+      },
+      "foundry": {
+        "passed": 6,
+        "failed": 0,
+        "firstFailure": null
+      },
+      "killedByHardhat": true,
+      "killedByForge": false,
+      "killed": true,
+      "seconds": 56
+    },
+    {
+      "id": "M03",
+      "area": "F-02 qualifiedAmountAt",
+      "title": "pending tranche boundary `<=` → `<`",
+      "find": "        if (pend > 0 && pt.timestamp <= loanStartTime) q += pend;",
+      "replace": "        if (pend > 0 && pt.timestamp < loanStartTime) q += pend;",
+      "hardhat": {
+        "passing": 50,
+        "failing": 2,
+        "compileError": false,
+        "firstFailure": "same-block top-up + loan: the pending tranche (ts == loan.start) qualifies (<=), and the next top-up folds (loan at s == pending.ts is NOT in [base.ts, pending.ts))"
+      },
+      "foundry": {
+        "passed": 6,
+        "failed": 0,
+        "firstFailure": null
+      },
+      "killedByHardhat": true,
+      "killedByForge": false,
+      "killed": true,
+      "seconds": 57
+    },
+    {
+      "id": "M04",
+      "area": "F-02 _socializeLoss pass 1",
+      "title": "drop the `_shrinkPendingProRata` call (pending may exceed principal)",
+      "find": "            _shrinkPendingProRata(agentId, lenders[i], share, p.amount);",
+      "replace": "            // MUTANT: _shrinkPendingProRata removed",
+      "hardhat": {
+        "passing": 47,
+        "failing": 5,
+        "compileError": false,
+        "firstFailure": "activeLoanIds is maintained by liquidateLoan too: after a default the id is gone and a fold top-up is accepted"
+      },
+      "foundry": {
+        "passed": 6,
+        "failed": 0,
+        "firstFailure": null
+      },
+      "killedByHardhat": true,
+      "killedByForge": false,
+      "killed": true,
+      "seconds": 56
+    },
+    {
+      "id": "M05",
+      "area": "F-02 _socializeLoss remainder pass",
+      "title": "drop the `_shrinkPendingProRata` call in the remainder loop",
+      "find": "                _shrinkPendingProRata(agentId, lenders[i], take, p.amount);",
+      "replace": "                // MUTANT: _shrinkPendingProRata removed",
+      "hardhat": {
+        "passing": 51,
+        "failing": 1,
+        "compileError": false,
+        "firstFailure": "150 random ops (seed 20260920): all V6.1 invariants hold after every op"
+      },
+      "foundry": {
+        "passed": 6,
+        "failed": 0,
+        "firstFailure": null
+      },
+      "killedByHardhat": true,
+      "killedByForge": false,
+      "killed": true,
+      "seconds": 56
+    },
+    {
+      "id": "M06",
+      "area": "F-01 repayLoan",
+      "title": "revert the ownerOf substitution: only the original borrower may repay",
+      "find": "        require(msg.sender == loan.borrower || msg.sender == holder, \"Not the borrower\");",
+      "replace": "        require(msg.sender == loan.borrower, \"Not the borrower\");",
+      "hardhat": {
+        "passing": 48,
+        "failing": 4,
+        "compileError": false,
+        "firstFailure": "150 random ops (seed 20260920): all V6.1 invariants hold after every op"
+      },
+      "foundry": {
+        "passed": 6,
+        "failed": 0,
+        "firstFailure": null
+      },
+      "killedByHardhat": true,
+      "killedByForge": false,
+      "killed": true,
+      "seconds": 56
+    },
+    {
+      "id": "M07",
+      "area": "F-01 repayLoan",
+      "title": "reputation credited to the historical borrower instead of the NFT holder",
+      "find": "        reputationManager.recordLoanCompletion(holder, loan.amount, onTime && heldLongEnough && paidInterest);",
+      "replace": "        reputationManager.recordLoanCompletion(loan.borrower, loan.amount, onTime && heldLongEnough && paidInterest);",
+      "hardhat": {
+        "passing": 46,
+        "failing": 6,
+        "compileError": false,
+        "firstFailure": "150 random ops (seed 20260920): all V6.1 invariants hold after every op"
+      },
+      "foundry": {
+        "passed": 5,
+        "failed": 1,
+        "firstFailure": "[Sequence]"
+      },
+      "killedByHardhat": true,
+      "killedByForge": true,
+      "killed": true,
+      "seconds": 56
+    },
+    {
+      "id": "M08",
+      "area": "F-01 liquidateLoan",
+      "title": "revert the ownerOf substitution: default recorded against loan.borrower",
+      "find": "        reputationManager.recordDefault(agentRegistry.ownerOf(loan.agentId), loan.amount);",
+      "replace": "        reputationManager.recordDefault(loan.borrower, loan.amount);",
+      "hardhat": {
+        "passing": 49,
+        "failing": 3,
+        "compileError": false,
+        "firstFailure": "150 random ops (seed 20260920): all V6.1 invariants hold after every op"
+      },
+      "foundry": {
+        "passed": 5,
+        "failed": 1,
+        "firstFailure": "[Sequence]"
+      },
+      "killedByHardhat": true,
+      "killedByForge": true,
+      "killed": true,
+      "seconds": 54
+    },
+    {
+      "id": "M09",
+      "area": "F-03 _interestDue",
+      "title": "remove the 30-day late-interest cap",
+      "find": "        if (chargeableSeconds > cap) chargeableSeconds = cap;",
+      "replace": "        // MUTANT: LATE_INTEREST_CAP clamp removed",
+      "hardhat": {
+        "passing": 48,
+        "failing": 4,
+        "compileError": false,
+        "firstFailure": "repay exactly at endTime is on time (lateSeconds 0) and exactly at endTime + 30d is charged the cap (no more after)"
+      },
+      "foundry": {
+        "passed": 5,
+        "failed": 1,
+        "firstFailure": "[Sequence]"
+      },
+      "killedByHardhat": true,
+      "killedByForge": true,
+      "killed": true,
+      "seconds": 58
+    },
+    {
+      "id": "M10",
+      "area": "F-03 _interestDue",
+      "title": "drop max(duration, elapsed): a late loan is charged the nominal term only",
+      "find": "        chargeableSeconds = elapsed > loan.duration ? elapsed : loan.duration;",
+      "replace": "        chargeableSeconds = loan.duration; elapsed;",
+      "hardhat": {
+        "passing": 47,
+        "failing": 5,
+        "compileError": false,
+        "firstFailure": "repay exactly at endTime is on time (lateSeconds 0) and exactly at endTime + 30d is charged the cap (no more after)"
+      },
+      "foundry": {
+        "passed": 5,
+        "failed": 1,
+        "firstFailure": "[Sequence]"
+      },
+      "killedByHardhat": true,
+      "killedByForge": true,
+      "killed": true,
+      "seconds": 59
+    },
+    {
+      "id": "M11",
+      "area": "F-02 withdrawLiquidity LIFO",
+      "title": "off-by-one: the pending tranche is trimmed one base unit short",
+      "find": "            uint256 fromPending = amount < pt.amount ? amount : pt.amount;",
+      "replace": "            uint256 fromPending = amount < pt.amount ? amount : pt.amount - 1;",
+      "hardhat": {
+        "passing": 48,
+        "failing": 4,
+        "compileError": false,
+        "firstFailure": "withdraw larger than the pending tranche: pending deleted, base reduced, base timestamp untouched"
+      },
+      "foundry": {
+        "passed": 4,
+        "failed": 2,
+        "firstFailure": "[Sequence]"
+      },
+      "killedByHardhat": true,
+      "killedByForge": true,
+      "killed": true,
+      "seconds": 56
+    },
+    {
+      "id": "M12",
+      "area": "F-01 repayLoan",
+      "title": "collateral returned to the current NFT holder instead of loan.borrower",
+      "find": "            usdcToken.safeTransfer(loan.borrower, loan.collateralAmount);",
+      "replace": "            usdcToken.safeTransfer(holder, loan.collateralAmount);",
+      "hardhat": {
+        "passing": 48,
+        "failing": 4,
+        "compileError": false,
+        "firstFailure": "150 random ops (seed 20260920): all V6.1 invariants hold after every op"
+      },
+      "foundry": {
+        "passed": 5,
+        "failed": 1,
+        "firstFailure": "[Sequence]"
+      },
+      "killedByHardhat": true,
+      "killedByForge": true,
+      "killed": true,
+      "seconds": 56
+    },
+    {
+      "id": "M13",
+      "area": "F-07 requestLoan",
+      "title": "delete the isAgentActive gate on borrowing",
+      "find": "        require(agentRegistry.isAgentActive(msg.sender), \"Agent deactivated\");\n        require(agentPools[agentId].isActive, \"No pool for agent\");",
+      "replace": "        // MUTANT: isAgentActive gate removed\n        require(agentPools[agentId].isActive, \"No pool for agent\");",
+      "hardhat": {
+        "passing": 48,
+        "failing": 4,
+        "compileError": false,
+        "firstFailure": "150 random ops (seed 20260920): all V6.1 invariants hold after every op"
+      },
+      "foundry": {
+        "passed": 5,
+        "failed": 1,
+        "firstFailure": "[Sequence]"
+      },
+      "killedByHardhat": true,
+      "killedByForge": true,
+      "killed": true,
+      "seconds": 54
+    },
+    {
+      "id": "M14",
+      "area": "F-07 createAgentPool",
+      "title": "delete the isAgentActive gate on pool creation",
+      "find": "        require(agentRegistry.isAgentActive(msg.sender), \"Agent deactivated\");\n        require(!agentPools[agentId].isActive, \"Pool already exists\");",
+      "replace": "        // MUTANT: isAgentActive gate removed\n        require(!agentPools[agentId].isActive, \"Pool already exists\");",
+      "hardhat": {
+        "passing": 50,
+        "failing": 2,
+        "compileError": false,
+        "firstFailure": "150 random ops (seed 20260920): all V6.1 invariants hold after every op"
+      },
+      "foundry": {
+        "passed": 6,
+        "failed": 0,
+        "firstFailure": null
+      },
+      "killedByHardhat": true,
+      "killedByForge": false,
+      "killed": true,
+      "seconds": 56
+    },
+    {
+      "id": "M15",
+      "area": "F-05 liquidateLoan",
+      "title": "skip `_socializeInterestLoss` (loss beyond principal leaves unbacked interest)",
+      "find": "                uint256 interestReduced = _socializeInterestLoss(loan.agentId, loss - reduced);",
+      "replace": "                uint256 interestReduced = 0; // MUTANT: _socializeInterestLoss skipped",
+      "hardhat": {
+        "passing": 44,
+        "failing": 7,
+        "compileError": false,
+        "firstFailure": "_socializeInterestLoss: remainder loop takes less than the remainder from a 1-unit lender (L544), exact to the base unit"
+      },
+      "foundry": {
+        "passed": 4,
+        "failed": 2,
+        "firstFailure": "[Sequence]"
+      },
+      "killedByHardhat": true,
+      "killedByForge": true,
+      "killed": true,
+      "seconds": 55
+    },
+    {
+      "id": "M16",
+      "area": "F-05 liquidateLoan",
+      "title": "skip `_pruneEmptyLenders` (wiped lenders keep their slot forever)",
+      "find": "            _pruneEmptyLenders(loan.agentId);",
+      "replace": "            // MUTANT: _pruneEmptyLenders removed",
+      "hardhat": {
+        "passing": 46,
+        "failing": 6,
+        "compileError": false,
+        "firstFailure": "_shrinkPendingProRata deletes the pending tranche when a loss consumes the whole position (L508-509), then the empty slot is pruned"
+      },
+      "foundry": {
+        "passed": 6,
+        "failed": 0,
+        "firstFailure": null
+      },
+      "killedByHardhat": true,
+      "killedByForge": false,
+      "killed": true,
+      "seconds": 56
+    },
+    {
+      "id": "M17",
+      "area": "2026-09-20 fix — canTopUp",
+      "title": "neutralize the fix: inclusive bound `block.timestamp + 1` → `block.timestamp`",
+      "find": "        return !_activeLoanStartedIn(agentId, pt.timestamp, block.timestamp + 1);",
+      "replace": "        return !_activeLoanStartedIn(agentId, pt.timestamp, block.timestamp);",
+      "hardhat": {
+        "passing": 50,
+        "failing": 2,
+        "compileError": false,
+        "firstFailure": "[BUG 2026-09-20] canTopUp must see a loan that started in the LATEST block (view at T vs tx at T' > T)"
+      },
+      "foundry": {
+        "passed": 6,
+        "failed": 0,
+        "firstFailure": null
+      },
+      "killedByHardhat": true,
+      "killedByForge": false,
+      "killed": true,
+      "seconds": 57
+    }
+  ]
+}

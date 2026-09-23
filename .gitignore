@@ -25,3 +25,42 @@ test-agents.json
 fresh-agents-config.json
 *-agents-config.json
 *-agents.json
+# Wallet/key dumps (singular *-wallet.json slipped past *wallets*.json)
+*-wallet.json
+*wallet*.json
+forensics/output/**/*wallet*.json
+# Secrets have leaked from these dirs before — keep local-only
+moltbook-posts/
+test-results/
+
+# Scratch / forensics scripts that may pull keys from env at runtime — keep local-only
+forensics/scripts/tmp_*.js
+forensics/scripts/tmp_*.ts
+scripts/security-audit.js
+
+# Forensics output that contains generated test-wallet private keys (testnet but still)
+forensics/output/**/*wallets*.json
+forensics/output/**/*-extras*.json
+forensics/output/**/*-agent.json
+forensics/output/**/*-lender.json
+__pycache__/
+*.pyc
+forensics/output/testing-2026-09-20/e2e-wallets.json
+scripts/sim/out/slither-v7.json
+
+forensics/monitor/rpc-health.jsonl
+forensics/monitor/*-stdout.log
+forensics/monitor/*-stderr.log
+
+# Machine-generated analyser dumps (MBs of JSON). The human-readable .txt summaries
+# beside them are what anyone actually reads; regenerate the JSON with slither if needed.
+forensics/output/**/slither-*.json
+
+# Invariant-monitor runtime state: rewritten on every run, meaningless in history.
+forensics/monitor/state-*.json
+forensics/monitor/heartbeat-*.json
+forensics/monitor/ALERT-ACTIVE.json
+forensics/monitor/alert-history.jsonl
+
+# Agent worktrees: full repo checkouts, multi-GB, never belong in git or a deploy upload.
+.claude/

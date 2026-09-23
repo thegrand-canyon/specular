@@ -1,0 +1,79 @@
+{
+  "gasUsed": [
+    {
+      "loanIdx": 1,
+      "activeBefore": 0,
+      "estimateGas": "412413",
+      "actualGas": "399505"
+    },
+    {
+      "loanIdx": 2,
+      "activeBefore": 1,
+      "estimateGas": "377805",
+      "actualGas": "365305"
+    },
+    {
+      "loanIdx": 3,
+      "activeBefore": 2,
+      "estimateGas": "377805",
+      "actualGas": "365305"
+    },
+    {
+      "loanIdx": 4,
+      "activeBefore": 3,
+      "estimateGas": "377805",
+      "actualGas": "365305"
+    },
+    {
+      "loanIdx": 5,
+      "activeBefore": 4,
+      "estimateGas": "377805",
+      "actualGas": "365305"
+    },
+    {
+      "loanIdx": 6,
+      "activeBefore": 5,
+      "estimateGas": "377805",
+      "actualGas": "365305"
+    },
+    {
+      "loanIdx": 7,
+      "activeBefore": 6,
+      "estimateGas": "377805",
+      "actualGas": "365305"
+    },
+    {
+      "loanIdx": 8,
+      "activeBefore": 7,
+      "estimateGas": "377805",
+      "actualGas": "365305"
+    },
+    {
+      "loanIdx": 9,
+      "activeBefore": 8,
+      "estimateGas": "377805",
+      "actualGas": "365305"
+    },
+    {
+      "loanIdx": 10,
+      "activeBefore": 9,
+      "estimateGas": "377805",
+      "actualGas": "365305"
+    }
+  ],
+  "cap_enforced": true,
+  "cap_unblock_after_repay": true,
+  "gas_ratio": 0.9143940626525325,
+  "loanIds": [
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "10",
+    "11"
+  ]
+}

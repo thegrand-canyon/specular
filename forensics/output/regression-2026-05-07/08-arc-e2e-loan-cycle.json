@@ -1,0 +1,78 @@
+{
+  "pre": {
+    "label": "pre",
+    "ts": "2026-05-07T18:15:04.053Z",
+    "wallet_usdc": 20,
+    "mp_usdc": 36744.766003,
+    "supply_pool_47": {
+      "totalLiq": 10005,
+      "avail": 9992.120009,
+      "lenderCount": 2
+    },
+    "borrow_pool_5": {
+      "totalLiq": 500,
+      "avail": 394.170581,
+      "totalLoaned": 120
+    },
+    "own_pool_49": {
+      "totalLiq": 0,
+      "avail": 0,
+      "lenderCount": 0
+    },
+    "my_position_pool_47": {
+      "supplied": 0,
+      "earnedInterest": 0
+    },
+    "my_position_pool_5": {
+      "supplied": 0,
+      "earnedInterest": 0
+    }
+  },
+  "afterSupply": {
+    "label": "after_supply",
+    "ts": "2026-05-07T18:15:12.471Z",
+    "wallet_usdc": 15,
+    "mp_usdc": 36749.766003,
+    "supply_pool_47": {
+      "totalLiq": 10010,
+      "avail": 9997.120009,
+      "lenderCount": 3
+    },
+    "borrow_pool_5": {
+      "totalLiq": 500,
+      "avail": 394.170581,
+      "totalLoaned": 120
+    },
+    "own_pool_49": {
+      "totalLiq": 0,
+      "avail": 0,
+      "lenderCount": 0
+    },
+    "my_position_pool_47": {
+      "supplied": 5,
+      "earnedInterest": 0
+    },
+    "my_position_pool_5": {
+      "supplied": 0,
+      "earnedInterest": 0
+    }
+  },
+  "abortReason": "no matching fragment",
+  "events": [
+    "Wallet: 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+    "Arc ETH balance: 199.971229565220003689",
+    "USDC balance: 20",
+    "\n--- PRE-STATE ---",
+    "{\n  \"label\": \"pre\",\n  \"ts\": \"2026-05-07T18:15:04.053Z\",\n  \"wallet_usdc\": 20,\n  \"mp_usdc\": 36744.766003,\n  \"supply_pool_47\": {\n    \"totalLiq\": 10005,\n    \"avail\": 9992.120009,\n    \"lenderCount\": 2\n  },\n  \"borrow_pool_5\": {\n    \"totalLiq\": 500,\n    \"avail\": 394.170581,\n    \"totalLoaned\": 120\n  },\n  \"own_pool_49\": {\n    \"totalLiq\": 0,\n    \"avail\": 0,\n    \"lenderCount\": 0\n  },\n  \"my_position_pool_47\": {\n    \"supplied\": 0,\n    \"earnedInterest\": 0\n  },\n  \"my_position_pool_5\": {\n    \"supplied\": 0,\n    \"earnedInterest\": 0\n  }\n}",
+    "\n[1] Approving USDC: 11",
+    "  approve → tx 0xde01824cd2dea9c8a701127a88287e7259ffdcbc99cb2ff9905b98b6072b2e48",
+    "  approve mined: block 41030506, gas 45939",
+    "\n[2] Supplying 5 USDC to agent 47 pool",
+    "  supplyLiquidity → tx 0xf119a4031395452f66df6e70a44f757fca99e226fc03b5f90901e8ea7f0a9f56",
+    "  supplyLiquidity mined: block 41030517, gas 136324",
+    "{\n  \"supplied\": 5,\n  \"earnedInterest\": 0\n}",
+    "\n[3] Requesting 3 USDC loan from agent 5 pool, duration 7 days",
+    "  ❌ requestLoan reverted: no matching fragment",
+    "  saving pre-snapshot and aborting..."
+  ]
+}

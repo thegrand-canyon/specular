@@ -1,0 +1,41 @@
+Owner: 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+V6: 0xCeF77E14dB17aE0272510ddbDa97075e7Eb6EbF3
+Plan: 100 loans (batches of 10 active, repay before next batch)
+Owner ETH: 296.381159568465940069
+Owner USDC: 3010265.519139
+Pool 49 avail before: 0.000014
+Approved 1000 USDC
+Seeding pool with 499.999986 USDC
+
+=== 100 loan churn ===
+  loans 1-10: gas range 399505 → 365305
+  batch repaid. Total loans: 10
+  loans 11-20: gas range 399506 → 365306
+  batch repaid. Total loans: 20
+  loans 21-30: gas range 399506 → 365306
+  batch repaid. Total loans: 30
+  loans 31-40: gas range 399487 → 365287
+  batch repaid. Total loans: 40
+  loans 41-50: gas range 405088 → 370888
+  batch repaid. Total loans: 50
+  loans 51-60: gas range 376221 → 342021
+  batch repaid. Total loans: 60
+  loans 61-70: gas range 376221 → 342021
+  batch repaid. Total loans: 70
+  loans 71-80: gas range 376146 → 341946
+  batch repaid. Total loans: 80
+  loans 81-90: gas range 376146 → 341946
+  batch repaid. Total loans: 90
+  loans 91-100: gas range 376146 → 341946
+  batch repaid. Total loans: 100
+
+=== GAS ANALYSIS ===
+Average gas first 10 loans: 368725
+Average gas last 10 loans: 345366
+Ratio: 0.937 (target: < 1.2 for §S5 fix to be confirmed at scale)
+✅ §S5 FIX CONFIRMED AT SCALE: gas does NOT scale with lifetime loan count
+
+=== CLEANUP ===
+Withdrew 499.999986 USDC
+
+Saved.

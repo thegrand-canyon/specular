@@ -1,0 +1,273 @@
+{
+  "scenario": "S2 — large default, M2 first-loss self-stake",
+  "levers": {
+    "platformFeeRate": 100,
+    "minSupplyAmount": 10,
+    "minHoldForReputationReward": 86400,
+    "bindBorrowToPoolCreator": true,
+    "migrationFinalized": true,
+    "maxReputationGainPerWindow": 5,
+    "reputationGainWindow": 86400,
+    "creditMultiple": 2,
+    "growthStep": 100,
+    "bootstrapLimit": 100,
+    "defaultLockout": 15552000,
+    "maxTierLimit": 10000
+  },
+  "agentId": "3",
+  "climb": {
+    "cycles": 100,
+    "scoreReached": 600,
+    "rungs": [
+      {
+        "amount": 300,
+        "maxRepaidPrincipal": 300,
+        "newLimit": 700
+      },
+      {
+        "amount": 700,
+        "maxRepaidPrincipal": 700,
+        "newLimit": 1500
+      },
+      {
+        "amount": 1500,
+        "maxRepaidPrincipal": 1500,
+        "newLimit": 2500
+      }
+    ]
+  },
+  "loan": {
+    "loanId": 107,
+    "principal": 2400,
+    "collateralPosted": 0,
+    "collateralPct": 0,
+    "durationDays": 7
+  },
+  "selfStakeLockHeld": true,
+  "selfStakeLockRevert": "Self-stake locked while borrowing",
+  "detection": {
+    "overdueLoanDetected": false,
+    "overdueMonitorExit": 0,
+    "overdueMonitorCodes": [],
+    "note": "The monitor has NO overdue-ACTIVE-loan check. Liquidation is not alert-driven."
+  },
+  "liquidation": {
+    "gasUsed": 197611,
+    "events": {
+      "SelfStakeAbsorbedLoss": [
+        "3",
+        "0x976EA74026E726554dB657fA54763abd0C3a0aa9",
+        "1200000000"
+      ],
+      "LoanDefaulted": [
+        "107"
+      ]
+    },
+    "selfStakeAbsorbed": 1200,
+    "interestLossSocialized": 0
+  },
+  "m2OrderingHeld": true,
+  "l7Held": true,
+  "lenderOutcomes": [
+    {
+      "lender": "agent self-stake (creator)",
+      "address": "0x976EA74026E726554dB657fA54763abd0C3a0aa9",
+      "principalBefore": 1200,
+      "principalAfter": 0,
+      "lost": 1200,
+      "lostPct": 100,
+      "unclaimedInterestAfter": 26.897288,
+      "qualifiedForDefaultedLoan": 0
+    },
+    {
+      "lender": "victimA (in before the loan)",
+      "address": "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955",
+      "principalBefore": 1000,
+      "principalAfter": 200,
+      "lost": 800,
+      "lostPct": 80,
+      "unclaimedInterestAfter": 0.738354,
+      "qualifiedForDefaultedLoan": 200
+    },
+    {
+      "lender": "victimB (in before the loan)",
+      "address": "0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f",
+      "principalBefore": 500,
+      "principalAfter": 100,
+      "lost": 400,
+      "lostPct": 80,
+      "unclaimedInterestAfter": 0.369176,
+      "qualifiedForDefaultedLoan": 100
+    },
+    {
+      "lender": "lateLender (in AFTER loan start)",
+      "address": "0xa0Ee7A142d267C1f36714E4a8F75612F20a79720",
+      "principalBefore": 500,
+      "principalAfter": 500,
+      "lost": 0,
+      "lostPct": 0,
+      "unclaimedInterestAfter": 0,
+      "qualifiedForDefaultedLoan": 0
+    }
+  ],
+  "reputation": {
+    "scoreBefore": 615,
+    "scoreAfter": 375,
+    "penaltyApplied": 240,
+    "expectedPenalty": 240,
+    "maxRepaidPrincipalAfter": 0,
+    "creditLimitAfter": 0,
+    "isLockedOut": true,
+    "lockoutDays": 180,
+    "defaultCount": 1
+  },
+  "poolBefore": {
+    "agentId": "3",
+    "agentAddress": "0x976EA74026E726554dB657fA54763abd0C3a0aa9",
+    "totalLiquidity": 2700,
+    "availableLiquidity": 2728.004818,
+    "totalLoaned": 0,
+    "lenderCount": 3,
+    "selfStake": 1200,
+    "selfStakeLocked": false,
+    "outstandingPrincipal": 0,
+    "lenders": [
+      {
+        "address": "0x976EA74026E726554dB657fA54763abd0C3a0aa9",
+        "principal": 1200,
+        "unclaimedInterest": 26.897288
+      },
+      {
+        "address": "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955",
+        "principal": 1000,
+        "unclaimedInterest": 0.738354
+      },
+      {
+        "address": "0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f",
+        "principal": 500,
+        "unclaimedInterest": 0.369176
+      }
+    ]
+  },
+  "poolAtLoan": {
+    "agentId": "3",
+    "agentAddress": "0x976EA74026E726554dB657fA54763abd0C3a0aa9",
+    "totalLiquidity": 3200,
+    "availableLiquidity": 828.004818,
+    "totalLoaned": 2400,
+    "lenderCount": 4,
+    "selfStake": 1200,
+    "selfStakeLocked": true,
+    "outstandingPrincipal": 2400,
+    "lenders": [
+      {
+        "address": "0x976EA74026E726554dB657fA54763abd0C3a0aa9",
+        "principal": 1200,
+        "unclaimedInterest": 26.897288
+      },
+      {
+        "address": "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955",
+        "principal": 1000,
+        "unclaimedInterest": 0.738354
+      },
+      {
+        "address": "0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f",
+        "principal": 500,
+        "unclaimedInterest": 0.369176
+      },
+      {
+        "address": "0xa0Ee7A142d267C1f36714E4a8F75612F20a79720",
+        "principal": 500,
+        "unclaimedInterest": 0
+      }
+    ]
+  },
+  "poolAfter": {
+    "agentId": "3",
+    "agentAddress": "0x976EA74026E726554dB657fA54763abd0C3a0aa9",
+    "totalLiquidity": 800,
+    "availableLiquidity": 828.004818,
+    "totalLoaned": 0,
+    "lenderCount": 4,
+    "selfStake": 0,
+    "selfStakeLocked": false,
+    "outstandingPrincipal": 0,
+    "lenders": [
+      {
+        "address": "0x976EA74026E726554dB657fA54763abd0C3a0aa9",
+        "principal": 0,
+        "unclaimedInterest": 26.897288
+      },
+      {
+        "address": "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955",
+        "principal": 200,
+        "unclaimedInterest": 0.738354
+      },
+      {
+        "address": "0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f",
+        "principal": 100,
+        "unclaimedInterest": 0.369176
+      },
+      {
+        "address": "0xa0Ee7A142d267C1f36714E4a8F75612F20a79720",
+        "principal": 500,
+        "unclaimedInterest": 0
+      }
+    ]
+  },
+  "conservationAfterLoss": {
+    "claims": 828.004818,
+    "backing": 828.004818,
+    "delta": 0,
+    "holds": true
+  },
+  "nothingStranded": true,
+  "exits": [
+    {
+      "who": "victimA",
+      "action": "claimInterest",
+      "label": "claim",
+      "ok": true,
+      "revert": null
+    },
+    {
+      "who": "victimA",
+      "action": "withdrawLiquidity(full)",
+      "label": "withdraw",
+      "ok": true,
+      "revert": null
+    },
+    {
+      "who": "victimB",
+      "action": "claimInterest",
+      "label": "claim",
+      "ok": true,
+      "revert": null
+    },
+    {
+      "who": "victimB",
+      "action": "withdrawLiquidity(full)",
+      "label": "withdraw",
+      "ok": true,
+      "revert": null
+    },
+    {
+      "who": "lateLender",
+      "action": "withdrawLiquidity(full)",
+      "label": "withdraw",
+      "ok": true,
+      "revert": null
+    },
+    {
+      "who": "agent(creator)",
+      "action": "claimInterest",
+      "label": "claim",
+      "ok": true,
+      "revert": null
+    }
+  ],
+  "monitorAfterLiquidation": {
+    "exitCode": 0,
+    "codes": []
+  }
+}

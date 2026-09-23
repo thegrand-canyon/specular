@@ -1,0 +1,26 @@
+{
+  "timestamp": "2026-05-14T17:52:31.673Z",
+  "v4": {
+    "label": "V4",
+    "mpAddress": "0x048363A325A5B188b7FF157d725C5e329f0171D3",
+    "agentId": 135,
+    "borrower": "0xcE4f73506A2FbC76eb8456e8909334F05B0eDB4d",
+    "lender": "0x872283A359bbD38756fFEB21Ab3313e6c9B8F92C",
+    "lc": 2,
+    "uniqueCount": 1,
+    "hasDup": true,
+    "repayResult": "PANIC"
+  },
+  "v6": {
+    "label": "V6",
+    "mpAddress": "0x56ecCB27D953a3c84463Df97e18b4E596462CbdE",
+    "agentId": 136,
+    "borrower": "0x5De2845D174F11f94fDeA845A0d8589db7969d68",
+    "lender": "0x2E2Bd8fe4AEC8Ef1E86ee161711A963935280e9A",
+    "lc": 1,
+    "uniqueCount": 1,
+    "hasDup": false,
+    "repayResult": "SUCCESS"
+  },
+  "definitive": true
+}

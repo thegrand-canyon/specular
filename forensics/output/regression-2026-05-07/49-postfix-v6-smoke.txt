@@ -1,0 +1,18 @@
+=== Post-fix V6 smoke test ===
+Address: 0x56ecCB27D953a3c84463Df97e18b4E596462CbdE
+  owner: 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+  paused: false
+  migrationFinalized: false
+  MAX_LENDERS_PER_POOL: 50
+  agentRegistry: 0x741C03c0d95d2c15E479CE1c7E69B3196d86faD7
+
+[Fix 3 live] requestLoan(0, 7) — should revert
+  ✓ execution reverted: "Amount must be > 0"
+
+[Fix 4 live] withdrawLiquidity(49, 0) — should revert
+  ✓ execution reverted: "Amount must be > 0"
+
+[Fix 1 live] seedPool(9999, random_addr) — should revert with mismatch
+  ✓ execution reverted: "agentAddress/agentId mismatch"
+
+Bytecode keccak (post-fix): 0x521dcc7600d03b6e4e21f166c6b304b7bcbfcf5eedb3bdb4ed57e2b981a77909

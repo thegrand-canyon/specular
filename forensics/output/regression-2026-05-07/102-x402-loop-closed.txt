@@ -1,0 +1,46 @@
+
+=== BEFORE ===
+Pool totalLiquidity: 2.0 USDC
+Pool available:      2.000949 USDC
+Seller stats:         {
+  mode: 'stub',
+  network: 'arc',
+  sellerWallet: '0x800e305A0caDdE6289dFDFEDF38218f45C06F72C',
+  payTo: '0x800e305A0caDdE6289dFDFEDF38218f45C06F72C',
+  poolAgentId: 49,
+  requestCount: 0,
+  pendingUsdc: '0.0',
+  totalFlushedUsdc: '0.0',
+  lastFlushAt: null,
+  autoFlushThresholdUsdc: 0.4
+}
+
+Server listening on http://localhost:4141
+
+=== Sending 4 paid requests (0.1 USDC each, threshold=0.4) ===
+  Call 1: HTTP 200, pending=0.1 USDC, flushed=0.0 USDC
+  Call 2: HTTP 200, pending=0.2 USDC, flushed=0.0 USDC
+  Call 3: HTTP 200, pending=0.3 USDC, flushed=0.0 USDC
+  Call 4: HTTP 200, pending=0.4 USDC, flushed=0.0 USDC
+
+Waiting 10s for auto-flush tx to confirm on Arc...
+[SpecularX402Server] Flushed 0.4 USDC into pool 49: 0x766c5d7415da3917a4fb4a28ef78b166514f13935e5735878ad1bbf527d871a3
+
+=== AFTER ===
+Seller stats:         {
+  mode: 'stub',
+  network: 'arc',
+  sellerWallet: '0x800e305A0caDdE6289dFDFEDF38218f45C06F72C',
+  payTo: '0x800e305A0caDdE6289dFDFEDF38218f45C06F72C',
+  poolAgentId: 49,
+  requestCount: 4,
+  pendingUsdc: '0.0',
+  totalFlushedUsdc: '0.4',
+  lastFlushAt: '2026-05-25T19:37:14.163Z',
+  autoFlushThresholdUsdc: 0.4
+}
+Pool totalLiquidity: 2.4 USDC
+Pool available:      2.400949 USDC
+
+Delta totalLiquidity: 0.4 USDC
+✅ Auto-supply LOOP CLOSED — revenue flowed into Specular pool

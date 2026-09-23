@@ -1,0 +1,35 @@
+Fresh agent address: 0x38588CC1D1210864Cfe896dC391bae500a2e4d24
+Funded agent with 0.3 ETH for gas
+
+[1] Onboard
+  agentId: 189
+
+[2] Claim initial credit from faucet
+  eligible: true
+  claim tx: 0xeca9fe955c53e760c48803a4d50727af87159d9d333685a5be6bed6b1f829548
+  agent USDC after claim: 10.0
+
+[3] Credit info
+   {
+  "score": 0,
+  "creditLimit": "1000.0",
+  "collateralPct": 100,
+  "interestRateBps": 1500,
+  "interestRateAPR": 15
+}
+
+[4] (Sponsor) supplies 50 USDC liquidity to agent pool so a loan can be drawn
+
+[5] Agent borrows 5 USDC for 7 days
+  loanId: 135
+  tx: https://testnet.arcscan.app/tx/0x2da6af90a36464187299504172e85ae4b4eabf9111b87abd3dea1c2212877d24
+
+[6] Agent repays
+  tx: https://testnet.arcscan.app/tx/0x18ab38bfcbb124e4932c99d6233e954c995a8d189fb58fa79029449dbe1f59c5
+
+=== Final ===
+Agent USDC balance: 9.985617
+Agent reputation: 10
+Agent credit limit: 1000.0 USDC
+
+✅ End-to-end onboarding with faucet works

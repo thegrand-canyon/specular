@@ -1,0 +1,54 @@
+======================================================================
+   CROSS-NETWORK V6 PARITY CHECK
+======================================================================
+Arc V6:   0x7a0560551b2370ee87458186c0b1eFCc38c7c57a
+Base V6:  0x0a4e3C745aB95aceb45B05C28D89fe4Db8815F9a
+
+[1] Arc V6 snapshot:
+  owner: 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+  paused: false
+  migrationFinalized: false
+  MAX_LENDERS_PER_POOL: 50
+  MAX_ACTIVE_LOANS_PER_AGENT: 10
+  MIN_LOAN_DURATION: 604800
+  MAX_LOAN_DURATION: 31536000
+  MAX_INTEREST_RATE: 2000
+  platformFeeRate: 100
+  agentRegistry: 0x741C03c0d95d2c15E479CE1c7E69B3196d86faD7
+  reputationManager: 0x94F2fa47c4488202a46dAA9038Ed9C9c4c07467F
+  usdcToken: 0xf2807051e292e945751A25616705a9aadfb39895
+  bytecodeHash: 0x5666cde0f8873c6d9754ca4f72462d27e7d93dda91c68db8561dc5db24c42f4a
+  bytecodeSize: 12431
+
+[2] Base V6 snapshot:
+  owner: 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+  paused: false
+  migrationFinalized: true
+  MAX_LENDERS_PER_POOL: 50
+  MAX_ACTIVE_LOANS_PER_AGENT: 10
+  MIN_LOAN_DURATION: 604800
+  MAX_LOAN_DURATION: 31536000
+  MAX_INTEREST_RATE: 2000
+  platformFeeRate: 100
+  agentRegistry: 0xb9996de05fD514A0cB2B81fa25448EECD4559Aaa
+  reputationManager: 0xf19b1780A84668C8dfB6b4E84C08e457dB3B0527
+  usdcToken: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+  bytecodeHash: 0x60b97777d75d4766ae13a673d8c1fc4a42c016feaac9a2f885c0991835b6c118
+  bytecodeSize: 12431
+
+[3] Parity comparison:
+  ✓ MAX_LENDERS_PER_POOL: 50 == 50
+  ✓ MAX_ACTIVE_LOANS_PER_AGENT: 10 == 10
+  ✓ MIN_LOAN_DURATION: 604800 == 604800
+  ✓ MAX_LOAN_DURATION: 31536000 == 31536000
+  ✓ MAX_INTEREST_RATE: 2000 == 2000
+  ✓ platformFeeRate: 100 == 100
+  ✓ bytecodeSize: 12431 == 12431
+  ℹ bytecodeHash differs (expected — immutable constructor args bake in):
+     Arc:  0x5666cde0f8873c6d9754ca4f72462d27e7d93dda91c68db8561dc5db24c42f4a
+     Base: 0x60b97777d75d4766ae13a673d8c1fc4a42c016feaac9a2f885c0991835b6c118
+  ✓ Arc V6 owner = secure wallet
+  ✓ Base V6 owner = secure wallet
+
+✅ PARITY VERIFIED — Arc V6 and Base V6 have identical configuration
+Saved.

@@ -1,0 +1,180 @@
+{
+  "v6Address": "0x56ecCB27D953a3c84463Df97e18b4E596462CbdE",
+  "startedAt": "2026-05-13T20:04:20.404Z",
+  "completedAt": "2026-05-13T23:27:26.028Z",
+  "totalOps": 2047,
+  "totalLoans": 500,
+  "fuzzOk": 203,
+  "fuzzFail": 97,
+  "invariantSnapshots": [
+    {
+      "ts": 1778703062114,
+      "label": "post-supply",
+      "sumAvail": 30000,
+      "sumLoaned": 0,
+      "mpBal": 1130408.829953,
+      "slack": 1100408.829953,
+      "s1Violates": false,
+      "b1Violates": false,
+      "dupViolations": []
+    },
+    {
+      "ts": 1778703966118,
+      "label": "post-boundary",
+      "sumAvail": 30440,
+      "sumLoaned": 0,
+      "mpBal": 1130848.829953,
+      "slack": 1100408.829953,
+      "s1Violates": false,
+      "b1Violates": false,
+      "dupViolations": []
+    },
+    {
+      "ts": 1778705813848,
+      "label": "cycle-25",
+      "sumAvail": 30454.417637,
+      "sumLoaned": 0,
+      "mpBal": 1130863.93794,
+      "slack": 1100409.520303,
+      "s1Violates": false,
+      "b1Violates": false,
+      "dupViolations": []
+    },
+    {
+      "ts": 1778707869795,
+      "label": "cycle-50",
+      "sumAvail": 30441.744164,
+      "sumLoaned": 0,
+      "mpBal": 1130851.862757,
+      "slack": 1100410.118593,
+      "s1Violates": false,
+      "b1Violates": false,
+      "dupViolations": []
+    },
+    {
+      "ts": 1778709738282,
+      "label": "cycle-75",
+      "sumAvail": 30448.547174,
+      "sumLoaned": 0,
+      "mpBal": 1130859.043152,
+      "slack": 1100410.495978,
+      "s1Violates": false,
+      "b1Violates": false,
+      "dupViolations": []
+    },
+    {
+      "ts": 1778712182536,
+      "label": "cycle-100",
+      "sumAvail": 30442.591496,
+      "sumLoaned": 0,
+      "mpBal": 1130853.335949,
+      "slack": 1100410.744453,
+      "s1Violates": false,
+      "b1Violates": false,
+      "dupViolations": []
+    },
+    {
+      "ts": 1778712323422,
+      "label": "fuzz-50",
+      "sumAvail": 27858.618575,
+      "sumLoaned": 7,
+      "mpBal": 1128269.363356,
+      "slack": 1100410.744781,
+      "s1Violates": false,
+      "b1Violates": false,
+      "dupViolations": []
+    },
+    {
+      "ts": 1778712452428,
+      "label": "fuzz-100",
+      "sumAvail": 26566.647055,
+      "sumLoaned": 11,
+      "mpBal": 1126977.392123,
+      "slack": 1100410.745068,
+      "s1Violates": false,
+      "b1Violates": false,
+      "dupViolations": []
+    },
+    {
+      "ts": 1778712633246,
+      "label": "fuzz-150",
+      "sumAvail": 24268.031988,
+      "sumLoaned": 44,
+      "mpBal": 1124678.791151,
+      "slack": 1100410.759163,
+      "s1Violates": false,
+      "b1Violates": false,
+      "dupViolations": []
+    },
+    {
+      "ts": 1778712842263,
+      "label": "fuzz-200",
+      "sumAvail": 20871.953418,
+      "sumLoaned": 62,
+      "mpBal": 1121282.737772,
+      "slack": 1100410.784354,
+      "s1Violates": false,
+      "b1Violates": false,
+      "dupViolations": []
+    },
+    {
+      "ts": 1778712996432,
+      "label": "fuzz-250",
+      "sumAvail": 19122.036829,
+      "sumLoaned": 38,
+      "mpBal": 1119532.831515,
+      "slack": 1100410.794686,
+      "s1Violates": false,
+      "b1Violates": false,
+      "dupViolations": []
+    },
+    {
+      "ts": 1778713192222,
+      "label": "fuzz-300",
+      "sumAvail": 19505.786425,
+      "sumLoaned": 77,
+      "mpBal": 1119916.582754,
+      "slack": 1100410.796329,
+      "s1Violates": false,
+      "b1Violates": false,
+      "dupViolations": []
+    },
+    {
+      "ts": 1778714338644,
+      "label": "final",
+      "sumAvail": 19505.786425,
+      "sumLoaned": 77,
+      "mpBal": 1119916.582754,
+      "slack": 1100410.796329,
+      "s1Violates": false,
+      "b1Violates": false,
+      "dupViolations": []
+    }
+  ],
+  "loanGas": {
+    "first10": 417543,
+    "last10": 371781
+  },
+  "reputationDeltas": [
+    {
+      "borrower": "0xD8A4fd28A28d1c1F2fe67111342c46E91153DA20",
+      "before": 0
+    },
+    {
+      "borrower": "0xCB1645E1C8024825367831927618881DFe3392BE",
+      "before": 0
+    },
+    {
+      "borrower": "0x06A643C8e860316D40B7Bf00Fb421136C016ec19",
+      "before": 0
+    },
+    {
+      "borrower": "0x9D2E659A6852F3D5Baab0b5c5a3E0fbfE7F9bc05",
+      "before": 0
+    },
+    {
+      "borrower": "0xdb43B6bc387452ba911Db16F2A3f0166F30163b5",
+      "before": 0
+    }
+  ]
+}

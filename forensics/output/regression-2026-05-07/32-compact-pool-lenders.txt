@@ -1,0 +1,14 @@
+PRE: lenderCount=50, totalLiq=0.0
+  lenders: 50 total, 50 unique
+  with non-zero positions: 0
+
+static-call compactPoolLenders(49)...
+  ✓ staticCall would succeed
+
+broadcasting...
+  tx: 0x8f5353f85f59e1f861d13d8d4e6821af1f4a2760e55d17efc48a32221c15a922
+  mined block 41215613, gas 399536
+  removed: 0
+
+POST: lenderCount=50, totalLiq=0.0
+  Δ lenderCount: 0

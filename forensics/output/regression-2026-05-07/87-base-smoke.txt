@@ -1,0 +1,63 @@
+=== BASE V6 SMOKE TEST ===
+Address: 0x0a4e3C745aB95aceb45B05C28D89fe4Db8815F9a
+  owner: 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+  paused: false
+  migrationFinalized: false
+  MAX_LENDERS_PER_POOL: 50
+  MAX_ACTIVE_LOANS_PER_AGENT: 10
+/Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/utils/errors.js:137
+            error = new Error(message);
+                    ^
+
+Error: missing revert data (action="call", data=null, reason=null, transaction={ "data": "0x89d99a05", "to": "0x0a4e3C745aB95aceb45B05C28D89fe4Db8815F9a" }, invocation=null, revert=null, code=CALL_EXCEPTION, version=6.16.0)
+    at makeError (/Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/utils/errors.js:137:21)
+    at getBuiltinCallException (/Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/abi/abi-coder.js:105:37)
+    at AbiCoder.getBuiltinCallException (/Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/abi/abi-coder.js:206:16)
+    at JsonRpcProvider.getRpcError (/Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/providers/provider-jsonrpc.js:695:43)
+    at /Users/peterschroeder/Specular/node_modules/ethers/lib.commonjs/providers/provider-jsonrpc.js:302:45
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  code: 'CALL_EXCEPTION',
+  action: 'call',
+  data: null,
+  reason: null,
+  transaction: {
+    to: '0x0a4e3C745aB95aceb45B05C28D89fe4Db8815F9a',
+    data: '0x89d99a05'
+  },
+  invocation: null,
+  revert: null,
+  shortMessage: 'missing revert data',
+  info: {
+    error: { code: -32016, message: 'over rate limit' },
+    payload: {
+      method: 'eth_call',
+      params: [
+        {
+          to: '0x0a4e3c745ab95aceb45b05c28d89fe4db8815f9a',
+          data: '0x89d99a05'
+        },
+        'latest'
+      ],
+      id: 11,
+      jsonrpc: '2.0'
+    }
+  }
+}
+
+Node.js v22.22.0
+=== BASE V6 SMOKE TEST (throttled) ===
+Address: 0x0a4e3C745aB95aceb45B05C28D89fe4Db8815F9a
+  owner: 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+  paused: false
+  migrationFinalized: false
+  MAX_LENDERS_PER_POOL: 50
+  MAX_ACTIVE_LOANS_PER_AGENT: 10
+  platformFeeRate (bps): 100
+  nextLoanId: 1
+  totalPools: 0
+  agentRegistry: 0xb9996de05fD514A0cB2B81fa25448EECD4559Aaa
+  reputationManager: 0xf19b1780A84668C8dfB6b4E84C08e457dB3B0527
+  usdcToken: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+  bytecode keccak: 0x60b97777d75d4766ae13a673d8c1fc4a42c016feaac9a2f885c0991835b6c118
+  bytecode size: 12431 bytes
+  authorized on ReputationManager: true

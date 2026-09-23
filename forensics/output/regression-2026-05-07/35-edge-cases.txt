@@ -1,0 +1,49 @@
+=== V6 EDGE-CASE BOMBARDMENT ===
+from: 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+
+--- supplyLiquidity ---
+  ✗ supply 0 amount: execution reverted: "Amount must be > 0"
+  ✗ supply to non-existent agent (id=999): execution reverted: "Pool not active"
+  ✓ supply 1 base unit: OK (WOULD SUCCEED)
+
+--- withdrawLiquidity ---
+  ✓ withdraw 0 amount: OK (WOULD SUCCEED)
+  ✗ withdraw more than position: execution reverted: "Insufficient balance"
+  ✗ withdraw from agent with no position: execution reverted: "Insufficient balance"
+
+--- requestLoan ---
+  ✓ request 0 amount: OK (WOULD SUCCEED)
+  ✗ request loan, durationDays = 0: execution reverted: "Insufficient pool liquidity"
+  ✗ request loan, durationDays = 6: execution reverted: "Insufficient pool liquidity"
+  ✗ request loan, durationDays = 7 (MIN): execution reverted: "Insufficient pool liquidity"
+  ✗ request loan, durationDays = 365 (MAX): execution reverted: "Insufficient pool liquidity"
+  ✗ request loan, durationDays = 366: execution reverted: "Insufficient pool liquidity"
+  ✗ request loan, durationDays = 604800 (seconds shape): execution reverted: "Insufficient pool liquidity"
+  ✗ request loan, durationDays = 2^256-1 (max uint): execution reverted: "Insufficient pool liquidity"
+  ✗ request amount > credit limit (1001 USDC, limit is 1000): execution reverted: "Insufficient pool liquidity"
+  ✗ request loan, agent has no pool: execution reverted: "Not a registered agent"
+
+--- repayLoan ---
+  ✗ repay non-existent loan (id=99999): execution reverted: "Not the borrower"
+  ✗ repay loanId = 0: execution reverted: "Not the borrower"
+
+--- claimInterest ---
+  ✗ claim on agent with no position: execution reverted: "No interest to claim"
+  ✗ claim on own pool with 0 earned: execution reverted: "No interest to claim"
+
+--- createAgentPool ---
+  ✗ create pool when agent has none (using fresh signer): execution reverted: "Not a registered agent"
+  ✗ create pool that already exists (agent #49): execution reverted: "Pool already exists"
+
+--- onlyOwner protections ---
+  ✗ non-owner pause(): execution reverted (unknown custom error)
+  ✗ non-owner seedPool(): execution reverted (unknown custom error)
+  ✗ non-owner setMigrationFinalized(): execution reverted (unknown custom error)
+  ✗ non-owner withdrawFees(1): execution reverted (unknown custom error)
+
+=== SUMMARY ===
+Total cases: 26
+Reverted (expected for edge cases): 23
+Would succeed: 3
+
+Saved.

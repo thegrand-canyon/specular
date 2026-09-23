@@ -1,0 +1,59 @@
+{
+  "name": "@specular/mcp-server",
+  "version": "2.0.0",
+  "description": "Specular Protocol agent integration server: non-custodial MCP (stdio + Streamable HTTP) and REST/OpenAPI",
+  "main": "dist/http.js",
+  "type": "module",
+  "scripts": {
+    "prebuild": "node scripts/extract-abis.mjs",
+    "build": "tsc && node dist/gen-openapi.js",
+    "watch": "tsc --watch",
+    "start": "node dist/http.js",
+    "start:stdio": "node dist/index.js",
+    "openapi": "node dist/gen-openapi.js",
+    "test": "npm run build && node --test \"test/*.test.mjs\"",
+    "test:unit": "node --test \"test/unit.*.test.mjs\"",
+    "test:integration": "node --test \"test/integration.*.test.mjs\""
+  },
+  "keywords": [
+    "mcp",
+    "claude",
+    "ai-agents",
+    "credit",
+    "defi",
+    "blockchain",
+    "base",
+    "specular"
+  ],
+  "author": "Specular Protocol",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "cors": "^2.8.6",
+    "ethers": "^6.16.0",
+    "express": "^5.2.1",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.3"
+  },
+  "bin": {
+    "specular-mcp": "dist/index.js",
+    "specular-mcp-http": "dist/http.js"
+  },
+  "files": [
+    "dist",
+    "abi",
+    "openapi.json",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "overrides": {
+    "ws": "8.21.3"
+  }
+}

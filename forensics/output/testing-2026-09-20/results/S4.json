@@ -1,0 +1,90 @@
+{
+  "scenario": "S4",
+  "startedAt": "2026-09-20T17:51:46.382Z",
+  "finishedAt": "2026-09-20T17:53:39.465Z",
+  "passed": 14,
+  "failed": 0,
+  "blocked": 0,
+  "checks": [
+    {
+      "label": "B active at start",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "B loan ACTIVE while active",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "registry isAgentActive(B) == false",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "B requestLoan reverts \"Agent deactivated\"",
+      "ok": true,
+      "detail": "Agent deactivated | execution reverted: \"Agent deactivated\" | execution reverted: \"Agent d"
+    },
+    {
+      "label": "SDK borrow surfaces the same revert",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "B repaid while deactivated (closing path live)",
+      "ok": true,
+      "detail": "paid 10.028767"
+    },
+    {
+      "label": "L2 withdrew 5 while agent deactivated",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "L2 claimed interest while agent deactivated",
+      "ok": true,
+      "detail": "28480"
+    },
+    {
+      "label": "supplyLiquidity into deactivated agent pool (staticCall)",
+      "ok": null,
+      "detail": "reverts"
+    },
+    {
+      "label": "registry isAgentActive(B) == true",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "B can borrow again after reactivation",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "cleanup: loan repaid",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "D createAgentPool reverts \"Agent deactivated\"",
+      "ok": true,
+      "detail": "Agent deactivated | execution reverted: \"Agent deactivated\" | execution reverted: \"Agent d"
+    },
+    {
+      "label": "D pool created after reactivation",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "GLOBAL solvency exact",
+      "ok": true,
+      "detail": "surplus 0"
+    }
+  ],
+  "spent": {
+    "nativeFromDeployer": "0.03956315309848976",
+    "usdcMinted": "0.0"
+  },
+  "agentId": 47
+}

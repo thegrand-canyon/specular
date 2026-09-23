@@ -50,6 +50,11 @@ contract ValidationRegistry is Ownable {
     mapping(address => bytes32[]) public validatorValidations; // validator => validationHashes
 
     uint256 public totalValidations;
+
+    // [audit 2026-08 D3] Cap on how many (most-recent) validations getSummary
+    // walks, so a permissionlessly-inflated agentValidations[] array can't DoS
+    // the borrow path (getSummary is reachable from calculateCreditLimit).
+    uint256 public constant MAX_SUMMARY_SCAN = 200;
     address[] public approvedValidators;
 
     // Events (ERC-8004 compliant)
@@ -318,7 +323,15 @@ contract ValidationRegistry is Ownable {
         uint256 scoreSum = 0;
         uint256 scoreCount = 0;
 
-        for (uint256 i = 0; i < hashes.length; i++) {
+        // [audit 2026-08 D3] Bound the scan to the MOST RECENT MAX_SUMMARY_SCAN
+        // entries. agentValidations grows via permissionless validationRequest, so
+        // an unbounded walk here could be inflated by an attacker until getSummary
+        // exceeds the block gas limit — which would DoS the borrow path when this
+        // is wired into ReputationManager.calculateCreditLimit. Scanning from the
+        // tail keeps the summary fresh and O(1)-bounded.
+        uint256 start = hashes.length > MAX_SUMMARY_SCAN ? hashes.length - MAX_SUMMARY_SCAN : 0;
+
+        for (uint256 i = start; i < hashes.length; i++) {
             ValidationRequest memory validation = validations[hashes[i]];
 
             // Skip pending or disputed

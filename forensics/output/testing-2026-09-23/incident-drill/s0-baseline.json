@@ -1,0 +1,12 @@
+{
+  "scenario": "S0 — control: healthy V7 baseline",
+  "marketplaceVersion": "V6.2",
+  "monitor": {
+    "exitCode": 0,
+    "ms": 212,
+    "codes": []
+  },
+  "cleanRun": true,
+  "alertLatchBefore": false,
+  "alertLatchAfter": false
+}

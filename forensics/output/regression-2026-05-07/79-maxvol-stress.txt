@@ -1,0 +1,130 @@
+======================================================================
+   MAX VOLUME STRESS — Arc V6 (target: ~5.7M USDC throughput)
+======================================================================
+Master start: 907849.473205 USDC, 215.598448754494094529 ETH
+
+[1] Generate + persist wallets
+  generated 10 wallets
+
+[2] Fund wallets
+  funded 5 lenders × 110000 USDC + 5 borrowers × 1500
+
+[3] Register borrowers, create pools, approve MaxUint256
+  borrower 1: aid=170
+  borrower 2: aid=171
+  borrower 3: aid=172
+  borrower 4: aid=173
+  borrower 5: aid=174
+
+[4] Initial supply: each lender → all 5 pools (20k each, 100k per lender)
+  lender 1: 5×20000 = 100000 USDC supplied
+  lender 2: 5×20000 = 100000 USDC supplied
+  lender 3: 5×20000 = 100000 USDC supplied
+  lender 4: 5×20000 = 100000 USDC supplied
+  lender 5: 5×20000 = 100000 USDC supplied
+  ✅ [post-supply-500k] §B1 OK, §S1 OK (Σavail=500000, mpBal=732522.09362, dups=0)
+  cumulative volume moved: 500000 USDC
+
+[5] §B1 high-volume churn: each lender does 10 cycles of 50000 on pool 170
+    L1 c1: execution reverted (unknown custom error)
+    L1 c2: execution reverted (unknown custom error)
+    L1 c3: execution reverted (unknown custom error)
+    L1 c4: execution reverted (unknown custom error)
+    L1 c5: execution reverted (unknown custom error)
+    L1 c6: execution reverted (unknown custom error)
+    L1 c7: execution reverted (unknown custom error)
+    L1 c8: execution reverted (unknown custom error)
+    L1 c9: execution reverted (unknown custom error)
+    L1 c10: execution reverted (unknown custom error)
+  lender 1 done: 10 cycles, cumulative volume=500000
+    L2 c1: execution reverted (unknown custom error)
+    L2 c2: execution reverted (unknown custom error)
+    L2 c3: execution reverted (unknown custom error)
+    L2 c4: execution reverted (unknown custom error)
+    L2 c5: execution reverted (unknown custom error)
+    L2 c6: execution reverted (unknown custom error)
+    L2 c7: execution reverted (unknown custom error)
+    L2 c8: execution reverted (unknown custom error)
+    L2 c9: execution reverted (unknown custom error)
+    L2 c10: execution reverted (unknown custom error)
+  lender 2 done: 10 cycles, cumulative volume=500000
+    L3 c1: execution reverted (unknown custom error)
+    L3 c2: execution reverted (unknown custom error)
+    L3 c3: execution reverted (unknown custom error)
+    L3 c4: execution reverted (unknown custom error)
+    L3 c5: execution reverted (unknown custom error)
+    L3 c6: execution reverted (unknown custom error)
+    L3 c7: execution reverted (unknown custom error)
+    L3 c8: execution reverted (unknown custom error)
+    L3 c9: execution reverted (unknown custom error)
+    L3 c10: execution reverted (unknown custom error)
+  lender 3 done: 10 cycles, cumulative volume=500000
+    L4 c1: execution reverted (unknown custom error)
+    L4 c2: execution reverted (unknown custom error)
+    L4 c3: execution reverted (unknown custom error)
+    L4 c4: execution reverted (unknown custom error)
+    L4 c5: execution reverted (unknown custom error)
+    L4 c6: execution reverted (unknown custom error)
+    L4 c7: execution reverted (unknown custom error)
+    L4 c8: execution reverted (unknown custom error)
+    L4 c9: execution reverted (unknown custom error)
+    L4 c10: execution reverted (unknown custom error)
+  lender 4 done: 10 cycles, cumulative volume=500000
+    L5 c1: execution reverted (unknown custom error)
+    L5 c2: execution reverted (unknown custom error)
+    L5 c3: execution reverted (unknown custom error)
+    L5 c4: execution reverted (unknown custom error)
+    L5 c5: execution reverted (unknown custom error)
+    L5 c6: execution reverted (unknown custom error)
+    L5 c7: execution reverted (unknown custom error)
+    L5 c8: execution reverted (unknown custom error)
+    L5 c9: execution reverted (unknown custom error)
+    L5 c10: execution reverted (unknown custom error)
+  lender 5 done: 10 cycles, cumulative volume=500000
+  ✅ [post-churn-5M] §B1 OK, §S1 OK (Σavail=500000, mpBal=732522.09362, dups=0)
+
+[6] Loan cycles: 5 borrowers × 20 cycles × 500 USDC
+  cycle 5/20: 25 loans done, volume=525000
+  ✅ [loan-cycle-5] §B1 OK, §S1 OK (Σavail=500035.599325, mpBal=732558.05252, dups=0)
+[unhandledRejection]: server response 408 Request Timeout
+[unhandledRejection]: server response 408 Request Timeout
+[unhandledRejection]: server response 408 Request Timeout
+[unhandledRejection]: server response 408 Request Timeout
+[unhandledRejection]: server response 408 Request Timeout
+[unhandledRejection]: server response 408 Request Timeout
+[unhandledRejection]: server response 408 Request Timeout
+[unhandledRejection]: server response 408 Request Timeout
+[unhandledRejection]: server response 408 Request Timeout
+[unhandledRejection]: server response 408 Request Timeout
+[unhandledRejection]: server response 408 Request Timeout
+[unhandledRejection]: server response 408 Request Timeout
+[unhandledRejection]: server response 408 Request Timeout
+[unhandledRejection]: server response 408 Request Timeout
+[unhandledRejection]: server response 408 Request Timeout
+[unhandledRejection]: server response 408 Request Timeout
+  cycle 10/20: 50 loans done, volume=550000
+  ✅ [loan-cycle-10] §B1 OK, §S1 OK (Σavail=500071.19865, mpBal=732594.01142, dups=0)
+  cycle 15/20: 75 loans done, volume=575000
+  ✅ [loan-cycle-15] §B1 OK, §S1 OK (Σavail=500106.797975, mpBal=732629.97032, dups=0)
+  cycle 20/20: 100 loans done, volume=600000
+  ✅ [loan-cycle-20] §B1 OK, §S1 OK (Σavail=500142.3973, mpBal=732665.92922, dups=0)
+
+[7] Lenders claim interest from all pools
+  total interest claimed: 142.397 USDC
+  ✅ [post-claims] §B1 OK, §S1 OK (Σavail=500000.0003, mpBal=732523.53222, dups=0)
+
+[8] Cleanup — withdraw all lender positions, drain residuals
+  drained 557498.5614 USDC back to master
+
+======================================================================
+   MAX VOLUME STRESS COMPLETE
+======================================================================
+Total ops: 285
+Total loans: 100
+Cumulative USDC volume moved: 600142.397 USDC (0.60M)
+Master USDC delta: -1.4386 USDC (net loss = interest + fees + stranded)
+Master ETH delta:  -1.404841991207 ETH
+Duration: 34.3 min
+Invariant violations: 0 / 7
+   ✅ ALL INVARIANTS HELD ACROSS HIGH-VOLUME OPS
+Saved.

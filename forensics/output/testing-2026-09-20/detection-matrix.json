@@ -1,0 +1,406 @@
+[
+  {
+    "key": "clean",
+    "title": "Healthy baseline (control — must NOT alert)",
+    "expectDetect": false,
+    "applyError": null,
+    "v60": {
+      "exitCode": 0,
+      "codes": [],
+      "worst": null
+    },
+    "v61": {
+      "exitCode": 0,
+      "codes": [],
+      "worst": null
+    }
+  },
+  {
+    "key": "s1_phantom_gross",
+    "title": "(a) §S1 phantom liquidity, gross: availableLiquidity far exceeds USDC backing",
+    "expectDetect": true,
+    "applyError": null,
+    "v60": {
+      "exitCode": 1,
+      "codes": [
+        "§S1 VIOLATION(ERROR)"
+      ],
+      "worst": "CRITICAL"
+    },
+    "v61": {
+      "exitCode": 1,
+      "codes": [
+        "§S1 VIOLATION(ERROR)",
+        "SOLVENCY VIOLATION(ERROR)",
+        "LOAN VIOLATION(ERROR)",
+        "S1(CRITICAL)",
+        "SOLV(CRITICAL)",
+        "POOL-SLACK(WARN)",
+        "LOAN-TOTAL(CRITICAL)"
+      ],
+      "worst": "CRITICAL"
+    }
+  },
+  {
+    "key": "s1_phantom_masked",
+    "title": "(a) §S1 phantom liquidity, MASKED: +500 USDC phantom, less than the 700 USDC of escrowed collateral",
+    "expectDetect": true,
+    "applyError": null,
+    "v60": {
+      "exitCode": 0,
+      "codes": [],
+      "worst": null
+    },
+    "v61": {
+      "exitCode": 1,
+      "codes": [
+        "SOLVENCY VIOLATION(ERROR)",
+        "SOLV(CRITICAL)",
+        "POOL-SLACK(WARN)"
+      ],
+      "worst": "CRITICAL"
+    }
+  },
+  {
+    "key": "b1_duplicate_lender",
+    "title": "(b) §B1 duplicate address in poolLenders[] (the state the §B1 fix prevents)",
+    "expectDetect": true,
+    "applyError": null,
+    "v60": {
+      "exitCode": 1,
+      "codes": [
+        "§B1 VIOLATION(ERROR)"
+      ],
+      "worst": "CRITICAL"
+    },
+    "v61": {
+      "exitCode": 1,
+      "codes": [
+        "§B1 VIOLATION(ERROR)",
+        "POOL VIOLATION(ERROR)",
+        "B1(CRITICAL)",
+        "POOL(CRITICAL)"
+      ],
+      "worst": "CRITICAL"
+    }
+  },
+  {
+    "key": "s5_runaway_counter",
+    "title": "(c) §S5 runaway activeLoanCount: 47 active loans recorded, cap is 10, 1 loan actually ACTIVE",
+    "expectDetect": true,
+    "applyError": null,
+    "v60": {
+      "exitCode": 0,
+      "codes": [],
+      "worst": null
+    },
+    "v61": {
+      "exitCode": 1,
+      "codes": [
+        "§S5 VIOLATION(ERROR)",
+        "S5-COUNTER(CRITICAL)",
+        "S5-CAP(CRITICAL)",
+        "ALI-LEN(CRITICAL)"
+      ],
+      "worst": "CRITICAL"
+    }
+  },
+  {
+    "key": "insolvency",
+    "title": "(d) Insolvency: lender claims + fees + collateral exceed the marketplace USDC balance",
+    "expectDetect": true,
+    "applyError": null,
+    "v60": {
+      "exitCode": 1,
+      "codes": [
+        "§S1 VIOLATION(ERROR)"
+      ],
+      "worst": "CRITICAL"
+    },
+    "v61": {
+      "exitCode": 1,
+      "codes": [
+        "§S1 VIOLATION(ERROR)",
+        "SOLVENCY VIOLATION(ERROR)",
+        "S1(CRITICAL)",
+        "SOLV(CRITICAL)"
+      ],
+      "worst": "CRITICAL"
+    }
+  },
+  {
+    "key": "insolvency_pool_only",
+    "title": "(d2) Pool-level insolvency: lender claims exceed pool backing, global balance still looks fine",
+    "expectDetect": true,
+    "applyError": null,
+    "v60": {
+      "exitCode": 0,
+      "codes": [],
+      "worst": null
+    },
+    "v61": {
+      "exitCode": 1,
+      "codes": [
+        "POOL VIOLATION(ERROR)",
+        "POOL(CRITICAL)"
+      ],
+      "worst": "CRITICAL"
+    }
+  },
+  {
+    "key": "totalloaned_mismatch",
+    "title": "(e) pool.totalLoaned disagrees with the sum of ACTIVE loans (seedPool zeroes it under an open loan)",
+    "expectDetect": true,
+    "applyError": null,
+    "v60": {
+      "exitCode": 0,
+      "codes": [],
+      "worst": null
+    },
+    "v61": {
+      "exitCode": 1,
+      "codes": [
+        "POOL VIOLATION(ERROR)",
+        "LOAN VIOLATION(ERROR)",
+        "POOL(CRITICAL)",
+        "LOAN-TOTAL(CRITICAL)"
+      ],
+      "worst": "CRITICAL"
+    }
+  },
+  {
+    "key": "ownership_change",
+    "title": "(f) Ownership handed to a different wallet (Ownable2Step transfer + accept)",
+    "expectDetect": true,
+    "applyError": null,
+    "v60": {
+      "exitCode": 0,
+      "codes": [],
+      "worst": null
+    },
+    "v61": {
+      "exitCode": 1,
+      "codes": [
+        "CONTROL VIOLATION(ERROR)",
+        "OWN(CRITICAL)"
+      ],
+      "worst": "CRITICAL"
+    }
+  },
+  {
+    "key": "ownership_pending",
+    "title": "(f2) Ownership transfer PENDING but not yet accepted (pendingOwner set)",
+    "expectDetect": true,
+    "applyError": null,
+    "v60": {
+      "exitCode": 0,
+      "codes": [],
+      "worst": null
+    },
+    "v61": {
+      "exitCode": 1,
+      "codes": [
+        "CONTROL VIOLATION(ERROR)",
+        "OWN-PENDING(CRITICAL)"
+      ],
+      "worst": "CRITICAL"
+    }
+  },
+  {
+    "key": "unexpected_pause",
+    "title": "(g) Contract paused without an operator expecting it",
+    "expectDetect": true,
+    "applyError": null,
+    "v60": {
+      "exitCode": 0,
+      "codes": [],
+      "worst": null
+    },
+    "v61": {
+      "exitCode": 1,
+      "codes": [
+        "PAUS(CRITICAL)"
+      ],
+      "worst": "CRITICAL"
+    }
+  },
+  {
+    "key": "fees_exceed_balance",
+    "title": "(h) accumulatedFees exceeds the marketplace USDC balance",
+    "expectDetect": true,
+    "applyError": null,
+    "v60": {
+      "exitCode": 0,
+      "codes": [],
+      "worst": null
+    },
+    "v61": {
+      "exitCode": 1,
+      "codes": [
+        "SOLVENCY VIOLATION(ERROR)",
+        "FEES VIOLATION(ERROR)",
+        "SOLV(CRITICAL)",
+        "FEE(CRITICAL)"
+      ],
+      "worst": "CRITICAL"
+    }
+  },
+  {
+    "key": "v61_pending_gt_position",
+    "title": "[V6.1] pendingTranche.amount exceeds position.amount",
+    "expectDetect": true,
+    "applyError": null,
+    "v60": {
+      "exitCode": 0,
+      "codes": [],
+      "worst": null
+    },
+    "v61": {
+      "exitCode": 1,
+      "codes": [
+        "V6.1-PENDING VIOLATION(ERROR)",
+        "V6.1-QUALIFIED VIOLATION(ERROR)",
+        "PT(CRITICAL)",
+        "QUAL-REVERT(CRITICAL)"
+      ],
+      "worst": "CRITICAL"
+    }
+  },
+  {
+    "key": "v61_pending_ts_before_base",
+    "title": "[V6.1] pendingTranche timestamp older than the base tranche (re-qualifies unqualified money)",
+    "expectDetect": true,
+    "applyError": null,
+    "v60": {
+      "exitCode": 0,
+      "codes": [],
+      "worst": null
+    },
+    "v61": {
+      "exitCode": 1,
+      "codes": [
+        "V6.1-PENDING VIOLATION(ERROR)",
+        "PT-TS(CRITICAL)"
+      ],
+      "worst": "CRITICAL"
+    }
+  },
+  {
+    "key": "v61_activeloanids_stale",
+    "title": "[V6.1] activeLoanIds contains a REPAID loan id (stale entry, count still 1)",
+    "expectDetect": true,
+    "applyError": null,
+    "v60": {
+      "exitCode": 0,
+      "codes": [],
+      "worst": null
+    },
+    "v61": {
+      "exitCode": 1,
+      "codes": [
+        "ALI(CRITICAL)",
+        "ALI-LEN(CRITICAL)"
+      ],
+      "worst": "CRITICAL"
+    }
+  },
+  {
+    "key": "v61_activeloanids_missing",
+    "title": "[V6.1] activeLoanIds emptied while activeLoanCount still says 1 (missing ACTIVE loan)",
+    "expectDetect": true,
+    "applyError": null,
+    "v60": {
+      "exitCode": 0,
+      "codes": [],
+      "worst": null
+    },
+    "v61": {
+      "exitCode": 1,
+      "codes": [
+        "ALI(CRITICAL)",
+        "ALI-LEN(CRITICAL)"
+      ],
+      "worst": "CRITICAL"
+    }
+  },
+  {
+    "key": "v61_qualified_revert",
+    "title": "[V6.1] pending > amount makes qualifiedAmountAt revert — _distributeInterest would revert, freezing every repayment on the pool",
+    "expectDetect": true,
+    "applyError": null,
+    "v60": {
+      "exitCode": 0,
+      "codes": [],
+      "worst": null
+    },
+    "v61": {
+      "exitCode": 1,
+      "codes": [
+        "V6.1-PENDING VIOLATION(ERROR)",
+        "V6.1-QUALIFIED VIOLATION(ERROR)",
+        "POOL-SLACK(WARN)",
+        "PT(CRITICAL)",
+        "PT-TS(CRITICAL)",
+        "QUAL-REVERT(CRITICAL)"
+      ],
+      "worst": "CRITICAL"
+    }
+  },
+  {
+    "key": "v61_lateness_regression",
+    "title": "[V6.1] lateRepayCount rewritten downwards (non-monotonic lateness record)",
+    "expectDetect": true,
+    "applyError": null,
+    "v60": {
+      "exitCode": 0,
+      "codes": [],
+      "worst": null
+    },
+    "v61": {
+      "exitCode": 1,
+      "codes": [
+        "V6.1-LATENESS VIOLATION(ERROR)",
+        "LATE-COUNT(CRITICAL)",
+        "LATE-MONO(CRITICAL)"
+      ],
+      "worst": "CRITICAL"
+    }
+  },
+  {
+    "key": "v61_lateness_inflated",
+    "title": "[V6.1] lateSecondsTotal inflated beyond the per-loan repayment records",
+    "expectDetect": true,
+    "applyError": null,
+    "v60": {
+      "exitCode": 0,
+      "codes": [],
+      "worst": null
+    },
+    "v61": {
+      "exitCode": 1,
+      "codes": [
+        "V6.1-LATENESS VIOLATION(ERROR)",
+        "LATE-SECONDS(CRITICAL)"
+      ],
+      "worst": "CRITICAL"
+    }
+  },
+  {
+    "key": "f01_nft_moved",
+    "title": "[F-01 follow-up] Agent NFT transferred while a loan is ACTIVE",
+    "expectDetect": true,
+    "applyError": null,
+    "v60": {
+      "exitCode": 0,
+      "codes": [],
+      "worst": null
+    },
+    "v61": {
+      "exitCode": 1,
+      "codes": [
+        "NFT-MOVED(WARN)"
+      ],
+      "worst": "WARN"
+    }
+  }
+]

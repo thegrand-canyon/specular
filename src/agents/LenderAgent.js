@@ -12,7 +12,7 @@
  *   4. Summarize total yield earned at the end
  */
 
-const { SpecularSDK }    = require('../sdk/SpecularSDK');
+const SpecularSDK        = require('../sdk/SpecularSDK');
 const { AgentMessenger } = require('../xmtp/AgentMessenger');
 
 class LenderAgent {

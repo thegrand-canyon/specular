@@ -1,0 +1,32 @@
+Now (UTC): 2026-05-07T23:04:33.000Z
+[
+  {
+    "id": 2,
+    "state": "ACTIVE",
+    "amount": "0.1",
+    "endTime": "2026-05-11T19:10:09.000Z",
+    "hours_until_eligible": "92.09",
+    "repayLoan_staticCall": "Panic(0x11)_§B1",
+    "liquidateLoan_staticCall": "execution reverted: \"Loan not overdue\""
+  },
+  {
+    "id": 3,
+    "state": "ACTIVE",
+    "amount": "0.1",
+    "endTime": "2026-05-11T19:10:15.000Z",
+    "hours_until_eligible": "92.09",
+    "repayLoan_staticCall": "Panic(0x11)_§B1",
+    "liquidateLoan_staticCall": "execution reverted: \"Loan not overdue\""
+  },
+  {
+    "id": 4,
+    "state": "ACTIVE",
+    "amount": "0.1",
+    "endTime": "2026-05-11T19:10:29.000Z",
+    "hours_until_eligible": "92.10",
+    "repayLoan_staticCall": "Panic(0x11)_§B1",
+    "liquidateLoan_staticCall": "execution reverted: \"Loan not overdue\""
+  }
+]
+
+First loan eligible to liquidate in: 93 hours from now

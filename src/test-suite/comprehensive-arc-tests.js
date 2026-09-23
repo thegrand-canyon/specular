@@ -16,8 +16,8 @@ const RPC_URL = process.env.ARC_TESTNET_RPC_URL || 'https://arc-testnet.drpc.org
 
 // Test wallets
 const AGENT1_KEY = process.env.PRIVATE_KEY; // Agent #43 (score 1000)
-const AGENT2_KEY = 'process.env.TEST_KEY_1 || '0x0000000000000000000000000000000000000000000000000000000000000000''; // New agent
-const LENDER_KEY = 'process.env.TEST_KEY_2 || '0x0000000000000000000000000000000000000000000000000000000000000000''; // Lender wallet
+const AGENT2_KEY = process.env.TEST_KEY_1; // New agent
+const LENDER_KEY = process.env.TEST_KEY_2; // Lender wallet
 
 // Contract addresses
 const addresses = require('../../src/config/arc-testnet-addresses.json');

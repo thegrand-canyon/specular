@@ -1,0 +1,12 @@
+
+=== Deploy AgentCreditFaucet to arcTestnet ===
+Deployer: 0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+Registry: 0x741C03c0d95d2c15E479CE1c7E69B3196d86faD7
+USDC:     0xf2807051e292e945751A25616705a9aadfb39895
+✅ Faucet: 0xb22FccD4a223C002E7cE963060A2cEF45D162b14
+   tx: 0x5191f4632a945fd15a90c621a3804ee36d5c4be878eef0cb11d659dd5e3cbac6
+✅ Updated /Users/peterschroeder/Specular/src/config/arc-testnet-addresses.json
+
+Next: owner needs to
+  1. Transfer USDC to 0xb22FccD4a223C002E7cE963060A2cEF45D162b14 (e.g. 1000 USDC for 100 free claims at default 10/agent)
+  2. Call setMaxEligibleAgentId(N) to open faucet to agents 1..N

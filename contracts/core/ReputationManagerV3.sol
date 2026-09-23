@@ -21,6 +21,24 @@ contract ReputationManagerV3 is Ownable {
     mapping(uint256 => uint256) private agentReputation; // agentId => score (0-1000)
     mapping(address => uint256) private agentIdByAddress;
 
+    // [audit 2026-08 F1/F-G] Explicit init flag. Gating initialization on
+    // score==0 conflated "never initialized" with "defaulted down to 0"
+    // (recordDefault floors the score at 0), letting a defaulter re-initialize
+    // back to 100 and erase the penalty. Track initialization separately.
+    mapping(uint256 => bool) public initialized; // agentId => has been initialized
+
+    // [audit 2026-08 D1 residual] Reputation-gain rate limit. The principal-scale
+    // + interest gate raised farming COST but a Sybil (self-lender + borrower)
+    // still recaptures interest, and MAX_ACTIVE_LOANS concurrency lets an agent
+    // earn bonus × 10 per window. This caps total reputation GAIN per rolling
+    // window per agent, so concurrency no longer accelerates farming — building
+    // a tier now takes real wall-clock time regardless of loan count. 0 =
+    // unlimited (disabled); set > 0 at launch. Owner-tunable.
+    uint256 public maxReputationGainPerWindow; // points; 0 = unlimited
+    uint256 public reputationGainWindow = 1 days;
+    mapping(uint256 => uint256) public windowStart;       // agentId => current window start ts
+    mapping(uint256 => uint256) public gainedInWindow;    // agentId => reputation gained this window
+
     // Loan tracking
     mapping(uint256 => uint256) public totalBorrowed; // agentId => total amount borrowed
     mapping(uint256 => uint256) public totalRepaid;   // agentId => total amount repaid
@@ -32,6 +50,24 @@ contract ReputationManagerV3 is Ownable {
     uint256 public defaultPenaltyBase = 50;        // Base penalty for defaults
     uint256 public defaultPenaltyLarge = 100;      // Penalty for large loan defaults
     uint256 public largeLoanThreshold = 10000 * 1e6; // Threshold for large loan penalty (USDC)
+
+    // [audit 2026-08 D1] Reputation must reflect economic stake, not loan COUNT.
+    // The on-time bonus is scaled by principal against this reference: a loan of
+    // >= bonusReferenceAmount earns the full onTimeRepaymentBonus; smaller loans
+    // earn proportionally less (a dust loan earns ~0). Owner-tunable. See also the
+    // marketplace's interest>0 reward gate.
+    //
+    // RESIDUAL RISK (honest scope, self-audit 2026-08): this MITIGATES but does
+    // NOT eliminate reputation farming. A farmer who controls both the borrower
+    // and a lender address (Sybil) supplies to their own pool, borrows, and
+    // recaptures the interest as that lender — so the real per-cycle cost is only
+    // the platform fee plus the time-value of collateral locked during the
+    // minHold window. It bites only with (a) minHoldForReputationReward > 0 and
+    // (b) a nonzero platformFeeRate — BOTH are part of the Arc launch config.
+    // A COMPLETE defense needs off-chain identity/attestation (ERC-8004
+    // ValidationRegistry, audited + wired) or slashable staking — tracked as
+    // future work; do not rely on this alone.
+    uint256 public bonusReferenceAmount = 100 * 1e6; // 100 USDC
     uint256 public validationBonusThreshold = 75;  // Min validation score for credit bonus (0-100)
     uint256 public validationCreditBonus = 2000 * 1e6; // Extra USDC credit limit for validated agents
 
@@ -41,6 +77,8 @@ contract ReputationManagerV3 is Ownable {
     event ValidationRegistrySet(address indexed registry);
     event ScoringParametersUpdated(uint256 onTimeBonus, uint256 defaultPenaltyBase, uint256 defaultPenaltyLarge, uint256 largeLoanThreshold);
     event ValidationBonusParametersUpdated(uint256 bonusThreshold, uint256 creditBonus);
+    event BonusReferenceAmountUpdated(uint256 newReference);
+    event ReputationRateLimitUpdated(uint256 maxGainPerWindow, uint256 window);
     event ReputationInitialized(uint256 indexed agentId, uint256 score);
     event ReputationUpdated(uint256 indexed agentId, uint256 oldScore, uint256 newScore, string reason);
     event LoanRecorded(uint256 indexed agentId, uint256 amount);
@@ -101,6 +139,29 @@ contract ReputationManagerV3 is Ownable {
     }
 
     /**
+     * @notice [D1] Set the principal reference used to scale the on-time bonus.
+     *         Higher = reputation requires larger loans to build (stronger
+     *         anti-farming). Must be > 0 (used as a divisor).
+     */
+    function setBonusReferenceAmount(uint256 newRef) external onlyOwner {
+        require(newRef > 0, "Reference must be > 0");
+        bonusReferenceAmount = newRef;
+        emit BonusReferenceAmountUpdated(newRef);
+    }
+
+    /**
+     * @notice [D1 residual] Configure the reputation-gain rate limit.
+     * @param maxGain Max reputation points an agent can gain per window (0 = unlimited/off).
+     * @param window  Rolling window length in seconds (must be > 0).
+     */
+    function setReputationRateLimit(uint256 maxGain, uint256 window) external onlyOwner {
+        require(window > 0, "Window must be > 0");
+        maxReputationGainPerWindow = maxGain;
+        reputationGainWindow = window;
+        emit ReputationRateLimitUpdated(maxGain, window);
+    }
+
+    /**
      * @notice Update validation bonus parameters
      */
     function setValidationBonusParameters(
@@ -119,13 +180,14 @@ contract ReputationManagerV3 is Ownable {
      */
     function initializeReputation(uint256 agentId) external {
         require(agentId != 0, "Invalid agent ID");
-        require(agentReputation[agentId] == 0, "Already initialized");
+        require(!initialized[agentId], "Already initialized");
         // Verify caller owns the agent NFT — prevents front-running and identity hijacking
         require(
             agentRegistry.addressToAgentId(msg.sender) == agentId,
             "Caller is not the owner of this agent"
         );
 
+        initialized[agentId] = true;
         agentReputation[agentId] = 100; // Start at 100
         agentIdByAddress[msg.sender] = agentId;
 
@@ -138,8 +200,9 @@ contract ReputationManagerV3 is Ownable {
     function initializeReputation() external {
         uint256 agentId = agentRegistry.addressToAgentId(msg.sender);
         require(agentId != 0, "Not an agent");
-        require(agentReputation[agentId] == 0, "Already initialized");
+        require(!initialized[agentId], "Already initialized");
 
+        initialized[agentId] = true;
         agentReputation[agentId] = 100;
         agentIdByAddress[msg.sender] = agentId;
 
@@ -169,12 +232,37 @@ contract ReputationManagerV3 is Ownable {
         totalRepaid[agentId] += amount;
 
         if (onTime) {
-            uint256 oldScore = agentReputation[agentId];
-            uint256 newScore = oldScore + onTimeRepaymentBonus;
-            if (newScore > 1000) newScore = 1000;
+            // [D1] Scale the bonus by principal so reputation tracks economic
+            // stake, not loan count. amount >= bonusReferenceAmount → full bonus;
+            // a dust loan → ~0 bonus (integer division). bonusReferenceAmount is
+            // never 0 (guarded in the setter), so no divide-by-zero.
+            uint256 ref = bonusReferenceAmount;
+            uint256 effAmount = amount < ref ? amount : ref;
+            uint256 bonus = (onTimeRepaymentBonus * effAmount) / ref;
 
-            agentReputation[agentId] = newScore;
-            emit ReputationUpdated(agentId, oldScore, newScore, "on-time repayment");
+            // [D1 residual] Rate-limit the gain per rolling window so concurrency
+            // can't accelerate farming. Reset the window if it has elapsed, then
+            // clamp the bonus to the remaining budget.
+            if (maxReputationGainPerWindow > 0) {
+                if (block.timestamp >= windowStart[agentId] + reputationGainWindow) {
+                    windowStart[agentId] = block.timestamp;
+                    gainedInWindow[agentId] = 0;
+                }
+                uint256 remaining = maxReputationGainPerWindow > gainedInWindow[agentId]
+                    ? maxReputationGainPerWindow - gainedInWindow[agentId]
+                    : 0;
+                if (bonus > remaining) bonus = remaining;
+            }
+
+            if (bonus > 0) {
+                if (maxReputationGainPerWindow > 0) gainedInWindow[agentId] += bonus;
+                uint256 oldScore = agentReputation[agentId];
+                uint256 newScore = oldScore + bonus;
+                if (newScore > 1000) newScore = 1000;
+
+                agentReputation[agentId] = newScore;
+                emit ReputationUpdated(agentId, oldScore, newScore, "on-time repayment");
+            }
         }
 
         emit LoanCompleted(agentId, amount, onTime);

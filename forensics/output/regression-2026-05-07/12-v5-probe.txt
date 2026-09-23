@@ -1,0 +1,31 @@
+--- v4 (canonical) 0x048363A325A5B188b7FF157d725C5e329f0171D3 ---
+  bytecode keccak: 0x6c5b78377df3aa1ed87d8f26985c3bab893f40afc91096e2e1b293f85c5d6048
+  bytecode len:    9254 bytes
+  paused:         false
+  owner:          0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+  totalPools:     47
+  MAX_LENDERS:    200
+  MAX_ACTIVE:     10
+  nextLoanId:     2125
+  platformFeeRate: 100
+--- v5 (with fix) 0x9EF0DD53F4412B5D5250B6797f6E347912877A2B ---
+  bytecode keccak: 0x95b0d1ac40336b9fbaa7040dd9b1f5120c18d70b7e3ffff17a70c76f69c750c7
+  bytecode len:    9254 bytes
+  paused:         false
+  owner:          0x656086A21073272533c8A3f56A94c1f3D8BCFcE2
+  totalPools:     0
+  MAX_LENDERS:    50
+  MAX_ACTIVE:     10
+  nextLoanId:     1
+  platformFeeRate: 100
+
+--- Bytecode comparison ---
+v4 == v5: false
+first diff at hex offset: 1364 (byte 682)
+  v4: f35b8386526007835260c8604087205410156103
+  v5: f35b838652600783526032604087205410156103
+
+--- v5 selector survey (compare against v4 ABI) ---
+v4 selectors: 73    v5 selectors: 73
+only-v5: []
+only-v4: []

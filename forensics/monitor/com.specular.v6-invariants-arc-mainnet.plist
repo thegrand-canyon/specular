@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Arc MAINNET invariant monitor.
+
+  Changes vs the plist currently installed in ~/Library/LaunchAgents (2026-09-20):
+    * runs run-with-alert.sh instead of the bare monitor, so a non-zero exit
+      (violation, RPC failure, crash, watchdog) actually reaches a human
+    * RunAtLoad true — a reboot or a reload should produce a check immediately,
+      not up to 30 minutes later
+    * V6_EXPECTED_OWNER pinned so an ownership change is detectable without
+      relying on addresses.json (which an attacker with repo write could edit)
+    * ProcessType Background + LowPriorityIO so it never fights the UI
+    * stdout/stderr still captured, but they are now a backstop, not the channel
+
+  Install:
+    cp forensics/monitor/com.specular.v6-invariants-arc-mainnet.plist ~/Library/LaunchAgents/
+    launchctl unload ~/Library/LaunchAgents/com.specular.v6-invariants-arc-mainnet.plist
+    launchctl load   ~/Library/LaunchAgents/com.specular.v6-invariants-arc-mainnet.plist
+
+  The webhook URL, if any, goes in forensics/monitor/monitor.env (gitignored),
+  never in this file.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.specular.v6-invariants-arc-mainnet</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/peterschroeder/Specular/forensics/monitor/run-with-alert.sh</string>
+        <string>arc-mainnet</string>
+    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>SPECULAR_REPO</key>
+        <string>/Users/peterschroeder/Specular</string>
+        <key>V6_EXPECTED_OWNER</key>
+        <string>0x800e305A0caDdE6289dFDFEDF38218f45C06F72C</string>
+        <key>V6_MAX_BLOCK_AGE_SEC</key>
+        <string>1800</string>
+        <key>V6_MAX_RUNTIME_SEC</key>
+        <string>600</string>
+    </dict>
+
+    <key>StartInterval</key>
+    <integer>1800</integer>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>/Users/peterschroeder/Specular/forensics/monitor/v6-invariants-arc-mainnet-stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/peterschroeder/Specular/forensics/monitor/v6-invariants-arc-mainnet-stderr.log</string>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/peterschroeder/Specular</string>
+
+    <key>ProcessType</key>
+    <string>Background</string>
+
+    <key>LowPriorityIO</key>
+    <true/>
+</dict>
+</plist>

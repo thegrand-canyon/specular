@@ -1,0 +1,510 @@
+{
+  "total_loans": 100,
+  "batch_size": 10,
+  "gas_readings": [
+    {
+      "loanIdx": 1,
+      "estimateGas": "412413",
+      "actualGas": "399505"
+    },
+    {
+      "loanIdx": 2,
+      "estimateGas": "377805",
+      "actualGas": "365305"
+    },
+    {
+      "loanIdx": 3,
+      "estimateGas": "377805",
+      "actualGas": "365305"
+    },
+    {
+      "loanIdx": 4,
+      "estimateGas": "377805",
+      "actualGas": "365305"
+    },
+    {
+      "loanIdx": 5,
+      "estimateGas": "377805",
+      "actualGas": "365305"
+    },
+    {
+      "loanIdx": 6,
+      "estimateGas": "377805",
+      "actualGas": "365305"
+    },
+    {
+      "loanIdx": 7,
+      "estimateGas": "377805",
+      "actualGas": "365305"
+    },
+    {
+      "loanIdx": 8,
+      "estimateGas": "377805",
+      "actualGas": "365305"
+    },
+    {
+      "loanIdx": 9,
+      "estimateGas": "377805",
+      "actualGas": "365305"
+    },
+    {
+      "loanIdx": 10,
+      "estimateGas": "377805",
+      "actualGas": "365305"
+    },
+    {
+      "loanIdx": 11,
+      "estimateGas": "412414",
+      "actualGas": "399506"
+    },
+    {
+      "loanIdx": 12,
+      "estimateGas": "377806",
+      "actualGas": "365306"
+    },
+    {
+      "loanIdx": 13,
+      "estimateGas": "377806",
+      "actualGas": "365306"
+    },
+    {
+      "loanIdx": 14,
+      "estimateGas": "377806",
+      "actualGas": "365306"
+    },
+    {
+      "loanIdx": 15,
+      "estimateGas": "377806",
+      "actualGas": "365306"
+    },
+    {
+      "loanIdx": 16,
+      "estimateGas": "377806",
+      "actualGas": "365306"
+    },
+    {
+      "loanIdx": 17,
+      "estimateGas": "377806",
+      "actualGas": "365306"
+    },
+    {
+      "loanIdx": 18,
+      "estimateGas": "377806",
+      "actualGas": "365306"
+    },
+    {
+      "loanIdx": 19,
+      "estimateGas": "377806",
+      "actualGas": "365306"
+    },
+    {
+      "loanIdx": 20,
+      "estimateGas": "377806",
+      "actualGas": "365306"
+    },
+    {
+      "loanIdx": 21,
+      "estimateGas": "412414",
+      "actualGas": "399506"
+    },
+    {
+      "loanIdx": 22,
+      "estimateGas": "377806",
+      "actualGas": "365306"
+    },
+    {
+      "loanIdx": 23,
+      "estimateGas": "377806",
+      "actualGas": "365306"
+    },
+    {
+      "loanIdx": 24,
+      "estimateGas": "377806",
+      "actualGas": "365306"
+    },
+    {
+      "loanIdx": 25,
+      "estimateGas": "377806",
+      "actualGas": "365306"
+    },
+    {
+      "loanIdx": 26,
+      "estimateGas": "377806",
+      "actualGas": "365306"
+    },
+    {
+      "loanIdx": 27,
+      "estimateGas": "377806",
+      "actualGas": "365306"
+    },
+    {
+      "loanIdx": 28,
+      "estimateGas": "377806",
+      "actualGas": "365306"
+    },
+    {
+      "loanIdx": 29,
+      "estimateGas": "377806",
+      "actualGas": "365306"
+    },
+    {
+      "loanIdx": 30,
+      "estimateGas": "377806",
+      "actualGas": "365306"
+    },
+    {
+      "loanIdx": 31,
+      "estimateGas": "412394",
+      "actualGas": "399487"
+    },
+    {
+      "loanIdx": 32,
+      "estimateGas": "377787",
+      "actualGas": "365287"
+    },
+    {
+      "loanIdx": 33,
+      "estimateGas": "377787",
+      "actualGas": "365287"
+    },
+    {
+      "loanIdx": 34,
+      "estimateGas": "377787",
+      "actualGas": "365287"
+    },
+    {
+      "loanIdx": 35,
+      "estimateGas": "377787",
+      "actualGas": "365287"
+    },
+    {
+      "loanIdx": 36,
+      "estimateGas": "377787",
+      "actualGas": "365287"
+    },
+    {
+      "loanIdx": 37,
+      "estimateGas": "377787",
+      "actualGas": "365287"
+    },
+    {
+      "loanIdx": 38,
+      "estimateGas": "377787",
+      "actualGas": "365287"
+    },
+    {
+      "loanIdx": 39,
+      "estimateGas": "377787",
+      "actualGas": "365287"
+    },
+    {
+      "loanIdx": 40,
+      "estimateGas": "377787",
+      "actualGas": "365287"
+    },
+    {
+      "loanIdx": 41,
+      "estimateGas": "410892",
+      "actualGas": "405088"
+    },
+    {
+      "loanIdx": 42,
+      "estimateGas": "376421",
+      "actualGas": "370888"
+    },
+    {
+      "loanIdx": 43,
+      "estimateGas": "376421",
+      "actualGas": "370888"
+    },
+    {
+      "loanIdx": 44,
+      "estimateGas": "376421",
+      "actualGas": "370888"
+    },
+    {
+      "loanIdx": 45,
+      "estimateGas": "376421",
+      "actualGas": "370888"
+    },
+    {
+      "loanIdx": 46,
+      "estimateGas": "376421",
+      "actualGas": "370888"
+    },
+    {
+      "loanIdx": 47,
+      "estimateGas": "376421",
+      "actualGas": "370888"
+    },
+    {
+      "loanIdx": 48,
+      "estimateGas": "376421",
+      "actualGas": "370888"
+    },
+    {
+      "loanIdx": 49,
+      "estimateGas": "376421",
+      "actualGas": "370888"
+    },
+    {
+      "loanIdx": 50,
+      "estimateGas": "376421",
+      "actualGas": "370888"
+    },
+    {
+      "loanIdx": 51,
+      "estimateGas": "381796",
+      "actualGas": "376221"
+    },
+    {
+      "loanIdx": 52,
+      "estimateGas": "347325",
+      "actualGas": "342021"
+    },
+    {
+      "loanIdx": 53,
+      "estimateGas": "347325",
+      "actualGas": "342021"
+    },
+    {
+      "loanIdx": 54,
+      "estimateGas": "347325",
+      "actualGas": "342021"
+    },
+    {
+      "loanIdx": 55,
+      "estimateGas": "347325",
+      "actualGas": "342021"
+    },
+    {
+      "loanIdx": 56,
+      "estimateGas": "347325",
+      "actualGas": "342021"
+    },
+    {
+      "loanIdx": 57,
+      "estimateGas": "347325",
+      "actualGas": "342021"
+    },
+    {
+      "loanIdx": 58,
+      "estimateGas": "347325",
+      "actualGas": "342021"
+    },
+    {
+      "loanIdx": 59,
+      "estimateGas": "347325",
+      "actualGas": "342021"
+    },
+    {
+      "loanIdx": 60,
+      "estimateGas": "347325",
+      "actualGas": "342021"
+    },
+    {
+      "loanIdx": 61,
+      "estimateGas": "381796",
+      "actualGas": "376221"
+    },
+    {
+      "loanIdx": 62,
+      "estimateGas": "347325",
+      "actualGas": "342021"
+    },
+    {
+      "loanIdx": 63,
+      "estimateGas": "347325",
+      "actualGas": "342021"
+    },
+    {
+      "loanIdx": 64,
+      "estimateGas": "347325",
+      "actualGas": "342021"
+    },
+    {
+      "loanIdx": 65,
+      "estimateGas": "347325",
+      "actualGas": "342021"
+    },
+    {
+      "loanIdx": 66,
+      "estimateGas": "347325",
+      "actualGas": "342021"
+    },
+    {
+      "loanIdx": 67,
+      "estimateGas": "347325",
+      "actualGas": "342021"
+    },
+    {
+      "loanIdx": 68,
+      "estimateGas": "347325",
+      "actualGas": "342021"
+    },
+    {
+      "loanIdx": 69,
+      "estimateGas": "347325",
+      "actualGas": "342021"
+    },
+    {
+      "loanIdx": 70,
+      "estimateGas": "347325",
+      "actualGas": "342021"
+    },
+    {
+      "loanIdx": 71,
+      "estimateGas": "381721",
+      "actualGas": "376146"
+    },
+    {
+      "loanIdx": 72,
+      "estimateGas": "347249",
+      "actualGas": "341946"
+    },
+    {
+      "loanIdx": 73,
+      "estimateGas": "347249",
+      "actualGas": "341946"
+    },
+    {
+      "loanIdx": 74,
+      "estimateGas": "347249",
+      "actualGas": "341946"
+    },
+    {
+      "loanIdx": 75,
+      "estimateGas": "347249",
+      "actualGas": "341946"
+    },
+    {
+      "loanIdx": 76,
+      "estimateGas": "347249",
+      "actualGas": "341946"
+    },
+    {
+      "loanIdx": 77,
+      "estimateGas": "347249",
+      "actualGas": "341946"
+    },
+    {
+      "loanIdx": 78,
+      "estimateGas": "347249",
+      "actualGas": "341946"
+    },
+    {
+      "loanIdx": 79,
+      "estimateGas": "347249",
+      "actualGas": "341946"
+    },
+    {
+      "loanIdx": 80,
+      "estimateGas": "347249",
+      "actualGas": "341946"
+    },
+    {
+      "loanIdx": 81,
+      "estimateGas": "381721",
+      "actualGas": "376146"
+    },
+    {
+      "loanIdx": 82,
+      "estimateGas": "347249",
+      "actualGas": "341946"
+    },
+    {
+      "loanIdx": 83,
+      "estimateGas": "347249",
+      "actualGas": "341946"
+    },
+    {
+      "loanIdx": 84,
+      "estimateGas": "347249",
+      "actualGas": "341946"
+    },
+    {
+      "loanIdx": 85,
+      "estimateGas": "347249",
+      "actualGas": "341946"
+    },
+    {
+      "loanIdx": 86,
+      "estimateGas": "347249",
+      "actualGas": "341946"
+    },
+    {
+      "loanIdx": 87,
+      "estimateGas": "347249",
+      "actualGas": "341946"
+    },
+    {
+      "loanIdx": 88,
+      "estimateGas": "347249",
+      "actualGas": "341946"
+    },
+    {
+      "loanIdx": 89,
+      "estimateGas": "347249",
+      "actualGas": "341946"
+    },
+    {
+      "loanIdx": 90,
+      "estimateGas": "347249",
+      "actualGas": "341946"
+    },
+    {
+      "loanIdx": 91,
+      "estimateGas": "381721",
+      "actualGas": "376146"
+    },
+    {
+      "loanIdx": 92,
+      "estimateGas": "347249",
+      "actualGas": "341946"
+    },
+    {
+      "loanIdx": 93,
+      "estimateGas": "347249",
+      "actualGas": "341946"
+    },
+    {
+      "loanIdx": 94,
+      "estimateGas": "347249",
+      "actualGas": "341946"
+    },
+    {
+      "loanIdx": 95,
+      "estimateGas": "347249",
+      "actualGas": "341946"
+    },
+    {
+      "loanIdx": 96,
+      "estimateGas": "347249",
+      "actualGas": "341946"
+    },
+    {
+      "loanIdx": 97,
+      "estimateGas": "347249",
+      "actualGas": "341946"
+    },
+    {
+      "loanIdx": 98,
+      "estimateGas": "347249",
+      "actualGas": "341946"
+    },
+    {
+      "loanIdx": 99,
+      "estimateGas": "347249",
+      "actualGas": "341946"
+    },
+    {
+      "loanIdx": 100,
+      "estimateGas": "347249",
+      "actualGas": "341946"
+    }
+  ],
+  "avg_first_10": 368725,
+  "avg_last_10": 345366,
+  "ratio": 0.9366492643569055,
+  "verdict": "§S5 fix confirmed at scale"
+}

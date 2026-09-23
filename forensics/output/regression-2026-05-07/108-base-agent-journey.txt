@@ -1,0 +1,43 @@
+Using RPC: https://mainnet.base.org (block 46510461)
+
+=== FULL AGENT JOURNEY (Base mainnet) ===
+Fresh agent wallet: 0xF2A861b2501c9313c24124bF690548942960CBaf
+Funder wallet:      0x800e305A0caDdE6289dFDFEDF38218f45C06F72C
+Key saved:          /tmp/agent-journey-1779810269350.json (chmod 600, sweep stranded funds here)
+
+[STEP 2] Funding agent: 5 USDC + 0.005 ETH...
+  USDC fund tx: https://basescan.org/tx/0xa4ce478eb17198dd2b390e76b658b2c3ff6d49b4b16ba3241068ee2fb7ef0ceb
+  ETH  fund tx: https://basescan.org/tx/0xf059903e6f03c09ec6c0d4fc8dd826492fedda30389fa8adfaf3fd33715f1251
+  Agent state: 5.0 USDC, 0.005 ETH
+
+[STEP 3] SDK.onboard() → register + createPool + approve…
+  Agent ID:     5
+  register tx:  0xef4fc57fab3e920febd4bbda7533cff57a29150b57ef1a710cfc707767db3d50
+  pool tx:      0x67908f4200e2a37d786153ac242a3404c87c487e95bafbbd3e36b147bce62cd7
+  approve tx:   0x27968d251a45c5db5c37c553d896a10c2620172c25c690690756909104e49b0c
+  elapsed: 54007ms
+
+[STEP 4] x402 call to https://api.x402node.dev/dev/uuid…
+  HTTP 200: {"version":4,"count":1,"uuid":"dc26b553-c2e7-4cd1-a3ad-9e561a218350","meta":{"source":"x402node.com","generator":"Node.js crypto"}}
+  x402 cost: 0.0022 USDC
+
+[STEP 5] Self-supply 2 USDC to own pool…
+  supply tx: https://basescan.org/tx/0x505e1364d558242bcb1b0a64bd377beb84894eaae7d5d9e09ecef71157f0411e
+
+[STEP 6] Credit before borrow: score=0, limit=1000.0 USDC, collateral=100%, rate=15% APR
+         Borrowing 0.5 USDC for 7 days…
+  loanId: 12
+  tx:     https://basescan.org/tx/0x327c102eb5ffc5ea1d8ac853979c2f61c1bb43b94cd16ac11dbd6dc0a65a3ac8
+  USDC delta from borrow: 0.0 (collateral pulled, principal credited)
+
+[STEP 7] Repay loan 12…
+  repay tx: https://basescan.org/tx/0x242a889084ef4adff8ab31e02e72f601d5a0a546b6b021d0f6843e5b89bf7d50
+  Net USDC change at repay: -0.001438 (collateral returned − interest)
+
+[STEP 8] Credit after repay: score=10 (delta: +10), limit=1000.0 USDC, rate=15% APR
+
+[STEP 9] Withdraw + sweep all funds back to funder…
+  withdraw tx: https://basescan.org/tx/0x5e52f7ea913a449184b0f2426490adb435ee4ed8f3c123d219d3f29b1b747152
+  USDC sweep tx (2.996362 USDC): https://basescan.org/tx/0xf68c0fdd1cf739da345dfd364d70f05b59879c7c4940a481f4af7aa71e7d9e51
+
+✅ Agent journey complete. Reputation: 0 → 10

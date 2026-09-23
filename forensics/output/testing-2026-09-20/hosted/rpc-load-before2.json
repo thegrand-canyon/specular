@@ -1,0 +1,234 @@
+{
+ "base": "http://127.0.0.1:3400",
+ "network": "arc-staging",
+ "tag": "before2",
+ "at": "2026-09-22T16:03:18.353Z",
+ "totalRequests": 420,
+ "totalUpstreamCalls": 6736,
+ "rows": [
+  {
+   "scenario": "health",
+   "concurrency": 1,
+   "requests": 25,
+   "wallMs": 14,
+   "rps": 1785.7,
+   "p50": 0,
+   "p95": 2,
+   "p99": 4,
+   "max": 4,
+   "errorRate": 0,
+   "upstreamCalls": 0,
+   "upstreamPerRequest": 0,
+   "statuses": {
+    "200": 25
+   }
+  },
+  {
+   "scenario": "health",
+   "concurrency": 5,
+   "requests": 25,
+   "wallMs": 16,
+   "rps": 1562.5,
+   "p50": 2,
+   "p95": 7,
+   "p99": 8,
+   "max": 8,
+   "errorRate": 0,
+   "upstreamCalls": 0,
+   "upstreamPerRequest": 0,
+   "statuses": {
+    "200": 25
+   }
+  },
+  {
+   "scenario": "health",
+   "concurrency": 20,
+   "requests": 25,
+   "wallMs": 16,
+   "rps": 1562.5,
+   "p50": 10,
+   "p95": 12,
+   "p99": 12,
+   "max": 12,
+   "errorRate": 0,
+   "upstreamCalls": 0,
+   "upstreamPerRequest": 0,
+   "statuses": {
+    "200": 25
+   }
+  },
+  {
+   "scenario": "status",
+   "concurrency": 1,
+   "requests": 25,
+   "wallMs": 6567,
+   "rps": 3.8,
+   "p50": 239,
+   "p95": 333,
+   "p99": 725,
+   "max": 725,
+   "errorRate": 88,
+   "upstreamCalls": 707,
+   "upstreamPerRequest": 28.28,
+   "statuses": {
+    "200": 3,
+    "502": 22
+   }
+  },
+  {
+   "scenario": "status",
+   "concurrency": 5,
+   "requests": 25,
+   "wallMs": 1357,
+   "rps": 18.4,
+   "p50": 223,
+   "p95": 464,
+   "p99": 469,
+   "max": 469,
+   "errorRate": 100,
+   "upstreamCalls": 724,
+   "upstreamPerRequest": 28.96,
+   "statuses": {
+    "502": 25
+   }
+  },
+  {
+   "scenario": "status",
+   "concurrency": 20,
+   "requests": 25,
+   "wallMs": 652,
+   "rps": 38.3,
+   "p50": 467,
+   "p95": 578,
+   "p99": 580,
+   "max": 580,
+   "errorRate": 100,
+   "upstreamCalls": 646,
+   "upstreamPerRequest": 25.84,
+   "statuses": {
+    "502": 25
+   }
+  },
+  {
+   "scenario": "mcp_read",
+   "concurrency": 1,
+   "requests": 25,
+   "wallMs": 5737,
+   "rps": 4.4,
+   "p50": 222,
+   "p95": 270,
+   "p99": 363,
+   "max": 363,
+   "errorRate": 0,
+   "upstreamCalls": 756,
+   "upstreamPerRequest": 30.24,
+   "statuses": {
+    "200": 25
+   }
+  },
+  {
+   "scenario": "mcp_read",
+   "concurrency": 5,
+   "requests": 25,
+   "wallMs": 1222,
+   "rps": 20.5,
+   "p50": 216,
+   "p95": 326,
+   "p99": 376,
+   "max": 376,
+   "errorRate": 0,
+   "upstreamCalls": 731,
+   "upstreamPerRequest": 29.24,
+   "statuses": {
+    "200": 25
+   }
+  },
+  {
+   "scenario": "mcp_read",
+   "concurrency": 20,
+   "requests": 25,
+   "wallMs": 708,
+   "rps": 35.3,
+   "p50": 514,
+   "p95": 652,
+   "p99": 670,
+   "max": 670,
+   "errorRate": 0,
+   "upstreamCalls": 671,
+   "upstreamPerRequest": 26.84,
+   "statuses": {
+    "200": 25
+   }
+  },
+  {
+   "scenario": "prepare_simulate",
+   "concurrency": 1,
+   "requests": 25,
+   "wallMs": 10606,
+   "rps": 2.4,
+   "p50": 359,
+   "p95": 788,
+   "p99": 798,
+   "max": 798,
+   "errorRate": 72,
+   "upstreamCalls": 327,
+   "upstreamPerRequest": 13.08,
+   "statuses": {
+    "200": 7,
+    "502": 18
+   }
+  },
+  {
+   "scenario": "prepare_simulate",
+   "concurrency": 5,
+   "requests": 25,
+   "wallMs": 2169,
+   "rps": 11.5,
+   "p50": 476,
+   "p95": 546,
+   "p99": 672,
+   "max": 672,
+   "errorRate": 100,
+   "upstreamCalls": 200,
+   "upstreamPerRequest": 8,
+   "statuses": {
+    "502": 25
+   }
+  },
+  {
+   "scenario": "prepare_simulate",
+   "concurrency": 20,
+   "requests": 25,
+   "wallMs": 700,
+   "rps": 35.7,
+   "p50": 253,
+   "p95": 501,
+   "p99": 581,
+   "max": 581,
+   "errorRate": 100,
+   "upstreamCalls": 75,
+   "upstreamPerRequest": 3,
+   "statuses": {
+    "502": 25
+   }
+  },
+  {
+   "scenario": "mixed",
+   "concurrency": 10,
+   "requests": 120,
+   "wallMs": 3181,
+   "rps": 37.7,
+   "p50": 228,
+   "p95": 565,
+   "p99": 657,
+   "max": 748,
+   "errorRate": 50,
+   "upstreamCalls": 1899,
+   "upstreamPerRequest": 15.82,
+   "statuses": {
+    "200": 60,
+    "502": 60
+   }
+  }
+ ]
+}

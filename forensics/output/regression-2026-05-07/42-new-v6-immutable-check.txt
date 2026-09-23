@@ -1,0 +1,29 @@
+=== New V6 immutable + live verification ===
+V6: 0x05f359D663fa8E70C49b3D69f65dA7C059b0cC7a
+
+[1] Immutable reads
+  agentRegistry: 0x741C03c0d95d2c15E479CE1c7E69B3196d86faD7
+  reputationManager: 0x94F2fa47c4488202a46dAA9038Ed9C9c4c07467F
+  usdcToken: 0xf2807051e292e945751A25616705a9aadfb39895
+  setters found in ABI: 0 (should be 0)
+
+[2] Post-cycle pool 49 state
+  totalLiq: 0.0
+  avail: 0.0
+  totalEarned: 0.002848
+  lenderCount: 1
+  accumulatedFees: 0.0
+  poolLenders unique: 1 / total: 1 ✅
+  activeLoanCount (wallet): 0
+
+[3] §S1 invariant
+  MP balance: 0.0
+  pool avail: 0.0
+  avail ≤ mpBal? ✅
+
+[4] Events check
+  FeesWithdrawn in ABI: ✅
+  Total events: 18
+
+[5] Migration state
+  migrationFinalized: false (seed* functions still usable)

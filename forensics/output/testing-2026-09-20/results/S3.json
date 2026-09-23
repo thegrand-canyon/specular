@@ -1,0 +1,135 @@
+{
+  "scenario": "S3",
+  "startedAt": "2026-09-20T17:38:06.942Z",
+  "finishedAt": "2026-09-20T17:40:05.384Z",
+  "passed": 24,
+  "failed": 0,
+  "blocked": 0,
+  "checks": [
+    {
+      "label": "(i) registry: ownerOf == A2, addressToAgentId(A)==0, addressToAgentId(A2)==aId",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "(i) loan still ACTIVE after transfer",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "(i) previewRepayment works after transfer",
+      "ok": true,
+      "detail": "total 20.057534"
+    },
+    {
+      "label": "(i) repay by ORIGINAL borrower succeeded (no \"Not an agent\")",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "(i) loan REPAID",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "(i) collateral returned to A: A delta == -interest",
+      "ok": true,
+      "detail": "0.057534"
+    },
+    {
+      "label": "(i) A2 balance untouched",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "(i) reputation keyed by agentId: score unchanged (minHold not met, no bonus) and no revert",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "(i) LoanCompleted emitted for agentId",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "(ii) A2 creditInfo resolves the transferred agent (score/limit)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "(ii) with M-1 ON, A2 (holder, not pool creator) cannot borrow: \"Borrow restricted to pool creator\"",
+      "ok": true,
+      "detail": "Borrow restricted to pool creator | execution reverted: \"Borrow restricted to pool creator\" | execut"
+    },
+    {
+      "label": "(ii) loan by A2: borrower == A2, agentId == aId, collateral 10",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "(ii) A holds the NFT again; A2 unregistered",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "(ii) third party repay refused \"Not the borrower\"",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "(ii) holder repay succeeded",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "(ii) A (holder) paid principal + interest",
+      "ok": true,
+      "detail": "10.028767"
+    },
+    {
+      "label": "(ii) collateral went to loan.borrower A2 (+10)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "(ii) A allowance 0 (exact)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "(ii) M-1 lever restored to ON",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "(iii) previewRepayment works while NFT is with A2",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "(iii) owner liquidateLoan reverts \"Loan not overdue\" (NOT \"Not an agent\")",
+      "ok": true,
+      "detail": "Loan not overdue | execution reverted: \"Loan not overdue\" | execution reverted: \"Loan not overdue\" ("
+    },
+    {
+      "label": "(iii) reputation resolves via holder: getReputationScore(A2) == getReputationScore(aId)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "(iii) loan REPAID, activeLoanCount 0",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "GLOBAL solvency exact",
+      "ok": true,
+      "detail": "surplus 0"
+    }
+  ],
+  "spent": {
+    "nativeFromDeployer": "1.0620429225",
+    "usdcMinted": "100.0"
+  },
+  "agentId": 46
+}

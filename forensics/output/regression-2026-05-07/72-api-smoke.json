@@ -1,0 +1,209 @@
+{
+  "timestamp": "2026-05-15T13:55:33.535Z",
+  "apiPort": 3001,
+  "results": [
+    {
+      "name": "GET /health",
+      "path": "/health",
+      "status": 200,
+      "ok": true,
+      "body": {
+        "ok": true,
+        "network": "arc",
+        "chainId": 5042002,
+        "blockNumber": 42343927
+      }
+    },
+    {
+      "name": "GET /status",
+      "path": "/status",
+      "status": 200,
+      "ok": true,
+      "body": {
+        "network": "arc",
+        "networkName": "Arc Testnet",
+        "chainId": 5042002,
+        "totalPools": 49,
+        "tvl": "$36,944.77"
+      }
+    },
+    {
+      "name": "GET /networks",
+      "path": "/networks",
+      "status": 200,
+      "ok": true,
+      "body": {
+        "default": "arc",
+        "available": [
+          {
+            "key": "arc",
+            "name": "Arc Testnet",
+            "chainId": 5042002,
+            "explorer": "https://arc-testnet.explorer.com"
+          },
+          {
+            "key": "base",
+            "name": "Base Mainnet",
+            "chainId": 8453,
+            "explorer": "https://basescan.org"
+          },
+          {
+            "key": "arbitrum",
+            "name": "Arbitrum One",
+            "chainId": 42161,
+            "explorer": "https://arbiscan.io"
+          }
+        ]
+      }
+    },
+    {
+      "name": "GET /pools",
+      "path": "/pools?network=arc-testnet",
+      "status": 400,
+      "ok": false,
+      "body": {
+        "error": "Invalid network: arc-testnet",
+        "validNetworks": [
+          "arc",
+          "base",
+          "arbitrum"
+        ]
+      }
+    },
+    {
+      "name": "GET /agents",
+      "path": "/agents?network=arc-testnet",
+      "status": 400,
+      "ok": false,
+      "body": {
+        "error": "Invalid network: arc-testnet",
+        "validNetworks": [
+          "arc",
+          "base",
+          "arbitrum"
+        ]
+      }
+    },
+    {
+      "name": "POST /tx/register",
+      "path": "/tx/register",
+      "status": 400,
+      "ok": false,
+      "body": {
+        "error": "agentURI must be a non-empty string"
+      }
+    },
+    {
+      "name": "POST /tx/create-agent-pool",
+      "path": "/tx/create-agent-pool",
+      "status": 200,
+      "ok": true,
+      "body": {
+        "to": "0x048363A325A5B188b7FF157d725C5e329f0171D3",
+        "data": "0xe09645aa",
+        "chainId": 5042002,
+        "method": "createAgentPool",
+        "network": "arc"
+      }
+    },
+    {
+      "name": "POST /tx/supply-liquidity",
+      "path": "/tx/supply-liquidity",
+      "status": 200,
+      "ok": true,
+      "body": {
+        "to": "0x048363A325A5B188b7FF157d725C5e329f0171D3",
+        "data": "0xf9dbb69f000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000f4240",
+        "chainId": 5042002,
+        "method": "supplyLiquidity",
+        "network": "arc"
+      }
+    },
+    {
+      "name": "POST /tx/withdraw-liquidity",
+      "path": "/tx/withdraw-liquidity",
+      "status": 200,
+      "ok": true,
+      "body": {
+        "to": "0x048363A325A5B188b7FF157d725C5e329f0171D3",
+        "data": "0x7ddced5a000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000f4240",
+        "chainId": 5042002,
+        "method": "withdrawLiquidity",
+        "network": "arc"
+      }
+    },
+    {
+      "name": "POST /tx/request-loan",
+      "path": "/tx/request-loan",
+      "status": 200,
+      "ok": true,
+      "body": {
+        "to": "0x048363A325A5B188b7FF157d725C5e329f0171D3",
+        "data": "0xaa452fa600000000000000000000000000000000000000000000000000000000004c4b400000000000000000000000000000000000000000000000000000000000000007",
+        "chainId": 5042002,
+        "method": "requestLoan",
+        "network": "arc"
+      }
+    },
+    {
+      "name": "POST /tx/repay-loan",
+      "path": "/tx/repay-loan",
+      "status": 200,
+      "ok": true,
+      "body": {
+        "to": "0x048363A325A5B188b7FF157d725C5e329f0171D3",
+        "data": "0xab7b1c890000000000000000000000000000000000000000000000000000000000000001",
+        "chainId": 5042002,
+        "method": "repayLoan",
+        "network": "arc"
+      }
+    },
+    {
+      "name": "POST /tx/claim-interest",
+      "path": "/tx/claim-interest",
+      "status": 200,
+      "ok": true,
+      "body": {
+        "to": "0x048363A325A5B188b7FF157d725C5e329f0171D3",
+        "data": "0x2eb375ea0000000000000000000000000000000000000000000000000000000000000001",
+        "chainId": 5042002,
+        "method": "claimInterest",
+        "network": "arc"
+      }
+    },
+    {
+      "name": "POST /tx/request-loan with invalid duration",
+      "path": "/tx/request-loan",
+      "status": 400,
+      "ok": false,
+      "body": {
+        "error": "durationDays must be 7-365 (got 5). If you passed seconds (e.g. 604800), pass days instead."
+      }
+    },
+    {
+      "name": "POST /tx/request-loan with duration too big",
+      "path": "/tx/request-loan",
+      "status": 400,
+      "ok": false,
+      "body": {
+        "error": "durationDays must be 7-365 (got 500). If you passed seconds (e.g. 604800), pass days instead."
+      }
+    },
+    {
+      "name": "POST /tx/request-loan with no body",
+      "path": "/tx/request-loan",
+      "status": 400,
+      "ok": false,
+      "body": {
+        "error": "amount must be a non-negative integer (number or numeric string), got undefined"
+      }
+    },
+    {
+      "name": "E2E sign+broadcast",
+      "error": "execution reverted: \"Pool not active\"",
+      "ok": false
+    }
+  ],
+  "passed": 9,
+  "total": 16
+}
