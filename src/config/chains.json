@@ -239,11 +239,11 @@
       "gasPrice": "20"
     },
     "status": "production",
-    "description": "Circle Arc L1 mainnet (live 2026-09-16). USDC is the native gas token (18-dec native view) and also the 6-dec ERC-20 at 0x3600…0000; the protocol uses the ERC-20 view. Params verified against docs.arc.io + live RPC 2026-09-19."
+    "description": "Circle Arc L1 mainnet (live 2026-09-16). Specular V7 (MarketplaceV6.2 + ReputationManagerV4) since 2026-09-23. USDC is the native gas token (18-dec native view) and the 6-dec ERC-20 at 0x3600…0000; the protocol uses the ERC-20 view."
   },
   "_metadata": {
     "version": "1.0.0",
-    "lastUpdated": "2026-09-19",
+    "lastUpdated": "2026-09-23",
     "totalChains": 9,
     "productionChains": 5,
     "testnetChains": 5,

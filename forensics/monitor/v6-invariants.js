@@ -192,12 +192,18 @@ async function snapshot(mp, reg, usdc) {
     const loans = [];
     for (let id = 1; id < nextLoanId; id++) {
         const l = await withRetry(() => mp.loans(id), `loans[${id}]`);
-        const rec = await withRetry(() => mp.repayments(id), `repayments[${id}]`);
+        // `repayments` is V6.1+. The oldest live deployment (Arc testnet v4/V6.0) has no
+        // such selector, and an unguarded call aborted the WHOLE run with "missing revert
+        // data" — turning a supported target into a monitor that cried CRITICAL every 30
+        // minutes. A noisy monitor is a monitor people learn to ignore.
+        let rec = null;
+        try { rec = await withRetry(() => mp.repayments(id), `repayments[${id}]`); } catch {}
         loans.push({
             id, borrower: l.borrower, agentId: l.agentId, amount: l.amount,
             collateral: l.collateralAmount, startTime: l.startTime, endTime: l.endTime,
             duration: l.duration, state: Number(l.state),
-            repaidAt: rec.repaidAt, interestPaid: rec.interestPaid, lateSeconds: rec.lateSeconds,
+            repaidAt: rec ? rec.repaidAt : 0n, interestPaid: rec ? rec.interestPaid : 0n,
+            lateSeconds: rec ? rec.lateSeconds : 0n, hasRepaymentRecord: rec !== null,
         });
     }
 
@@ -210,22 +216,25 @@ async function snapshot(mp, reg, usdc) {
         for (let j = 0; j < lenderCount; j++) {
             const addr = await withRetry(() => mp.poolLenders(aid, j), `poolLenders[${aid}][${j}]`);
             const pos = await withRetry(() => mp.positions(aid, addr), `positions[${aid}][${addr}]`);
-            const pt = await withRetry(() => mp.pendingTranche(aid, addr), `pendingTranche[${aid}][${addr}]`);
+            let pt = null;   // V6.1+
+            try { pt = await withRetry(() => mp.pendingTranche(aid, addr), `pendingTranche[${aid}][${addr}]`); } catch {}
             lenders.push({
                 index: j, address: addr,
                 amount: pos.amount, earnedInterest: pos.earnedInterest, depositTimestamp: pos.depositTimestamp,
-                pendingAmount: pt.amount, pendingTimestamp: pt.timestamp,
+                pendingAmount: pt ? pt.amount : 0n, pendingTimestamp: pt ? pt.timestamp : 0n,
             });
         }
         pools.push({
             agentId: aid, agentAddress: p[0],
             totalLiquidity: p[1], availableLiquidity: p[2], totalLoaned: p[3], totalEarned: p[4],
             lenderCount, lenders,
-            activeLoanCount: await withRetry(() => mp.activeLoanCount(aid), `activeLoanCount[${aid}]`),
-            outstandingPrincipal: await withRetry(() => mp.outstandingPrincipal(aid), `outstandingPrincipal[${aid}]`),
-            activeLoanIds: (await withRetry(() => mp.getActiveLoanIds(aid), `activeLoanIds[${aid}]`)).map(x => Number(x)),
-            lateRepayCount: await withRetry(() => mp.lateRepayCount(aid), `lateRepayCount[${aid}]`),
-            lateSecondsTotal: await withRetry(() => mp.lateSecondsTotal(aid), `lateSecondsTotal[${aid}]`),
+            // All V6.1+. Guarded so the monitor degrades to the checks the deployment
+            // actually supports instead of failing shut. `generation` records what it got.
+            activeLoanCount: await withRetry(() => mp.activeLoanCount(aid), `activeLoanCount[${aid}]`).catch(() => null),
+            outstandingPrincipal: await withRetry(() => mp.outstandingPrincipal(aid), `outstandingPrincipal[${aid}]`).catch(() => null),
+            activeLoanIds: await withRetry(() => mp.getActiveLoanIds(aid), `activeLoanIds[${aid}]`).then(v => v.map(x => Number(x))).catch(() => null),
+            lateRepayCount: await withRetry(() => mp.lateRepayCount(aid), `lateRepayCount[${aid}]`).catch(() => null),
+            lateSecondsTotal: await withRetry(() => mp.lateSecondsTotal(aid), `lateSecondsTotal[${aid}]`).catch(() => null),
         });
         // [V6.2/M2] Self-stake. Absent on V6.1 — leave undefined and the check skips.
         const last = pools[pools.length - 1];
@@ -359,9 +368,26 @@ function checkLoanAccounting(s) {
         byAgent.set(k, cur);
     }
     const rows = [];
+    const skipped = [];
     for (const p of s.pools) {
         const k = p.agentId.toString();
         const actual = byAgent.get(k) || { sum: 0n, ids: [] };
+        // `outstandingPrincipal` / `activeLoanCount` / `activeLoanIds` are V6.1+. On an
+        // older deployment they read null. Record the pool as SKIPPED rather than
+        // substituting a value derived from the same loan walk the check compares against
+        // — that would make the assertion pass while proving nothing, which is worse than
+        // an honest gap. The totalLoaned check below still runs for these pools.
+        const preV61 = p.outstandingPrincipal === null || p.activeLoanCount === null || p.activeLoanIds === null;
+        if (preV61) {
+            skipped.push(k);
+            if (p.totalLoaned !== actual.sum) {
+                violate('CRITICAL', 'LOAN-TOTAL', 'pool.totalLoaned disagrees with Σ ACTIVE loan principal',
+                    { agentId: k, poolTotalLoaned: fmt(p.totalLoaned), sumActiveLoans: fmt(actual.sum), generation: 'pre-V6.1' });
+            }
+            rows.push({ agentId: k, generation: 'pre-V6.1 — V6.1 loan-accounting checks skipped',
+                poolTotalLoaned: fmt(p.totalLoaned), sumActiveLoans: fmt(actual.sum) });
+            continue;
+        }
         const row = {
             agentId: k,
             poolTotalLoaned: fmt(p.totalLoaned), sumActiveLoans: fmt(actual.sum),
@@ -489,6 +515,7 @@ function checkQualified(s, mp) {
     const rows = [];
     const promises = [];
     for (const p of s.pools) {
+        if (p.activeLoanIds === null) continue;   // pre-V6.1: no activeLoanIds to qualify against
         for (const loanId of p.activeLoanIds) {
             const loan = s.loans.find(l => l.id === loanId);
             if (!loan) continue;
@@ -534,6 +561,12 @@ function checkLateness(s, prevState) {
     const rows = [];
     for (const p of s.pools) {
         const k = p.agentId.toString();
+        // Lateness tracking is V6.1+. On an older deployment `lateRepayCount` /
+        // `lateSecondsTotal` read null AND `repayments` does not exist, so every per-loan
+        // lateSeconds defaults to 0 — comparing the two produced 11 false CRITICALs on the
+        // Arc testnet v4 stack. Skip the family rather than report a disagreement between
+        // two values the contract never had.
+        if (p.lateRepayCount === null || p.lateSecondsTotal === null) continue;
         const lateLoans = s.loans.filter(l => l.agentId.toString() === k && l.state === 2 && l.lateSeconds > 0n);
         const recSum = lateLoans.reduce((a, l) => a + l.lateSeconds, 0n);
         const closed = s.loans.filter(l => l.agentId.toString() === k && (l.state === 2 || l.state === 3)).length;

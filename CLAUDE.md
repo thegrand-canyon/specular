@@ -35,7 +35,7 @@ Website: specular.financial | GitHub: thegrand-canyon/specular | Deploy: specula
 | Arc Testnet | `0x048363A325A5B188b7FF157d725C5e329f0171D3` | `0x7a0560551b2370ee87458186c0b1eFCc38c7c57a` (post-WORLDCLASS audit, deployed 2026-05-17 — predates 2026-08 self-audit fixes) | `0x800e305A...F72C` (secure) | **No** |
 | Arc Testnet **V6-staging (fixed)** | — | `0xDbDf60AE5CB46D23aA44c062a4943655a6820f31` (2026-08 self-audit fixes + levers, fresh MockUSDC) | `0x800e305A...F72C` (secure) | **No** |
 | Base Mainnet | `0x0a4e3C745aB95aceb45B05C28D89fe4Db8815F9a` (CANONICAL 2026-05-17 — V6, post-WORLDCLASS audit) | (v4 archived: `0xd7b4dEE74C61844DFA75aEbe224e4635463b1C8f`, paused) | `0x800e305A...F72C` (secure) | **No** |
-| **Arc Mainnet** (chainId 5042) | — | **`0x358c5E69f712A4b3558333090a45A054bAeEb282` (V6.1 CANONICAL, 2026-09-19 audit fixes, migration finalized)**; V6.0 `0xb9996de0…9Aaa` retired same day (paused, revoked, 0 balance) | `0x800e305A...F72C` (secure) | **No** |
+| **Arc Mainnet** (chainId 5042) | — | **`0xCb23f2fb03Bfd4775Cc0e76E28f64c1e545071be` (V6.2 CANONICAL, V7 credit model, 2026-09-23)** with **ReputationManagerV4 `0x12953e732e5D1aFdA640554125367d1CEC2ac4FB`**; superseded: V6.1 `0x358c5E69…` (left running, monitored), V6.0 `0xb9996de0…` (retired) | `0x800e305A...F72C` (secure) | **No** |
 
 - **Arc Mainnet (deployed 2026-09-19)**: `src/config/arc-mainnet-addresses.json`. RegistryV2 `0x6F1EbF50290f6D4A9947E9EB77f98a683684fBF5`, ReputationV3 `0x1577Eb9985CcA859F25ED2EDaeD16A464ADFaE5e`, **Marketplace V6.1 `0x358c5E69f712A4b3558333090a45A054bAeEb282`** (redeployed same day after internal audit; original V6.0 `0xb9996de05fD514A0cB2B81fa25448EECD4559Aaa` retired: paused, revoked, 0 balance), Faucet `0xD854F80031A8d0CB166587AafA0969Da8C3757bF`. USDC = Arc native ERC-20 `0x3600000000000000000000000000000000000000` (6 dec; gas is the same USDC in its 18-dec native view). RPC `https://rpc.mainnet.arc.io`, explorer `https://explorer.arc.io`. Levers (tightened 2026-09-19 post-audit): M-1 on, M-2=86400s, **F-C minSupply=10 USDC, D1 rate-limit 5 pts/day**, 1% fee, faucet cohort 100, **claimAmount=1 USDC, faucet funded 20 USDC** (claim verified live; agent #1 = secure wallet already claimed). Smoke test: `scripts/smoke-test-arc-mainnet.js` (real USDC, tiny amounts). Deployed ahead of the runbook's Gate 1 external re-audit (owner decision 2026-09-19). **Internal audit 2026-09-19** (`forensics/output/audit-2026-09/INTERNAL_AUDIT_2026-09-19.md`) found F-01 HIGH (NFT transfer freezes loan) + F-04 HIGH (D1 economics) + 3 MEDIUM + 3 LOW; F-01/02/03/05/07 fixed in **V6.1** (source in repo, `VERSION()=="V6.1"`, pre-fix mainnet source at git tag `arc-mainnet-v6-deployed-2026-09-19`). **Mainnet redeployed to V6.1 on 2026-09-19** via `scripts/redeploy-marketplace-v6.1.js` (marketplace-only; old retired, migration finalized = F-08 closed). Sourcify exact_match; smoke 22/22; invariants OK. Still open: F-04 (D1 reputation economics — model change in ReputationManagerV3 pending owner direction), late-repay reputation penalty (needs RM redeploy), D1 lever tightening (owner call). Keep third-party lender exposure modest until F-04 is addressed.
 
@@ -91,7 +91,7 @@ Honest framing from that analysis: an unsecured line to a pseudonymous agent can
 EV-negative by backing it with something the protocol can seize. Pick the parameters to
 **price** the residual risk; do not claim it is zero.
 
-### V7 credit model (the F-04 fix) — built, on STAGING, not on mainnet
+### V7 credit model (the F-04 fix) — LIVE ON ARC MAINNET since 2026-09-23
 
 `contracts/core/ReputationManagerV4.sol` + `contracts/core/AgentLiquidityMarketplaceV62.sol`
 (`VERSION()=="V6.2"`). M1 = credit limit tracks demonstrated repaid volume
@@ -107,8 +107,10 @@ extraction **2,500 → 13.9 USDC/day**, lender loss per incident **49,982 → 2,
 agents are slightly *slower and dearer*, not faster (an earlier claim to the contrary compared
 two strategies rather than two models and was refuted on re-measurement).
 
-- **Arc staging (rehearsal, deployed 2026-09-22):** ReputationManagerV4 `0x66977dF45F38D8b0Dc463817C4B46a7E08ddbdFB`,
-  MarketplaceV6.2 `0xa736EE7BB1BFB21bD294B220Bd7027B6Fe266300`, both Sourcify `exact_match`.
+- **Arc MAINNET (canonical, 2026-09-23):** ReputationManagerV4 `0x12953e732e5D1aFdA640554125367d1CEC2ac4FB`,
+  MarketplaceV6.2 `0xCb23f2fb03Bfd4775Cc0e76E28f64c1e545071be`. Both Sourcify `exact_match`; smoke 21/21.
+- **Arc staging (rehearsal, scale-fixed, 2026-09-22):** ReputationManagerV4 `0xD7906fDFBf69BA89a4c2FE148797e24f386fE3d2`,
+  MarketplaceV6.2 `0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18`. E2E 237/237.
   Canonical config keys now point at V7; the superseded V6.1 stack is under `*_legacy` keys,
   still live and still holding test lender funds.
 - **Deploy:** `scripts/deploy-v7.js --network <arc-staging|arc-mainnet>` (dry run by default).

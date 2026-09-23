@@ -1,7 +1,7 @@
 {
-  "ts": "2026-09-22T18:12:06.830Z",
-  "blockNumber": 22218261,
-  "blockTimestamp": 1790100724,
+  "ts": "2026-09-23T01:31:53.421Z",
+  "blockNumber": 22269670,
+  "blockTimestamp": 1790127110,
   "owner": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
   "paused": false,
   "nextLoanId": 2,
@@ -11,5 +11,26 @@
       "seconds": 0
     }
   },
-  "creditPolicy": null
+  "creditPolicy": {
+    "reputationManager": "0x12953e732e5D1aFdA640554125367d1CEC2ac4FB",
+    "maxTierLimit": "10000000000",
+    "tierLimits": [
+      "1000000000",
+      "5000000000",
+      "10000000000",
+      "10000000000",
+      "2500000000",
+      "5000000000"
+    ],
+    "creditMultiple": "2",
+    "growthStep": "100000000",
+    "bootstrapLimit": "100000000",
+    "defaultLockout": "15552000",
+    "agentLimits": [
+      {
+        "agentId": "1",
+        "creditLimit": "100000000"
+      }
+    ]
+  }
 }

@@ -1,0 +1,55 @@
+{
+  "ts": "2026-09-23T01:29:09.084Z",
+  "blockNumber": 63512931,
+  "blockTimestamp": 1790126862,
+  "owner": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+  "paused": false,
+  "nextLoanId": 195,
+  "lateness": {
+    "49": {
+      "count": 0,
+      "seconds": 0
+    },
+    "180": {
+      "count": 0,
+      "seconds": 0
+    },
+    "181": {
+      "count": 0,
+      "seconds": 0
+    },
+    "182": {
+      "count": 0,
+      "seconds": 0
+    },
+    "183": {
+      "count": 0,
+      "seconds": 0
+    },
+    "184": {
+      "count": 0,
+      "seconds": 0
+    },
+    "185": {
+      "count": 0,
+      "seconds": 0
+    },
+    "186": {
+      "count": 0,
+      "seconds": 0
+    },
+    "187": {
+      "count": 0,
+      "seconds": 0
+    },
+    "188": {
+      "count": 0,
+      "seconds": 0
+    },
+    "189": {
+      "count": 0,
+      "seconds": 0
+    }
+  },
+  "creditPolicy": null
+}

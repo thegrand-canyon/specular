@@ -41,9 +41,17 @@ async function main() {
     check('not paused', (await mp.paused()) === false);
 
     console.log('\n=== 2. Onboard (exact approval, no MaxUint256) ===');
-    // Budget: 10 supply (minSupply) + 0.5 collateral + ~0.51 repay (principal+interest+fee) < 12. Reset to 0 at the end.
-    await (await usdc.approve(cfg.agentLiquidityMarketplace_v6, USDC(12))).wait();
-    check('allowance = 12 USDC', (await usdc.allowance(wallet.address, cfg.agentLiquidityMarketplace_v6)) === USDC(12));
+    // Budget: 10 supply + 0.5 collateral + ~0.51 repay (principal+interest+fee), plus the
+    // 5 USDC probe in section 3 on a V6.2 deployment where the creator is exempt from the
+    // minimum and that supply SUCCEEDS. Approve per-step instead of one flat figure, so a
+    // step that legitimately consumes allowance cannot starve a later one. Reset to 0 at the end.
+    const V62 = (await mp.VERSION().catch(() => 'V6')) === 'V6.2';
+    const approveAtLeast = async (need) => {
+        if ((await usdc.allowance(wallet.address, cfg.agentLiquidityMarketplace_v6)) >= need) return;
+        await (await usdc.approve(cfg.agentLiquidityMarketplace_v6, need)).wait();
+    };
+    await approveAtLeast(USDC(V62 ? 18 : 12));
+    check('allowance covers the run', (await usdc.allowance(wallet.address, cfg.agentLiquidityMarketplace_v6)) >= USDC(V62 ? 18 : 12));
     let agentId = await registry.addressToAgentId(wallet.address);
     if (agentId === 0n) {
         await (await registry.register('ipfs://specular-arc-mainnet-smoke', [])).wait();
@@ -53,9 +61,20 @@ async function main() {
     if (!(await mp.agentPools(agentId)).isActive) await (await mp.createAgentPool()).wait();
     check('pool active', (await mp.agentPools(agentId)).isActive);
 
-    console.log('\n=== 3. F-C lever live: sub-minimum supply reverts (new slot only) ===');
+    console.log('\n=== 3. F-C minimum-supply lever ===');
+    // V6.2 changed this deliberately: the POOL CREATOR is exempt from minSupplyAmount,
+    // because the agent's own M2 first-loss stake lives in a lender slot and a 10 USDC
+    // floor on it would price small honest borrowing out. Third parties are still gated —
+    // that half needs a second wallet and is covered by the staging e2e suite (V6), not here.
+    // The wallet running this smoke test IS the creator, so asserting a revert would assert
+    // the OLD behaviour and fail on a correct deployment.
     if (await mp.isInPoolLenders(agentId, wallet.address)) {
-        console.log('  (skipped: wallet already holds a lender slot; F-C only gates NEW slots — verified on first run)');
+        console.log('  (skipped: wallet already holds a lender slot; the floor only gates a NEW slot)');
+    } else if (V62) {
+        const before = (await mp.positions(agentId, wallet.address)).amount;
+        await (await mp.supplyLiquidity(agentId, USDC('5'))).wait();
+        check('V6.2: creator may seed BELOW minSupplyAmount (exempt)',
+            ((await mp.positions(agentId, wallet.address)).amount) === before + USDC('5'));
     } else {
         let reverted = false;
         try { await (await mp.supplyLiquidity(agentId, USDC('5'))).wait(); } catch { reverted = true; }
