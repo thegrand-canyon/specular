@@ -1,0 +1,33 @@
+# The Docker build needs only mcp-server/ and src/config/*.json (see mcp-server/Dockerfile).
+# Everything else is upload weight. This exists because `railway up` was uploading
+# .claude/worktrees — 3.4 GB of agent worktree checkouts — and timing out before it
+# could ship a config fix to a live service.
+#
+# Patterns are ANCHORED with a leading slash. Unanchored gitignore-style patterns match at
+# EVERY level, so a bare `scripts/` also excluded `mcp-server/scripts/` and broke the build.
+/.claude/
+/.git/
+/artifacts/
+/cache/
+/out/
+/coverage/
+/node_modules/
+/forensics/
+/comprehensive-tests/
+/test/
+/contracts/
+/scripts/
+/public/
+/docs/
+/python/
+/backend/
+/deployments/
+/lib/
+/examples/
+/src/agents/
+/src/integrations/
+/src/test-suite/
+/*.md
+/*.log
+/*.tar.gz
+/*.patch

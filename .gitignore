@@ -61,3 +61,6 @@ forensics/monitor/state-*.json
 forensics/monitor/heartbeat-*.json
 forensics/monitor/ALERT-ACTIVE.json
 forensics/monitor/alert-history.jsonl
+
+# Agent worktrees: full repo checkouts, multi-GB, never belong in git or a deploy upload.
+.claude/

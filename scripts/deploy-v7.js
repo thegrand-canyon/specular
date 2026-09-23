@@ -130,7 +130,11 @@ async function main() {
     console.log('\n⚠️  MONITORING: the canonical pointer now names the V6.2 marketplace, so the');
     console.log('    invariant monitor follows V7 and STOPS WATCHING the superseded deployment —');
     console.log('    which still holds lender funds and may have open loans. Add a second job:');
-    console.log(`      V6_MONITOR_NETWORK=${netArg} V6_MONITOR_MARKETPLACE_KEY=agentLiquidityMarketplace_v61_legacy \\`);
+    // Address form, NOT a config key: superseded stacks now live in the
+    // `supersededDeployments` LIST, so no fixed key resolves them. Printing a key that
+    // does not exist would make the monitor exit(2) and alert forever while watching
+    // nothing — the precise failure this second job exists to prevent.
+    console.log(`      V6_MONITOR_NETWORK=${netArg} V6_MONITOR_MARKETPLACE=${cfg.agentLiquidityMarketplacePrevious} \\`);
     console.log('        node forensics/monitor/v6-invariants.js');
     console.log('    Keep it running until that contract is drained and retired.');
 }
