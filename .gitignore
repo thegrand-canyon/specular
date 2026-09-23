@@ -51,3 +51,13 @@ scripts/sim/out/slither-v7.json
 forensics/monitor/rpc-health.jsonl
 forensics/monitor/*-stdout.log
 forensics/monitor/*-stderr.log
+
+# Machine-generated analyser dumps (MBs of JSON). The human-readable .txt summaries
+# beside them are what anyone actually reads; regenerate the JSON with slither if needed.
+forensics/output/**/slither-*.json
+
+# Invariant-monitor runtime state: rewritten on every run, meaningless in history.
+forensics/monitor/state-*.json
+forensics/monitor/heartbeat-*.json
+forensics/monitor/ALERT-ACTIVE.json
+forensics/monitor/alert-history.jsonl
