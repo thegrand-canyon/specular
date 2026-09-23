@@ -1,0 +1,37 @@
+[
+  {
+    "docStep": "check_credit_score",
+    "ok": true,
+    "registered": true
+  },
+  {
+    "docStep": "prepare_register_agent",
+    "note": "skipped per doc: already registered"
+  },
+  {
+    "docStep": "prepare_create_pool",
+    "ok": true,
+    "hash": "0x4e3507c850ce13502f091f86c8c4688ef74cfde17cee2f4dbcc35f86a3246e80"
+  },
+  {
+    "docStep": "prepare_request_loan (doc walkthrough, no supply step)",
+    "status": 200,
+    "simOk": false,
+    "plainLanguage": "The pool does not hold enough available USDC for this amount. Lower the amount, or supply/attract liquidity first. (A prerequisite approve is included in this response; simulate again after it is mined.)",
+    "warnings": [
+      "Pool #67 has only 0.0 USDC available; the request for 25.0 USDC will revert.",
+      "Marketplace allowance (0.0 USDC) is below the 25.0 USDC this call pulls. Send `prerequisite` (exact approve) first or the main transaction will revert."
+    ],
+    "prerequisite": "Allow the Specular marketplace (0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18) to spend exactly 25.0 USDC from 0xff7bb13d098B27871E94FCf83Ac826ae8Cd58d09 on arc-staging."
+  },
+  {
+    "docStep": "send prerequisite (per doc)",
+    "hash": "0x22879e9feee4f94caaaa9eb1f3f494798a748c29b81613a81e29c3faa29b1cf9",
+    "status": 1
+  },
+  {
+    "docStep": "send request_loan (per doc)",
+    "hash": "0xe1672c2bf748f85c8d76d4b62cf05da35735aa04faf5cf2408e60d15708cf32c",
+    "status": 0
+  }
+]

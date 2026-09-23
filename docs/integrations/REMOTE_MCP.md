@@ -8,8 +8,10 @@ Every `/mcp` and `/v1/*` request needs a bearer token:
 Authorization: Bearer <token>
 ```
 
-`/health` and `/openapi.json` stay open so a platform can probe the service before it has
-a credential.
+`GET /`, `/health`, `/openapi.json` and `/rpc-health` stay open so a platform can probe the
+service before it has a credential. **Everything under `/v1/` and `/mcp` is 401 without the
+header** — including `tools/list`. Every `curl`/client example below therefore carries the
+`Authorization` header; copying one without it returns `{"error":"missing or invalid bearer token"}`.
 
 **Issue ONE token per connector**, not one shared token. The reason is not custody — the
 server is non-custodial and cannot move funds, and every adversarial signed transaction in
@@ -33,10 +35,10 @@ Source: [`mcp-server/`](../../mcp-server/) in this repo. Platform-specific notes
 
 | Item | Value |
 |------|-------|
-| MCP URL | `https://<your-deployment>/mcp` (local dev: `http://localhost:3400/mcp`) |
+| MCP URL | `https://specular-agent-api-production.up.railway.app/mcp` (local dev: `http://localhost:3400/mcp`) |
 | Transport | MCP **Streamable HTTP**, stateless (no session id needed; `GET /mcp` returns 405) |
-| Protocol version | negotiated by the SDK (`2025-06-18` and earlier) |
-| Auth | Optional `Authorization: Bearer <SPECULAR_MCP_TOKEN>`; if the operator did not set a token the endpoint is open and rate-limited per IP |
+| Protocol version | negotiated by the SDK (`2025-11-25`, `2025-06-18`, `2024-11-05`) |
+| Auth | **Required on the hosted deployment**: `Authorization: Bearer <SPECULAR_MCP_TOKEN>`. A self-hosted instance with no `SPECULAR_MCP_TOKEN` set is open and rate-limited per IP |
 | Headers | `Content-Type: application/json`, `Accept: application/json, text/event-stream` (the spec requires both; this server also serves clients that send only `application/json`, `*/*` or no `Accept`) |
 | Same tools as REST | `https://<your-deployment>/openapi.json` |
 
@@ -45,6 +47,7 @@ Each `POST /mcp` carries one JSON-RPC request (`initialize`, `tools/list`, `tool
 
 ```bash
 curl -s -X POST https://specular-agent-api-production.up.railway.app/mcp \
+  -H "authorization: Bearer $SPECULAR_MCP_TOKEN" \
   -H 'content-type: application/json' -H 'accept: application/json, text/event-stream' \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"check_credit_score",
        "arguments":{"network":"arc-staging","address":"0x800e305A0caDdE6289dFDFEDF38218f45C06F72C"}}}'
@@ -69,11 +72,16 @@ in its environment.
 
 Every tool requires `network`. There is no default, because two of the three move real money.
 
-| `network` | What | Money |
-|-----------|------|-------|
-| `arc-staging` | Arc testnet, V6.2 / V7 stack | test USDC (start here) |
-| `base` | Base mainnet, V6.1 / V3 stack | **real USDC** |
-| `arc-mainnet` | Arc mainnet, V6.2 / V7 stack (since 2026-09-23) | **real USDC** |
+| `network` | What | Money | On the hosted deployment |
+|-----------|------|-------|--------------------------|
+| `arc-staging` | Arc testnet, V6.2 / V7 stack | test USDC (start here) | enabled |
+| `arc-mainnet` | Arc mainnet, V6.2 / V7 stack (since 2026-09-23) | **real USDC** | enabled |
+| `base` | Base mainnet, V6.1 / V3 stack | **real USDC** | **not enabled** — `400 Network "base" is not enabled on this server` |
+
+The hosted deployment currently runs `SPECULAR_ENABLED_NETWORKS=arc-mainnet,arc-staging`.
+Call `list_networks` / `GET /v1/networks` to see what a given deployment actually serves;
+do not read the "Valid: base, arc-staging, arc-mainnet" list in an *unknown-network* error
+message as a list of enabled networks — it is the list of names the code knows about.
 
 Generations differ per network and the V7 networks expose tools the others do not. Never hardcode
 a generation: call `get_protocol_status` and branch on `capabilities.v62` / `capabilities.reputationV4`.
@@ -103,19 +111,53 @@ Every `prepare_*` accepts `simulate: true` to dry-run from your address; reverts
 
 ## Borrower walkthrough
 
+**A loan is drawn from the borrower's OWN pool.** `get_protocol_status` reports
+`parameters.borrowRestrictedToPoolCreator: true` on every current deployment: only the agent that
+created a pool may borrow from it, and `requestLoan` pulls the principal out of that pool's
+`availableLiquidity`. So a new agent must put USDC into its own pool (or attract lenders into it)
+**before** it can borrow anything. A freshly created pool holds 0 USDC and `request_loan` against it
+reverts — `simulate: true` says so, but the transaction is wasted gas if you send it anyway.
+
 ```
 check_credit_score        {network, address}           -> registered? score/tier, limit, allowance
 prepare_register_agent    {network, from}              -> sign+send once (skip if registered)
 prepare_create_pool       {network, from}              -> sign+send once
+prepare_supply_liquidity  {network, from, agentId, amount}   <-- REQUIRED before the first loan
+                          -> sign+send the `prerequisite` exact approve, wait for it to mine
+                          -> sign+send the supply tx  (the pool creator is exempt from
+                             `parameters.minSupplyUsdc`; ordinary lenders are not)
+get_self_stake / required_self_stake {network, agentId}
+                          -> V6.2/V7 only. At a <100 % collateral tier this first-loss stake
+                             gates borrowing; check it before sizing the loan.
 prepare_request_loan      {network, from, amount, durationDays, simulate:true}
                           -> if `prerequisite` present: sign+send it, wait for it to mine
-                          -> sign+send the loan tx
+                          -> sign+send the loan tx   (keep `amount` <= the pool's availableLiquidity
+                             AND <= check_credit_score.credit.creditLimitUsdc)
 get_transaction           {network, hash}              -> LoanRequested event carries loanId
+preview_repayment         {network, loanId}            -> the exact amount repayLoan will pull
 prepare_repay_loan        {network, from, loanId, simulate:true} before the due date -> approve prerequisite, then repay
 ```
 
+How much to supply: at a 100 %-collateral tier a loan of `X` USDC needs `X` available in the pool
+*and* `X` of collateral in the wallet, so budget roughly `2X` of USDC to move `X`. A fresh agent's
+effective limit is the credit ladder's bootstrap (100 USDC today), not the tier limit — read
+`check_credit_score.credit.creditLimitUsdc`, never the tier table alone.
+
+### Reputation does not move on a same-minute repay
+
+`get_protocol_status.parameters.minHoldForReputationRewardSeconds` (86,400 = 1 day today) is an
+anti-farming lever. A loan repaid **sooner** than that is recorded as `onTime=false`: no reputation
+bonus, **and the credit ladder does not advance** — `maxRepaidPrincipal` stays where it was, so the
+agent's limit stays at the bootstrap 100 USDC no matter how many loans it cycles. Nothing in the
+`prepare_repay_loan` response warns about this. If your integration test asserts "score went up
+after a repay", hold the loan at least `minHoldForReputationRewardSeconds` first. The reputation
+bonus is also scaled by principal × holding time against `refDuration` (7 days), so a 1-day hold of
+a small loan earns a fraction of a point, not the full `onTimeRepaymentBonus`.
+
 Lenders use `get_available_liquidity` -> `prepare_supply_liquidity` -> later `prepare_claim_interest` /
-`prepare_withdraw_liquidity`.
+`prepare_withdraw_liquidity`. Note that a **pool creator's** own position is first-loss self-stake
+and `prepare_withdraw_liquidity` is blocked while that agent has outstanding principal;
+`prepare_claim_interest` keeps working throughout.
 
 ## Client snippets
 
@@ -127,7 +169,7 @@ import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/
 
 const client = new Client({ name: 'my-agent', version: '1.0.0' });
 await client.connect(new StreamableHTTPClientTransport(new URL('https://specular-agent-api-production.up.railway.app/mcp'), {
-  requestInit: { headers: { Authorization: 'Bearer <token-if-required>' } },
+  requestInit: { headers: { Authorization: `Bearer ${process.env.SPECULAR_MCP_TOKEN}` } },   // required
 }));
 const prepared = await client.callTool({ name: 'prepare_request_loan',
   arguments: { network: 'arc-staging', from: wallet.address, amount: 25, durationDays: 30, simulate: true } });
@@ -139,11 +181,12 @@ await wallet.sendTransaction({ to: tx.to, data: tx.data, gasLimit: BigInt(tx.gas
 **Python (raw JSON-RPC)**
 
 ```python
-import requests, json
+import os, requests
 r = requests.post('https://specular-agent-api-production.up.railway.app/mcp', json={
   'jsonrpc': '2.0', 'id': 1, 'method': 'tools/call',
   'params': {'name': 'get_protocol_status', 'arguments': {'network': 'arc-staging'}}},
-  headers={'Accept': 'application/json, text/event-stream'})
+  headers={'Accept': 'application/json, text/event-stream',
+           'Authorization': 'Bearer ' + os.environ['SPECULAR_MCP_TOKEN']})
 print(r.json()['result']['structuredContent'])
 ```
 
@@ -158,8 +201,9 @@ print(r.json()['result']['structuredContent'])
 - **Batches**: a JSON-RPC batch is answered with an array (even when only one member produces a response); an empty batch is `-32600`.
 - **Simulation**: `simulation.ok: false` always means the EVM reverted. An upstream RPC failure is an HTTP 502 / tool error, never a fabricated `revertReason`.
 - **`can_top_up` is advisory**: the deployed marketplace's `canTopUp()` view is off by one block, so the server also evaluates the corrected predicate and returns the conservative answer with `onChainView`, `correctedPredicate`, `viewDisagrees` and `warnings[]`. A loan can also start between your check and your transaction. Simulate `supply_liquidity` immediately before signing.
-- **Session**: stateless; no `Mcp-Session-Id` is issued and any sent is ignored. `Mcp-Protocol-Version` is honoured (`2024-11-05` … `2025-11-25`; other values get 400).
-- **Health**: `GET /health` (per-network RPC status, plus an `upstream` summary: cache hit rates and, per network, whether the circuit is open and how many endpoints are healthy). `GET /rpc-health` gives the full picture — per-endpoint state / consecutive failures / last error class, circuit state with a retry hint, and both cache layers' counters. Neither route makes an upstream call, and neither publishes RPC credentials. **Discovery**: `GET /` and `GET /openapi.json`.
+- **Session**: stateless; no `Mcp-Session-Id` is issued and any sent is ignored. `Mcp-Protocol-Version` is honoured (`2024-11-05` … `2025-11-25`; other values get a JSON-RPC `-32000` "Unsupported protocol version" naming the supported list).
+- **Health**: `GET /health` (per-network RPC status, plus an `upstream` summary: cache hit rates and, per network, whether the circuit is open and how many endpoints are healthy). `GET /rpc-health` gives the full picture — per-endpoint state / consecutive failures / last error class, circuit state with a retry hint, and both cache layers' counters. Neither route makes an upstream call, and neither publishes RPC credentials. **Discovery**: `GET /` and `GET /openapi.json`. These four routes need no bearer token; everything under `/v1/` and `/mcp` does.
+- **OpenAPI caveat**: `/openapi.json` declares `security: [{bearerAuth: []}, {}]`, i.e. it advertises auth as *optional*. On the hosted deployment it is not — a connector generated straight from that document with no credential gets 401 on every call. Configure the bearer token in your connector regardless of what the spec's `security` block implies.
 
 ## Self-hosting
 

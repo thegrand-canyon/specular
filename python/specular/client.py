@@ -96,6 +96,21 @@ def _reputation_abi() -> list[dict]:
 
 
 @dataclass
+def _hex0x(value) -> str:
+    """Return a 0x-prefixed hex string for a tx hash / HexBytes.
+
+    web3.py v6 returned ``HexBytes.hex()`` WITH the ``0x`` prefix; v8 returns it WITHOUT.
+    The client passed the result straight into ``explorer_url()``, so on web3 v8 every
+    explorer link it produced was missing the prefix and 404'd, and the hashes it returned
+    did not match what the JS SDK or any block explorer expects. Normalise rather than
+    pinning web3, so the client is correct on both.
+    """
+    if isinstance(value, str):
+        return value if value.startswith("0x") else "0x" + value
+    h = value.hex() if hasattr(value, "hex") else str(value)
+    return h if h.startswith("0x") else "0x" + h
+
+
 class CreditInfo:
     """Snapshot of an agent's credit standing.
 
@@ -566,11 +581,11 @@ class SpecularClient:
         # its hash as "success" and the calling agent (or LLM tool wrapper)
         # treats the loan as repaid — later defaulting for real.
         if receipt["status"] != 1:
-            raise RuntimeError(f"transaction {tx_hash.hex()} reverted (status 0)")
-        return tx_hash.hex()
+            raise RuntimeError(f"transaction {_hex0x(tx_hash)} reverted (status 0)")
+        return _hex0x(tx_hash)
 
-    def explorer_url(self, tx_hash: str) -> str:
-        return f"{self.explorer}{tx_hash}"
+    def explorer_url(self, tx_hash) -> str:
+        return f"{self.explorer}{_hex0x(tx_hash)}"
 
     # ------------------------------------------------------------------ ops
 

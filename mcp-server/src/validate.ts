@@ -152,7 +152,20 @@ export function validateAmountUsdc(value: unknown, field = 'amount', opts: Amoun
   if (base === 0n && !opts.allowZero) throw new ValidationError(`${field} must be > 0`, field);
   const capBase = ethers.parseUnits(cap.toString(), USDC_DECIMALS);
   if (base > capBase) {
-    throw new ValidationError(`${field}=${s} USDC exceeds this server's per-call cap of ${cap} USDC (raise SPECULAR_MAX_AMOUNT_USDC to change)`, field);
+    // [C3/C4 2026-09-24] Two failures a newcomer hits on day one, from one message:
+    //  - Amounts are USDC DISPLAY units, not base units. `25000000` means 25 million USDC,
+    //    not 25. That is the single most common first mistake and the old text gave no hint.
+    //  - The old text told the caller to "raise SPECULAR_MAX_AMOUNT_USDC" — a server-side
+    //    env var a third-party integrator has no access to. Never instruct a caller to
+    //    change something only the operator controls.
+    const looksLikeBaseUnits = base > capBase && Number(s) >= 1e6 && Number(s) % 1 === 0;
+    const hint = looksLikeBaseUnits
+      ? ` Amounts are in USDC, not base units — ${s} means ${s} USDC. Did you mean ${ethers.formatUnits(BigInt(s), USDC_DECIMALS)}?`
+      : '';
+    throw new ValidationError(
+      `${field}=${s} USDC exceeds this server's per-call cap of ${cap} USDC.${hint}`,
+      field,
+    );
   }
   return base;
 }

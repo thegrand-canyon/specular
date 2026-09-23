@@ -236,7 +236,12 @@ export function getNetwork(name: unknown): NetworkConfig {
     throw new NetworkError(`Unknown network "${describeValue(name)}". Valid: ${ALL_NETWORKS.join(', ')}.`);
   }
   if (!enabledNetworks().includes(name)) {
-    throw new NetworkError(`Network "${name}" is not enabled on this server (enabled: ${enabledNetworks().join(', ')}).`);
+    // [C2 2026-09-24] List only what this server actually serves. The old message named
+    // every network the CODE supports, so a caller was told `base` was available, used it,
+    // and got the same refusal again.
+    throw new NetworkError(
+      `Network "${name}" is not enabled on this server. Available: ${enabledNetworks().join(', ')}.`,
+    );
   }
   const hit = cache.get(name);
   if (hit) return hit;

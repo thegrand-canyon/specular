@@ -103,7 +103,7 @@ function errorResponses(withAuth: boolean) {
     '503': { description: 'Network temporarily unavailable (every RPC endpoint for this network is cold), or the server is shedding load. Carries Retry-After.', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
     '504': { description: 'The request exceeded SPECULAR_REQUEST_DEADLINE_MS before the chain answered. Carries Retry-After.', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
   };
-  if (withAuth) r['401'] = { description: 'Missing/invalid bearer token (only when SPECULAR_MCP_TOKEN is configured)', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } };
+  if (withAuth) r['401'] = { description: 'Missing or invalid bearer token', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } };
   return r;
 }
 
@@ -147,7 +147,12 @@ function stripDesc(s: unknown) {
   return rest;
 }
 
-export function buildOpenApi(publicUrl?: string) {
+/**
+ * `authRequired` defaults to whether THIS process enforces a token, so the document a
+ * live server serves describes that server. The generator writes the unauthenticated
+ * shape unless told otherwise.
+ */
+export function buildOpenApi(publicUrl?: string, authRequired = !!process.env.SPECULAR_MCP_TOKEN) {
   const paths: Record<string, Record<string, unknown>> = {};
   for (const t of TOOLS) {
     paths[t.rest.path] ??= {};
@@ -229,7 +234,7 @@ export function buildOpenApi(publicUrl?: string) {
       { name: 'meta' },
     ],
     components: {
-      securitySchemes: { bearerAuth: { type: 'http', scheme: 'bearer', description: 'Only enforced when the server sets SPECULAR_MCP_TOKEN.' } },
+      securitySchemes: { bearerAuth: { type: 'http', scheme: 'bearer', description: 'Required. Issue one token per connector; the operator sets it on the service.' } },
       schemas: {
         Error: ERROR_SCHEMA,
         PreparedTransaction: PREPARED_TX_SCHEMA,
@@ -238,7 +243,12 @@ export function buildOpenApi(publicUrl?: string) {
         NetworkRpcHealth: NETWORK_RPC_HEALTH_SCHEMA,
       },
     },
-    security: [{ bearerAuth: [] }, {}],
+    // [C1 2026-09-24] Emit the alternative `{}` (= "no auth accepted") ONLY when this
+    // server genuinely runs without a token. Emitting it unconditionally told every
+    // generator that anonymous access was valid, so a Muse connector built from this
+    // document sent no Authorization header and got 401 on every call — the document
+    // said the request was legal and the server disagreed.
+    security: authRequired ? [{ bearerAuth: [] }] : [{ bearerAuth: [] }, {}],
     paths,
   };
 }

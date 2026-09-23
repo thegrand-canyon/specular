@@ -11,11 +11,17 @@ General custody/network notes: [REMOTE_MCP.md](REMOTE_MCP.md). Grok Bot (MCP ins
 
 | Field | Value |
 |-------|-------|
-| Base URL | `https://<specular-deployment>` |
-| API description | `https://<specular-deployment>/openapi.json` (OpenAPI 3.1, generated from the tool registry; also committed as `mcp-server/openapi.json`) |
-| Auth | Bearer token if the deployment sets `SPECULAR_MCP_TOKEN` (`Authorization: Bearer <token>`); otherwise no auth (per-IP rate limits apply) |
+| Base URL | `https://specular-agent-api-production.up.railway.app` |
+| API description | `https://specular-agent-api-production.up.railway.app/openapi.json` (OpenAPI 3.1, generated from the tool registry; also committed as `mcp-server/openapi.json`) |
+| Auth | **Required on the hosted deployment**: `Authorization: Bearer <token>`. A self-hosted instance with no `SPECULAR_MCP_TOKEN` is open (per-IP rate limits apply) |
 | Content type | `application/json` in and out |
-| Health | `GET /health` |
+| Health | `GET /health` (open, no token — as are `GET /`, `/openapi.json` and `/rpc-health`) |
+
+> **Configure the bearer token even though the OpenAPI document says it is optional.** The
+> generated spec declares `security: [{bearerAuth: []}, {}]`; the empty alternative advertises
+> "no auth also works", which is false on the hosted deployment. A connector built straight from
+> the document with no credential gets `401 {"error":"missing or invalid bearer token"}` on every
+> `/v1/` call.
 
 `operationId`s in the OpenAPI file equal the MCP tool names (`check_credit_score`, `prepare_request_loan`, ...), so
 one set of action descriptions works for both surfaces.
@@ -57,8 +63,15 @@ Relay (POST, side effect: submits bytes the caller already signed):
 POST /v1/{network}/tx/broadcast                  {signedTransaction: "0x..."}
 ```
 
-`{network}` is one of `arc-staging` (testnet, test USDC), `base` (**real USDC**), `arc-mainnet` (**real USDC**).
-It is a required path segment; there is no default. Amounts are USDC display units (`12.5`), max 6 decimals.
+`{network}` is one of `arc-staging` (testnet, test USDC) or `arc-mainnet` (**real USDC**) on the hosted
+deployment; `base` (**real USDC**) is a known name but is **not enabled** there and answers
+`400 Network "base" is not enabled on this server`. `GET /v1/networks` is the authority on what a
+deployment serves — the unknown-network error's "Valid: …" list is the set of names the code knows,
+not the set it serves. `{network}` is a required path segment; there is no default.
+
+Amounts are USDC **display** units (`12.5` means 12.5 USDC), max 6 decimals, accepted as a JSON number
+or a decimal string. Passing base units (`25000000` for 25 USDC) is rejected, but with a per-call-cap
+message rather than a units hint — if you see "exceeds this server's per-call cap", check your units first.
 
 ## Custody: the connector never gets a key
 
@@ -74,12 +87,33 @@ their own wallet app. This needs no secrets anywhere in the connector.
 The developer's backend holds the agent wallet (never Specular). Flow:
 
 ```
+0. one-time, before the first loan (a loan is drawn from the agent's OWN pool):
+   POST /v1/arc-staging/tx/prepare/register_agent   {"from":"0xAGENT"}            -> sign+send
+   POST /v1/arc-staging/tx/prepare/create_pool      {"from":"0xAGENT"}            -> sign+send
+   POST /v1/arc-staging/tx/prepare/supply_liquidity {"from":"0xAGENT","agentId":N,"amount":120}
+                                                    -> sign+send `prerequisite`, then the supply tx
 1. POST /v1/arc-staging/tx/prepare/request_loan {"from":"0xAGENT","amount":25,"durationDays":30,"simulate":true}
+   -> check simulation.ok BEFORE signing; ok:false means the EVM reverted and signing wastes gas
 2. if response.prerequisite -> sign+send it (exact USDC approve), wait for confirmation
 3. sign the main tx; either send via your own RPC, or
    POST /v1/arc-staging/tx/broadcast {"signedTransaction":"0x02f8..."}   (relayed only if it targets Specular)
 4. GET /v1/arc-staging/tx/{hash} -> "confirmed" + decoded LoanRequested {loanId}
+5. GET /v1/arc-staging/loans/{loanId}/repayment -> the exact total repayLoan will pull
+   POST /v1/arc-staging/tx/prepare/repay_loan {"from":"0xAGENT","loanId":N,"simulate":true}
 ```
+
+Step 0 is not optional. `GET /v1/{network}/status` reports
+`parameters.borrowRestrictedToPoolCreator: true`: only the pool's creator may borrow from it and the
+principal comes out of that pool's `availableLiquidity`, so a brand-new agent with an empty pool
+cannot borrow. At the 100 %-collateral starting tier, moving `X` USDC needs `X` in the pool plus `X`
+of collateral in the wallet. The pool creator is exempt from `parameters.minSupplyUsdc`; other
+lenders are not. A creator's own position is first-loss self-stake and cannot be withdrawn while the
+agent has outstanding principal (claiming interest still works).
+
+Reputation caveat: a loan repaid sooner than `parameters.minHoldForReputationRewardSeconds`
+(86,400 s today) is recorded as not-on-time — no score gain **and no credit-ladder growth**. The API
+returns no warning about this, so a connector that repays immediately will see the agent's limit
+sit at the bootstrap 100 USDC forever.
 
 Approvals are always exact amounts to the Specular marketplace; the relay rejects unlimited approvals, approvals to
 any other spender, native-value transfers, admin functions and anything not addressed to a Specular contract on that
@@ -88,12 +122,13 @@ network.
 ## Example: sizing and preparing a loan
 
 ```bash
-H='content-type: application/json'
 API=https://specular-agent-api-production.up.railway.app
+AUTH="authorization: Bearer $SPECULAR_MCP_TOKEN"     # required; omit it and every call is 401
+H='content-type: application/json'
 
-curl -s $API/v1/arc-staging/agents/0xAGENT/credit | jq '{registered, reputation, credit, wallet}'
+curl -s -H "$AUTH" $API/v1/arc-staging/agents/0xAGENT/credit | jq '{registered, reputation, credit, wallet}'
 
-curl -s -X POST $API/v1/arc-staging/tx/prepare/request_loan -H "$H" \
+curl -s -X POST $API/v1/arc-staging/tx/prepare/request_loan -H "$AUTH" -H "$H" \
   -d '{"from":"0xAGENT","amount":25,"durationDays":30,"simulate":true}' \
   | jq '{humanReadableSummary, warnings, gasEstimate, prerequisite: .prerequisite.humanReadableSummary, simulation}'
 ```
@@ -106,11 +141,17 @@ approve is mined.
 
 | HTTP | Meaning |
 |------|---------|
-| 400 | Validation error (`{error, field?}`): bad address/checksum, amount out of range or over cap, `durationDays` outside 7-365, unknown/missing network, non-existent loan or pool, relay refused |
-| 401 | Bearer token required/invalid (only when the operator configured one) |
+| 400 | Validation error (`{error, field?}`): bad address/checksum, amount out of range or over cap, `durationDays` outside 7-365, unknown/disabled network, non-existent loan or pool, relay refused |
+| 401 | `{"error":"missing or invalid bearer token"}` — always, on the hosted deployment, for `/v1/` and `/mcp` |
 | 413 | Body over 256 KB |
-| 429 | Per-IP rate limit; `Retry-After` header |
+| 429 | Per-IP rate limit (120/min; 20/min for broadcast); `Retry-After` header and `{"error":"rate limit exceeded; retry in Ns"}` |
 | 502 | Upstream RPC failure; retry |
+| 503 | Concurrency cap reached, or every upstream RPC for that network is cold; `Retry-After` + `{error, network, retryAfterSeconds}` |
+| 504 | Request exceeded the server's 20 s budget; `Retry-After`. Fast and explicit, never a hang |
+
+A `prepare_*` call whose transaction **would revert** is still HTTP **200**: the refusal arrives as
+`simulation.ok: false` with `simulation.revertReason`, `simulation.plainLanguage` and `warnings[]`.
+Treat a 200 with `simulation.ok === false` as a failure and surface `plainLanguage` — do not sign it.
 
 Every read includes `rpc.stale` (true when the RPC's latest block is older than 5 minutes) so the assistant can
 caveat numbers.
