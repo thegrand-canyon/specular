@@ -1,7 +1,7 @@
 {
   "scenario": "local-time-travel",
   "chainId": 31337,
-  "runAt": "2026-09-22T18:06:45.647Z",
+  "runAt": "2026-09-23T00:37:18.516Z",
   "note": "LOCAL hardhat with time travel — nothing broadcast to any network",
   "passed": 46,
   "failed": 0,
@@ -76,7 +76,7 @@
       "scenario": "L2",
       "label": "G1: AgentLockedOut(agent, now + 180 days) emitted",
       "ok": true,
-      "detail": "until 2154104813"
+      "detail": "until 2154128246"
     },
     {
       "scenario": "L2",
@@ -112,7 +112,7 @@
       "scenario": "L2",
       "label": "G5: AgentLockedOut(agent, now + 180 days) emitted",
       "ok": true,
-      "detail": "until 2154796019"
+      "detail": "until 2154819452"
     },
     {
       "scenario": "L2",
@@ -148,7 +148,7 @@
       "scenario": "L2",
       "label": "G2: AgentLockedOut(agent, now + 180 days) emitted",
       "ok": true,
-      "detail": "until 2155487225"
+      "detail": "until 2155510658"
     },
     {
       "scenario": "L2",
@@ -172,13 +172,13 @@
       "scenario": "L4",
       "label": "first default set a 180-day lockout",
       "ok": true,
-      "detail": "2156178432"
+      "detail": "2156201865"
     },
     {
       "scenario": "L4",
       "label": "a later, smaller default with a SHORTER lockout lever did NOT shorten the existing lockout",
       "ok": true,
-      "detail": "2156178432 -> 2156178432"
+      "detail": "2156201865 -> 2156201865"
     },
     {
       "scenario": "L3",

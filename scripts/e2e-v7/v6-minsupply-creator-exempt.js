@@ -17,15 +17,31 @@ async function main() {
     await L.assertStaging();
     const R = new L.Results(S, 'creator exemption from minSupplyAmount (on-chain)');
     const { mp, reg } = L.contracts();
-    const C = L.roleWallet('C'), T2 = L.roleWallet('T2'), A = L.roleWallet('A');
+
+    // The scenario turns on a creator opening a NEW lender slot in its own pool, and on
+    // a third party being refused a new slot in that same pool. A lender slot is never
+    // un-claimed on chain, so both preconditions are one-shot: allocate a VIRGIN
+    // creator each run (its pool is then new, which makes any third party new in it
+    // too, and makes the "not exempt in a foreign pool" leg honest as well).
+    const { wallet: C, role: cRole } = await L.freshRoleWallet('V6CREATOR', async (w) => {
+        const id = await reg.addressToAgentId(w.address);
+        if (id === 0n) return true;
+        return (await mp.positions(id, w.address)).amount === 0n && !(await mp.isInPoolLenders(id, w.address));
+    });
+    const T2 = L.roleWallet('T2'), A = L.roleWallet('A');
     const mpC = L.contracts(C).mp, mpT2 = L.contracts(T2).mp;
 
     const minSupply = await mp.minSupplyAmount();
     R.check('live lever minSupplyAmount == 10 USDC', minSupply === USDC(10), fmt(minSupply));
 
-    const cId = await L.ensureAgent(C, S, 'C-minsupply');
+    await L.fundNative(C, '0.4', S);
+    await L.ensureUsdc(C, 40, 120, S);
+    await L.approveMax(C, 100000, S, `${cRole} approve`);
+    await L.ensureUsdc(T2, 30, 120, S);
+    await L.approveMax(T2, 100000, S, 'T2 approve');
+    const cId = await L.ensureAgent(C, S, cRole);
     const aId = Number(await reg.addressToAgentId(A.address));
-    R.note('agents', `creator C = #${cId} (${C.address}), third party T2 = ${T2.address}, foreign pool A = #${aId}`);
+    R.note('agents', `creator ${cRole} = #${cId} (${C.address}), third party T2 = ${T2.address}, foreign pool A = #${aId}`);
 
     const cPos = (await mp.positions(cId, C.address)).amount;
     R.check('precondition: creator has no position yet in its own pool (a NEW slot)', cPos === 0n, fmt(cPos));

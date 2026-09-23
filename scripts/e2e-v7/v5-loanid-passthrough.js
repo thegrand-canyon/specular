@@ -20,11 +20,11 @@
 const L = require('./_lib');
 const { USDC, fmt } = L;
 const S = 'v5-loanid-passthrough';
-const AMOUNT = 200;          // both loans, deliberately identical
 const REF_DURATION = 600;    // seconds, for this script only
 const GAP_SECONDS = 60;      // between the two borrows
 const HOLD_SECONDS = 36;     // before the first (younger-loan) repayment
 const MIN_HOLD_FOR_RUN = 10; // seconds, for this script only (live value is 86400)
+const SCORE_HEADROOM = 100n; // reputation points the proof needs to be able to observe
 
 // The marketplace's `minHoldForReputationReward` gates the reward ENTIRELY, not just its
 // size (scenario V9's O-1): a loan held for less than minHold reports onTime=false and
@@ -39,9 +39,47 @@ async function main() {
     await L.assertStaging();
     const R = new L.Results(S, 'M2-d loanId pass-through: concurrent equal-size loans, out-of-order repayment (on-chain)');
     const { mp, rep, reg } = L.contracts();
-    const B = L.roleWallet('B');
-    const mpB = L.contracts(B).mp, repOwner = L.contracts(L.deployer).rep;
-    const bId = Number(await reg.addressToAgentId(B.address));
+
+    // Proof (2) reads the M1-1 bonus off the agent's SCORE DELTA, so it needs an agent
+    // with room below MAX_SCORE. A long-lived pumped agent saturates at 1000 after a few
+    // suite runs and every delta silently becomes 0 — which would make the hold-time leg
+    // vacuous (0 == 0 proves nothing about attribution) while still reporting PASS.
+    // Allocate an agent that still has headroom; one is reused until it runs out.
+    const MAX_SCORE = await rep.MAX_SCORE();
+    const { wallet: B, role: bRole } = await L.freshRoleWallet('V5LOANID', async (w) => {
+        const id = await reg.addressToAgentId(w.address);
+        if (id === 0n) return true;
+        const score = await rep['getReputationScore(uint256)'](id);
+        return score + SCORE_HEADROOM <= MAX_SCORE && (await mp.activeLoanCount(id)) === 0n;
+    });
+    const LB = L.roleWallet('LB');
+    const mpB = L.contracts(B).mp, mpLB = L.contracts(LB).mp, repOwner = L.contracts(L.deployer).rep;
+
+    await L.fundNative(B, '1.0', S);
+    const bId = await L.ensureAgent(B, S, bRole);
+
+    // Size everything from chain: climb the ladder until two concurrent equal loans fit,
+    // then take the per-loan amount from the live head-room. Nothing is hardcoded, so a
+    // redeploy (which resets reputation) just re-climbs.
+    const boot = await rep.bootstrapLimit();
+    const targetLimit = boot * 4n;
+    await L.ensureUsdc(B, Number(fmt(targetLimit)) * 3, Number(fmt(targetLimit)) * 4, S);
+    await L.approveMax(B, 100000, S, `${bRole} approve`);
+    if ((await mp.agentPools(bId)).availableLiquidity < targetLimit * 3n) {
+        await L.ensureUsdc(LB, Number(fmt(targetLimit)) * 3, Number(fmt(targetLimit)) * 4, S);
+        await L.send(S, `LB supply ${fmt(targetLimit * 3n)} USDC to pool #${bId}`, mpLB.supplyLiquidity(bId, targetLimit * 3n));
+    }
+    const rungs = await L.climbLadderTo(S, B, bId, targetLimit);
+    if (rungs.length) R.note('ladder climbed for the loanId agent', JSON.stringify(rungs));
+    const sz = await L.borrowableNow(bId, B.address, { slots: 2, reserveUsdc: 20 });
+    const AMOUNT_UNITS = sz.per;
+    R.note('loanId agent (score headroom required)',
+        `${bRole} #${bId} ${B.address} score ${await rep['getReputationScore(uint256)'](bId)}/${MAX_SCORE}, two concurrent loans of ${fmt(AMOUNT_UNITS)} USDC`);
+    R.check('the agent has reputation head-room for the bonus deltas this proof measures',
+        (await rep['getReputationScore(uint256)'](bId)) + SCORE_HEADROOM <= MAX_SCORE,
+        `score ${await rep['getReputationScore(uint256)'](bId)} + ${SCORE_HEADROOM} <= ${MAX_SCORE}`);
+    R.check('two concurrent equal loans fit under the live credit limit', AMOUNT_UNITS > 0n && sz.limit >= AMOUNT_UNITS * 2n,
+        `per-loan ${fmt(AMOUNT_UNITS)}, limit ${fmt(sz.limit)}`);
 
     const mpOwner = L.contracts(L.deployer).mp;
     const rdBefore = await rep.refDuration();
@@ -63,16 +101,16 @@ async function main() {
 
         let st = await L.creditState(bId, B.address);
         R.check('precondition: no active loans on agent B', st.outstanding === 0n);
-        const need = await mp.requiredSelfStake(bId, USDC(2 * AMOUNT));
+        const need = await mp.requiredSelfStake(bId, AMOUNT_UNITS * 2n);
         if (st.selfStake < need) R.tx('top up self-stake', await L.send(S, `B top self-stake to ${fmt(need)}`, mpB.supplyLiquidity(bId, need - st.selfStake)));
 
         // ------------------------------------------------- two identical concurrent loans
-        const rc1 = await L.send(S, `B requestLoan ${AMOUNT} USDC (loan X, older)`, mpB.requestLoan(USDC(AMOUNT), 7));
+        const rc1 = await L.send(S, `B requestLoan ${fmt(AMOUNT_UNITS)} USDC (loan X, older)`, mpB.requestLoan(AMOUNT_UNITS, 7));
         const loanX = L.loanIdFromReceipt(mp, rc1);
         R.tx(`requestLoan X -> #${loanX}`, rc1);
         console.log(`    waiting ${GAP_SECONDS}s before the second borrow...`);
         await L.sleep(GAP_SECONDS * 1000);
-        const rc2 = await L.send(S, `B requestLoan ${AMOUNT} USDC (loan Y, younger)`, mpB.requestLoan(USDC(AMOUNT), 7));
+        const rc2 = await L.send(S, `B requestLoan ${fmt(AMOUNT_UNITS)} USDC (loan Y, younger)`, mpB.requestLoan(AMOUNT_UNITS, 7));
         const loanY = L.loanIdFromReceipt(mp, rc2);
         R.tx(`requestLoan Y -> #${loanY}`, rc2);
 
@@ -82,10 +120,10 @@ async function main() {
             (await mp.loans(loanX)).amount === (await mp.loans(loanY)).amount, `${fmt(olX.amount)} == ${fmt(olY.amount)}`);
         R.check('recordBorrow created a per-loanId open-loan record for EACH loan',
             olX.start > 0n && olY.start > 0n && olX.agentId === BigInt(bId) && olY.agentId === BigInt(bId) &&
-            olX.amount === USDC(AMOUNT) && olY.amount === USDC(AMOUNT),
+            olX.amount === AMOUNT_UNITS && olY.amount === AMOUNT_UNITS,
             `X{start ${olX.start}, amt ${fmt(olX.amount)}, agent ${olX.agentId}}  Y{start ${olY.start}, amt ${fmt(olY.amount)}, agent ${olY.agentId}}`);
         R.check('the younger loan has a strictly later recordBorrow timestamp', olY.start > olX.start, `${olX.start} -> ${olY.start} (+${olY.start - olX.start}s)`);
-        R.check('both loans are ACTIVE concurrently', (await mp.activeLoanCount(bId)) === 2n && (await mp.outstandingPrincipal(bId)) === USDC(2 * AMOUNT));
+        R.check('both loans are ACTIVE concurrently', (await mp.activeLoanCount(bId)) === 2n && (await mp.outstandingPrincipal(bId)) === AMOUNT_UNITS * 2n);
 
         // ------------------------------------------------- repay the YOUNGER first
         console.log(`    holding ${HOLD_SECONDS}s before repaying the younger loan...`);
@@ -114,7 +152,7 @@ async function main() {
         R.check('openLoans(X) UNTOUCHED: same start, amount and agentId as at recordBorrow',
             olXAfter.start === olX.start && olXAfter.amount === olX.amount && olXAfter.agentId === olX.agentId,
             `start ${olXAfter.start} amt ${fmt(olXAfter.amount)}`);
-        R.check('the older loan is still ACTIVE on the marketplace', (await mp.activeLoanCount(bId)) === 1n && (await mp.outstandingPrincipal(bId)) === USDC(AMOUNT));
+        R.check('the older loan is still ACTIVE on the marketplace', (await mp.activeLoanCount(bId)) === 1n && (await mp.outstandingPrincipal(bId)) === AMOUNT_UNITS);
 
         // ------------------------------------------------- then the older one
         const rcRX = await L.send(S, `B repayLoan ${loanX} (the OLDER loan)`, mpB.repayLoan(loanX));
@@ -135,7 +173,7 @@ async function main() {
         R.check('per-pool conservation exact at the end', cons.conserved, `Σamt ${fmt(cons.sumAmt)} Σearned ${fmt(cons.sumEarned)}`);
 
         R.finish({
-            agentId: bId, loanX, loanY,
+            agentId: bId, agentRole: bRole, perLoanAmount: fmt(AMOUNT_UNITS), loanX, loanY,
             timings: { startX: Number(olX.start), startY: Number(olY.start), repayY: blkY.timestamp, repayX: blkX.timestamp, heldY, heldX, heldFifoCounterfactual: heldFifo },
             bonuses: { byLoanId: expY.toString(), fifoCounterfactual: expFifo.toString(), olderLoan: expX.toString() }
         });

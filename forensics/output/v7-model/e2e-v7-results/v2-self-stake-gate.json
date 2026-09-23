@@ -2,10 +2,10 @@
   "scenario": "v2-self-stake-gate",
   "title": "M2-c self-stake requirement gates the unsecured tiers (on-chain)",
   "chainId": 5042002,
-  "marketplace": "0xa736EE7BB1BFB21bD294B220Bd7027B6Fe266300",
-  "reputation": "0x66977dF45F38D8b0Dc463817C4B46a7E08ddbdFB",
-  "startedAt": "2026-09-22T17:49:40.392Z",
-  "finishedAt": "2026-09-22T17:50:16.264Z",
+  "marketplace": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+  "reputation": "0xD7906fDFBf69BA89a4c2FE148797e24f386fE3d2",
+  "startedAt": "2026-09-23T00:29:01.936Z",
+  "finishedAt": "2026-09-23T00:29:37.017Z",
   "passed": 15,
   "failed": 0,
   "blocked": 0,
@@ -13,7 +13,7 @@
     {
       "label": "agent B",
       "ok": null,
-      "detail": "#52 score 650 collateral 0% ladder 2100.0 creditLimit 2100.0 selfStake 0.0"
+      "detail": "#52 score 1000 collateral 0% ladder 2100.0 creditLimit 2100.0 selfStake 0.0"
     },
     {
       "label": "precondition: B is at a sub-100 % collateral tier and has no outstanding principal",
@@ -88,54 +88,54 @@
     {
       "label": "per-pool conservation exact at the end",
       "ok": true,
-      "detail": "Σamt 1650.0 Σearned 20.600121"
+      "detail": "Σamt 1950.0 Σearned 27.890835"
     }
   ],
   "txs": [
     {
       "label": "stake to required-1",
-      "hash": "0x40689905ac3bccc817256307565f9520f74ee0813daefe55d5f99e0c60272c5e",
-      "gasUsed": "96999"
+      "hash": "0xb60ad6dcd5a5209460db070cf4bb65932536abdd25a9a82ca144df22d7e2bb22",
+      "gasUsed": "97132"
     },
     {
       "label": "top up 1 unit",
-      "hash": "0x676655c22101f9e7efde3d28851c3f8bdf0ef24e0dc63bf0b3f6698731bc1b89",
-      "gasUsed": "82046"
+      "hash": "0xfc827a5754a24dd589ffbda1d29753cd25c963028137f90db7ea8b7953e8f25e",
+      "gasUsed": "82179"
     },
     {
-      "label": "requestLoan 400 -> loan #12",
-      "hash": "0xb5bd3ccd63b93576304a1ce56fcf433f6a144fb0aa5df281c61360249aff4d60",
-      "gasUsed": "499732"
+      "label": "requestLoan 400 -> loan #100",
+      "hash": "0x01bb055ad59a62c8c24eed2c67d4318c78f470b4fb5f7bf1583e2c8a7546f6ca",
+      "gasUsed": "497590"
     },
     {
       "label": "top up to aggregate requirement",
-      "hash": "0x48446b76daefde616f8e8102f3c66c3c07d5ed9883a7641a115f25fce03beda8",
-      "gasUsed": "99357"
+      "hash": "0x3bfca7f6a83946b7bbf0e3ca237e62014cd1246febda3703aa9a0c3a7211a8c8",
+      "gasUsed": "99490"
     },
     {
-      "label": "requestLoan 100 -> loan #13",
-      "hash": "0x5905d5bc0f35dc621d609eac39c22ef6b22d5f8835cc58bb08247fa30c102dc6",
-      "gasUsed": "431332"
+      "label": "requestLoan 100 -> loan #101",
+      "hash": "0xcfe87a49a5bb88aff9d5761ea8b1fcf8c090ee6750a7f964086b826c8f244f12",
+      "gasUsed": "429190"
     },
     {
-      "label": "repay 12",
-      "hash": "0xba44c741fc7827dbf6b4818c6b51c1d2b63e3c6dfe6408657b543e7653d13495",
-      "gasUsed": "263755"
+      "label": "repay 100",
+      "hash": "0xa3dc451333d1d590357cc6d08117f2f8d67cd85cc0c9cef7bdd6595aaefb3fab",
+      "gasUsed": "261288"
     },
     {
-      "label": "repay 13",
-      "hash": "0x9da9944f4a6ecfd56311407d223116cf6bccd91416aaf4d79824dcb73519c6c7",
-      "gasUsed": "239821"
+      "label": "repay 101",
+      "hash": "0x63457b99ce8f426836943cae792c5ac568dfb493600ad1c275da98f95877e5ca",
+      "gasUsed": "237354"
     }
   ],
   "cumulativeSpend": {
-    "nativeFromDeployer": "9.2466589",
-    "usdcMinted": "13700.0"
+    "nativeFromDeployer": "17.5033632",
+    "usdcMinted": "32160.0"
   },
   "agentId": 52,
   "loans": [
-    12,
-    13
+    100,
+    101
   ],
   "requiredSelfStake": {
     "forFirst": "200000000",

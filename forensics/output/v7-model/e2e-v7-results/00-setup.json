@@ -2,10 +2,10 @@
   "scenario": "00-setup",
   "title": "preflight, funding, calendar compression, agent B pumped to the 0%-collateral tier",
   "chainId": 5042002,
-  "marketplace": "0xa736EE7BB1BFB21bD294B220Bd7027B6Fe266300",
-  "reputation": "0x66977dF45F38D8b0Dc463817C4B46a7E08ddbdFB",
-  "startedAt": "2026-09-22T17:44:14.508Z",
-  "finishedAt": "2026-09-22T17:47:40.644Z",
+  "marketplace": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+  "reputation": "0xD7906fDFBf69BA89a4c2FE148797e24f386fE3d2",
+  "startedAt": "2026-09-23T00:26:18.537Z",
+  "finishedAt": "2026-09-23T00:28:35.500Z",
   "passed": 8,
   "failed": 0,
   "blocked": 0,
@@ -13,7 +13,7 @@
     {
       "label": "live levers before compression",
       "ok": null,
-      "detail": "{\"rep\":{\"onTimeBonus\":\"50\",\"defaultPenaltyBase\":\"50\",\"defaultPenaltyLarge\":\"100\",\"largeLoanThreshold\":\"1000000000\",\"bonusReferenceAmount\":\"1000000\",\"creditMultiple\":\"2\",\"growthStep\":\"100000000\",\"bootstrapLimit\":\"100000000\",\"refDuration\":\"1\",\"rateMaxGain\":\"0\",\"rateWindow\":\"86400\",\"defaultLockout\":\"15552000\"},\"mp\":{\"minHold\":\"0\",\"minSupply\":\"10000000\",\"feeBps\":\"100\",\"bind\":true}}"
+      "detail": "{\"rep\":{\"onTimeBonus\":\"10\",\"defaultPenaltyBase\":\"50\",\"defaultPenaltyLarge\":\"100\",\"largeLoanThreshold\":\"1000000000\",\"bonusReferenceAmount\":\"100000000\",\"creditMultiple\":\"2\",\"growthStep\":\"100000000\",\"bootstrapLimit\":\"100000000\",\"refDuration\":\"604800\",\"rateMaxGain\":\"5\",\"rateWindow\":\"86400\",\"defaultLockout\":\"15552000\"},\"mp\":{\"minHold\":\"86400\",\"minSupply\":\"10000000\",\"feeBps\":\"100\",\"bind\":true}}"
     },
     {
       "label": "all throwaway roles funded with native gas",
@@ -43,12 +43,12 @@
     {
       "label": "B before pump",
       "ok": null,
-      "detail": "score 100 limit 100.0 ladder 100.0 maxRepaid 0.0"
+      "detail": "score 1000 limit 2100.0 ladder 2100.0 maxRepaid 1000.0"
     },
     {
       "label": "agent B reached the 0 %-collateral tier (score >= 600)",
       "ok": true,
-      "detail": "score 600 after 10 pump loans"
+      "detail": "score 1000 after 0 pump loans"
     },
     {
       "label": "agent B collateral requirement is now 0 %",
@@ -56,25 +56,25 @@
       "detail": "0%"
     },
     {
-      "label": "agent B tier limit is the capped 2,500 USDC (tier 4)",
+      "label": "agent B's tier limit is exactly the shipped table entry for its tier, and that tier is unsecured",
       "ok": true,
-      "detail": "2500.0"
+      "detail": "score 1000 -> tier 5, limit 5000.0, collateral 0%"
     },
     {
       "label": "B after pump",
       "ok": null,
-      "detail": "score 600 maxRepaid 1000.0 ladder 2100.0 limit 2100.0 selfStake 200.0"
+      "detail": "score 1000 maxRepaid 1000.0 ladder 2100.0 limit 2100.0 selfStake 250.0"
     },
     {
       "label": "pool #B per-pool conservation exact after the pump",
       "ok": true,
-      "detail": "avail 1319.271085 + loaned 0.0 == Σamt 1300.0 + Σearned 19.271085"
+      "detail": "avail 1676.941524 + loaned 0.0 == Σamt 1650.0 + Σearned 26.941524"
     }
   ],
   "txs": [],
   "cumulativeSpend": {
-    "nativeFromDeployer": "9.2466589",
-    "usdcMinted": "13700.0"
+    "nativeFromDeployer": "17.5033632",
+    "usdcMinted": "32160.0"
   },
   "agents": {
     "A": 51,
@@ -94,24 +94,24 @@
     "LF": "0x6585A543a585DB5D1ae6D4AB4b7Dc796756d5cCD",
     "X": "0x1C4Ea831aC2C879AbA6182038bDb25E702Ea358f"
   },
-  "pumpLoans": 10,
+  "pumpLoans": 0,
   "leversBefore": {
     "rep": {
-      "onTimeBonus": "50",
+      "onTimeBonus": "10",
       "defaultPenaltyBase": "50",
       "defaultPenaltyLarge": "100",
       "largeLoanThreshold": "1000000000",
-      "bonusReferenceAmount": "1000000",
+      "bonusReferenceAmount": "100000000",
       "creditMultiple": "2",
       "growthStep": "100000000",
       "bootstrapLimit": "100000000",
-      "refDuration": "1",
-      "rateMaxGain": "0",
+      "refDuration": "604800",
+      "rateMaxGain": "5",
       "rateWindow": "86400",
       "defaultLockout": "15552000"
     },
     "mp": {
-      "minHold": "0",
+      "minHold": "86400",
       "minSupply": "10000000",
       "feeBps": "100",
       "bind": true

@@ -27,9 +27,20 @@ async function main() {
     // ---------------------------------------------- versions
     R.check('marketplace VERSION == "V6.2"', (await mp.VERSION()) === 'V6.2');
     R.check('reputation manager VERSION == "V4"', (await rep.VERSION()) === 'V4');
-    R.check('addresses are the configured V7 pair',
-        L.MP.toLowerCase() === '0xa736ee7bb1bfb21bd294b220bd7027b6fe266300' &&
-        L.REP.toLowerCase() === '0x66977df45f38d8b0dc463817c4b46a7e08ddbdfb', `${L.MP} / ${L.REP}`);
+    // The pair is read from the CANONICAL keys of the address file, never hardcoded:
+    // a redeploy rewrites those keys and must not need a scenario edit. What is
+    // asserted is that the suite ran against the canonical pair and that the pair is
+    // not one of the superseded stacks the address file lists.
+    const canonMp = L.cfg.agentLiquidityMarketplace_v62, canonRep = L.cfg.reputationManagerV4;
+    const superseded = (L.cfg.supersededDeployments || []);
+    const supersededMps = superseded.map(d => d.marketplace.toLowerCase());
+    const supersededReps = superseded.map(d => d.reputationManager.toLowerCase());
+    R.check('addresses are the configured V7 pair (canonical keys of arc-testnet-v6-addresses.json)',
+        L.MP.toLowerCase() === canonMp.toLowerCase() && L.REP.toLowerCase() === canonRep.toLowerCase(),
+        `${L.MP} / ${L.REP}`);
+    R.check('the live pair is NOT one of the superseded deployments',
+        !supersededMps.includes(L.MP.toLowerCase()) && !supersededReps.includes(L.REP.toLowerCase()),
+        `${superseded.length} superseded stack(s) on file`);
 
     // ---------------------------------------------- migration
     R.check('migrationFinalized == true', (await mp.migrationFinalized()) === true);
@@ -52,10 +63,19 @@ async function main() {
 
     // ---------------------------------------------- pool authorization
     R.check('authorizePool is wired: authorizedPools[V6.2 marketplace] == true', (await rep.authorizedPools(L.MP)) === true);
-    R.check('the superseded V6.1 marketplace is NOT authorized on V4',
-        (await rep.authorizedPools(L.cfg.agentLiquidityMarketplace_v61_legacy)) === false, L.cfg.agentLiquidityMarketplace_v61_legacy);
-    R.check('the legacy V6.0 marketplace is NOT authorized on V4',
-        (await rep.authorizedPools(L.cfg.agentLiquidityMarketplace_v6_0_legacy_still_live)) === false);
+    // Every marketplace the address file records as superseded (V6.0, V6.1, the
+    // pre-scale-fix V6.2) must be unauthorized on THIS ReputationManagerV4. Driven
+    // off the address file so a new supersession is covered without a scenario edit.
+    const staleMps = [
+        ...superseded.map(d => ({ addr: d.marketplace, label: d.version })),
+        { addr: L.cfg.agentLiquidityMarketplace_v6_0_legacy_still_live, label: 'V6.0 legacy (still live)' },
+        { addr: L.cfg.agentLiquidityMarketplacePrevious, label: 'previous marketplace' }
+    ].filter(x => x.addr && x.addr.toLowerCase() !== L.MP.toLowerCase());
+    R.check('every superseded / legacy marketplace on file is UNAUTHORIZED on this ReputationManagerV4',
+        (await Promise.all(staleMps.map(x => rep.authorizedPools(x.addr)))).every(v => v === false),
+        staleMps.map(x => `${x.label} ${x.addr}`).join(' | '));
+    R.check('the superseded reputation managers are not this one (V7 reputation did NOT migrate)',
+        !supersededReps.includes(L.REP.toLowerCase()), supersededReps.join(', ') || 'none');
     const rvUnauth = await L.expectRevert(L.contracts(L.deployer).rep.recordBorrow(A.address, 999999, USDC(1)), 'Only authorized pools');
     R.check('an unauthorized caller (even the owner EOA) cannot write reputation ("Only authorized pools")', rvUnauth.reverted && rvUnauth.matched, rvUnauth.message.slice(0, 120));
 

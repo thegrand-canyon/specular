@@ -2,10 +2,10 @@
   "scenario": "v9-minhold-ladder-coupling",
   "title": "minHoldForReputationReward also gates the credit ladder (observation, live levers)",
   "chainId": 5042002,
-  "marketplace": "0xa736EE7BB1BFB21bD294B220Bd7027B6Fe266300",
-  "reputation": "0x66977dF45F38D8b0Dc463817C4B46a7E08ddbdFB",
-  "startedAt": "2026-09-22T18:08:23.649Z",
-  "finishedAt": "2026-09-22T18:08:40.243Z",
+  "marketplace": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+  "reputation": "0xD7906fDFBf69BA89a4c2FE148797e24f386fE3d2",
+  "startedAt": "2026-09-23T00:37:04.477Z",
+  "finishedAt": "2026-09-23T00:37:16.687Z",
   "passed": 7,
   "failed": 0,
   "blocked": 0,
@@ -21,19 +21,19 @@
       "detail": "score 100 maxRepaid 0.0 ladder 100.0 limit 100.0 coll 100%"
     },
     {
-      "label": "precondition: agent is at the bootstrap rung (maxRepaidPrincipal 0, limit 100 USDC)",
+      "label": "precondition: agent is at the bootstrap rung (maxRepaidPrincipal 0, limit 100.0 USDC)",
       "ok": true,
-      "detail": ""
+      "detail": "maxRepaid 0.0 limit 100.0"
     },
     {
       "label": "the repayment was genuinely ON TIME (lateSeconds == 0, well before endTime)",
       "ok": true,
-      "detail": "held 5s, term 604800s"
+      "detail": "held 4s, term 604800s"
     },
     {
       "label": "held for less than minHoldForReputationReward",
       "ok": true,
-      "detail": "5s < 86400s"
+      "detail": "4s < 86400s"
     },
     {
       "label": "OBSERVATION: the ladder did NOT advance — maxRepaidPrincipal is still 0 after an on-time repayment",
@@ -58,27 +58,22 @@
   ],
   "txs": [
     {
-      "label": "fund C pool",
-      "hash": "0x9a520197988855e5b95fabad57a5fd19e6f95f5c6ba64f72aae7125229fc3e3f",
-      "gasUsed": "82070"
+      "label": "requestLoan -> #114",
+      "hash": "0xc59fe50794eafe06bdba3923bef05c999c9891d5d3e275a810c0f45e966aff73",
+      "gasUsed": "530009"
     },
     {
-      "label": "requestLoan -> #27",
-      "hash": "0x68c168007c31e783e011484e9dded4832d085c503bb3f7771e84b21de58c7716",
-      "gasUsed": "580748"
-    },
-    {
-      "label": "repayLoan 27",
-      "hash": "0x3490064fbfd2c6b560b16a78ff76002d3b2fa62f8f613e22dca9ccff9ce76e15",
-      "gasUsed": "274880"
+      "label": "repayLoan 114",
+      "hash": "0x2d87c3f2506dbef17ada7969b9fce3decc1b303281631c881df3fd30fc71ddb9",
+      "gasUsed": "206784"
     }
   ],
   "cumulativeSpend": {
-    "nativeFromDeployer": "9.2466589",
-    "usdcMinted": "13700.0"
+    "nativeFromDeployer": "19.139985775",
+    "usdcMinted": "33680.0"
   },
   "agentId": 53,
-  "loanId": 27,
-  "heldSeconds": 5,
+  "loanId": 114,
+  "heldSeconds": 4,
   "minHold": "86400"
 }

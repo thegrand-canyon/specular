@@ -2,10 +2,10 @@
   "scenario": "v6-minsupply-creator-exempt",
   "title": "creator exemption from minSupplyAmount (on-chain)",
   "chainId": 5042002,
-  "marketplace": "0xa736EE7BB1BFB21bD294B220Bd7027B6Fe266300",
-  "reputation": "0x66977dF45F38D8b0Dc463817C4B46a7E08ddbdFB",
-  "startedAt": "2026-09-22T17:56:53.056Z",
-  "finishedAt": "2026-09-22T17:57:28.311Z",
+  "marketplace": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+  "reputation": "0xD7906fDFBf69BA89a4c2FE148797e24f386fE3d2",
+  "startedAt": "2026-09-23T00:33:55.728Z",
+  "finishedAt": "2026-09-23T00:34:45.568Z",
   "passed": 11,
   "failed": 0,
   "blocked": 0,
@@ -18,7 +18,7 @@
     {
       "label": "agents",
       "ok": null,
-      "detail": "creator C = #53 (0x60C4274B7A793a075780Aef0059d8e487d12c769), third party T2 = 0x6b5122E84e31c57541d32942A4523f8dDf3eD5D6, foreign pool A = #51"
+      "detail": "creator V6CREATOR-4 = #65 (0x783cc55f2e0A8592E2dD630CeDF0dcf1F0Df8D71), third party T2 = 0x6b5122E84e31c57541d32942A4523f8dDf3eD5D6, foreign pool A = #51"
     },
     {
       "label": "precondition: creator has no position yet in its own pool (a NEW slot)",
@@ -74,30 +74,30 @@
   "txs": [
     {
       "label": "creator seed below minSupply",
-      "hash": "0x1f1ce26b52d13e26a0e0da783cc6fc2dc005a9d2addc9a8877b1df3c8c897fba",
-      "gasUsed": "215591"
+      "hash": "0x06495c158c11aea578ca521056f1ae7f4b049123a4aa2a8ad6fd2da88d16c672",
+      "gasUsed": "215685"
     },
     {
       "label": "third party at the minimum",
-      "hash": "0x572c080357afc89caab6bca9d711bd43403c48af66620dfb067c80fd9ad174e7",
-      "gasUsed": "164324"
+      "hash": "0x3d941213a36ae721b1d0309a2306b6d09e9830ad6f637e88ba032e3bb8dc6361",
+      "gasUsed": "164418"
     },
     {
       "label": "third-party top-up below minimum",
-      "hash": "0xb22ead087b9dc4e899c3615b8977bac813896eabd06592db48fdd7af6a67fafe",
-      "gasUsed": "82070"
+      "hash": "0x08515b85679413e33bdd567bd58a011e963ee14b621538b08a63ca1e66d95091",
+      "gasUsed": "82203"
     },
     {
       "label": "creator top-up below minimum",
-      "hash": "0x2b3e1ddafd0a0bd5c9f6a32aeb18d336d7ec9053cc39e2e118151d918a28b962",
-      "gasUsed": "82070"
+      "hash": "0xc8ad1be2e55a2daf8a4f34fec2e79cd47aea53120efe4067f97bcccb06c944df",
+      "gasUsed": "82203"
     }
   ],
   "cumulativeSpend": {
-    "nativeFromDeployer": "9.2466589",
-    "usdcMinted": "13700.0"
+    "nativeFromDeployer": "19.139985775",
+    "usdcMinted": "33680.0"
   },
-  "agentId": 53,
+  "agentId": 65,
   "minSupplyAmount": "10000000",
   "creatorSeed": "5000000"
 }

@@ -2,11 +2,11 @@
   "scenario": "v7-migration-control-plane",
   "title": "migration finalized, ownership, pool authorization, live lever read-back (on-chain)",
   "chainId": 5042002,
-  "marketplace": "0xa736EE7BB1BFB21bD294B220Bd7027B6Fe266300",
-  "reputation": "0x66977dF45F38D8b0Dc463817C4B46a7E08ddbdFB",
-  "startedAt": "2026-09-22T18:02:42.352Z",
-  "finishedAt": "2026-09-22T18:02:46.696Z",
-  "passed": 29,
+  "marketplace": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+  "reputation": "0xD7906fDFBf69BA89a4c2FE148797e24f386fE3d2",
+  "startedAt": "2026-09-23T00:36:59.948Z",
+  "finishedAt": "2026-09-23T00:37:04.065Z",
+  "passed": 30,
   "failed": 0,
   "blocked": 0,
   "checks": [
@@ -21,9 +21,14 @@
       "detail": ""
     },
     {
-      "label": "addresses are the configured V7 pair",
+      "label": "addresses are the configured V7 pair (canonical keys of arc-testnet-v6-addresses.json)",
       "ok": true,
-      "detail": "0xa736EE7BB1BFB21bD294B220Bd7027B6Fe266300 / 0x66977dF45F38D8b0Dc463817C4B46a7E08ddbdFB"
+      "detail": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18 / 0xD7906fDFBf69BA89a4c2FE148797e24f386fE3d2"
+    },
+    {
+      "label": "the live pair is NOT one of the superseded deployments",
+      "ok": true,
+      "detail": "3 superseded stack(s) on file"
     },
     {
       "label": "migrationFinalized == true",
@@ -81,14 +86,14 @@
       "detail": ""
     },
     {
-      "label": "the superseded V6.1 marketplace is NOT authorized on V4",
+      "label": "every superseded / legacy marketplace on file is UNAUTHORIZED on this ReputationManagerV4",
       "ok": true,
-      "detail": "0xB2d88bbFF61EF2CcF4B4A2CFd75aeed0f11F6878"
+      "detail": "V6.0 (2026-07/08 fixes) 0xDbDf60AE5CB46D23aA44c062a4943655a6820f31 | V6.1 (2026-09-19 audit fixes) 0xB2d88bbFF61EF2CcF4B4A2CFd75aeed0f11F6878 | V6.2 + RMV4 (pre scale-fix) 0xa736EE7BB1BFB21bD294B220Bd7027B6Fe266300 | V6.0 legacy (still live) 0xDbDf60AE5CB46D23aA44c062a4943655a6820f31 | previous marketplace 0xa736EE7BB1BFB21bD294B220Bd7027B6Fe266300"
     },
     {
-      "label": "the legacy V6.0 marketplace is NOT authorized on V4",
+      "label": "the superseded reputation managers are not this one (V7 reputation did NOT migrate)",
       "ok": true,
-      "detail": ""
+      "detail": "0x085d581fb56d4ad428d9852466557286099dd46c, 0x085d581fb56d4ad428d9852466557286099dd46c, 0x66977df45f38d8b0dc463817c4b46a7e08ddbdfb"
     },
     {
       "label": "an unauthorized caller (even the owner EOA) cannot write reputation (\"Only authorized pools\")",
@@ -158,8 +163,8 @@
   ],
   "txs": [],
   "cumulativeSpend": {
-    "nativeFromDeployer": "9.2466589",
-    "usdcMinted": "13700.0"
+    "nativeFromDeployer": "19.139985775",
+    "usdcMinted": "33680.0"
   },
   "levers": {
     "rep": {

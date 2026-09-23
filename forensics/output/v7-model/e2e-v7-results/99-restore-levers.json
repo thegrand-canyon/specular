@@ -2,10 +2,10 @@
   "scenario": "99-restore-levers",
   "title": "restore live staging levers",
   "chainId": 5042002,
-  "marketplace": "0xa736EE7BB1BFB21bD294B220Bd7027B6Fe266300",
-  "reputation": "0x66977dF45F38D8b0Dc463817C4B46a7E08ddbdFB",
-  "startedAt": "2026-09-22T18:02:13.911Z",
-  "finishedAt": "2026-09-22T18:02:41.918Z",
+  "marketplace": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+  "reputation": "0xD7906fDFBf69BA89a4c2FE148797e24f386fE3d2",
+  "startedAt": "2026-09-23T00:36:32.694Z",
+  "finishedAt": "2026-09-23T00:36:59.491Z",
   "passed": 7,
   "failed": 0,
   "blocked": 0,
@@ -53,8 +53,8 @@
   ],
   "txs": [],
   "cumulativeSpend": {
-    "nativeFromDeployer": "9.2466589",
-    "usdcMinted": "13700.0"
+    "nativeFromDeployer": "19.139985775",
+    "usdcMinted": "33680.0"
   },
   "leversAfter": {
     "rep": {

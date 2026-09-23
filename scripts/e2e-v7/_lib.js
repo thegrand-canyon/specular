@@ -82,6 +82,27 @@ function roleWallet(role) {
     return new ethers.Wallet(w.roles[role].privateKey, provider);
 }
 
+/**
+ * Allocate a throwaway role for a scenario that needs VIRGIN on-chain state — an
+ * agent that has never repaid a loan (so `maxRepaidPrincipal == 0` and the M1 ladder
+ * starts at the bootstrap rung), or an address that has never held a position in the
+ * pool under test. Nothing on chain can undo either: `maxRepaidPrincipal` is only
+ * reset by a DEFAULT (which also arms a 180-day lockout), and a lender slot is never
+ * un-claimed. Reusing a fixed role therefore makes such a scenario a one-shot that
+ * silently fails on the second run.
+ *
+ * Roles are indexed `prefix-1`, `prefix-2`, …; the first index `isVirgin` still
+ * accepts is reused, so a re-run only burns a new wallet once the previous one has
+ * actually been consumed. Generating a key is free — only funding costs anything.
+ */
+async function freshRoleWallet(prefix, isVirgin, max = 50) {
+    for (let i = 1; i <= max; i++) {
+        const w = roleWallet(`${prefix}-${i}`);
+        if (await isVirgin(w)) return { wallet: w, index: i, role: `${prefix}-${i}` };
+    }
+    throw new Error(`no virgin "${prefix}" role available in ${max} indices`);
+}
+
 // ---------------------------------------------------------------- funding
 const NATIVE_CAP = ethers.parseEther('30');   // HARD CAP on total native moved out of the deployer
 function loadSpend() {
@@ -271,6 +292,114 @@ async function loanCycle(scenario, agentWallet, agentId, amountDisplay, duration
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
+/**
+ * Repay every ACTIVE loan an agent is carrying, so a scenario can be re-run after a
+ * crash (and so no loan is ever left open on staging). `signer` must be the address
+ * `loan.borrower` recorded — which after an agent-NFT transfer is still the ORIGINAL
+ * borrower, not the new holder.
+ */
+async function clearActiveLoans(scenario, signer, agentId) {
+    const view = contracts();
+    const mpS = contracts(signer).mp;
+    const cleared = [];
+    // read the whole list up front: repayLoan swap-and-pops activeLoanIds
+    const ids = [];
+    for (let i = 0; ; i++) {
+        let id; try { id = await view.mp.activeLoanIds(agentId, i); } catch (e) { break; }
+        ids.push(Number(id));
+    }
+    for (const id of ids) {
+        const ln = await view.mp.loans(id);
+        if (Number(ln.state) !== 1) continue;            // 1 = ACTIVE
+        if (ln.borrower.toLowerCase() !== signer.address.toLowerCase()) {
+            console.log(`    ! leftover ACTIVE loan #${id} belongs to ${ln.borrower}, not ${signer.address} — skipping`);
+            continue;
+        }
+        await send(scenario, `cleanup: repay leftover ACTIVE loan ${id} (agent ${agentId})`, mpS.repayLoan(id));
+        cleared.push(id);
+    }
+    return cleared;
+}
+
+/**
+ * Amount an agent can borrow right now, derived entirely from chain state:
+ * head-room under `calculateCreditLimit`, the pool's available liquidity, and
+ * (when collateral is required) the borrower's own USDC balance.
+ * Rounded DOWN to whole USDC so the scenario logs stay readable.
+ */
+async function borrowableNow(agentId, agentAddr, { slots = 1, reserveUsdc = 0 } = {}) {
+    const { mp, rep } = contracts();
+    const [limit, outstanding, pool, collPct, usdcBal] = await Promise.all([
+        rep.creditLimitOf(agentId), mp.outstandingPrincipal(agentId), mp.agentPools(agentId),
+        rep.collateralRequirementOf(agentId), contracts().usdc.balanceOf(agentAddr)
+    ]);
+    const headroom = limit > outstanding ? limit - outstanding : 0n;
+    let per = headroom / BigInt(slots);
+    const liqPer = pool.availableLiquidity / BigInt(slots);
+    if (liqPer < per) per = liqPer;
+    if (collPct > 0n) {
+        // collateral is posted up-front for every concurrent loan
+        const spendable = usdcBal > USDC(reserveUsdc) ? usdcBal - USDC(reserveUsdc) : 0n;
+        const collPer = (spendable * 100n) / (collPct * BigInt(slots));
+        if (collPer < per) per = collPer;
+    }
+    per = (per / 1000000n) * 1000000n;   // whole USDC
+    return { per, limit, outstanding, headroom, collPct, availableLiquidity: pool.availableLiquidity };
+}
+
+/**
+ * [M2-c] Ensure the pool creator already holds the first-loss self-stake the
+ * marketplace will demand before it can carry `additionalExposure` more principal.
+ * A no-op at the 100 %-collateral tiers (`requiredSelfStake` returns 0 there), which
+ * is why a scenario that only ever ran against a low-score agent never needed it —
+ * and why it starts reverting "Insufficient self-stake" the run after that agent's
+ * score crosses into a 0 %-collateral tier. The creator's own stake is exempt from
+ * `minSupplyAmount` (M2-a), so a small top-up is legal.
+ */
+async function ensureSelfStake(scenario, wallet, agentId, additionalExposure) {
+    const { mp } = contracts();
+    const need = await mp.requiredSelfStake(agentId, additionalExposure);
+    const have = (await mp.positions(agentId, wallet.address)).amount;
+    if (need === 0n || have >= need) return 0n;
+    const gap = need - have;
+    await ensureUsdc(wallet, Number(fmt(gap)) + 5, Number(fmt(gap)) * 2 + 100, scenario);
+    await send(scenario, `M2-c self-stake top-up ${fmt(gap)} USDC into own pool #${agentId}`,
+        contracts(wallet).mp.supplyLiquidity(agentId, gap));
+    return gap;
+}
+
+/**
+ * Climb the M1 ladder until `creditLimitOf(agentId) >= target`, one on-time repaid
+ * loan at a time. Each rung borrows the agent's whole current head-room, which is
+ * what advances `maxRepaidPrincipal`. Requires the compressed clock levers
+ * (minHoldForReputationReward == 0) — at the live 1-day minHold a rung can never be
+ * "on time enough" inside a test run, so this throws rather than spinning.
+ */
+async function climbLadderTo(scenario, wallet, agentId, target, maxRungs = 6) {
+    const { mp, rep } = contracts();
+    const mpW = contracts(wallet).mp;
+    const minHold = await mp.minHoldForReputationReward();
+    const rungs = [];
+    for (let i = 0; i < maxRungs; i++) {
+        const limit = await rep.creditLimitOf(agentId);
+        if (limit >= target) return rungs;
+        if (minHold !== 0n) {
+            throw new Error(`cannot climb the ladder: minHoldForReputationReward is ${minHold}s — run 00-setup.js first`);
+        }
+        const { per } = await borrowableNow(agentId, wallet.address, { slots: 1, reserveUsdc: 5 });
+        if (per === 0n) throw new Error(`ladder rung ${i + 1}: nothing borrowable (limit ${fmt(limit)})`);
+        await ensureSelfStake(scenario, wallet, agentId, per);   // no-op below the 0 %-collateral tiers
+        const rc = await send(scenario, `ladder rung ${i + 1}: requestLoan ${fmt(per)} USDC (agent ${agentId})`, mpW.requestLoan(per, 7));
+        const id = loanIdFromReceipt(mp, rc);
+        await sleep(2500);                                   // non-zero hold -> non-zero principal-TIME bonus
+        await send(scenario, `ladder rung ${i + 1}: repayLoan ${id}`, mpW.repayLoan(id));
+        const after = await rep.creditLimitOf(agentId);
+        rungs.push({ loanId: id, amount: fmt(per), limitAfter: fmt(after) });
+        if (after <= limit) throw new Error(`ladder rung ${i + 1} did not advance the limit (${fmt(limit)} -> ${fmt(after)})`);
+    }
+    throw new Error(`ladder did not reach ${fmt(target)} in ${maxRungs} rungs`);
+}
+
 // ---------------------------------------------------------------- levers
 const LIVE_LEVERS = {
     rep: { onTimeBonus: 10, defaultPenaltyBase: 50, defaultPenaltyLarge: 100, largeLoanThreshold: USDC(1000),
@@ -379,5 +508,6 @@ module.exports = {
     ROOT, OUT_DIR, RESULTS_DIR, CHAIN_ID, RPC_URL, RPC_FALLBACK, cfg, MP, REP, ABI, provider, deployer,
     USDC, fmt, contracts, roleWallet, fundNative, mintUsdc, ensureUsdc, logTx, send, Results, expectRevert,
     eventFromReceipt, loanIdFromReceipt, ensureAgent, approveMax, creditState, loanCycle, sleep,
+    clearActiveLoans, borrowableNow, climbLadderTo, freshRoleWallet, ensureSelfStake,
     LIVE_LEVERS, readLevers, setLevers, restoreLiveLevers, assertStaging, poolConservation, spent, ethers
 };

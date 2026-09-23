@@ -25,26 +25,34 @@ async function main() {
     const { mp, rep, reg } = L.contracts();
     const C = L.roleWallet('C'), T2 = L.roleWallet('T2');
     const mpC = L.contracts(C).mp, mpT2 = L.contracts(T2).mp;
-    const cId = Number(await reg.addressToAgentId(C.address));
+    // Self-contained: agent C is registered here rather than inherited from another
+    // scenario, so this runs against a fresh registry too. C stays at the bootstrap
+    // rung run after run precisely because of the behaviour being demonstrated —
+    // minHold gates the ladder, so C's repayments never advance maxRepaidPrincipal.
+    await L.fundNative(C, '0.4', S);
+    await L.ensureUsdc(C, 150, 300, S);
+    await L.approveMax(C, 100000, S, 'C approve');
+    const cId = await L.ensureAgent(C, S, 'C-minhold');
 
     const lv = await L.readLevers();
     R.check('running at LIVE levers: minHold 86400 s, refDuration 7 d, rate limit 5/day, onTimeBonus 10',
         lv.mp.minHold === 86400n && lv.rep.refDuration === 604800n && lv.rep.rateMaxGain === 5n && lv.rep.onTimeBonus === 10n,
         `minHold ${lv.mp.minHold} refDur ${lv.rep.refDuration}`);
 
+    const boot = await rep.bootstrapLimit();       // the bootstrap rung, read from chain
     const pool = await mp.agentPools(cId);
-    if (pool.availableLiquidity < USDC(110)) {
+    if (pool.availableLiquidity < boot + boot / 10n) {
         await L.ensureUsdc(T2, 150, 300, S);
-        R.tx('fund C pool', await L.send(S, `T2 supply 120 USDC to pool #${cId}`, mpT2.supplyLiquidity(cId, USDC(120))));
+        await L.approveMax(T2, 100000, S, 'T2 approve');
+        R.tx('fund C pool', await L.send(S, `T2 supply ${fmt(boot + boot / 5n)} USDC to pool #${cId}`, mpT2.supplyLiquidity(cId, boot + boot / 5n)));
     }
-    await L.ensureUsdc(C, 150, 300, S);
 
     const before = await L.creditState(cId, C.address);
     R.note('agent C before', `score ${before.score} maxRepaid ${fmt(before.maxRepaid)} ladder ${fmt(before.ladder)} limit ${fmt(before.limit)} coll ${before.collPct}%`);
-    R.check('precondition: agent is at the bootstrap rung (maxRepaidPrincipal 0, limit 100 USDC)',
-        before.maxRepaid === 0n && before.limit === USDC(100));
+    R.check(`precondition: agent is at the bootstrap rung (maxRepaidPrincipal 0, limit ${fmt(boot)} USDC)`,
+        before.maxRepaid === 0n && before.limit === boot, `maxRepaid ${fmt(before.maxRepaid)} limit ${fmt(before.limit)}`);
 
-    const rcReq = await L.send(S, 'C requestLoan 100 USDC / 7 days', mpC.requestLoan(USDC(100), 7));
+    const rcReq = await L.send(S, `C requestLoan ${fmt(boot)} USDC / 7 days`, mpC.requestLoan(boot, 7));
     const loanId = L.loanIdFromReceipt(mp, rcReq);
     R.tx(`requestLoan -> #${loanId}`, rcReq);
     const rcRep = await L.send(S, `C repayLoan ${loanId} well inside the 7-day term`, mpC.repayLoan(loanId));
