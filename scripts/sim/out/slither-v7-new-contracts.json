@@ -1,0 +1,288 @@
+{
+  "generatedAt": "2026-09-22T16:25:27.262Z",
+  "tool": "slither 0.11.4",
+  "note": "Filtered to detectors naming the two NEW V7 contracts. Full 10 MB run not committed; reproduce with: slither . --filter-paths \"node_modules|contracts/bridge|contracts/sim|test\" --json <path>",
+  "findings": [
+    {
+      "check": "divide-before-multiply",
+      "impact": "Medium",
+      "confidence": "Medium",
+      "description": "AgentLiquidityMarketplaceV62.calculateInterest(uint256,uint256,uint256) (contracts/core/AgentLiquidityMarketplaceV62.sol#1162-1170) performs a multiplication on the result of a division:\n\t- annualInterest = (principal * annualRateBPS) / 10000 (contracts/core/AgentLiquidityMarketplaceV62.sol#1167)\n\t- interest = (annualInterest * durationSeconds) / 31536000 (contracts/core/AgentLiquidityMarketplaceV62.sol#1168)"
+    },
+    {
+      "check": "divide-before-multiply",
+      "impact": "Medium",
+      "confidence": "Medium",
+      "description": "ReputationManagerV4.recordLoanCompletion(address,uint256,uint256,bool,uint256) (contracts/core/ReputationManagerV4.sol#414-482) performs a multiplication on the result of a division:\n\t- penalty = latePenaltyBase + latePenaltyPerDay * (lateSeconds / 86400) (contracts/core/ReputationManagerV4.sol#431)"
+    },
+    {
+      "check": "incorrect-equality",
+      "impact": "Medium",
+      "confidence": "High",
+      "description": "AgentLiquidityMarketplaceV62._countActiveLoansFromArray(address) (contracts/core/AgentLiquidityMarketplaceV62.sol#1583-1594) uses a dangerous strict equality:\n\t- loans[loanIds[i]].state == LoanState.ACTIVE (contracts/core/AgentLiquidityMarketplaceV62.sol#1588)"
+    },
+    {
+      "check": "incorrect-equality",
+      "impact": "Medium",
+      "confidence": "High",
+      "description": "ReputationManagerV4.recordBorrow(address,uint256,uint256) (contracts/core/ReputationManagerV4.sol#390-404) uses a dangerous strict equality:\n\t- require(bool,string)(openLoans[loanId].start == 0,Loan already recorded) (contracts/core/ReputationManagerV4.sol#393)"
+    },
+    {
+      "check": "unused-return",
+      "impact": "Medium",
+      "confidence": "Medium",
+      "description": "ReputationManagerV4.creditLimitOf(uint256) (contracts/core/ReputationManagerV4.sol#587-602) ignores return value by (None,None,None,avgScore) = validationRegistry.getSummary(agentId,new address[](0),) (contracts/core/ReputationManagerV4.sol#596)"
+    },
+    {
+      "check": "timestamp",
+      "impact": "Low",
+      "confidence": "Medium",
+      "description": "AgentLiquidityMarketplaceV62._requiredSelfStake(uint256,uint256) (contracts/core/AgentLiquidityMarketplaceV62.sol#811-816) uses timestamp for comparisons\n\tDangerous comparisons:\n\t- collateralPercent >= 100 (contracts/core/AgentLiquidityMarketplaceV62.sol#812)"
+    },
+    {
+      "check": "timestamp",
+      "impact": "Low",
+      "confidence": "Medium",
+      "description": "ReputationManagerV4.recordDefault(address,uint256,uint256) (contracts/core/ReputationManagerV4.sol#489-518) uses timestamp for comparisons\n\tDangerous comparisons:\n\t- until_ > lockedUntil[agentId] (contracts/core/ReputationManagerV4.sol#511)"
+    },
+    {
+      "check": "timestamp",
+      "impact": "Low",
+      "confidence": "Medium",
+      "description": "AgentLiquidityMarketplaceV62.requestLoan(uint256,uint256) (contracts/core/AgentLiquidityMarketplaceV62.sol#722-807) uses timestamp for comparisons\n\tDangerous comparisons:\n\t- require(bool,string)(agentPools[agentId].isActive,No pool for agent) (contracts/core/AgentLiquidityMarketplaceV62.sol#730)\n\t- require(bool,string)(amount <= pool.availableLiquidity,Insufficient pool liquidity) (contracts/core/AgentLiquidityMarketplaceV62.sol#733)\n\t- require(bool,string)(pool.agentAddress == msg.sender,Borrow restricted to pool creator) (contracts/core/AgentLiquidityMarketplaceV62.sol#738)\n\t- require(bool,string)(outstandingPrincipal[agentId] + amount <= creditLimit,Exceeds credit limit) (contracts/core/AgentLiquidityMarketplaceV62.sol#751)\n\t- require(bool,string)(positions[agentId][pool.agentAddress].amount >= _requiredSelfStake(outstandingPrincipal[agentId] + amount,collateralPercent),Insufficient self-stake) (contracts/core/AgentLiquidityMarketplaceV62.sol#768-772)"
+    },
+    {
+      "check": "timestamp",
+      "impact": "Low",
+      "confidence": "Medium",
+      "description": "AgentLiquidityMarketplaceV62._distributeInterest(uint256,uint256,uint256) (contracts/core/AgentLiquidityMarketplaceV62.sol#1028-1080) uses timestamp for comparisons\n\tDangerous comparisons:\n\t- dust > 0 (contracts/core/AgentLiquidityMarketplaceV62.sol#1074)"
+    },
+    {
+      "check": "timestamp",
+      "impact": "Low",
+      "confidence": "Medium",
+      "description": "AgentLiquidityMarketplaceV62.claimInterest(uint256) (contracts/core/AgentLiquidityMarketplaceV62.sol#1255-1282) uses timestamp for comparisons\n\tDangerous comparisons:\n\t- require(bool,string)(pool.availableLiquidity >= interest,Drain underflow) (contracts/core/AgentLiquidityMarketplaceV62.sol#1263)"
+    },
+    {
+      "check": "timestamp",
+      "impact": "Low",
+      "confidence": "Medium",
+      "description": "AgentLiquidityMarketplaceV62.createAgentPool() (contracts/core/AgentLiquidityMarketplaceV62.sol#275-295) uses timestamp for comparisons\n\tDangerous comparisons:\n\t- require(bool,string)(! agentPools[agentId].isActive,Pool already exists) (contracts/core/AgentLiquidityMarketplaceV62.sol#280)"
+    },
+    {
+      "check": "timestamp",
+      "impact": "Low",
+      "confidence": "Medium",
+      "description": "ReputationManagerV4.recordLoanCompletion(address,uint256,uint256,bool,uint256) (contracts/core/ReputationManagerV4.sol#414-482) uses timestamp for comparisons\n\tDangerous comparisons:\n\t- block.timestamp >= lockedUntil[agentId] && amount > maxRepaidPrincipal[agentId] (contracts/core/ReputationManagerV4.sol#443)\n\t- block.timestamp < lockedUntil[agentId] (contracts/core/ReputationManagerV4.sol#457)\n\t- block.timestamp >= windowStart[agentId] + reputationGainWindow (contracts/core/ReputationManagerV4.sol#461)\n\t- bonus > remaining (contracts/core/ReputationManagerV4.sol#468)\n\t- bonus > 0 (contracts/core/ReputationManagerV4.sol#471)\n\t- newScore > MAX_SCORE (contracts/core/ReputationManagerV4.sol#475)\n\t- block.timestamp > start (contracts/core/ReputationManagerV4.sol#451)\n\t- held < rd (contracts/core/ReputationManagerV4.sol#453)"
+    },
+    {
+      "check": "timestamp",
+      "impact": "Low",
+      "confidence": "Medium",
+      "description": "AgentLiquidityMarketplaceV62.liquidateLoan(uint256) (contracts/core/AgentLiquidityMarketplaceV62.sol#1085-1157) uses timestamp for comparisons\n\tDangerous comparisons:\n\t- require(bool,string)(loan.state == LoanState.ACTIVE,Loan not active) (contracts/core/AgentLiquidityMarketplaceV62.sol#1087)\n\t- require(bool,string)(block.timestamp > loan.endTime,Loan not overdue) (contracts/core/AgentLiquidityMarketplaceV62.sol#1088)"
+    },
+    {
+      "check": "timestamp",
+      "impact": "Low",
+      "confidence": "Medium",
+      "description": "AgentLiquidityMarketplaceV62._disburseLoan(uint256) (contracts/core/AgentLiquidityMarketplaceV62.sol#840-871) uses timestamp for comparisons\n\tDangerous comparisons:\n\t- require(bool,string)(loan.state == LoanState.REQUESTED,Invalid loan state) (contracts/core/AgentLiquidityMarketplaceV62.sol#844)"
+    },
+    {
+      "check": "timestamp",
+      "impact": "Low",
+      "confidence": "Medium",
+      "description": "ReputationManagerV4.recordBorrow(address,uint256,uint256) (contracts/core/ReputationManagerV4.sol#390-404) uses timestamp for comparisons\n\tDangerous comparisons:\n\t- require(bool,string)(openLoans[loanId].start == 0,Loan already recorded) (contracts/core/ReputationManagerV4.sol#393)"
+    },
+    {
+      "check": "timestamp",
+      "impact": "Low",
+      "confidence": "Medium",
+      "description": "AgentLiquidityMarketplaceV62.supplyLiquidity(uint256,uint256) (contracts/core/AgentLiquidityMarketplaceV62.sol#314-402) uses timestamp for comparisons\n\tDangerous comparisons:\n\t- require(bool,string)(agentPools[agentId].isActive,Pool not active) (contracts/core/AgentLiquidityMarketplaceV62.sol#331)"
+    },
+    {
+      "check": "timestamp",
+      "impact": "Low",
+      "confidence": "Medium",
+      "description": "AgentLiquidityMarketplaceV62.seedPosition(uint256,address,uint256,uint256,uint256) (contracts/core/AgentLiquidityMarketplaceV62.sol#1376-1414) uses timestamp for comparisons\n\tDangerous comparisons:\n\t- require(bool,string)(agentPools[agentId].agentId == agentId,Pool not seeded) (contracts/core/AgentLiquidityMarketplaceV62.sol#1384)\n\t- require(bool,string)(sumPositions <= agentPools[agentId].totalLiquidity,Position sum exceeds totalLiquidity) (contracts/core/AgentLiquidityMarketplaceV62.sol#1408-1411)"
+    },
+    {
+      "check": "timestamp",
+      "impact": "Low",
+      "confidence": "Medium",
+      "description": "AgentLiquidityMarketplaceV62.getAgentPool(uint256) (contracts/core/AgentLiquidityMarketplaceV62.sol#1175-1198) uses timestamp for comparisons\n\tDangerous comparisons:\n\t- pool.totalLiquidity > 0 (contracts/core/AgentLiquidityMarketplaceV62.sol#1185-1187)"
+    },
+    {
+      "check": "timestamp",
+      "impact": "Low",
+      "confidence": "Medium",
+      "description": "AgentLiquidityMarketplaceV62.withdrawFees(uint256) (contracts/core/AgentLiquidityMarketplaceV62.sol#1287-1292) uses timestamp for comparisons\n\tDangerous comparisons:\n\t- require(bool,string)(amount <= accumulatedFees,Insufficient fees) (contracts/core/AgentLiquidityMarketplaceV62.sol#1288)"
+    },
+    {
+      "check": "timestamp",
+      "impact": "Low",
+      "confidence": "Medium",
+      "description": "ReputationManagerV4.creditLimitOf(uint256) (contracts/core/ReputationManagerV4.sol#587-602) uses timestamp for comparisons\n\tDangerous comparisons:\n\t- block.timestamp < lockedUntil[agentId] (contracts/core/ReputationManagerV4.sol#588)"
+    },
+    {
+      "check": "timestamp",
+      "impact": "Low",
+      "confidence": "Medium",
+      "description": "ReputationManagerV4.isLockedOut(uint256) (contracts/core/ReputationManagerV4.sol#613-615) uses timestamp for comparisons\n\tDangerous comparisons:\n\t- block.timestamp < lockedUntil[agentId] (contracts/core/ReputationManagerV4.sol#614)"
+    },
+    {
+      "check": "timestamp",
+      "impact": "Low",
+      "confidence": "Medium",
+      "description": "AgentLiquidityMarketplaceV62.selfStake(uint256) (contracts/core/AgentLiquidityMarketplaceV62.sol#831-835) uses timestamp for comparisons\n\tDangerous comparisons:\n\t- locked = outstandingPrincipal[agentId] > 0 (contracts/core/AgentLiquidityMarketplaceV62.sol#834)"
+    },
+    {
+      "check": "timestamp",
+      "impact": "Low",
+      "confidence": "Medium",
+      "description": "AgentLiquidityMarketplaceV62.getLenderPosition(uint256,address) (contracts/core/AgentLiquidityMarketplaceV62.sol#1203-1222) uses timestamp for comparisons\n\tDangerous comparisons:\n\t- pool.totalLiquidity > 0 (contracts/core/AgentLiquidityMarketplaceV62.sol#1212-1214)"
+    },
+    {
+      "check": "timestamp",
+      "impact": "Low",
+      "confidence": "Medium",
+      "description": "AgentLiquidityMarketplaceV62._countActiveLoansFromArray(address) (contracts/core/AgentLiquidityMarketplaceV62.sol#1583-1594) uses timestamp for comparisons\n\tDangerous comparisons:\n\t- loans[loanIds[i]].state == LoanState.ACTIVE (contracts/core/AgentLiquidityMarketplaceV62.sol#1588)"
+    },
+    {
+      "check": "timestamp",
+      "impact": "Low",
+      "confidence": "Medium",
+      "description": "AgentLiquidityMarketplaceV62.requiredSelfStake(uint256,uint256) (contracts/core/AgentLiquidityMarketplaceV62.sol#822-827) uses timestamp for comparisons\n\tDangerous comparisons:\n\t- agentAddr == address(0) (contracts/core/AgentLiquidityMarketplaceV62.sol#824)"
+    },
+    {
+      "check": "timestamp",
+      "impact": "Low",
+      "confidence": "Medium",
+      "description": "AgentLiquidityMarketplaceV62.previewRepayment(uint256) (contracts/core/AgentLiquidityMarketplaceV62.sol#993-1000) uses timestamp for comparisons\n\tDangerous comparisons:\n\t- require(bool,string)(loan.state == LoanState.ACTIVE,Loan not active) (contracts/core/AgentLiquidityMarketplaceV62.sol#997)"
+    },
+    {
+      "check": "timestamp",
+      "impact": "Low",
+      "confidence": "Medium",
+      "description": "AgentLiquidityMarketplaceV62._activeLoanStartedIn(uint256,uint256,uint256) (contracts/core/AgentLiquidityMarketplaceV62.sol#405-412) uses timestamp for comparisons\n\tDangerous comparisons:\n\t- s >= lo && s < hi (contracts/core/AgentLiquidityMarketplaceV62.sol#409)"
+    },
+    {
+      "check": "timestamp",
+      "impact": "Low",
+      "confidence": "Medium",
+      "description": "AgentLiquidityMarketplaceV62._interestDue(AgentLiquidityMarketplaceV62.Loan) (contracts/core/AgentLiquidityMarketplaceV62.sol#974-983) uses timestamp for comparisons\n\tDangerous comparisons:\n\t- chargeableSeconds > cap (contracts/core/AgentLiquidityMarketplaceV62.sol#980)\n\t- elapsed > loan.duration (contracts/core/AgentLiquidityMarketplaceV62.sol#978)\n\t- block.timestamp > loan.endTime (contracts/core/AgentLiquidityMarketplaceV62.sol#981)"
+    },
+    {
+      "check": "timestamp",
+      "impact": "Low",
+      "confidence": "Medium",
+      "description": "AgentLiquidityMarketplaceV62.resetPoolAccounting(uint256) (contracts/core/AgentLiquidityMarketplaceV62.sol#1515-1568) uses timestamp for comparisons\n\tDangerous comparisons:\n\t- require(bool,string)(pool.agentId == agentId,Pool does not exist) (contracts/core/AgentLiquidityMarketplaceV62.sol#1517)\n\t- require(bool,string)(agentRegistry.ownerOf(agentId) == pool.agentAddress,Agent transferred; resync via migration helpers) (contracts/core/AgentLiquidityMarketplaceV62.sol#1524-1527)"
+    },
+    {
+      "check": "timestamp",
+      "impact": "Low",
+      "confidence": "Medium",
+      "description": "ReputationManagerV4._closeOpenLoan(uint256,uint256) (contracts/core/ReputationManagerV4.sol#523-530) uses timestamp for comparisons\n\tDangerous comparisons:\n\t- require(bool,string)(ol.agentId == uint64(agentId),Loan/agent mismatch) (contracts/core/ReputationManagerV4.sol#528)"
+    },
+    {
+      "check": "timestamp",
+      "impact": "Low",
+      "confidence": "Medium",
+      "description": "AgentLiquidityMarketplaceV62.withdrawLiquidity(uint256,uint256) (contracts/core/AgentLiquidityMarketplaceV62.sol#459-529) uses timestamp for comparisons\n\tDangerous comparisons:\n\t- require(bool,string)(position.amount >= amount,Insufficient balance) (contracts/core/AgentLiquidityMarketplaceV62.sol#465)\n\t- require(bool,string)(pool.availableLiquidity >= amount,Insufficient pool liquidity) (contracts/core/AgentLiquidityMarketplaceV62.sol#466)\n\t- require(bool,string)(msg.sender != pool.agentAddress || outstandingPrincipal[agentId] == 0,Self-stake locked while borrowing) (contracts/core/AgentLiquidityMarketplaceV62.sol#473-476)"
+    },
+    {
+      "check": "timestamp",
+      "impact": "Low",
+      "confidence": "Medium",
+      "description": "AgentLiquidityMarketplaceV62.repayLoan(uint256) (contracts/core/AgentLiquidityMarketplaceV62.sol#876-970) uses timestamp for comparisons\n\tDangerous comparisons:\n\t- require(bool,string)(loan.state == LoanState.ACTIVE,Loan not active) (contracts/core/AgentLiquidityMarketplaceV62.sol#878)\n\t- require(bool,string)(msg.sender == loan.borrower || msg.sender == holder,Not the borrower) (contracts/core/AgentLiquidityMarketplaceV62.sol#887)\n\t- lateSeconds > 0 (contracts/core/AgentLiquidityMarketplaceV62.sol#916)\n\t- onTime = block.timestamp <= loan.endTime (contracts/core/AgentLiquidityMarketplaceV62.sol#961)\n\t- heldLongEnough = minHoldForReputationReward == 0 || (block.timestamp - loan.startTime) >= minHoldForReputationReward (contracts/core/AgentLiquidityMarketplaceV62.sol#962-963)\n\t- paidInterest = interest > 0 (contracts/core/AgentLiquidityMarketplaceV62.sol#964)\n\t- reputationManager.recordLoanCompletion(holder,loanId,loan.amount,onTime && heldLongEnough && paidInterest,lateSeconds) (contracts/core/AgentLiquidityMarketplaceV62.sol#965-967)"
+    },
+    {
+      "check": "cyclomatic-complexity",
+      "impact": "Informational",
+      "confidence": "High",
+      "description": "ReputationManagerV4.recordLoanCompletion(address,uint256,uint256,bool,uint256) (contracts/core/ReputationManagerV4.sol#414-482) has a high cyclomatic complexity (18)."
+    },
+    {
+      "check": "dead-code",
+      "impact": "Informational",
+      "confidence": "Medium",
+      "description": "AgentLiquidityMarketplaceV62._countActiveLoansFromArray(address) (contracts/core/AgentLiquidityMarketplaceV62.sol#1583-1594) is never used and should be removed"
+    },
+    {
+      "check": "naming-convention",
+      "impact": "Informational",
+      "confidence": "High",
+      "description": "Parameter ReputationManagerV4.setValidationBonusParameters(uint256,uint256)._creditBonus (contracts/core/ReputationManagerV4.sol#287) is not in mixedCase"
+    },
+    {
+      "check": "naming-convention",
+      "impact": "Informational",
+      "confidence": "High",
+      "description": "Parameter ReputationManagerV4.setValidationBonusParameters(uint256,uint256)._bonusThreshold (contracts/core/ReputationManagerV4.sol#287) is not in mixedCase"
+    },
+    {
+      "check": "naming-convention",
+      "impact": "Informational",
+      "confidence": "High",
+      "description": "Parameter ReputationManagerV4.setLadderParameters(uint256,uint256,uint256,uint256)._bootstrapLimit (contracts/core/ReputationManagerV4.sol#313) is not in mixedCase"
+    },
+    {
+      "check": "naming-convention",
+      "impact": "Informational",
+      "confidence": "High",
+      "description": "Parameter ReputationManagerV4.setScoringParameters(uint256,uint256,uint256,uint256)._largeLoanThreshold (contracts/core/ReputationManagerV4.sol#260) is not in mixedCase"
+    },
+    {
+      "check": "naming-convention",
+      "impact": "Informational",
+      "confidence": "High",
+      "description": "Parameter ReputationManagerV4.setLadderParameters(uint256,uint256,uint256,uint256)._creditMultiple (contracts/core/ReputationManagerV4.sol#311) is not in mixedCase"
+    },
+    {
+      "check": "naming-convention",
+      "impact": "Informational",
+      "confidence": "High",
+      "description": "Variable ReputationManagerV4.TIER_MIN_SCORE (contracts/core/ReputationManagerV4.sol#158) is not in mixedCase"
+    },
+    {
+      "check": "naming-convention",
+      "impact": "Informational",
+      "confidence": "High",
+      "description": "Parameter ReputationManagerV4.setScoringParameters(uint256,uint256,uint256,uint256)._defaultPenaltyLarge (contracts/core/ReputationManagerV4.sol#259) is not in mixedCase"
+    },
+    {
+      "check": "naming-convention",
+      "impact": "Informational",
+      "confidence": "High",
+      "description": "Parameter ReputationManagerV4.setLadderParameters(uint256,uint256,uint256,uint256)._growthStep (contracts/core/ReputationManagerV4.sol#312) is not in mixedCase"
+    },
+    {
+      "check": "naming-convention",
+      "impact": "Informational",
+      "confidence": "High",
+      "description": "Parameter ReputationManagerV4.setLadderParameters(uint256,uint256,uint256,uint256)._refDuration (contracts/core/ReputationManagerV4.sol#314) is not in mixedCase"
+    },
+    {
+      "check": "naming-convention",
+      "impact": "Informational",
+      "confidence": "High",
+      "description": "Parameter ReputationManagerV4.setValidationRegistry(address)._validationRegistry (contracts/core/ReputationManagerV4.sol#251) is not in mixedCase"
+    },
+    {
+      "check": "naming-convention",
+      "impact": "Informational",
+      "confidence": "High",
+      "description": "Parameter ReputationManagerV4.setScoringParameters(uint256,uint256,uint256,uint256)._defaultPenaltyBase (contracts/core/ReputationManagerV4.sol#258) is not in mixedCase"
+    },
+    {
+      "check": "naming-convention",
+      "impact": "Informational",
+      "confidence": "High",
+      "description": "Parameter ReputationManagerV4.setScoringParameters(uint256,uint256,uint256,uint256)._onTimeBonus (contracts/core/ReputationManagerV4.sol#257) is not in mixedCase"
+    }
+  ],
+  "summary": {
+    "Medium": 5,
+    "Low": 27,
+    "Informational": 14
+  }
+}

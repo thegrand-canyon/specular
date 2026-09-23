@@ -1,4 +1,4 @@
-name: hardhat tests
+name: tests
 
 on:
   push:
@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
+  hardhat:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -37,7 +37,57 @@ jobs:
         run: npx mocha test/api/*.test.js
         # API tests spawn the server process; mocha runs them top-level
 
-      - name: Report
-        if: always()
+  # The agent server builds from the ABIs committed under mcp-server/abi/, so it
+  # needs neither the root install nor a hardhat compile. It was previously not
+  # covered by CI at all.
+  mcp-server:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: mcp-server/package-lock.json
+      - run: npm ci
+        working-directory: mcp-server
+      - run: npm run build
+        working-directory: mcp-server
+      - run: npm test
+        working-directory: mcp-server
+      - name: ABIs match the compiled artifacts
         run: |
-          echo "::notice title=Test count::See test output above for passing/failing count"
+          npm ci
+          npx hardhat compile
+          node mcp-server/scripts/extract-abis.mjs
+          git diff --exit-code -- mcp-server/abi
+
+  # test/foundry/ (invariants, gas, DoS, soak, storage) had no CI coverage.
+  # forge auto-installs lib/forge-std; npm ci is required because foundry.toml
+  # remaps @openzeppelin/ into node_modules/.
+  foundry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+      - uses: foundry-rs/foundry-toolchain@v1
+      - run: forge test -vv
+
+  python:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r python/requirements.txt pytest
+      - run: python -m pytest python/tests -q

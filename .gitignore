@@ -64,3 +64,10 @@ forensics/monitor/alert-history.jsonl
 
 # Agent worktrees: full repo checkouts, multi-GB, never belong in git or a deploy upload.
 .claude/
+
+forensics/output/testing-2026-09-24/keys*
+forensics/output/testing-2026-09-24/*.secret.json
+
+# Foundry build output (repo root only - an unanchored `out/` also swallowed
+# scripts/sim/out/, the simulation results the V7 design report cites).
+/out/

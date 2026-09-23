@@ -1,0 +1,45 @@
+{
+  "generatedAt": "2026-09-22T16:18:57.143Z",
+  "gas": {
+    "v61": {
+      "supply_newLender": 227067,
+      "supply_selfStake": 158655,
+      "supply_secondLender": 158655,
+      "requestLoan": 499725,
+      "repayLoan": 315942,
+      "claimInterest": 51221,
+      "liquidateLoan_lossy": 154047
+    },
+    "v62": {
+      "supply_newLender": 227106,
+      "supply_selfStake": 158694,
+      "supply_secondLender": 158694,
+      "requestLoan": 514087,
+      "repayLoan": 322117,
+      "claimInterest": 51173,
+      "liquidateLoan_lossy": 193774
+    }
+  },
+  "sizes": {
+    "ReputationManagerV3": {
+      "deployedBytes": 6388,
+      "initcodeBytes": 6666,
+      "headroomToEIP170": 18188
+    },
+    "ReputationManagerV4": {
+      "deployedBytes": 11099,
+      "initcodeBytes": 11931,
+      "headroomToEIP170": 13477
+    },
+    "AgentLiquidityMarketplaceV6 (V6.1)": {
+      "deployedBytes": 19759,
+      "initcodeBytes": 20222,
+      "headroomToEIP170": 4817
+    },
+    "AgentLiquidityMarketplaceV62 (V6.2)": {
+      "deployedBytes": 21299,
+      "initcodeBytes": 21776,
+      "headroomToEIP170": 3277
+    }
+  }
+}

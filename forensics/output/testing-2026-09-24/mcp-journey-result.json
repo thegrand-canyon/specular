@@ -1,0 +1,667 @@
+{
+  "wallet": "0xff7bb13d098B27871E94FCf83Ac826ae8Cd58d09",
+  "steps": [
+    {
+      "name": "connect+initialize",
+      "ms": 433
+    },
+    {
+      "name": "tools/list",
+      "ms": 241,
+      "count": 25,
+      "names": [
+        "list_networks",
+        "get_network_info",
+        "get_protocol_status",
+        "check_credit_score",
+        "get_available_liquidity",
+        "get_pool_details",
+        "get_loan_status",
+        "get_agent_loans",
+        "get_lending_positions",
+        "preview_repayment",
+        "can_top_up",
+        "get_active_loan_ids",
+        "required_self_stake",
+        "get_self_stake",
+        "get_transaction",
+        "prepare_register_agent",
+        "prepare_create_pool",
+        "prepare_approve_usdc",
+        "prepare_supply_liquidity",
+        "prepare_withdraw_liquidity",
+        "prepare_request_loan",
+        "prepare_repay_loan",
+        "prepare_claim_interest",
+        "simulate_transaction",
+        "broadcast_signed_transaction"
+      ]
+    },
+    {
+      "name": "list_networks",
+      "ms": 97,
+      "isError": false,
+      "result": {
+        "networks": [
+          {
+            "network": "arc-mainnet",
+            "label": "Arc Mainnet (REAL USDC)",
+            "chainId": 5042,
+            "realMoney": true,
+            "rpcUrl": "https://rpc.mainnet.arc.io",
+            "rpcUrls": [
+              "https://rpc.mainnet.arc.io",
+              "https://arc-rpc.publicnode.com",
+              "https://arc.drpc.org"
+            ],
+            "explorerTx": "https://explorer.arc.io/tx/",
+            "contracts": {
+              "marketplace": "0xCb23f2fb03Bfd4775Cc0e76E28f64c1e545071be",
+              "registry": "0x6F1EbF50290f6D4A9947E9EB77f98a683684fBF5",
+              "reputation": "0x12953e732e5D1aFdA640554125367d1CEC2ac4FB",
+              "usdc": "0x3600000000000000000000000000000000000000"
+            },
+            "usdcDecimals": 6,
+            "addressSource": "src/config/arc-mainnet-addresses.json"
+          },
+          {
+            "network": "arc-staging",
+            "label": "Arc Testnet V6-staging (test USDC, no real value)",
+            "chainId": 5042002,
+            "realMoney": false,
+            "rpcUrl": "https://rpc.testnet.arc.io",
+            "rpcUrls": [
+              "https://rpc.testnet.arc.io",
+              "https://arc-testnet-rpc.publicnode.com"
+            ],
+            "explorerTx": "https://testnet.arcscan.app/tx/",
+            "contracts": {
+              "marketplace": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+              "registry": "0x4712A978A0EADe68f0b485b981112Ae66aA622d9",
+              "reputation": "0xD7906fDFBf69BA89a4c2FE148797e24f386fE3d2",
+              "usdc": "0x9F3C10985998D1354D1465c5135Aa924775bd11D"
+            },
+            "usdcDecimals": 6,
+            "addressSource": "src/config/arc-testnet-v6-addresses.json"
+          }
+        ],
+        "note": "Every other tool requires an explicit `network`. Use arc-staging to test; base and arc-mainnet are real money."
+      }
+    },
+    {
+      "name": "get_protocol_status",
+      "ms": 1366,
+      "isError": false,
+      "result": {
+        "network": "arc-staging",
+        "label": "Arc Testnet V6-staging (test USDC, no real value)",
+        "realMoney": false,
+        "chainId": 5042002,
+        "marketplace": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+        "paused": false,
+        "totalPools": 15,
+        "activePools": 15,
+        "totalLoans": 115,
+        "totalAgents": 66,
+        "tvlUsdc": "9756.0",
+        "availableLiquidityUsdc": "9855.015412",
+        "totalLoanedUsdc": "0.0",
+        "capabilities": {
+          "marketplaceVersion": "V6.2",
+          "reputationVersion": "V4",
+          "v61": true,
+          "v62": true,
+          "reputationV4": true
+        },
+        "parameters": {
+          "minSupplyUsdc": "10.0",
+          "minSupplyAppliesToPoolCreator": false,
+          "borrowRestrictedToPoolCreator": true,
+          "minHoldForReputationRewardSeconds": 86400,
+          "platformFeeBps": 100,
+          "maxActiveLoansPerAgent": 10,
+          "loanDurationDays": {
+            "min": 7,
+            "max": 365
+          }
+        },
+        "creditTiers": {
+          "source": "chain",
+          "reputationVersion": "V4",
+          "maxTierLimitUsdc": "10000.0",
+          "tiers": [
+            {
+              "index": 0,
+              "name": "New",
+              "minScore": 0,
+              "creditLimitUsdc": "1000.0",
+              "collateralPercent": 100,
+              "interestRateBps": 1500,
+              "interestRateAprPercent": 15,
+              "unsecuredExposureUsdc": "0.0"
+            },
+            {
+              "index": 1,
+              "name": "Low",
+              "minScore": 200,
+              "creditLimitUsdc": "5000.0",
+              "collateralPercent": 100,
+              "interestRateBps": 1500,
+              "interestRateAprPercent": 15,
+              "unsecuredExposureUsdc": "0.0"
+            },
+            {
+              "index": 2,
+              "name": "Building",
+              "minScore": 400,
+              "creditLimitUsdc": "10000.0",
+              "collateralPercent": 100,
+              "interestRateBps": 1000,
+              "interestRateAprPercent": 10,
+              "unsecuredExposureUsdc": "0.0"
+            },
+            {
+              "index": 3,
+              "name": "Fair",
+              "minScore": 500,
+              "creditLimitUsdc": "10000.0",
+              "collateralPercent": 75,
+              "interestRateBps": 1000,
+              "interestRateAprPercent": 10,
+              "unsecuredExposureUsdc": "2500.0"
+            },
+            {
+              "index": 4,
+              "name": "Good",
+              "minScore": 600,
+              "creditLimitUsdc": "2500.0",
+              "collateralPercent": 0,
+              "interestRateBps": 700,
+              "interestRateAprPercent": 7,
+              "unsecuredExposureUsdc": "2500.0"
+            },
+            {
+              "index": 5,
+              "name": "Excellent",
+              "minScore": 800,
+              "creditLimitUsdc": "5000.0",
+              "collateralPercent": 0,
+              "interestRateBps": 500,
+              "interestRateAprPercent": 5,
+              "unsecuredExposureUsdc": "5000.0"
+            }
+          ],
+          "note": "Read live from ReputationManagerV4. These limits are OWNER-SETTABLE and every entry is bounded by MAX_TIER_LIMIT (an immutable constant) — do not cache them in client code. An agent's actual limit is min(tier limit, credit ladder) and 0 during a post-default lockout."
+        },
+        "rpc": {
+          "blockNumber": 63662675,
+          "blockTimestamp": 1790201965,
+          "ageSeconds": 0,
+          "stale": false
+        }
+      }
+    },
+    {
+      "name": "check_credit_score",
+      "ms": 174,
+      "isError": false,
+      "result": {
+        "network": "arc-staging",
+        "address": "0xff7bb13d098B27871E94FCf83Ac826ae8Cd58d09",
+        "registered": false,
+        "wallet": {
+          "usdcBalance": "500.0",
+          "usdcAllowanceToMarketplace": "0.0"
+        },
+        "nextStep": "Use prepare_register_agent to get an unsigned registration transaction, sign it with this wallet, then prepare_create_pool.",
+        "rpc": {
+          "blockNumber": 63662675,
+          "blockTimestamp": 1790201965,
+          "ageSeconds": 1,
+          "stale": false
+        }
+      }
+    },
+    {
+      "name": "prepare_register_agent",
+      "ms": 195,
+      "isError": false,
+      "result": {
+        "network": "arc-staging",
+        "chainId": 5042002,
+        "realMoney": false,
+        "action": "register_agent",
+        "from": "0xff7bb13d098B27871E94FCf83Ac826ae8Cd58d09",
+        "to": "0x4712A978A0EADe68f0b485b981112Ae66aA622d9",
+        "data": "0x8ea42286000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000003573706563756c61723a2f2f30786666376262313364303938423237383731453934464366383341633832366165384364353864303900000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "value": "0",
+        "gasEstimate": "424778",
+        "gasEstimateSource": "estimateGas",
+        "description": "Register this wallet as a Specular agent (mints the agent NFT, agentId assigned on-chain).",
+        "humanReadableSummary": "Register 0xff7bb13d098B27871E94FCf83Ac826ae8Cd58d09 as an agent on arc-staging with URI \"specular://0xff7bb13d098B27871E94FCf83Ac826ae8Cd58d09\". No USDC moves.",
+        "warnings": [],
+        "call": {
+          "contract": "registry",
+          "contractAddress": "0x4712A978A0EADe68f0b485b981112Ae66aA622d9",
+          "function": "register",
+          "args": {
+            "agentURI": "specular://0xff7bb13d098B27871E94FCf83Ac826ae8Cd58d09",
+            "metadataEntries": "0"
+          }
+        },
+        "prerequisite": null,
+        "simulation": {
+          "ok": true,
+          "gasEstimate": "353982",
+          "revertReason": null,
+          "plainLanguage": null,
+          "from": "0xff7bb13d098B27871E94FCf83Ac826ae8Cd58d09"
+        },
+        "signingInstructions": "Sign {chainId,to,data,value:0} with YOUR OWN wallet (set nonce/gas from your provider; gasEstimate is a hint), then broadcast it yourself or pass the raw signed hex to broadcast_signed_transaction. If `prerequisite` is present, send and confirm it first. IF THE MAIN TRANSACTION THEN FAILS OR YOU ABANDON IT, send prepare_approve_usdc with amount \"0\" and broadcast that too: the prerequisite approval is still standing until you do, and the exact-approval model's resting state is zero. This server never sees your private key."
+      }
+    },
+    {
+      "name": "broadcast_signed_transaction",
+      "ms": 149,
+      "isError": false,
+      "result": {
+        "network": "arc-staging",
+        "realMoney": false,
+        "accepted": true,
+        "hash": "0xc0904484b7bcbd4e8169d28d4e33a97be5dab43bccf1db474ac6de7d6192225f",
+        "from": "0xff7bb13d098B27871E94FCf83Ac826ae8Cd58d09",
+        "to": "0x4712A978A0EADe68f0b485b981112Ae66aA622d9",
+        "call": "registry.register(specular://0xff7bb13d098B27871E94FCf83Ac826ae8Cd58d09, [])",
+        "explorer": "https://testnet.arcscan.app/tx/0xc0904484b7bcbd4e8169d28d4e33a97be5dab43bccf1db474ac6de7d6192225f",
+        "next": "Poll get_transaction with this hash until status is confirmed or reverted."
+      }
+    },
+    {
+      "name": "verify_onchain",
+      "hash": "0xc0904484b7bcbd4e8169d28d4e33a97be5dab43bccf1db474ac6de7d6192225f",
+      "status": 1
+    },
+    {
+      "name": "get_transaction",
+      "ms": 272,
+      "isError": false,
+      "result": {
+        "network": "arc-staging",
+        "hash": "0xc0904484b7bcbd4e8169d28d4e33a97be5dab43bccf1db474ac6de7d6192225f",
+        "found": true,
+        "status": "confirmed",
+        "blockNumber": 63662680,
+        "from": "0xff7bb13d098B27871E94FCf83Ac826ae8Cd58d09",
+        "to": "0x4712A978A0EADe68f0b485b981112Ae66aA622d9",
+        "gasUsed": "350037",
+        "events": [
+          {
+            "name": "MetadataUpdate",
+            "args": {
+              "_tokenId": "67"
+            }
+          },
+          {
+            "name": "AgentRegistered",
+            "args": {
+              "agentId": "67",
+              "owner": "0xff7bb13d098B27871E94FCf83Ac826ae8Cd58d09",
+              "agentURI": "specular://0xff7bb13d098B27871E94FCf83Ac826ae8Cd58d09",
+              "timestamp": "1790201967"
+            }
+          },
+          {
+            "name": "Transfer",
+            "args": {
+              "from": "0x0000000000000000000000000000000000000000",
+              "to": "0xff7bb13d098B27871E94FCf83Ac826ae8Cd58d09",
+              "tokenId": "67"
+            }
+          }
+        ],
+        "explorer": "https://testnet.arcscan.app/tx/0xc0904484b7bcbd4e8169d28d4e33a97be5dab43bccf1db474ac6de7d6192225f",
+        "rpc": {
+          "blockNumber": 63662691,
+          "blockTimestamp": 1790201973,
+          "ageSeconds": 0,
+          "stale": false
+        }
+      }
+    },
+    {
+      "name": "check_credit_score",
+      "ms": 413,
+      "isError": false,
+      "result": {
+        "network": "arc-staging",
+        "address": "0xff7bb13d098B27871E94FCf83Ac826ae8Cd58d09",
+        "registered": true,
+        "agentId": 67,
+        "owner": "0xff7bb13d098B27871E94FCf83Ac826ae8Cd58d09",
+        "agentWallet": "0xff7bb13d098B27871E94FCf83Ac826ae8Cd58d09",
+        "agentURI": "specular://0xff7bb13d098B27871E94FCf83Ac826ae8Cd58d09",
+        "isActive": true,
+        "registrationTime": 1790201967,
+        "reputation": {
+          "score": 0,
+          "tier": "New",
+          "max": 1000
+        },
+        "credit": {
+          "creditLimitUsdc": "100.0",
+          "outstandingPrincipalUsdc": "0.0",
+          "remainingCreditUsdc": "100.0",
+          "collateralPercent": 100,
+          "interestRateBps": 1500,
+          "interestRateAprPercent": 15,
+          "activeLoans": 0,
+          "maxActiveLoans": 10,
+          "canBorrow": true,
+          "model": {
+            "reputationVersion": "V4",
+            "tierIndex": 0,
+            "tierLimitUsdc": "1000.0",
+            "ladderLimitUsdc": "100.0",
+            "maxRepaidPrincipalUsdc": "0.0",
+            "maxTierLimitUsdc": "10000.0",
+            "lockedOut": false,
+            "lockedUntil": 0,
+            "lockedUntilIso": null,
+            "explanation": "Credit limit = min(tier limit 1000.0, ladder limit 100.0) USDC. The ladder is creditMultiple x the largest single on-time-repaid loan (0.0 USDC) + growthStep, floored at the bootstrap limit. No tier may ever exceed 10000.0 USDC (MAX_TIER_LIMIT, an immutable constant)."
+          }
+        },
+        "selfStake": null,
+        "pool": null,
+        "wallet": {
+          "usdcBalance": "500.0",
+          "usdcAllowanceToMarketplace": "0.0"
+        },
+        "rpc": {
+          "blockNumber": 63662691,
+          "blockTimestamp": 1790201973,
+          "ageSeconds": 1,
+          "stale": false
+        }
+      }
+    }
+  ],
+  "annotations": [
+    {
+      "name": "list_networks",
+      "annotations": {
+        "title": "list_networks",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "get_network_info",
+      "annotations": {
+        "title": "get_network_info",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "get_protocol_status",
+      "annotations": {
+        "title": "get_protocol_status",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "check_credit_score",
+      "annotations": {
+        "title": "check_credit_score",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "get_available_liquidity",
+      "annotations": {
+        "title": "get_available_liquidity",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "get_pool_details",
+      "annotations": {
+        "title": "get_pool_details",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "get_loan_status",
+      "annotations": {
+        "title": "get_loan_status",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "get_agent_loans",
+      "annotations": {
+        "title": "get_agent_loans",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "get_lending_positions",
+      "annotations": {
+        "title": "get_lending_positions",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "preview_repayment",
+      "annotations": {
+        "title": "preview_repayment",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "can_top_up",
+      "annotations": {
+        "title": "can_top_up",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "get_active_loan_ids",
+      "annotations": {
+        "title": "get_active_loan_ids",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "required_self_stake",
+      "annotations": {
+        "title": "required_self_stake",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "get_self_stake",
+      "annotations": {
+        "title": "get_self_stake",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "get_transaction",
+      "annotations": {
+        "title": "get_transaction",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "prepare_register_agent",
+      "annotations": {
+        "title": "prepare_register_agent",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "prepare_create_pool",
+      "annotations": {
+        "title": "prepare_create_pool",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "prepare_approve_usdc",
+      "annotations": {
+        "title": "prepare_approve_usdc",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "prepare_supply_liquidity",
+      "annotations": {
+        "title": "prepare_supply_liquidity",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "prepare_withdraw_liquidity",
+      "annotations": {
+        "title": "prepare_withdraw_liquidity",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "prepare_request_loan",
+      "annotations": {
+        "title": "prepare_request_loan",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "prepare_repay_loan",
+      "annotations": {
+        "title": "prepare_repay_loan",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "prepare_claim_interest",
+      "annotations": {
+        "title": "prepare_claim_interest",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "simulate_transaction",
+      "annotations": {
+        "title": "simulate_transaction",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "broadcast_signed_transaction",
+      "annotations": {
+        "title": "broadcast_signed_transaction",
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      }
+    }
+  ],
+  "errors": [
+    {
+      "label": "unknown network name",
+      "ms": 63,
+      "isError": true,
+      "text": "{\n  \"error\": \"Unknown network \\\"arc-testnet\\\". Valid: base, arc-staging, arc-mainnet.\"\n}"
+    },
+    {
+      "label": "missing network",
+      "ms": 56,
+      "isError": true,
+      "text": "{\n  \"error\": \"\\\"network\\\" is required (one of: base, arc-staging, arc-mainnet). There is no default: base and arc-mainnet move real USDC; use arc-staging to test.\"\n}"
+    },
+    {
+      "label": "malformed address",
+      "ms": 67,
+      "isError": true,
+      "text": "{\n  \"error\": \"address must be a 0x-prefixed 20-byte hex address\",\n  \"field\": \"address\"\n}"
+    },
+    {
+      "label": "unknown tool",
+      "ms": 71,
+      "threw": "MCP error -32602: MCP error -32602: Unknown tool: borrow_all_the_money",
+      "code": -32602
+    }
+  ],
+  "totalMs": 10290
+}

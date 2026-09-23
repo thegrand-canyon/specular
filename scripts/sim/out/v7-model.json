@@ -1,0 +1,821 @@
+{
+  "generatedAt": "2026-09-22T16:18:06.584Z",
+  "attackers": {
+    "v3": {
+      "config": "V3 live (V6.1)",
+      "creditMultiple": null,
+      "climb": {
+        "days": 146,
+        "score": 800,
+        "creditLimitUsdc": 50000,
+        "collateralPct": 0,
+        "maxRepaidUsdc": null,
+        "peakCapitalUsdc": 412.273935,
+        "feesUsdc": 0.182918,
+        "lenderAddresses": 1,
+        "lenderCapitalUsdc": 400,
+        "gas": "94033569",
+        "trajectory": [
+          {
+            "day": 1,
+            "score": 100,
+            "limitUsdc": 1000,
+            "maxRepaidUsdc": null,
+            "capitalUsdc": 200
+          },
+          {
+            "day": 2,
+            "score": 100,
+            "limitUsdc": 1000,
+            "maxRepaidUsdc": null,
+            "capitalUsdc": 200
+          },
+          {
+            "day": 20,
+            "score": 165,
+            "limitUsdc": 1000,
+            "maxRepaidUsdc": null,
+            "capitalUsdc": 402.136979
+          },
+          {
+            "day": 40,
+            "score": 265,
+            "limitUsdc": 5000,
+            "maxRepaidUsdc": null,
+            "capitalUsdc": 405.424639
+          },
+          {
+            "day": 60,
+            "score": 365,
+            "limitUsdc": 5000,
+            "maxRepaidUsdc": null,
+            "capitalUsdc": 408.712299
+          },
+          {
+            "day": 80,
+            "score": 465,
+            "limitUsdc": 10000,
+            "maxRepaidUsdc": null,
+            "capitalUsdc": 411.616401
+          },
+          {
+            "day": 100,
+            "score": 565,
+            "limitUsdc": 10000,
+            "maxRepaidUsdc": null,
+            "capitalUsdc": 151.308181
+          },
+          {
+            "day": 120,
+            "score": 665,
+            "limitUsdc": 25000,
+            "maxRepaidUsdc": null,
+            "capitalUsdc": 65.769822
+          },
+          {
+            "day": 140,
+            "score": 765,
+            "limitUsdc": 25000,
+            "maxRepaidUsdc": null,
+            "capitalUsdc": 67.304062
+          }
+        ]
+      },
+      "bustOut": {
+        "creditLimitUsdc": 50000,
+        "collateralPct": 0,
+        "drawnUsdc": 50000,
+        "collateralSeizedUsdc": 0,
+        "attackerCashDeltaUsdc": 50000,
+        "selfStakeLockedAtBustOut": false,
+        "selfStakePreWithdrawnUsdc": 0,
+        "selfStakeBurnedUsdc": 0,
+        "victimSuppliedUsdc": 49981.8816,
+        "victimLossUsdc": 49981.8816,
+        "scoreBefore": 800,
+        "scoreAfter": 700,
+        "penaltyPoints": 100,
+        "creditLimitAfterUsdc": 25000,
+        "maxRepaidAfterUsdc": null,
+        "lockoutDays": 0
+      },
+      "netAttackerGainUsdc": 50000,
+      "capitalShareOfPrize": 0.0082,
+      "repeatCadenceDays": 20,
+      "steadyStateExtractionPerDay": 2500
+    },
+    "m1_k2": {
+      "config": "M1 only k=2",
+      "creditMultiple": 2,
+      "climb": {
+        "days": 171,
+        "score": 835,
+        "creditLimitUsdc": 50000,
+        "collateralPct": 0,
+        "maxRepaidUsdc": 32650,
+        "peakCapitalUsdc": 27902.336882,
+        "feesUsdc": 1.349747,
+        "lenderAddresses": 2,
+        "lenderCapitalUsdc": 42249.778141,
+        "gas": "117255646",
+        "trajectory": [
+          {
+            "day": 1,
+            "score": 100,
+            "limitUsdc": 100,
+            "maxRepaidUsdc": 0,
+            "capitalUsdc": 300
+          },
+          {
+            "day": 2,
+            "score": 100,
+            "limitUsdc": 100,
+            "maxRepaidUsdc": 0,
+            "capitalUsdc": 300
+          },
+          {
+            "day": 20,
+            "score": 110,
+            "limitUsdc": 400,
+            "maxRepaidUsdc": 200,
+            "capitalUsdc": 598.056984
+          },
+          {
+            "day": 40,
+            "score": 175,
+            "limitUsdc": 1000,
+            "maxRepaidUsdc": 600,
+            "capitalUsdc": 1004.632319
+          },
+          {
+            "day": 60,
+            "score": 275,
+            "limitUsdc": 2300,
+            "maxRepaidUsdc": 1150,
+            "capitalUsdc": 2654.242731
+          },
+          {
+            "day": 80,
+            "score": 375,
+            "limitUsdc": 5000,
+            "maxRepaidUsdc": 2650,
+            "capitalUsdc": 3540.421389
+          },
+          {
+            "day": 100,
+            "score": 475,
+            "limitUsdc": 10000,
+            "maxRepaidUsdc": 8650,
+            "capitalUsdc": 11311.501981
+          },
+          {
+            "day": 120,
+            "score": 575,
+            "limitUsdc": 10000,
+            "maxRepaidUsdc": 8650,
+            "capitalUsdc": 11051.193761
+          },
+          {
+            "day": 140,
+            "score": 675,
+            "limitUsdc": 25000,
+            "maxRepaidUsdc": 16650,
+            "capitalUsdc": 27900.495794
+          },
+          {
+            "day": 160,
+            "score": 775,
+            "limitUsdc": 25000,
+            "maxRepaidUsdc": 16650,
+            "capitalUsdc": 27902.030034
+          }
+        ]
+      },
+      "bustOut": {
+        "creditLimitUsdc": 50000,
+        "collateralPct": 0,
+        "drawnUsdc": 50000,
+        "collateralSeizedUsdc": 0,
+        "attackerCashDeltaUsdc": 50000,
+        "selfStakeLockedAtBustOut": false,
+        "selfStakePreWithdrawnUsdc": 0,
+        "selfStakeBurnedUsdc": 0,
+        "victimSuppliedUsdc": 49866.379943,
+        "victimLossUsdc": 49866.379943,
+        "scoreBefore": 835,
+        "scoreAfter": 335,
+        "penaltyPoints": 500,
+        "creditLimitAfterUsdc": 0,
+        "maxRepaidAfterUsdc": 0,
+        "lockoutDays": 180
+      },
+      "netAttackerGainUsdc": 50000,
+      "capitalShareOfPrize": 0.558,
+      "repeatCadenceDays": 180,
+      "steadyStateExtractionPerDay": 277.7778
+    },
+    "m1_k4": {
+      "config": "M1 only k=4",
+      "creditMultiple": 4,
+      "climb": {
+        "days": 165,
+        "score": 835,
+        "creditLimitUsdc": 50000,
+        "collateralPct": 0,
+        "maxRepaidUsdc": 47150,
+        "peakCapitalUsdc": 42412.789482,
+        "feesUsdc": 1.034745,
+        "lenderAddresses": 1,
+        "lenderCapitalUsdc": 89861.359398,
+        "gas": "111819479",
+        "trajectory": [
+          {
+            "day": 1,
+            "score": 100,
+            "limitUsdc": 100,
+            "maxRepaidUsdc": 0,
+            "capitalUsdc": 300
+          },
+          {
+            "day": 2,
+            "score": 100,
+            "limitUsdc": 100,
+            "maxRepaidUsdc": 0,
+            "capitalUsdc": 300
+          },
+          {
+            "day": 20,
+            "score": 110,
+            "limitUsdc": 1000,
+            "maxRepaidUsdc": 400,
+            "capitalUsdc": 600.667395
+          },
+          {
+            "day": 40,
+            "score": 205,
+            "limitUsdc": 1600,
+            "maxRepaidUsdc": 400,
+            "capitalUsdc": 2543.049838
+          },
+          {
+            "day": 60,
+            "score": 305,
+            "limitUsdc": 5000,
+            "maxRepaidUsdc": 3150,
+            "capitalUsdc": 5268.604912
+          },
+          {
+            "day": 80,
+            "score": 405,
+            "limitUsdc": 10000,
+            "maxRepaidUsdc": 3150,
+            "capitalUsdc": 5271.892572
+          },
+          {
+            "day": 100,
+            "score": 505,
+            "limitUsdc": 10000,
+            "maxRepaidUsdc": 3150,
+            "capitalUsdc": 5199.358322
+          },
+          {
+            "day": 120,
+            "score": 605,
+            "limitUsdc": 12600,
+            "maxRepaidUsdc": 3150,
+            "capitalUsdc": 13960.609399
+          },
+          {
+            "day": 140,
+            "score": 705,
+            "limitUsdc": 25000,
+            "maxRepaidUsdc": 11950,
+            "capitalUsdc": 25868.14227
+          },
+          {
+            "day": 160,
+            "score": 805,
+            "limitUsdc": 47800,
+            "maxRepaidUsdc": 11950,
+            "capitalUsdc": 42412.405922
+          }
+        ]
+      },
+      "bustOut": {
+        "creditLimitUsdc": 50000,
+        "collateralPct": 0,
+        "drawnUsdc": 50000,
+        "collateralSeizedUsdc": 0,
+        "attackerCashDeltaUsdc": 50000,
+        "selfStakeLockedAtBustOut": false,
+        "selfStakePreWithdrawnUsdc": 0,
+        "selfStakeBurnedUsdc": 0,
+        "victimSuppliedUsdc": 49897.549871,
+        "victimLossUsdc": 49897.549871,
+        "scoreBefore": 835,
+        "scoreAfter": 335,
+        "penaltyPoints": 500,
+        "creditLimitAfterUsdc": 0,
+        "maxRepaidAfterUsdc": 0,
+        "lockoutDays": 180
+      },
+      "netAttackerGainUsdc": 50000,
+      "capitalShareOfPrize": 0.8483,
+      "repeatCadenceDays": 180,
+      "steadyStateExtractionPerDay": 277.7778
+    },
+    "v7_k2": {
+      "config": "V7 (M1+M2) k=2",
+      "creditMultiple": 2,
+      "climb": {
+        "days": 158,
+        "score": 800,
+        "creditLimitUsdc": 5000,
+        "collateralPct": 0,
+        "maxRepaidUsdc": 8550,
+        "peakCapitalUsdc": 11458.412104,
+        "feesUsdc": 0.700379,
+        "lenderAddresses": 2,
+        "lenderCapitalUsdc": 11342.110776,
+        "gas": "110451593",
+        "trajectory": [
+          {
+            "day": 1,
+            "score": 100,
+            "limitUsdc": 100,
+            "maxRepaidUsdc": 0,
+            "capitalUsdc": 300
+          },
+          {
+            "day": 2,
+            "score": 100,
+            "limitUsdc": 100,
+            "maxRepaidUsdc": 0,
+            "capitalUsdc": 300
+          },
+          {
+            "day": 20,
+            "score": 110,
+            "limitUsdc": 700,
+            "maxRepaidUsdc": 300,
+            "capitalUsdc": 701.315068
+          },
+          {
+            "day": 40,
+            "score": 205,
+            "limitUsdc": 1100,
+            "maxRepaidUsdc": 500,
+            "capitalUsdc": 1302.186311
+          },
+          {
+            "day": 60,
+            "score": 305,
+            "limitUsdc": 3200,
+            "maxRepaidUsdc": 1550,
+            "capitalUsdc": 3478.204954
+          },
+          {
+            "day": 80,
+            "score": 405,
+            "limitUsdc": 5200,
+            "maxRepaidUsdc": 2550,
+            "capitalUsdc": 7571.727109
+          },
+          {
+            "day": 100,
+            "score": 505,
+            "limitUsdc": 10000,
+            "maxRepaidUsdc": 8550,
+            "capitalUsdc": 11425.079913
+          },
+          {
+            "day": 120,
+            "score": 605,
+            "limitUsdc": 2500,
+            "maxRepaidUsdc": 8550,
+            "capitalUsdc": 11421.021693
+          },
+          {
+            "day": 140,
+            "score": 705,
+            "limitUsdc": 2500,
+            "maxRepaidUsdc": 8550,
+            "capitalUsdc": 11235.220318
+          }
+        ]
+      },
+      "bustOut": {
+        "creditLimitUsdc": 5000,
+        "collateralPct": 0,
+        "drawnUsdc": 5000,
+        "collateralSeizedUsdc": 0,
+        "attackerCashDeltaUsdc": 5000,
+        "selfStakeLockedAtBustOut": true,
+        "selfStakePreWithdrawnUsdc": 0,
+        "selfStakeBurnedUsdc": 2500,
+        "victimSuppliedUsdc": 2430.673037,
+        "victimLossUsdc": 2430.673037,
+        "scoreBefore": 800,
+        "scoreAfter": 300,
+        "penaltyPoints": 500,
+        "creditLimitAfterUsdc": 0,
+        "maxRepaidAfterUsdc": 0,
+        "lockoutDays": 180
+      },
+      "netAttackerGainUsdc": 2500,
+      "capitalShareOfPrize": 2.2917,
+      "repeatCadenceDays": 180,
+      "steadyStateExtractionPerDay": 13.8889
+    },
+    "v7_k4": {
+      "config": "V7 (M1+M2) k=4",
+      "creditMultiple": 4,
+      "climb": {
+        "days": 152,
+        "score": 800,
+        "creditLimitUsdc": 5000,
+        "collateralPct": 0,
+        "maxRepaidUsdc": 3650,
+        "peakCapitalUsdc": 8178.766186,
+        "feesUsdc": 0.35572,
+        "lenderAddresses": 2,
+        "lenderCapitalUsdc": 8139.747389,
+        "gas": "108279550",
+        "trajectory": [
+          {
+            "day": 1,
+            "score": 100,
+            "limitUsdc": 100,
+            "maxRepaidUsdc": 0,
+            "capitalUsdc": 300
+          },
+          {
+            "day": 2,
+            "score": 100,
+            "limitUsdc": 100,
+            "maxRepaidUsdc": 0,
+            "capitalUsdc": 300
+          },
+          {
+            "day": 20,
+            "score": 135,
+            "limitUsdc": 700,
+            "maxRepaidUsdc": 150,
+            "capitalUsdc": 1098.878898
+          },
+          {
+            "day": 40,
+            "score": 235,
+            "limitUsdc": 4300,
+            "maxRepaidUsdc": 1050,
+            "capitalUsdc": 8149.446003
+          },
+          {
+            "day": 60,
+            "score": 335,
+            "limitUsdc": 5000,
+            "maxRepaidUsdc": 3650,
+            "capitalUsdc": 8164.733663
+          },
+          {
+            "day": 80,
+            "score": 435,
+            "limitUsdc": 10000,
+            "maxRepaidUsdc": 3650,
+            "capitalUsdc": 8167.966529
+          },
+          {
+            "day": 100,
+            "score": 535,
+            "limitUsdc": 10000,
+            "maxRepaidUsdc": 3650,
+            "capitalUsdc": 8104.533309
+          },
+          {
+            "day": 120,
+            "score": 635,
+            "limitUsdc": 2500,
+            "maxRepaidUsdc": 3650,
+            "capitalUsdc": 7909.817212
+          },
+          {
+            "day": 140,
+            "score": 735,
+            "limitUsdc": 2500,
+            "maxRepaidUsdc": 3650,
+            "capitalUsdc": 7911.351452
+          }
+        ]
+      },
+      "bustOut": {
+        "creditLimitUsdc": 5000,
+        "collateralPct": 0,
+        "drawnUsdc": 5000,
+        "collateralSeizedUsdc": 0,
+        "attackerCashDeltaUsdc": 5000,
+        "selfStakeLockedAtBustOut": true,
+        "selfStakePreWithdrawnUsdc": 0,
+        "selfStakeBurnedUsdc": 1250,
+        "victimSuppliedUsdc": 3714.794129,
+        "victimLossUsdc": 3714.794129,
+        "scoreBefore": 800,
+        "scoreAfter": 300,
+        "penaltyPoints": 500,
+        "creditLimitAfterUsdc": 0,
+        "maxRepaidAfterUsdc": 0,
+        "lockoutDays": 180
+      },
+      "netAttackerGainUsdc": 3750,
+      "capitalShareOfPrize": 1.6358,
+      "repeatCadenceDays": 180,
+      "steadyStateExtractionPerDay": 20.8333
+    }
+  },
+  "honest": {
+    "v3": {
+      "config": "V3 live (V6.1)",
+      "creditMultiple": null,
+      "days": 146,
+      "score": 800,
+      "creditLimitUsdc": 50000,
+      "collateralPct": 0,
+      "maxRepaidUsdc": null,
+      "peakCapitalUsdc": 12.273935,
+      "feesUsdc": 0.182918,
+      "lenderAddresses": 1,
+      "lenderCapitalUsdc": 400,
+      "gas": "94033545",
+      "trajectory": [
+        {
+          "day": 1,
+          "score": 100,
+          "limitUsdc": 1000,
+          "maxRepaidUsdc": null,
+          "capitalUsdc": 0
+        },
+        {
+          "day": 2,
+          "score": 100,
+          "limitUsdc": 1000,
+          "maxRepaidUsdc": null,
+          "capitalUsdc": 0
+        },
+        {
+          "day": 20,
+          "score": 165,
+          "limitUsdc": 1000,
+          "maxRepaidUsdc": null,
+          "capitalUsdc": 2.136979
+        },
+        {
+          "day": 40,
+          "score": 265,
+          "limitUsdc": 5000,
+          "maxRepaidUsdc": null,
+          "capitalUsdc": 5.424639
+        },
+        {
+          "day": 60,
+          "score": 365,
+          "limitUsdc": 5000,
+          "maxRepaidUsdc": null,
+          "capitalUsdc": 8.712299
+        },
+        {
+          "day": 80,
+          "score": 465,
+          "limitUsdc": 10000,
+          "maxRepaidUsdc": null,
+          "capitalUsdc": 11.616401
+        },
+        {
+          "day": 100,
+          "score": 565,
+          "limitUsdc": 10000,
+          "maxRepaidUsdc": null,
+          "capitalUsdc": -248.691819
+        },
+        {
+          "day": 120,
+          "score": 665,
+          "limitUsdc": 25000,
+          "maxRepaidUsdc": null,
+          "capitalUsdc": -334.230178
+        },
+        {
+          "day": 140,
+          "score": 765,
+          "limitUsdc": 25000,
+          "maxRepaidUsdc": null,
+          "capitalUsdc": -332.695938
+        }
+      ],
+      "realisedCostUsdc": 18.301318,
+      "thirdPartyLenderEarnedUsdc": 18.1184
+    },
+    "v7_k2": {
+      "config": "V7 (M1+M2) k=2",
+      "creditMultiple": 2,
+      "days": 158,
+      "score": 800,
+      "creditLimitUsdc": 5000,
+      "collateralPct": 0,
+      "maxRepaidUsdc": 8550,
+      "peakCapitalUsdc": 116.301328,
+      "feesUsdc": 0.700379,
+      "lenderAddresses": 2,
+      "lenderCapitalUsdc": 11342.110776,
+      "gas": "110451569",
+      "trajectory": [
+        {
+          "day": 1,
+          "score": 100,
+          "limitUsdc": 100,
+          "maxRepaidUsdc": 0,
+          "capitalUsdc": 0
+        },
+        {
+          "day": 2,
+          "score": 100,
+          "limitUsdc": 100,
+          "maxRepaidUsdc": 0,
+          "capitalUsdc": 0
+        },
+        {
+          "day": 20,
+          "score": 110,
+          "limitUsdc": 700,
+          "maxRepaidUsdc": 300,
+          "capitalUsdc": 1.315068
+        },
+        {
+          "day": 40,
+          "score": 205,
+          "limitUsdc": 1100,
+          "maxRepaidUsdc": 500,
+          "capitalUsdc": 7.068481
+        },
+        {
+          "day": 60,
+          "score": 305,
+          "limitUsdc": 3200,
+          "maxRepaidUsdc": 1550,
+          "capitalUsdc": 21.369838
+        },
+        {
+          "day": 80,
+          "score": 405,
+          "limitUsdc": 5200,
+          "maxRepaidUsdc": 2550,
+          "capitalUsdc": 33.041059
+        },
+        {
+          "day": 100,
+          "score": 505,
+          "limitUsdc": 10000,
+          "maxRepaidUsdc": 8550,
+          "capitalUsdc": 82.969137
+        },
+        {
+          "day": 120,
+          "score": 605,
+          "limitUsdc": 2500,
+          "maxRepaidUsdc": 8550,
+          "capitalUsdc": 78.910917
+        },
+        {
+          "day": 140,
+          "score": 705,
+          "limitUsdc": 2500,
+          "maxRepaidUsdc": 8550,
+          "capitalUsdc": -106.890458
+        }
+      ],
+      "realisedCostUsdc": 69.972902,
+      "thirdPartyLenderEarnedUsdc": 69.272523
+    },
+    "m1_k2": {
+      "config": "M1 only k=2",
+      "creditMultiple": 2,
+      "days": 171,
+      "score": 835,
+      "creditLimitUsdc": 50000,
+      "collateralPct": 0,
+      "maxRepaidUsdc": 32650,
+      "peakCapitalUsdc": 67.232837,
+      "feesUsdc": 1.349747,
+      "lenderAddresses": 2,
+      "lenderCapitalUsdc": 42249.778141,
+      "gas": "117255634",
+      "trajectory": [
+        {
+          "day": 1,
+          "score": 100,
+          "limitUsdc": 100,
+          "maxRepaidUsdc": 0,
+          "capitalUsdc": 0
+        },
+        {
+          "day": 2,
+          "score": 100,
+          "limitUsdc": 100,
+          "maxRepaidUsdc": 0,
+          "capitalUsdc": 0
+        },
+        {
+          "day": 20,
+          "score": 110,
+          "limitUsdc": 400,
+          "maxRepaidUsdc": 200,
+          "capitalUsdc": 0.986301
+        },
+        {
+          "day": 40,
+          "score": 175,
+          "limitUsdc": 1000,
+          "maxRepaidUsdc": 600,
+          "capitalUsdc": 7.561636
+        },
+        {
+          "day": 60,
+          "score": 275,
+          "limitUsdc": 2300,
+          "maxRepaidUsdc": 1150,
+          "capitalUsdc": 17.424638
+        },
+        {
+          "day": 80,
+          "score": 375,
+          "limitUsdc": 5000,
+          "maxRepaidUsdc": 2650,
+          "capitalUsdc": 34.849283
+        },
+        {
+          "day": 100,
+          "score": 475,
+          "limitUsdc": 10000,
+          "maxRepaidUsdc": 8650,
+          "capitalUsdc": 66.794481
+        },
+        {
+          "day": 120,
+          "score": 575,
+          "limitUsdc": 10000,
+          "maxRepaidUsdc": 8650,
+          "capitalUsdc": -193.513739
+        },
+        {
+          "day": 140,
+          "score": 675,
+          "limitUsdc": 25000,
+          "maxRepaidUsdc": 16650,
+          "capitalUsdc": -253.572647
+        },
+        {
+          "day": 160,
+          "score": 775,
+          "limitUsdc": 25000,
+          "maxRepaidUsdc": 16650,
+          "capitalUsdc": -252.038407
+        }
+      ],
+      "realisedCostUsdc": 134.969804,
+      "thirdPartyLenderEarnedUsdc": 133.620057
+    }
+  },
+  "honestFixed": {
+    "v3": {
+      "config": "V3 live (V6.1)",
+      "profile": "H1 (50 USDC / 7-day working capital, held to term)",
+      "days": 699.3,
+      "finalScore": 600,
+      "loans": 100,
+      "creditLimitUsdc": 25000,
+      "selfStakePostedUsdc": 0,
+      "realisedCostUsdc": 12.4657,
+      "feesUsdc": 0.1246
+    },
+    "m1_k2": {
+      "config": "M1 only k=2",
+      "profile": "H1 (50 USDC / 7-day working capital, held to term)",
+      "days": 839.2,
+      "finalScore": 580,
+      "loans": 120,
+      "creditLimitUsdc": 100,
+      "selfStakePostedUsdc": 0,
+      "realisedCostUsdc": 15.102675,
+      "feesUsdc": 0.15096
+    },
+    "v7_k2": {
+      "config": "V7 (M1+M2) k=2",
+      "profile": "H1 (50 USDC / 7-day working capital, held to term)",
+      "days": 839.2,
+      "finalScore": 580,
+      "loans": 120,
+      "creditLimitUsdc": 200,
+      "selfStakePostedUsdc": 6.25,
+      "realisedCostUsdc": 15.096775,
+      "feesUsdc": 0.15098
+    }
+  }
+}

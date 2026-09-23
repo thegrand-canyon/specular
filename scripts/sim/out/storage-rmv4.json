@@ -1,0 +1,397 @@
+{
+  "storage": [
+    {
+      "astId": 3414,
+      "contract": "contracts/core/ReputationManagerV4.sol:ReputationManagerV4",
+      "label": "_owner",
+      "offset": 0,
+      "slot": "0",
+      "type": "t_address"
+    },
+    {
+      "astId": 3562,
+      "contract": "contracts/core/ReputationManagerV4.sol:ReputationManagerV4",
+      "label": "_pendingOwner",
+      "offset": 0,
+      "slot": "1",
+      "type": "t_address"
+    },
+    {
+      "astId": 753,
+      "contract": "contracts/core/ReputationManagerV4.sol:ReputationManagerV4",
+      "label": "validationRegistry",
+      "offset": 0,
+      "slot": "2",
+      "type": "t_contract(ValidationRegistry)3405"
+    },
+    {
+      "astId": 757,
+      "contract": "contracts/core/ReputationManagerV4.sol:ReputationManagerV4",
+      "label": "authorizedPools",
+      "offset": 0,
+      "slot": "3",
+      "type": "t_mapping(t_address,t_bool)"
+    },
+    {
+      "astId": 761,
+      "contract": "contracts/core/ReputationManagerV4.sol:ReputationManagerV4",
+      "label": "agentReputation",
+      "offset": 0,
+      "slot": "4",
+      "type": "t_mapping(t_uint256,t_uint256)"
+    },
+    {
+      "astId": 765,
+      "contract": "contracts/core/ReputationManagerV4.sol:ReputationManagerV4",
+      "label": "initialized",
+      "offset": 0,
+      "slot": "5",
+      "type": "t_mapping(t_uint256,t_bool)"
+    },
+    {
+      "astId": 773,
+      "contract": "contracts/core/ReputationManagerV4.sol:ReputationManagerV4",
+      "label": "maxReputationGainPerWindow",
+      "offset": 0,
+      "slot": "6",
+      "type": "t_uint256"
+    },
+    {
+      "astId": 776,
+      "contract": "contracts/core/ReputationManagerV4.sol:ReputationManagerV4",
+      "label": "reputationGainWindow",
+      "offset": 0,
+      "slot": "7",
+      "type": "t_uint256"
+    },
+    {
+      "astId": 780,
+      "contract": "contracts/core/ReputationManagerV4.sol:ReputationManagerV4",
+      "label": "windowStart",
+      "offset": 0,
+      "slot": "8",
+      "type": "t_mapping(t_uint256,t_uint256)"
+    },
+    {
+      "astId": 784,
+      "contract": "contracts/core/ReputationManagerV4.sol:ReputationManagerV4",
+      "label": "gainedInWindow",
+      "offset": 0,
+      "slot": "9",
+      "type": "t_mapping(t_uint256,t_uint256)"
+    },
+    {
+      "astId": 788,
+      "contract": "contracts/core/ReputationManagerV4.sol:ReputationManagerV4",
+      "label": "totalBorrowed",
+      "offset": 0,
+      "slot": "10",
+      "type": "t_mapping(t_uint256,t_uint256)"
+    },
+    {
+      "astId": 792,
+      "contract": "contracts/core/ReputationManagerV4.sol:ReputationManagerV4",
+      "label": "totalRepaid",
+      "offset": 0,
+      "slot": "11",
+      "type": "t_mapping(t_uint256,t_uint256)"
+    },
+    {
+      "astId": 796,
+      "contract": "contracts/core/ReputationManagerV4.sol:ReputationManagerV4",
+      "label": "loanCount",
+      "offset": 0,
+      "slot": "12",
+      "type": "t_mapping(t_uint256,t_uint256)"
+    },
+    {
+      "astId": 800,
+      "contract": "contracts/core/ReputationManagerV4.sol:ReputationManagerV4",
+      "label": "defaultCount",
+      "offset": 0,
+      "slot": "13",
+      "type": "t_mapping(t_uint256,t_uint256)"
+    },
+    {
+      "astId": 804,
+      "contract": "contracts/core/ReputationManagerV4.sol:ReputationManagerV4",
+      "label": "lateCount",
+      "offset": 0,
+      "slot": "14",
+      "type": "t_mapping(t_uint256,t_uint256)"
+    },
+    {
+      "astId": 807,
+      "contract": "contracts/core/ReputationManagerV4.sol:ReputationManagerV4",
+      "label": "onTimeRepaymentBonus",
+      "offset": 0,
+      "slot": "15",
+      "type": "t_uint256"
+    },
+    {
+      "astId": 810,
+      "contract": "contracts/core/ReputationManagerV4.sol:ReputationManagerV4",
+      "label": "defaultPenaltyBase",
+      "offset": 0,
+      "slot": "16",
+      "type": "t_uint256"
+    },
+    {
+      "astId": 813,
+      "contract": "contracts/core/ReputationManagerV4.sol:ReputationManagerV4",
+      "label": "defaultPenaltyLarge",
+      "offset": 0,
+      "slot": "17",
+      "type": "t_uint256"
+    },
+    {
+      "astId": 818,
+      "contract": "contracts/core/ReputationManagerV4.sol:ReputationManagerV4",
+      "label": "largeLoanThreshold",
+      "offset": 0,
+      "slot": "18",
+      "type": "t_uint256"
+    },
+    {
+      "astId": 823,
+      "contract": "contracts/core/ReputationManagerV4.sol:ReputationManagerV4",
+      "label": "bonusReferenceAmount",
+      "offset": 0,
+      "slot": "19",
+      "type": "t_uint256"
+    },
+    {
+      "astId": 826,
+      "contract": "contracts/core/ReputationManagerV4.sol:ReputationManagerV4",
+      "label": "refDuration",
+      "offset": 0,
+      "slot": "20",
+      "type": "t_uint256"
+    },
+    {
+      "astId": 829,
+      "contract": "contracts/core/ReputationManagerV4.sol:ReputationManagerV4",
+      "label": "creditMultiple",
+      "offset": 0,
+      "slot": "21",
+      "type": "t_uint256"
+    },
+    {
+      "astId": 834,
+      "contract": "contracts/core/ReputationManagerV4.sol:ReputationManagerV4",
+      "label": "growthStep",
+      "offset": 0,
+      "slot": "22",
+      "type": "t_uint256"
+    },
+    {
+      "astId": 839,
+      "contract": "contracts/core/ReputationManagerV4.sol:ReputationManagerV4",
+      "label": "bootstrapLimit",
+      "offset": 0,
+      "slot": "23",
+      "type": "t_uint256"
+    },
+    {
+      "astId": 843,
+      "contract": "contracts/core/ReputationManagerV4.sol:ReputationManagerV4",
+      "label": "maxRepaidPrincipal",
+      "offset": 0,
+      "slot": "24",
+      "type": "t_mapping(t_uint256,t_uint256)"
+    },
+    {
+      "astId": 846,
+      "contract": "contracts/core/ReputationManagerV4.sol:ReputationManagerV4",
+      "label": "defaultLockout",
+      "offset": 0,
+      "slot": "25",
+      "type": "t_uint256"
+    },
+    {
+      "astId": 850,
+      "contract": "contracts/core/ReputationManagerV4.sol:ReputationManagerV4",
+      "label": "lockedUntil",
+      "offset": 0,
+      "slot": "26",
+      "type": "t_mapping(t_uint256,t_uint256)"
+    },
+    {
+      "astId": 853,
+      "contract": "contracts/core/ReputationManagerV4.sol:ReputationManagerV4",
+      "label": "latePenaltyBase",
+      "offset": 0,
+      "slot": "27",
+      "type": "t_uint256"
+    },
+    {
+      "astId": 856,
+      "contract": "contracts/core/ReputationManagerV4.sol:ReputationManagerV4",
+      "label": "latePenaltyPerDay",
+      "offset": 0,
+      "slot": "28",
+      "type": "t_uint256"
+    },
+    {
+      "astId": 859,
+      "contract": "contracts/core/ReputationManagerV4.sol:ReputationManagerV4",
+      "label": "latePenaltyMax",
+      "offset": 0,
+      "slot": "29",
+      "type": "t_uint256"
+    },
+    {
+      "astId": 862,
+      "contract": "contracts/core/ReputationManagerV4.sol:ReputationManagerV4",
+      "label": "validationBonusThreshold",
+      "offset": 0,
+      "slot": "30",
+      "type": "t_uint256"
+    },
+    {
+      "astId": 867,
+      "contract": "contracts/core/ReputationManagerV4.sol:ReputationManagerV4",
+      "label": "validationCreditBonus",
+      "offset": 0,
+      "slot": "31",
+      "type": "t_uint256"
+    },
+    {
+      "astId": 888,
+      "contract": "contracts/core/ReputationManagerV4.sol:ReputationManagerV4",
+      "label": "TIER_MIN_SCORE",
+      "offset": 0,
+      "slot": "32",
+      "type": "t_array(t_uint256)6_storage"
+    },
+    {
+      "astId": 915,
+      "contract": "contracts/core/ReputationManagerV4.sol:ReputationManagerV4",
+      "label": "tierLimits",
+      "offset": 0,
+      "slot": "38",
+      "type": "t_array(t_uint256)6_storage"
+    },
+    {
+      "astId": 930,
+      "contract": "contracts/core/ReputationManagerV4.sol:ReputationManagerV4",
+      "label": "tierCollateralPct",
+      "offset": 0,
+      "slot": "44",
+      "type": "t_array(t_uint256)6_storage"
+    },
+    {
+      "astId": 945,
+      "contract": "contracts/core/ReputationManagerV4.sol:ReputationManagerV4",
+      "label": "tierInterestBps",
+      "offset": 0,
+      "slot": "50",
+      "type": "t_array(t_uint256)6_storage"
+    },
+    {
+      "astId": 958,
+      "contract": "contracts/core/ReputationManagerV4.sol:ReputationManagerV4",
+      "label": "openLoans",
+      "offset": 0,
+      "slot": "56",
+      "type": "t_mapping(t_uint256,t_struct(OpenLoan)953_storage)"
+    }
+  ],
+  "types": {
+    "t_address": {
+      "encoding": "inplace",
+      "label": "address",
+      "numberOfBytes": "20"
+    },
+    "t_array(t_uint256)6_storage": {
+      "encoding": "inplace",
+      "label": "uint256[6]",
+      "numberOfBytes": "192",
+      "base": "t_uint256"
+    },
+    "t_bool": {
+      "encoding": "inplace",
+      "label": "bool",
+      "numberOfBytes": "1"
+    },
+    "t_contract(ValidationRegistry)3405": {
+      "encoding": "inplace",
+      "label": "contract ValidationRegistry",
+      "numberOfBytes": "20"
+    },
+    "t_mapping(t_address,t_bool)": {
+      "encoding": "mapping",
+      "key": "t_address",
+      "label": "mapping(address => bool)",
+      "numberOfBytes": "32",
+      "value": "t_bool"
+    },
+    "t_mapping(t_uint256,t_bool)": {
+      "encoding": "mapping",
+      "key": "t_uint256",
+      "label": "mapping(uint256 => bool)",
+      "numberOfBytes": "32",
+      "value": "t_bool"
+    },
+    "t_mapping(t_uint256,t_struct(OpenLoan)953_storage)": {
+      "encoding": "mapping",
+      "key": "t_uint256",
+      "label": "mapping(uint256 => struct ReputationManagerV4.OpenLoan)",
+      "numberOfBytes": "32",
+      "value": "t_struct(OpenLoan)953_storage"
+    },
+    "t_mapping(t_uint256,t_uint256)": {
+      "encoding": "mapping",
+      "key": "t_uint256",
+      "label": "mapping(uint256 => uint256)",
+      "numberOfBytes": "32",
+      "value": "t_uint256"
+    },
+    "t_struct(OpenLoan)953_storage": {
+      "encoding": "inplace",
+      "label": "struct ReputationManagerV4.OpenLoan",
+      "numberOfBytes": "32",
+      "members": [
+        {
+          "astId": 948,
+          "contract": "contracts/core/ReputationManagerV4.sol:ReputationManagerV4",
+          "label": "amount",
+          "offset": 0,
+          "slot": "0",
+          "type": "t_uint128"
+        },
+        {
+          "astId": 950,
+          "contract": "contracts/core/ReputationManagerV4.sol:ReputationManagerV4",
+          "label": "start",
+          "offset": 16,
+          "slot": "0",
+          "type": "t_uint64"
+        },
+        {
+          "astId": 952,
+          "contract": "contracts/core/ReputationManagerV4.sol:ReputationManagerV4",
+          "label": "agentId",
+          "offset": 24,
+          "slot": "0",
+          "type": "t_uint64"
+        }
+      ]
+    },
+    "t_uint128": {
+      "encoding": "inplace",
+      "label": "uint128",
+      "numberOfBytes": "16"
+    },
+    "t_uint256": {
+      "encoding": "inplace",
+      "label": "uint256",
+      "numberOfBytes": "32"
+    },
+    "t_uint64": {
+      "encoding": "inplace",
+      "label": "uint64",
+      "numberOfBytes": "8"
+    }
+  }
+}

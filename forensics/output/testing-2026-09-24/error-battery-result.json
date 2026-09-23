@@ -1,0 +1,1359 @@
+[
+  {
+    "label": "missing bearer token (REST read)",
+    "http": 401,
+    "ms": 268,
+    "message": "missing or invalid bearer token",
+    "raw": {
+      "error": "missing or invalid bearer token"
+    }
+  },
+  {
+    "label": "wrong bearer token",
+    "http": 401,
+    "ms": 210,
+    "message": "missing or invalid bearer token",
+    "raw": {
+      "error": "missing or invalid bearer token"
+    }
+  },
+  {
+    "label": "wrong network name \"arc-testnet\"",
+    "http": 400,
+    "ms": 61,
+    "message": "Unknown network \"arc-testnet\". Valid: base, arc-staging, arc-mainnet.",
+    "raw": {
+      "error": "Unknown network \"arc-testnet\". Valid: base, arc-staging, arc-mainnet."
+    }
+  },
+  {
+    "label": "network \"arc\" (SDK name, not API name)",
+    "http": 400,
+    "ms": 60,
+    "message": "Unknown network \"arc\". Valid: base, arc-staging, arc-mainnet.",
+    "raw": {
+      "error": "Unknown network \"arc\". Valid: base, arc-staging, arc-mainnet."
+    }
+  },
+  {
+    "label": "network \"base\" (documented but NOT enabled here)",
+    "http": 400,
+    "ms": 59,
+    "message": "Network \"base\" is not enabled on this server (enabled: arc-mainnet, arc-staging).",
+    "raw": {
+      "error": "Network \"base\" is not enabled on this server (enabled: arc-mainnet, arc-staging)."
+    }
+  },
+  {
+    "label": "network \"mainnet\"",
+    "http": 400,
+    "ms": 59,
+    "message": "Unknown network \"mainnet\". Valid: base, arc-staging, arc-mainnet.",
+    "raw": {
+      "error": "Unknown network \"mainnet\". Valid: base, arc-staging, arc-mainnet."
+    }
+  },
+  {
+    "label": "malformed address 0xdeadbeef",
+    "http": 400,
+    "ms": 57,
+    "message": "address must be a 0x-prefixed 20-byte hex address",
+    "field": "address",
+    "raw": {
+      "error": "address must be a 0x-prefixed 20-byte hex address",
+      "field": "address"
+    }
+  },
+  {
+    "label": "address with bad EIP-55 checksum",
+    "http": 400,
+    "ms": 60,
+    "message": "address has an invalid EIP-55 checksum: 0x801E256f516A2Fd3e0E06a871419e707695b82df",
+    "field": "address",
+    "raw": {
+      "error": "address has an invalid EIP-55 checksum: 0x801E256f516A2Fd3e0E06a871419e707695b82df",
+      "field": "address"
+    }
+  },
+  {
+    "label": "all-lowercase address (valid, should work)",
+    "http": 200,
+    "ms": 607,
+    "message": "{\"network\":\"arc-staging\",\"address\":\"0x801e256F516a2fD3E0e06A871419E707695B82DF\",\"registered\":true,\"agentId\":66,\"owner\":\"0x801e256F516a2fD3E0e06A871419E707695B82DF\",\"agentWallet\":\"0x801e256F516a2fD3E0e06A871419E707695B82DF\",\"agentURI\":\"https://example.invalid/fresh-agent.json\",\"isActive\":true,\"regist",
+    "raw": {
+      "network": "arc-staging",
+      "address": "0x801e256F516a2fD3E0e06A871419E707695B82DF",
+      "registered": true,
+      "agentId": 66,
+      "owner": "0x801e256F516a2fD3E0e06A871419E707695B82DF",
+      "agentWallet": "0x801e256F516a2fD3E0e06A871419E707695B82DF",
+      "agentURI": "https://example.invalid/fresh-agent.json",
+      "isActive": true,
+      "registrationTime": 1790201757,
+      "reputation": {
+        "score": 0,
+        "tier": "New",
+        "max": 1000
+      },
+      "credit": {
+        "creditLimitUsdc": "100.0",
+        "outstandingPrincipalUsdc": "0.0",
+        "remainingCreditUsdc": "100.0",
+        "collateralPercent": 100,
+        "interestRateBps": 1500,
+        "interestRateAprPercent": 15,
+        "activeLoans": 0,
+        "maxActiveLoans": 10,
+        "canBorrow": true,
+        "model": {
+          "reputationVersion": "V4",
+          "tierIndex": 0,
+          "tierLimitUsdc": "1000.0",
+          "ladderLimitUsdc": "100.0",
+          "maxRepaidPrincipalUsdc": "0.0",
+          "maxTierLimitUsdc": "10000.0",
+          "lockedOut": false,
+          "lockedUntil": 0,
+          "lockedUntilIso": null,
+          "explanation": "Credit limit = min(tier limit 1000.0, ladder limit 100.0) USDC. The ladder is creditMultiple x the largest single on-time-repaid loan (0.0 USDC) + growthStep, floored at the bootstrap limit. No tier may ever exceed 10000.0 USDC (MAX_TIER_LIMIT, an immutable constant)."
+        }
+      },
+      "selfStake": {
+        "marketplaceVersion": "V6.2",
+        "amountUsdc": "70.0",
+        "locked": false,
+        "requiredForCurrentExposureUsdc": "0.0",
+        "shortfallUsdc": "0.0",
+        "note": "The agent holds no outstanding principal, so its first-loss position is currently withdrawable."
+      },
+      "pool": {
+        "agentId": 66,
+        "totalLiquidityUsdc": "70.0",
+        "availableLiquidityUsdc": "70.0",
+        "totalLoanedUsdc": "0.0"
+      },
+      "wallet": {
+        "usdcBalance": "429.996918",
+        "usdcAllowanceToMarketplace": "0.0"
+      },
+      "rpc": {
+        "blockNumber": 63663368,
+        "blockTimestamp": 1790202313,
+        "ageSeconds": 1,
+        "stale": false
+      }
+    }
+  },
+  {
+    "label": "ENS-style name instead of address",
+    "http": 400,
+    "ms": 71,
+    "message": "address must be a 0x-prefixed 20-byte hex address",
+    "field": "address",
+    "raw": {
+      "error": "address must be a 0x-prefixed 20-byte hex address",
+      "field": "address"
+    }
+  },
+  {
+    "label": "amount as NUMBER 25",
+    "http": 200,
+    "ms": 399,
+    "message": "{\"network\":\"arc-staging\",\"chainId\":5042002,\"realMoney\":false,\"action\":\"supply_liquidity\",\"from\":\"0x801e256F516a2fD3E0e06A871419E707695B82DF\",\"to\":\"0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18\",\"data\":\"0xf9dbb69f0000000000000000000000000000000000000000000000000000000000000042000000000000000000000000000",
+    "warnings": [
+      "can_top_up is a point-in-time check: a new loan can start in the pool between this read and your supply transaction, which would make the top-up revert \"Top-up would forfeit in-flight interest\". Treat a true answer as \"likely to succeed\", not a guarantee, and simulate immediately before sending.",
+      "Marketplace allowance (0.0 USDC) is below the 25.0 USDC this call pulls. Send `prerequisite` (exact approve) first or the main transaction will revert."
+    ],
+    "raw": {
+      "network": "arc-staging",
+      "chainId": 5042002,
+      "realMoney": false,
+      "action": "supply_liquidity",
+      "from": "0x801e256F516a2fD3E0e06A871419E707695B82DF",
+      "to": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+      "data": "0xf9dbb69f000000000000000000000000000000000000000000000000000000000000004200000000000000000000000000000000000000000000000000000000017d7840",
+      "value": "0",
+      "gasEstimate": "300000",
+      "gasEstimateSource": "default",
+      "description": "Supply USDC to an agent pool as a lender and earn interest from that agent's loan repayments.",
+      "humanReadableSummary": "Supply 25.0 USDC from 0x801e256F516a2fD3E0e06A871419E707695B82DF into agent #66's pool on arc-staging. Requires a prior exact USDC approval of the same amount.",
+      "warnings": [
+        "can_top_up is a point-in-time check: a new loan can start in the pool between this read and your supply transaction, which would make the top-up revert \"Top-up would forfeit in-flight interest\". Treat a true answer as \"likely to succeed\", not a guarantee, and simulate immediately before sending.",
+        "Marketplace allowance (0.0 USDC) is below the 25.0 USDC this call pulls. Send `prerequisite` (exact approve) first or the main transaction will revert."
+      ],
+      "call": {
+        "contract": "marketplace",
+        "contractAddress": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+        "function": "supplyLiquidity",
+        "args": {
+          "agentId": "66",
+          "amount": "25000000",
+          "amountUsdc": "25.0"
+        }
+      },
+      "prerequisite": {
+        "network": "arc-staging",
+        "chainId": 5042002,
+        "realMoney": false,
+        "action": "approve_usdc",
+        "from": "0x801e256F516a2fD3E0e06A871419E707695B82DF",
+        "to": "0x9F3C10985998D1354D1465c5135Aa924775bd11D",
+        "data": "0x095ea7b30000000000000000000000007e4d144abeb3c695ec2ddf00fc710aabc04bdd1800000000000000000000000000000000000000000000000000000000017d7840",
+        "value": "0",
+        "gasEstimate": "80000",
+        "gasEstimateSource": "default",
+        "description": "Approve the Specular marketplace to pull EXACTLY this much USDC (never unlimited). Set amount 0 to revoke.",
+        "humanReadableSummary": "Allow the Specular marketplace (0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18) to spend exactly 25.0 USDC from 0x801e256F516a2fD3E0e06A871419E707695B82DF on arc-staging.",
+        "warnings": [
+          "Approving exactly 25.0 USDC for: supplyLiquidity(66, 25.0). Current allowance is 0.0 USDC."
+        ],
+        "call": {
+          "contract": "usdc",
+          "contractAddress": "0x9F3C10985998D1354D1465c5135Aa924775bd11D",
+          "function": "approve",
+          "args": {
+            "spender": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+            "amount": "25000000",
+            "amountUsdc": "25.0"
+          }
+        },
+        "prerequisite": null,
+        "simulation": null,
+        "signingInstructions": "Sign {chainId,to,data,value:0} with YOUR OWN wallet (set nonce/gas from your provider; gasEstimate is a hint), then broadcast it yourself or pass the raw signed hex to broadcast_signed_transaction. If `prerequisite` is present, send and confirm it first. IF THE MAIN TRANSACTION THEN FAILS OR YOU ABANDON IT, send prepare_approve_usdc with amount \"0\" and broadcast that too: the prerequisite approval is still standing until you do, and the exact-approval model's resting state is zero. This server never sees your private key."
+      },
+      "simulation": null,
+      "signingInstructions": "Sign {chainId,to,data,value:0} with YOUR OWN wallet (set nonce/gas from your provider; gasEstimate is a hint), then broadcast it yourself or pass the raw signed hex to broadcast_signed_transaction. If `prerequisite` is present, send and confirm it first. IF THE MAIN TRANSACTION THEN FAILS OR YOU ABANDON IT, send prepare_approve_usdc with amount \"0\" and broadcast that too: the prerequisite approval is still standing until you do, and the exact-approval model's resting state is zero. This server never sees your private key."
+    }
+  },
+  {
+    "label": "amount as STRING \"25\"",
+    "http": 200,
+    "ms": 117,
+    "message": "{\"network\":\"arc-staging\",\"chainId\":5042002,\"realMoney\":false,\"action\":\"supply_liquidity\",\"from\":\"0x801e256F516a2fD3E0e06A871419E707695B82DF\",\"to\":\"0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18\",\"data\":\"0xf9dbb69f0000000000000000000000000000000000000000000000000000000000000042000000000000000000000000000",
+    "warnings": [
+      "can_top_up is a point-in-time check: a new loan can start in the pool between this read and your supply transaction, which would make the top-up revert \"Top-up would forfeit in-flight interest\". Treat a true answer as \"likely to succeed\", not a guarantee, and simulate immediately before sending.",
+      "Marketplace allowance (0.0 USDC) is below the 25.0 USDC this call pulls. Send `prerequisite` (exact approve) first or the main transaction will revert."
+    ],
+    "raw": {
+      "network": "arc-staging",
+      "chainId": 5042002,
+      "realMoney": false,
+      "action": "supply_liquidity",
+      "from": "0x801e256F516a2fD3E0e06A871419E707695B82DF",
+      "to": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+      "data": "0xf9dbb69f000000000000000000000000000000000000000000000000000000000000004200000000000000000000000000000000000000000000000000000000017d7840",
+      "value": "0",
+      "gasEstimate": "300000",
+      "gasEstimateSource": "default",
+      "description": "Supply USDC to an agent pool as a lender and earn interest from that agent's loan repayments.",
+      "humanReadableSummary": "Supply 25.0 USDC from 0x801e256F516a2fD3E0e06A871419E707695B82DF into agent #66's pool on arc-staging. Requires a prior exact USDC approval of the same amount.",
+      "warnings": [
+        "can_top_up is a point-in-time check: a new loan can start in the pool between this read and your supply transaction, which would make the top-up revert \"Top-up would forfeit in-flight interest\". Treat a true answer as \"likely to succeed\", not a guarantee, and simulate immediately before sending.",
+        "Marketplace allowance (0.0 USDC) is below the 25.0 USDC this call pulls. Send `prerequisite` (exact approve) first or the main transaction will revert."
+      ],
+      "call": {
+        "contract": "marketplace",
+        "contractAddress": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+        "function": "supplyLiquidity",
+        "args": {
+          "agentId": "66",
+          "amount": "25000000",
+          "amountUsdc": "25.0"
+        }
+      },
+      "prerequisite": {
+        "network": "arc-staging",
+        "chainId": 5042002,
+        "realMoney": false,
+        "action": "approve_usdc",
+        "from": "0x801e256F516a2fD3E0e06A871419E707695B82DF",
+        "to": "0x9F3C10985998D1354D1465c5135Aa924775bd11D",
+        "data": "0x095ea7b30000000000000000000000007e4d144abeb3c695ec2ddf00fc710aabc04bdd1800000000000000000000000000000000000000000000000000000000017d7840",
+        "value": "0",
+        "gasEstimate": "80000",
+        "gasEstimateSource": "default",
+        "description": "Approve the Specular marketplace to pull EXACTLY this much USDC (never unlimited). Set amount 0 to revoke.",
+        "humanReadableSummary": "Allow the Specular marketplace (0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18) to spend exactly 25.0 USDC from 0x801e256F516a2fD3E0e06A871419E707695B82DF on arc-staging.",
+        "warnings": [
+          "Approving exactly 25.0 USDC for: supplyLiquidity(66, 25.0). Current allowance is 0.0 USDC."
+        ],
+        "call": {
+          "contract": "usdc",
+          "contractAddress": "0x9F3C10985998D1354D1465c5135Aa924775bd11D",
+          "function": "approve",
+          "args": {
+            "spender": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+            "amount": "25000000",
+            "amountUsdc": "25.0"
+          }
+        },
+        "prerequisite": null,
+        "simulation": null,
+        "signingInstructions": "Sign {chainId,to,data,value:0} with YOUR OWN wallet (set nonce/gas from your provider; gasEstimate is a hint), then broadcast it yourself or pass the raw signed hex to broadcast_signed_transaction. If `prerequisite` is present, send and confirm it first. IF THE MAIN TRANSACTION THEN FAILS OR YOU ABANDON IT, send prepare_approve_usdc with amount \"0\" and broadcast that too: the prerequisite approval is still standing until you do, and the exact-approval model's resting state is zero. This server never sees your private key."
+      },
+      "simulation": null,
+      "signingInstructions": "Sign {chainId,to,data,value:0} with YOUR OWN wallet (set nonce/gas from your provider; gasEstimate is a hint), then broadcast it yourself or pass the raw signed hex to broadcast_signed_transaction. If `prerequisite` is present, send and confirm it first. IF THE MAIN TRANSACTION THEN FAILS OR YOU ABANDON IT, send prepare_approve_usdc with amount \"0\" and broadcast that too: the prerequisite approval is still standing until you do, and the exact-approval model's resting state is zero. This server never sees your private key."
+    }
+  },
+  {
+    "label": "amount as DECIMAL 12.5",
+    "http": 200,
+    "ms": 70,
+    "message": "{\"network\":\"arc-staging\",\"chainId\":5042002,\"realMoney\":false,\"action\":\"supply_liquidity\",\"from\":\"0x801e256F516a2fD3E0e06A871419E707695B82DF\",\"to\":\"0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18\",\"data\":\"0xf9dbb69f0000000000000000000000000000000000000000000000000000000000000042000000000000000000000000000",
+    "warnings": [
+      "can_top_up is a point-in-time check: a new loan can start in the pool between this read and your supply transaction, which would make the top-up revert \"Top-up would forfeit in-flight interest\". Treat a true answer as \"likely to succeed\", not a guarantee, and simulate immediately before sending.",
+      "Marketplace allowance (0.0 USDC) is below the 12.5 USDC this call pulls. Send `prerequisite` (exact approve) first or the main transaction will revert."
+    ],
+    "raw": {
+      "network": "arc-staging",
+      "chainId": 5042002,
+      "realMoney": false,
+      "action": "supply_liquidity",
+      "from": "0x801e256F516a2fD3E0e06A871419E707695B82DF",
+      "to": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+      "data": "0xf9dbb69f00000000000000000000000000000000000000000000000000000000000000420000000000000000000000000000000000000000000000000000000000bebc20",
+      "value": "0",
+      "gasEstimate": "300000",
+      "gasEstimateSource": "default",
+      "description": "Supply USDC to an agent pool as a lender and earn interest from that agent's loan repayments.",
+      "humanReadableSummary": "Supply 12.5 USDC from 0x801e256F516a2fD3E0e06A871419E707695B82DF into agent #66's pool on arc-staging. Requires a prior exact USDC approval of the same amount.",
+      "warnings": [
+        "can_top_up is a point-in-time check: a new loan can start in the pool between this read and your supply transaction, which would make the top-up revert \"Top-up would forfeit in-flight interest\". Treat a true answer as \"likely to succeed\", not a guarantee, and simulate immediately before sending.",
+        "Marketplace allowance (0.0 USDC) is below the 12.5 USDC this call pulls. Send `prerequisite` (exact approve) first or the main transaction will revert."
+      ],
+      "call": {
+        "contract": "marketplace",
+        "contractAddress": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+        "function": "supplyLiquidity",
+        "args": {
+          "agentId": "66",
+          "amount": "12500000",
+          "amountUsdc": "12.5"
+        }
+      },
+      "prerequisite": {
+        "network": "arc-staging",
+        "chainId": 5042002,
+        "realMoney": false,
+        "action": "approve_usdc",
+        "from": "0x801e256F516a2fD3E0e06A871419E707695B82DF",
+        "to": "0x9F3C10985998D1354D1465c5135Aa924775bd11D",
+        "data": "0x095ea7b30000000000000000000000007e4d144abeb3c695ec2ddf00fc710aabc04bdd180000000000000000000000000000000000000000000000000000000000bebc20",
+        "value": "0",
+        "gasEstimate": "80000",
+        "gasEstimateSource": "default",
+        "description": "Approve the Specular marketplace to pull EXACTLY this much USDC (never unlimited). Set amount 0 to revoke.",
+        "humanReadableSummary": "Allow the Specular marketplace (0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18) to spend exactly 12.5 USDC from 0x801e256F516a2fD3E0e06A871419E707695B82DF on arc-staging.",
+        "warnings": [
+          "Approving exactly 12.5 USDC for: supplyLiquidity(66, 12.5). Current allowance is 0.0 USDC."
+        ],
+        "call": {
+          "contract": "usdc",
+          "contractAddress": "0x9F3C10985998D1354D1465c5135Aa924775bd11D",
+          "function": "approve",
+          "args": {
+            "spender": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+            "amount": "12500000",
+            "amountUsdc": "12.5"
+          }
+        },
+        "prerequisite": null,
+        "simulation": null,
+        "signingInstructions": "Sign {chainId,to,data,value:0} with YOUR OWN wallet (set nonce/gas from your provider; gasEstimate is a hint), then broadcast it yourself or pass the raw signed hex to broadcast_signed_transaction. If `prerequisite` is present, send and confirm it first. IF THE MAIN TRANSACTION THEN FAILS OR YOU ABANDON IT, send prepare_approve_usdc with amount \"0\" and broadcast that too: the prerequisite approval is still standing until you do, and the exact-approval model's resting state is zero. This server never sees your private key."
+      },
+      "simulation": null,
+      "signingInstructions": "Sign {chainId,to,data,value:0} with YOUR OWN wallet (set nonce/gas from your provider; gasEstimate is a hint), then broadcast it yourself or pass the raw signed hex to broadcast_signed_transaction. If `prerequisite` is present, send and confirm it first. IF THE MAIN TRANSACTION THEN FAILS OR YOU ABANDON IT, send prepare_approve_usdc with amount \"0\" and broadcast that too: the prerequisite approval is still standing until you do, and the exact-approval model's resting state is zero. This server never sees your private key."
+    }
+  },
+  {
+    "label": "amount 7 decimals 12.1234567",
+    "http": 400,
+    "ms": 62,
+    "message": "amount must be a positive decimal with at most 6 decimal places (got \"12.1234567\")",
+    "field": "amount",
+    "raw": {
+      "error": "amount must be a positive decimal with at most 6 decimal places (got \"12.1234567\")",
+      "field": "amount"
+    }
+  },
+  {
+    "label": "amount as BASE UNITS 25000000 (common mistake)",
+    "http": 400,
+    "ms": 60,
+    "message": "amount=25000000 USDC exceeds this server's per-call cap of 100000 USDC (raise SPECULAR_MAX_AMOUNT_USDC to change)",
+    "field": "amount",
+    "raw": {
+      "error": "amount=25000000 USDC exceeds this server's per-call cap of 100000 USDC (raise SPECULAR_MAX_AMOUNT_USDC to change)",
+      "field": "amount"
+    }
+  },
+  {
+    "label": "amount 0",
+    "http": 400,
+    "ms": 58,
+    "message": "amount must be > 0",
+    "field": "amount",
+    "raw": {
+      "error": "amount must be > 0",
+      "field": "amount"
+    }
+  },
+  {
+    "label": "amount -5",
+    "http": 400,
+    "ms": 60,
+    "message": "amount must be a positive decimal with at most 6 decimal places (got \"-5\")",
+    "field": "amount",
+    "raw": {
+      "error": "amount must be a positive decimal with at most 6 decimal places (got \"-5\")",
+      "field": "amount"
+    }
+  },
+  {
+    "label": "amount \"twenty-five\"",
+    "http": 400,
+    "ms": 57,
+    "message": "amount must be a positive decimal with at most 6 decimal places (got \"twenty-five\")",
+    "field": "amount",
+    "raw": {
+      "error": "amount must be a positive decimal with at most 6 decimal places (got \"twenty-five\")",
+      "field": "amount"
+    }
+  },
+  {
+    "label": "amount missing entirely",
+    "http": 400,
+    "ms": 61,
+    "message": "amount must be a number or decimal string in USDC (e.g. 12.5)",
+    "field": "amount",
+    "raw": {
+      "error": "amount must be a number or decimal string in USDC (e.g. 12.5)",
+      "field": "amount"
+    }
+  },
+  {
+    "label": "supply 5 USDC below 10 minimum (non-creator lender)",
+    "http": 200,
+    "ms": 289,
+    "message": "Amount is below the pool's minimum supply (see get_protocol_status.parameters.minSupplyUsdc). On a V6.2 deployment the pool CREATOR supplying into its own pool is exempt from this minimum, because that position is locked first-loss capital rather than a lender-slot squat. (A prerequisite approve is included in this response; simulate again after it is mined.)",
+    "simOk": false,
+    "warnings": [
+      "Amount is below the minimum supply of 10.0 USDC.",
+      "Marketplace allowance (0.0 USDC) is below the 5.0 USDC this call pulls. Send `prerequisite` (exact approve) first or the main transaction will revert."
+    ],
+    "raw": {
+      "network": "arc-staging",
+      "chainId": 5042002,
+      "realMoney": false,
+      "action": "supply_liquidity",
+      "from": "0xff7bb13d098B27871E94FCf83Ac826ae8Cd58d09",
+      "to": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+      "data": "0xf9dbb69f000000000000000000000000000000000000000000000000000000000000004200000000000000000000000000000000000000000000000000000000004c4b40",
+      "value": "0",
+      "gasEstimate": "300000",
+      "gasEstimateSource": "default",
+      "description": "Supply USDC to an agent pool as a lender and earn interest from that agent's loan repayments.",
+      "humanReadableSummary": "Supply 5.0 USDC from 0xff7bb13d098B27871E94FCf83Ac826ae8Cd58d09 into agent #66's pool on arc-staging. Requires a prior exact USDC approval of the same amount.",
+      "warnings": [
+        "Amount is below the minimum supply of 10.0 USDC.",
+        "Marketplace allowance (0.0 USDC) is below the 5.0 USDC this call pulls. Send `prerequisite` (exact approve) first or the main transaction will revert."
+      ],
+      "call": {
+        "contract": "marketplace",
+        "contractAddress": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+        "function": "supplyLiquidity",
+        "args": {
+          "agentId": "66",
+          "amount": "5000000",
+          "amountUsdc": "5.0"
+        }
+      },
+      "prerequisite": {
+        "network": "arc-staging",
+        "chainId": 5042002,
+        "realMoney": false,
+        "action": "approve_usdc",
+        "from": "0xff7bb13d098B27871E94FCf83Ac826ae8Cd58d09",
+        "to": "0x9F3C10985998D1354D1465c5135Aa924775bd11D",
+        "data": "0x095ea7b30000000000000000000000007e4d144abeb3c695ec2ddf00fc710aabc04bdd1800000000000000000000000000000000000000000000000000000000004c4b40",
+        "value": "0",
+        "gasEstimate": "80000",
+        "gasEstimateSource": "default",
+        "description": "Approve the Specular marketplace to pull EXACTLY this much USDC (never unlimited). Set amount 0 to revoke.",
+        "humanReadableSummary": "Allow the Specular marketplace (0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18) to spend exactly 5.0 USDC from 0xff7bb13d098B27871E94FCf83Ac826ae8Cd58d09 on arc-staging.",
+        "warnings": [
+          "Approving exactly 5.0 USDC for: supplyLiquidity(66, 5.0). Current allowance is 0.0 USDC."
+        ],
+        "call": {
+          "contract": "usdc",
+          "contractAddress": "0x9F3C10985998D1354D1465c5135Aa924775bd11D",
+          "function": "approve",
+          "args": {
+            "spender": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+            "amount": "5000000",
+            "amountUsdc": "5.0"
+          }
+        },
+        "prerequisite": null,
+        "simulation": null,
+        "signingInstructions": "Sign {chainId,to,data,value:0} with YOUR OWN wallet (set nonce/gas from your provider; gasEstimate is a hint), then broadcast it yourself or pass the raw signed hex to broadcast_signed_transaction. If `prerequisite` is present, send and confirm it first. IF THE MAIN TRANSACTION THEN FAILS OR YOU ABANDON IT, send prepare_approve_usdc with amount \"0\" and broadcast that too: the prerequisite approval is still standing until you do, and the exact-approval model's resting state is zero. This server never sees your private key."
+      },
+      "simulation": {
+        "ok": false,
+        "gasEstimate": null,
+        "revertReason": "Below minimum supply",
+        "plainLanguage": "Amount is below the pool's minimum supply (see get_protocol_status.parameters.minSupplyUsdc). On a V6.2 deployment the pool CREATOR supplying into its own pool is exempt from this minimum, because that position is locked first-loss capital rather than a lender-slot squat. (A prerequisite approve is included in this response; simulate again after it is mined.)",
+        "from": "0xff7bb13d098B27871E94FCf83Ac826ae8Cd58d09"
+      },
+      "signingInstructions": "Sign {chainId,to,data,value:0} with YOUR OWN wallet (set nonce/gas from your provider; gasEstimate is a hint), then broadcast it yourself or pass the raw signed hex to broadcast_signed_transaction. If `prerequisite` is present, send and confirm it first. IF THE MAIN TRANSACTION THEN FAILS OR YOU ABANDON IT, send prepare_approve_usdc with amount \"0\" and broadcast that too: the prerequisite approval is still standing until you do, and the exact-approval model's resting state is zero. This server never sees your private key."
+    }
+  },
+  {
+    "label": "borrow 500 USDC over 100 credit limit",
+    "http": 200,
+    "ms": 228,
+    "message": "The pool does not hold enough available USDC for this amount. Lower the amount, or supply/attract liquidity first. (A prerequisite approve is included in this response; simulate again after it is mined.)",
+    "simOk": false,
+    "warnings": [
+      "Pool #66 has only 70.0 USDC available; the request for 500.0 USDC will revert.",
+      "Outstanding 0.0 + 500.0 exceeds credit limit 100.0 USDC.",
+      "Collateral of 500.0 USDC exceeds wallet balance 429.996918 USDC.",
+      "Marketplace allowance (0.0 USDC) is below the 500.0 USDC this call pulls. Send `prerequisite` (exact approve) first or the main transaction will revert."
+    ],
+    "raw": {
+      "network": "arc-staging",
+      "chainId": 5042002,
+      "realMoney": false,
+      "action": "request_loan",
+      "from": "0x801e256F516a2fD3E0e06A871419E707695B82DF",
+      "to": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+      "data": "0xaa452fa6000000000000000000000000000000000000000000000000000000001dcd6500000000000000000000000000000000000000000000000000000000000000001e",
+      "value": "0",
+      "gasEstimate": "700000",
+      "gasEstimateSource": "default",
+      "description": "Request a USDC loan against your reputation. Auto-disbursed from your own agent pool; low-reputation tiers must post collateral (pulled via a prior exact approval).",
+      "humanReadableSummary": "Borrow 500.0 USDC for 30 days as 0x801e256F516a2fD3E0e06A871419E707695B82DF on arc-staging. Interest is fixed for the full term at your reputation tier's APR. At your current tier: 15% APR, 100% collateral (500.0 USDC), projected repayment 506.164383 USDC.",
+      "warnings": [
+        "Pool #66 has only 70.0 USDC available; the request for 500.0 USDC will revert.",
+        "Outstanding 0.0 + 500.0 exceeds credit limit 100.0 USDC.",
+        "Collateral of 500.0 USDC exceeds wallet balance 429.996918 USDC.",
+        "Marketplace allowance (0.0 USDC) is below the 500.0 USDC this call pulls. Send `prerequisite` (exact approve) first or the main transaction will revert."
+      ],
+      "call": {
+        "contract": "marketplace",
+        "contractAddress": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+        "function": "requestLoan",
+        "args": {
+          "amount": "500000000",
+          "amountUsdc": "500.0",
+          "durationDays": "30",
+          "collateralRequired": "500000000",
+          "collateralRequiredUsdc": "500.0",
+          "collateralPercent": "100",
+          "interestRateBps": "1500",
+          "projectedInterestUsdc": "6.164383",
+          "projectedTotalRepaymentUsdc": "506.164383",
+          "lockedOut": "false"
+        }
+      },
+      "prerequisite": {
+        "network": "arc-staging",
+        "chainId": 5042002,
+        "realMoney": false,
+        "action": "approve_usdc",
+        "from": "0x801e256F516a2fD3E0e06A871419E707695B82DF",
+        "to": "0x9F3C10985998D1354D1465c5135Aa924775bd11D",
+        "data": "0x095ea7b30000000000000000000000007e4d144abeb3c695ec2ddf00fc710aabc04bdd18000000000000000000000000000000000000000000000000000000001dcd6500",
+        "value": "0",
+        "gasEstimate": "80000",
+        "gasEstimateSource": "default",
+        "description": "Approve the Specular marketplace to pull EXACTLY this much USDC (never unlimited). Set amount 0 to revoke.",
+        "humanReadableSummary": "Allow the Specular marketplace (0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18) to spend exactly 500.0 USDC from 0x801e256F516a2fD3E0e06A871419E707695B82DF on arc-staging.",
+        "warnings": [
+          "Approving exactly 500.0 USDC for: collateral for requestLoan(500.0, 30d). Current allowance is 0.0 USDC."
+        ],
+        "call": {
+          "contract": "usdc",
+          "contractAddress": "0x9F3C10985998D1354D1465c5135Aa924775bd11D",
+          "function": "approve",
+          "args": {
+            "spender": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+            "amount": "500000000",
+            "amountUsdc": "500.0"
+          }
+        },
+        "prerequisite": null,
+        "simulation": null,
+        "signingInstructions": "Sign {chainId,to,data,value:0} with YOUR OWN wallet (set nonce/gas from your provider; gasEstimate is a hint), then broadcast it yourself or pass the raw signed hex to broadcast_signed_transaction. If `prerequisite` is present, send and confirm it first. IF THE MAIN TRANSACTION THEN FAILS OR YOU ABANDON IT, send prepare_approve_usdc with amount \"0\" and broadcast that too: the prerequisite approval is still standing until you do, and the exact-approval model's resting state is zero. This server never sees your private key."
+      },
+      "simulation": {
+        "ok": false,
+        "gasEstimate": null,
+        "revertReason": "Insufficient pool liquidity",
+        "plainLanguage": "The pool does not hold enough available USDC for this amount. Lower the amount, or supply/attract liquidity first. (A prerequisite approve is included in this response; simulate again after it is mined.)",
+        "from": "0x801e256F516a2fD3E0e06A871419E707695B82DF"
+      },
+      "signingInstructions": "Sign {chainId,to,data,value:0} with YOUR OWN wallet (set nonce/gas from your provider; gasEstimate is a hint), then broadcast it yourself or pass the raw signed hex to broadcast_signed_transaction. If `prerequisite` is present, send and confirm it first. IF THE MAIN TRANSACTION THEN FAILS OR YOU ABANDON IT, send prepare_approve_usdc with amount \"0\" and broadcast that too: the prerequisite approval is still standing until you do, and the exact-approval model's resting state is zero. This server never sees your private key."
+    }
+  },
+  {
+    "label": "borrow 99999 over transport cap",
+    "http": 400,
+    "ms": 62,
+    "message": "amount=99999 USDC exceeds this server's per-call cap of 50000 USDC (raise SPECULAR_MAX_AMOUNT_USDC to change)",
+    "field": "amount",
+    "raw": {
+      "error": "amount=99999 USDC exceeds this server's per-call cap of 50000 USDC (raise SPECULAR_MAX_AMOUNT_USDC to change)",
+      "field": "amount"
+    }
+  },
+  {
+    "label": "durationDays 3 (below min 7)",
+    "http": 400,
+    "ms": 65,
+    "message": "durationDays=3 is below min 7",
+    "field": "durationDays",
+    "raw": {
+      "error": "durationDays=3 is below min 7",
+      "field": "durationDays"
+    }
+  },
+  {
+    "label": "durationDays 9999",
+    "http": 400,
+    "ms": 63,
+    "message": "durationDays=9999 exceeds max 365",
+    "field": "durationDays",
+    "raw": {
+      "error": "durationDays=9999 exceeds max 365",
+      "field": "durationDays"
+    }
+  },
+  {
+    "label": "durationDays 30.5",
+    "http": 400,
+    "ms": 62,
+    "message": "durationDays must be an integer number of days",
+    "field": "durationDays",
+    "raw": {
+      "error": "durationDays must be an integer number of days",
+      "field": "durationDays"
+    }
+  },
+  {
+    "label": "borrow from an UNREGISTERED wallet",
+    "http": 200,
+    "ms": 188,
+    "message": "This wallet is not registered as an agent on this network. Send register_agent first, then create_pool.",
+    "simOk": false,
+    "warnings": [
+      "This wallet is not registered as an agent; register_agent + create_pool are required first."
+    ],
+    "raw": {
+      "network": "arc-staging",
+      "chainId": 5042002,
+      "realMoney": false,
+      "action": "request_loan",
+      "from": "0x58F475030c15981477b1AcA8ff0b212238c1da7D",
+      "to": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+      "data": "0xaa452fa60000000000000000000000000000000000000000000000000000000000989680000000000000000000000000000000000000000000000000000000000000001e",
+      "value": "0",
+      "gasEstimate": "700000",
+      "gasEstimateSource": "default",
+      "description": "Request a USDC loan against your reputation. Auto-disbursed from your own agent pool; low-reputation tiers must post collateral (pulled via a prior exact approval).",
+      "humanReadableSummary": "Borrow 10.0 USDC for 30 days as 0x58F475030c15981477b1AcA8ff0b212238c1da7D on arc-staging. Interest is fixed for the full term at your reputation tier's APR.",
+      "warnings": [
+        "This wallet is not registered as an agent; register_agent + create_pool are required first."
+      ],
+      "call": {
+        "contract": "marketplace",
+        "contractAddress": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+        "function": "requestLoan",
+        "args": {
+          "amount": "10000000",
+          "amountUsdc": "10.0",
+          "durationDays": "30"
+        }
+      },
+      "prerequisite": null,
+      "simulation": {
+        "ok": false,
+        "gasEstimate": null,
+        "revertReason": "Not a registered agent",
+        "plainLanguage": "This wallet is not registered as an agent on this network. Send register_agent first, then create_pool.",
+        "from": "0x58F475030c15981477b1AcA8ff0b212238c1da7D"
+      },
+      "signingInstructions": "Sign {chainId,to,data,value:0} with YOUR OWN wallet (set nonce/gas from your provider; gasEstimate is a hint), then broadcast it yourself or pass the raw signed hex to broadcast_signed_transaction. If `prerequisite` is present, send and confirm it first. IF THE MAIN TRANSACTION THEN FAILS OR YOU ABANDON IT, send prepare_approve_usdc with amount \"0\" and broadcast that too: the prerequisite approval is still standing until you do, and the exact-approval model's resting state is zero. This server never sees your private key."
+    }
+  },
+  {
+    "label": "borrow as registered agent with NO pool",
+    "http": 200,
+    "ms": 323,
+    "message": "This agent has no liquidity pool yet. Send create_pool first. (A prerequisite approve is included in this response; simulate again after it is mined.)",
+    "simOk": false,
+    "warnings": [
+      "Agent #67 has no pool; send create_pool first.",
+      "Marketplace allowance (0.0 USDC) is below the 10.0 USDC this call pulls. Send `prerequisite` (exact approve) first or the main transaction will revert."
+    ],
+    "raw": {
+      "network": "arc-staging",
+      "chainId": 5042002,
+      "realMoney": false,
+      "action": "request_loan",
+      "from": "0xff7bb13d098B27871E94FCf83Ac826ae8Cd58d09",
+      "to": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+      "data": "0xaa452fa60000000000000000000000000000000000000000000000000000000000989680000000000000000000000000000000000000000000000000000000000000001e",
+      "value": "0",
+      "gasEstimate": "700000",
+      "gasEstimateSource": "default",
+      "description": "Request a USDC loan against your reputation. Auto-disbursed from your own agent pool; low-reputation tiers must post collateral (pulled via a prior exact approval).",
+      "humanReadableSummary": "Borrow 10.0 USDC for 30 days as 0xff7bb13d098B27871E94FCf83Ac826ae8Cd58d09 on arc-staging. Interest is fixed for the full term at your reputation tier's APR. At your current tier: 15% APR, 100% collateral (10.0 USDC), projected repayment 10.123287 USDC.",
+      "warnings": [
+        "Agent #67 has no pool; send create_pool first.",
+        "Marketplace allowance (0.0 USDC) is below the 10.0 USDC this call pulls. Send `prerequisite` (exact approve) first or the main transaction will revert."
+      ],
+      "call": {
+        "contract": "marketplace",
+        "contractAddress": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+        "function": "requestLoan",
+        "args": {
+          "amount": "10000000",
+          "amountUsdc": "10.0",
+          "durationDays": "30",
+          "collateralRequired": "10000000",
+          "collateralRequiredUsdc": "10.0",
+          "collateralPercent": "100",
+          "interestRateBps": "1500",
+          "projectedInterestUsdc": "0.123287",
+          "projectedTotalRepaymentUsdc": "10.123287",
+          "lockedOut": "false"
+        }
+      },
+      "prerequisite": {
+        "network": "arc-staging",
+        "chainId": 5042002,
+        "realMoney": false,
+        "action": "approve_usdc",
+        "from": "0xff7bb13d098B27871E94FCf83Ac826ae8Cd58d09",
+        "to": "0x9F3C10985998D1354D1465c5135Aa924775bd11D",
+        "data": "0x095ea7b30000000000000000000000007e4d144abeb3c695ec2ddf00fc710aabc04bdd180000000000000000000000000000000000000000000000000000000000989680",
+        "value": "0",
+        "gasEstimate": "80000",
+        "gasEstimateSource": "default",
+        "description": "Approve the Specular marketplace to pull EXACTLY this much USDC (never unlimited). Set amount 0 to revoke.",
+        "humanReadableSummary": "Allow the Specular marketplace (0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18) to spend exactly 10.0 USDC from 0xff7bb13d098B27871E94FCf83Ac826ae8Cd58d09 on arc-staging.",
+        "warnings": [
+          "Approving exactly 10.0 USDC for: collateral for requestLoan(10.0, 30d). Current allowance is 0.0 USDC."
+        ],
+        "call": {
+          "contract": "usdc",
+          "contractAddress": "0x9F3C10985998D1354D1465c5135Aa924775bd11D",
+          "function": "approve",
+          "args": {
+            "spender": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+            "amount": "10000000",
+            "amountUsdc": "10.0"
+          }
+        },
+        "prerequisite": null,
+        "simulation": null,
+        "signingInstructions": "Sign {chainId,to,data,value:0} with YOUR OWN wallet (set nonce/gas from your provider; gasEstimate is a hint), then broadcast it yourself or pass the raw signed hex to broadcast_signed_transaction. If `prerequisite` is present, send and confirm it first. IF THE MAIN TRANSACTION THEN FAILS OR YOU ABANDON IT, send prepare_approve_usdc with amount \"0\" and broadcast that too: the prerequisite approval is still standing until you do, and the exact-approval model's resting state is zero. This server never sees your private key."
+      },
+      "simulation": {
+        "ok": false,
+        "gasEstimate": null,
+        "revertReason": "No pool for agent",
+        "plainLanguage": "This agent has no liquidity pool yet. Send create_pool first. (A prerequisite approve is included in this response; simulate again after it is mined.)",
+        "from": "0xff7bb13d098B27871E94FCf83Ac826ae8Cd58d09"
+      },
+      "signingInstructions": "Sign {chainId,to,data,value:0} with YOUR OWN wallet (set nonce/gas from your provider; gasEstimate is a hint), then broadcast it yourself or pass the raw signed hex to broadcast_signed_transaction. If `prerequisite` is present, send and confirm it first. IF THE MAIN TRANSACTION THEN FAILS OR YOU ABANDON IT, send prepare_approve_usdc with amount \"0\" and broadcast that too: the prerequisite approval is still standing until you do, and the exact-approval model's resting state is zero. This server never sees your private key."
+    }
+  },
+  {
+    "label": "loanId 999999",
+    "http": 400,
+    "ms": 115,
+    "message": "Loan 999999 does not exist on arc-staging (highest loanId is 117)",
+    "field": "loanId",
+    "raw": {
+      "error": "Loan 999999 does not exist on arc-staging (highest loanId is 117)",
+      "field": "loanId"
+    }
+  },
+  {
+    "label": "loanId \"abc\"",
+    "http": 400,
+    "ms": 65,
+    "message": "loanId must be an integer >= 1",
+    "field": "loanId",
+    "raw": {
+      "error": "loanId must be an integer >= 1",
+      "field": "loanId"
+    }
+  },
+  {
+    "label": "pool for agentId 999999",
+    "http": 400,
+    "ms": 118,
+    "message": "No active pool for agentId 999999 on arc-staging",
+    "field": "agentId",
+    "raw": {
+      "error": "No active pool for agentId 999999 on arc-staging",
+      "field": "agentId"
+    }
+  },
+  {
+    "label": "tx hash that does not exist",
+    "http": 200,
+    "ms": 120,
+    "message": "{\"network\":\"arc-staging\",\"hash\":\"0x1111111111111111111111111111111111111111111111111111111111111111\",\"found\":false,\"status\":\"unknown\",\"hint\":\"Not seen by this RPC yet (or never broadcast).\",\"rpc\":{\"blockNumber\":63663373,\"blockTimestamp\":1790202316,\"ageSeconds\":1,\"stale\":false}}",
+    "raw": {
+      "network": "arc-staging",
+      "hash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+      "found": false,
+      "status": "unknown",
+      "hint": "Not seen by this RPC yet (or never broadcast).",
+      "rpc": {
+        "blockNumber": 63663373,
+        "blockTimestamp": 1790202316,
+        "ageSeconds": 1,
+        "stale": false
+      }
+    }
+  },
+  {
+    "label": "prepare borrow 20 (setup)",
+    "http": 200,
+    "ms": 116,
+    "message": "{\"network\":\"arc-staging\",\"chainId\":5042002,\"realMoney\":false,\"action\":\"request_loan\",\"from\":\"0x801e256F516a2fD3E0e06A871419E707695B82DF\",\"to\":\"0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18\",\"data\":\"0xaa452fa60000000000000000000000000000000000000000000000000000000001312d000000000000000000000000000000000",
+    "warnings": [
+      "Marketplace allowance (0.0 USDC) is below the 20.0 USDC this call pulls. Send `prerequisite` (exact approve) first or the main transaction will revert."
+    ],
+    "raw": {
+      "network": "arc-staging",
+      "chainId": 5042002,
+      "realMoney": false,
+      "action": "request_loan",
+      "from": "0x801e256F516a2fD3E0e06A871419E707695B82DF",
+      "to": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+      "data": "0xaa452fa60000000000000000000000000000000000000000000000000000000001312d00000000000000000000000000000000000000000000000000000000000000001e",
+      "value": "0",
+      "gasEstimate": "700000",
+      "gasEstimateSource": "default",
+      "description": "Request a USDC loan against your reputation. Auto-disbursed from your own agent pool; low-reputation tiers must post collateral (pulled via a prior exact approval).",
+      "humanReadableSummary": "Borrow 20.0 USDC for 30 days as 0x801e256F516a2fD3E0e06A871419E707695B82DF on arc-staging. Interest is fixed for the full term at your reputation tier's APR. At your current tier: 15% APR, 100% collateral (20.0 USDC), projected repayment 20.246575 USDC.",
+      "warnings": [
+        "Marketplace allowance (0.0 USDC) is below the 20.0 USDC this call pulls. Send `prerequisite` (exact approve) first or the main transaction will revert."
+      ],
+      "call": {
+        "contract": "marketplace",
+        "contractAddress": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+        "function": "requestLoan",
+        "args": {
+          "amount": "20000000",
+          "amountUsdc": "20.0",
+          "durationDays": "30",
+          "collateralRequired": "20000000",
+          "collateralRequiredUsdc": "20.0",
+          "collateralPercent": "100",
+          "interestRateBps": "1500",
+          "projectedInterestUsdc": "0.246575",
+          "projectedTotalRepaymentUsdc": "20.246575",
+          "lockedOut": "false"
+        }
+      },
+      "prerequisite": {
+        "network": "arc-staging",
+        "chainId": 5042002,
+        "realMoney": false,
+        "action": "approve_usdc",
+        "from": "0x801e256F516a2fD3E0e06A871419E707695B82DF",
+        "to": "0x9F3C10985998D1354D1465c5135Aa924775bd11D",
+        "data": "0x095ea7b30000000000000000000000007e4d144abeb3c695ec2ddf00fc710aabc04bdd180000000000000000000000000000000000000000000000000000000001312d00",
+        "value": "0",
+        "gasEstimate": "80000",
+        "gasEstimateSource": "default",
+        "description": "Approve the Specular marketplace to pull EXACTLY this much USDC (never unlimited). Set amount 0 to revoke.",
+        "humanReadableSummary": "Allow the Specular marketplace (0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18) to spend exactly 20.0 USDC from 0x801e256F516a2fD3E0e06A871419E707695B82DF on arc-staging.",
+        "warnings": [
+          "Approving exactly 20.0 USDC for: collateral for requestLoan(20.0, 30d). Current allowance is 0.0 USDC."
+        ],
+        "call": {
+          "contract": "usdc",
+          "contractAddress": "0x9F3C10985998D1354D1465c5135Aa924775bd11D",
+          "function": "approve",
+          "args": {
+            "spender": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+            "amount": "20000000",
+            "amountUsdc": "20.0"
+          }
+        },
+        "prerequisite": null,
+        "simulation": null,
+        "signingInstructions": "Sign {chainId,to,data,value:0} with YOUR OWN wallet (set nonce/gas from your provider; gasEstimate is a hint), then broadcast it yourself or pass the raw signed hex to broadcast_signed_transaction. If `prerequisite` is present, send and confirm it first. IF THE MAIN TRANSACTION THEN FAILS OR YOU ABANDON IT, send prepare_approve_usdc with amount \"0\" and broadcast that too: the prerequisite approval is still standing until you do, and the exact-approval model's resting state is zero. This server never sees your private key."
+      },
+      "simulation": null,
+      "signingInstructions": "Sign {chainId,to,data,value:0} with YOUR OWN wallet (set nonce/gas from your provider; gasEstimate is a hint), then broadcast it yourself or pass the raw signed hex to broadcast_signed_transaction. If `prerequisite` is present, send and confirm it first. IF THE MAIN TRANSACTION THEN FAILS OR YOU ABANDON IT, send prepare_approve_usdc with amount \"0\" and broadcast that too: the prerequisite approval is still standing until you do, and the exact-approval model's resting state is zero. This server never sees your private key."
+    }
+  },
+  {
+    "label": "withdraw self-stake while borrowing (locked)",
+    "http": 200,
+    "ms": 452,
+    "message": "You are the creator of this pool, so your position is the agent's first-loss self-stake and is locked for as long as the agent carries outstanding principal. Repay the agent's active loans (get_active_loan_ids, then prepare_repay_loan) and the position unlocks. Ordinary lenders in the same pool are NOT locked, and claim_interest works while locked.",
+    "simOk": false,
+    "warnings": [
+      "SELF-STAKE LOCKED: you created pool #66, so your position (70.0 USDC) is the agent's FIRST-LOSS capital. Agent #66 still owes 20.0 USDC of principal, so withdrawLiquidity WILL revert \"Self-stake locked while borrowing\". Repay the agent's active loans (get_active_loan_ids then prepare_repay_loan) and the position unlocks. claim_interest is not blocked by the lock, and ordinary lenders in this pool are not locked."
+    ],
+    "raw": {
+      "network": "arc-staging",
+      "chainId": 5042002,
+      "realMoney": false,
+      "action": "withdraw_liquidity",
+      "from": "0x801e256F516a2fD3E0e06A871419E707695B82DF",
+      "to": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+      "data": "0x7ddced5a00000000000000000000000000000000000000000000000000000000000000420000000000000000000000000000000000000000000000000000000002faf080",
+      "value": "0",
+      "gasEstimate": "300000",
+      "gasEstimateSource": "default",
+      "description": "Withdraw supplied principal from an agent pool (interest is claimed separately with claim_interest).",
+      "humanReadableSummary": "Withdraw 50.0 USDC of supplied principal from agent #66's pool on arc-staging to 0x801e256F516a2fD3E0e06A871419E707695B82DF.",
+      "warnings": [
+        "SELF-STAKE LOCKED: you created pool #66, so your position (70.0 USDC) is the agent's FIRST-LOSS capital. Agent #66 still owes 20.0 USDC of principal, so withdrawLiquidity WILL revert \"Self-stake locked while borrowing\". Repay the agent's active loans (get_active_loan_ids then prepare_repay_loan) and the position unlocks. claim_interest is not blocked by the lock, and ordinary lenders in this pool are not locked."
+      ],
+      "call": {
+        "contract": "marketplace",
+        "contractAddress": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+        "function": "withdrawLiquidity",
+        "args": {
+          "agentId": "66",
+          "amount": "50000000",
+          "amountUsdc": "50.0",
+          "selfStakeUsdc": "70.0",
+          "selfStakeLocked": "true",
+          "outstandingPrincipalUsdc": "20.0"
+        }
+      },
+      "prerequisite": null,
+      "simulation": {
+        "ok": false,
+        "gasEstimate": null,
+        "revertReason": "Self-stake locked while borrowing",
+        "plainLanguage": "You are the creator of this pool, so your position is the agent's first-loss self-stake and is locked for as long as the agent carries outstanding principal. Repay the agent's active loans (get_active_loan_ids, then prepare_repay_loan) and the position unlocks. Ordinary lenders in the same pool are NOT locked, and claim_interest works while locked.",
+        "from": "0x801e256F516a2fD3E0e06A871419E707695B82DF"
+      },
+      "signingInstructions": "Sign {chainId,to,data,value:0} with YOUR OWN wallet (set nonce/gas from your provider; gasEstimate is a hint), then broadcast it yourself or pass the raw signed hex to broadcast_signed_transaction. If `prerequisite` is present, send and confirm it first. IF THE MAIN TRANSACTION THEN FAILS OR YOU ABANDON IT, send prepare_approve_usdc with amount \"0\" and broadcast that too: the prerequisite approval is still standing until you do, and the exact-approval model's resting state is zero. This server never sees your private key."
+    }
+  },
+  {
+    "label": "repay SOMEONE ELSE'S active loan",
+    "http": 200,
+    "ms": 298,
+    "message": "Only the wallet that borrowed this loan (or, on V6.1, the current holder of the agent NFT) can repay it. (A prerequisite approve is included in this response; simulate again after it is mined.)",
+    "simOk": false,
+    "warnings": [
+      "Loan #118 belongs to 0x801e256F516a2fD3E0e06A871419E707695B82DF, not 0xff7bb13d098B27871E94FCf83Ac826ae8Cd58d09; the transaction will revert. (Only the borrower or the current holder of the agent NFT can repay.)",
+      "Marketplace allowance (0.0 USDC) is below the 20.246575 USDC this call pulls. Send `prerequisite` (exact approve) first or the main transaction will revert."
+    ],
+    "raw": {
+      "network": "arc-staging",
+      "chainId": 5042002,
+      "realMoney": false,
+      "action": "repay_loan",
+      "from": "0xff7bb13d098B27871E94FCf83Ac826ae8Cd58d09",
+      "to": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+      "data": "0xab7b1c890000000000000000000000000000000000000000000000000000000000000076",
+      "value": "0",
+      "gasEstimate": "1600000",
+      "gasEstimateSource": "default",
+      "description": "Repay a loan in full (principal + interest; on V6.1 a late loan pays for the elapsed time, capped at duration + 30 days); collateral is returned and reputation updated.",
+      "humanReadableSummary": "Repay loan #118 in full from 0xff7bb13d098B27871E94FCf83Ac826ae8Cd58d09 on arc-staging. Requires a prior exact USDC approval of the amount due (see previewRepayment / prerequisite). Total due: 20.246575 USDC (20.0 principal + 0.246575 interest).",
+      "warnings": [
+        "Loan #118 belongs to 0x801e256F516a2fD3E0e06A871419E707695B82DF, not 0xff7bb13d098B27871E94FCf83Ac826ae8Cd58d09; the transaction will revert. (Only the borrower or the current holder of the agent NFT can repay.)",
+        "Marketplace allowance (0.0 USDC) is below the 20.246575 USDC this call pulls. Send `prerequisite` (exact approve) first or the main transaction will revert."
+      ],
+      "call": {
+        "contract": "marketplace",
+        "contractAddress": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+        "function": "repayLoan",
+        "args": {
+          "loanId": "118",
+          "principalUsdc": "20.0",
+          "interestUsdc": "0.246575",
+          "totalRepaymentUsdc": "20.246575",
+          "repaymentSource": "previewRepayment",
+          "marketplaceVersion": "V6.2",
+          "chargeableDays": "30",
+          "lateSeconds": "0",
+          "maxTotalRepaymentUsdc": "20.49315",
+          "approveUsdc": "20.246575"
+        }
+      },
+      "prerequisite": {
+        "network": "arc-staging",
+        "chainId": 5042002,
+        "realMoney": false,
+        "action": "approve_usdc",
+        "from": "0xff7bb13d098B27871E94FCf83Ac826ae8Cd58d09",
+        "to": "0x9F3C10985998D1354D1465c5135Aa924775bd11D",
+        "data": "0x095ea7b30000000000000000000000007e4d144abeb3c695ec2ddf00fc710aabc04bdd18000000000000000000000000000000000000000000000000000000000134f02f",
+        "value": "0",
+        "gasEstimate": "80000",
+        "gasEstimateSource": "default",
+        "description": "Approve the Specular marketplace to pull EXACTLY this much USDC (never unlimited). Set amount 0 to revoke.",
+        "humanReadableSummary": "Allow the Specular marketplace (0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18) to spend exactly 20.246575 USDC from 0xff7bb13d098B27871E94FCf83Ac826ae8Cd58d09 on arc-staging.",
+        "warnings": [
+          "Approving exactly 20.246575 USDC for: repayLoan(118). Current allowance is 0.0 USDC."
+        ],
+        "call": {
+          "contract": "usdc",
+          "contractAddress": "0x9F3C10985998D1354D1465c5135Aa924775bd11D",
+          "function": "approve",
+          "args": {
+            "spender": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+            "amount": "20246575",
+            "amountUsdc": "20.246575"
+          }
+        },
+        "prerequisite": null,
+        "simulation": null,
+        "signingInstructions": "Sign {chainId,to,data,value:0} with YOUR OWN wallet (set nonce/gas from your provider; gasEstimate is a hint), then broadcast it yourself or pass the raw signed hex to broadcast_signed_transaction. If `prerequisite` is present, send and confirm it first. IF THE MAIN TRANSACTION THEN FAILS OR YOU ABANDON IT, send prepare_approve_usdc with amount \"0\" and broadcast that too: the prerequisite approval is still standing until you do, and the exact-approval model's resting state is zero. This server never sees your private key."
+      },
+      "simulation": {
+        "ok": false,
+        "gasEstimate": null,
+        "revertReason": "Not the borrower",
+        "plainLanguage": "Only the wallet that borrowed this loan (or, on V6.1, the current holder of the agent NFT) can repay it. (A prerequisite approve is included in this response; simulate again after it is mined.)",
+        "from": "0xff7bb13d098B27871E94FCf83Ac826ae8Cd58d09"
+      },
+      "signingInstructions": "Sign {chainId,to,data,value:0} with YOUR OWN wallet (set nonce/gas from your provider; gasEstimate is a hint), then broadcast it yourself or pass the raw signed hex to broadcast_signed_transaction. If `prerequisite` is present, send and confirm it first. IF THE MAIN TRANSACTION THEN FAILS OR YOU ABANDON IT, send prepare_approve_usdc with amount \"0\" and broadcast that too: the prerequisite approval is still standing until you do, and the exact-approval model's resting state is zero. This server never sees your private key."
+    }
+  },
+  {
+    "label": "repay an already-REPAID loan (#115)",
+    "http": 200,
+    "ms": 214,
+    "message": "This loan is not ACTIVE (already repaid or defaulted).",
+    "simOk": false,
+    "warnings": [
+      "Loan #115 is REPAID, not ACTIVE; the transaction will revert."
+    ],
+    "raw": {
+      "network": "arc-staging",
+      "chainId": 5042002,
+      "realMoney": false,
+      "action": "repay_loan",
+      "from": "0x801e256F516a2fD3E0e06A871419E707695B82DF",
+      "to": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+      "data": "0xab7b1c890000000000000000000000000000000000000000000000000000000000000073",
+      "value": "0",
+      "gasEstimate": "1600000",
+      "gasEstimateSource": "default",
+      "description": "Repay a loan in full (principal + interest; on V6.1 a late loan pays for the elapsed time, capped at duration + 30 days); collateral is returned and reputation updated.",
+      "humanReadableSummary": "Repay loan #115 in full from 0x801e256F516a2fD3E0e06A871419E707695B82DF on arc-staging. Requires a prior exact USDC approval of the amount due (see previewRepayment / prerequisite).",
+      "warnings": [
+        "Loan #115 is REPAID, not ACTIVE; the transaction will revert."
+      ],
+      "call": {
+        "contract": "marketplace",
+        "contractAddress": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+        "function": "repayLoan",
+        "args": {
+          "loanId": "115",
+          "principalUsdc": "25.0"
+        }
+      },
+      "prerequisite": null,
+      "simulation": {
+        "ok": false,
+        "gasEstimate": null,
+        "revertReason": "Loan not active",
+        "plainLanguage": "This loan is not ACTIVE (already repaid or defaulted).",
+        "from": "0x801e256F516a2fD3E0e06A871419E707695B82DF"
+      },
+      "signingInstructions": "Sign {chainId,to,data,value:0} with YOUR OWN wallet (set nonce/gas from your provider; gasEstimate is a hint), then broadcast it yourself or pass the raw signed hex to broadcast_signed_transaction. If `prerequisite` is present, send and confirm it first. IF THE MAIN TRANSACTION THEN FAILS OR YOU ABANDON IT, send prepare_approve_usdc with amount \"0\" and broadcast that too: the prerequisite approval is still standing until you do, and the exact-approval model's resting state is zero. This server never sees your private key."
+    }
+  },
+  {
+    "label": "claim interest from a pool you never supplied to",
+    "http": 200,
+    "ms": 175,
+    "message": "There is no claimable interest for this wallet in this pool.",
+    "simOk": false,
+    "warnings": [
+      "No claimable interest for 0xff7bb13d098B27871E94FCf83Ac826ae8Cd58d09 in pool #66; the transaction will revert."
+    ],
+    "raw": {
+      "network": "arc-staging",
+      "chainId": 5042002,
+      "realMoney": false,
+      "action": "claim_interest",
+      "from": "0xff7bb13d098B27871E94FCf83Ac826ae8Cd58d09",
+      "to": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+      "data": "0x2eb375ea0000000000000000000000000000000000000000000000000000000000000042",
+      "value": "0",
+      "gasEstimate": "150000",
+      "gasEstimateSource": "default",
+      "description": "Claim interest earned as a lender in an agent pool.",
+      "humanReadableSummary": "Claim accrued lender interest from agent #66's pool on arc-staging to 0xff7bb13d098B27871E94FCf83Ac826ae8Cd58d09.",
+      "warnings": [
+        "No claimable interest for 0xff7bb13d098B27871E94FCf83Ac826ae8Cd58d09 in pool #66; the transaction will revert."
+      ],
+      "call": {
+        "contract": "marketplace",
+        "contractAddress": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+        "function": "claimInterest",
+        "args": {
+          "agentId": "66",
+          "claimableUsdc": "0.0"
+        }
+      },
+      "prerequisite": null,
+      "simulation": {
+        "ok": false,
+        "gasEstimate": null,
+        "revertReason": "No interest to claim",
+        "plainLanguage": "There is no claimable interest for this wallet in this pool.",
+        "from": "0xff7bb13d098B27871E94FCf83Ac826ae8Cd58d09"
+      },
+      "signingInstructions": "Sign {chainId,to,data,value:0} with YOUR OWN wallet (set nonce/gas from your provider; gasEstimate is a hint), then broadcast it yourself or pass the raw signed hex to broadcast_signed_transaction. If `prerequisite` is present, send and confirm it first. IF THE MAIN TRANSACTION THEN FAILS OR YOU ABANDON IT, send prepare_approve_usdc with amount \"0\" and broadcast that too: the prerequisite approval is still standing until you do, and the exact-approval model's resting state is zero. This server never sees your private key."
+    }
+  },
+  {
+    "label": "prepare repay (cleanup)",
+    "http": 200,
+    "ms": 123,
+    "message": "{\"network\":\"arc-staging\",\"chainId\":5042002,\"realMoney\":false,\"action\":\"repay_loan\",\"from\":\"0x801e256F516a2fD3E0e06A871419E707695B82DF\",\"to\":\"0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18\",\"data\":\"0xab7b1c890000000000000000000000000000000000000000000000000000000000000076\",\"value\":\"0\",\"gasEstimate\":\"1600",
+    "warnings": [
+      "Marketplace allowance (0.0 USDC) is below the 20.246575 USDC this call pulls. Send `prerequisite` (exact approve) first or the main transaction will revert."
+    ],
+    "raw": {
+      "network": "arc-staging",
+      "chainId": 5042002,
+      "realMoney": false,
+      "action": "repay_loan",
+      "from": "0x801e256F516a2fD3E0e06A871419E707695B82DF",
+      "to": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+      "data": "0xab7b1c890000000000000000000000000000000000000000000000000000000000000076",
+      "value": "0",
+      "gasEstimate": "1600000",
+      "gasEstimateSource": "default",
+      "description": "Repay a loan in full (principal + interest; on V6.1 a late loan pays for the elapsed time, capped at duration + 30 days); collateral is returned and reputation updated.",
+      "humanReadableSummary": "Repay loan #118 in full from 0x801e256F516a2fD3E0e06A871419E707695B82DF on arc-staging. Requires a prior exact USDC approval of the amount due (see previewRepayment / prerequisite). Total due: 20.246575 USDC (20.0 principal + 0.246575 interest).",
+      "warnings": [
+        "Marketplace allowance (0.0 USDC) is below the 20.246575 USDC this call pulls. Send `prerequisite` (exact approve) first or the main transaction will revert."
+      ],
+      "call": {
+        "contract": "marketplace",
+        "contractAddress": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+        "function": "repayLoan",
+        "args": {
+          "loanId": "118",
+          "principalUsdc": "20.0",
+          "interestUsdc": "0.246575",
+          "totalRepaymentUsdc": "20.246575",
+          "repaymentSource": "previewRepayment",
+          "marketplaceVersion": "V6.2",
+          "chargeableDays": "30",
+          "lateSeconds": "0",
+          "maxTotalRepaymentUsdc": "20.49315",
+          "approveUsdc": "20.246575"
+        }
+      },
+      "prerequisite": {
+        "network": "arc-staging",
+        "chainId": 5042002,
+        "realMoney": false,
+        "action": "approve_usdc",
+        "from": "0x801e256F516a2fD3E0e06A871419E707695B82DF",
+        "to": "0x9F3C10985998D1354D1465c5135Aa924775bd11D",
+        "data": "0x095ea7b30000000000000000000000007e4d144abeb3c695ec2ddf00fc710aabc04bdd18000000000000000000000000000000000000000000000000000000000134f02f",
+        "value": "0",
+        "gasEstimate": "80000",
+        "gasEstimateSource": "default",
+        "description": "Approve the Specular marketplace to pull EXACTLY this much USDC (never unlimited). Set amount 0 to revoke.",
+        "humanReadableSummary": "Allow the Specular marketplace (0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18) to spend exactly 20.246575 USDC from 0x801e256F516a2fD3E0e06A871419E707695B82DF on arc-staging.",
+        "warnings": [
+          "Approving exactly 20.246575 USDC for: repayLoan(118). Current allowance is 0.0 USDC."
+        ],
+        "call": {
+          "contract": "usdc",
+          "contractAddress": "0x9F3C10985998D1354D1465c5135Aa924775bd11D",
+          "function": "approve",
+          "args": {
+            "spender": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+            "amount": "20246575",
+            "amountUsdc": "20.246575"
+          }
+        },
+        "prerequisite": null,
+        "simulation": null,
+        "signingInstructions": "Sign {chainId,to,data,value:0} with YOUR OWN wallet (set nonce/gas from your provider; gasEstimate is a hint), then broadcast it yourself or pass the raw signed hex to broadcast_signed_transaction. If `prerequisite` is present, send and confirm it first. IF THE MAIN TRANSACTION THEN FAILS OR YOU ABANDON IT, send prepare_approve_usdc with amount \"0\" and broadcast that too: the prerequisite approval is still standing until you do, and the exact-approval model's resting state is zero. This server never sees your private key."
+      },
+      "simulation": null,
+      "signingInstructions": "Sign {chainId,to,data,value:0} with YOUR OWN wallet (set nonce/gas from your provider; gasEstimate is a hint), then broadcast it yourself or pass the raw signed hex to broadcast_signed_transaction. If `prerequisite` is present, send and confirm it first. IF THE MAIN TRANSACTION THEN FAILS OR YOU ABANDON IT, send prepare_approve_usdc with amount \"0\" and broadcast that too: the prerequisite approval is still standing until you do, and the exact-approval model's resting state is zero. This server never sees your private key."
+    }
+  },
+  {
+    "label": "broadcast garbage hex",
+    "http": 400,
+    "ms": 198,
+    "message": "signedTransaction could not be decoded: data short segment too short",
+    "field": "signedTransaction",
+    "raw": {
+      "error": "signedTransaction could not be decoded: data short segment too short",
+      "field": "signedTransaction"
+    }
+  },
+  {
+    "label": "broadcast non-hex string",
+    "http": 400,
+    "ms": 179,
+    "message": "signedTransaction must be 0x-prefixed hex (the RLP-encoded, signed transaction)",
+    "field": "signedTransaction",
+    "raw": {
+      "error": "signedTransaction must be 0x-prefixed hex (the RLP-encoded, signed transaction)",
+      "field": "signedTransaction"
+    }
+  },
+  {
+    "label": "broadcast a plain native-value transfer (not Specular)",
+    "http": 400,
+    "ms": 61,
+    "message": "Specular transactions must carry value 0; refusing to relay a native-token transfer",
+    "field": "signedTransaction",
+    "raw": {
+      "error": "Specular transactions must carry value 0; refusing to relay a native-token transfer",
+      "field": "signedTransaction"
+    }
+  },
+  {
+    "label": "broadcast an UNLIMITED USDC approve",
+    "http": 400,
+    "ms": 61,
+    "message": "USDC approve of unlimited exceeds the exact-approval cap (100000 USDC); approve only what the next call needs",
+    "field": "signedTransaction",
+    "raw": {
+      "error": "USDC approve of unlimited exceeds the exact-approval cap (100000 USDC); approve only what the next call needs",
+      "field": "signedTransaction"
+    }
+  },
+  {
+    "label": "broadcast a tx signed for a DIFFERENT chain",
+    "http": 400,
+    "ms": 56,
+    "message": "transaction chainId 8453 does not match arc-staging (chainId 5042002)",
+    "field": "signedTransaction",
+    "raw": {
+      "error": "transaction chainId 8453 does not match arc-staging (chainId 5042002)",
+      "field": "signedTransaction"
+    }
+  },
+  {
+    "label": "register twice (already registered)",
+    "http": 200,
+    "ms": 192,
+    "message": "This wallet is already registered; skip register_agent.",
+    "simOk": false,
+    "warnings": [
+      "This wallet is already registered; the transaction will revert."
+    ],
+    "raw": {
+      "network": "arc-staging",
+      "chainId": 5042002,
+      "realMoney": false,
+      "action": "register_agent",
+      "from": "0x801e256F516a2fD3E0e06A871419E707695B82DF",
+      "to": "0x4712A978A0EADe68f0b485b981112Ae66aA622d9",
+      "data": "0x8ea42286000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000003573706563756c61723a2f2f30783830316532353646353136613266443345306530364138373134313945373037363935423832444600000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "value": "0",
+      "gasEstimate": "500000",
+      "gasEstimateSource": "default",
+      "description": "Register this wallet as a Specular agent (mints the agent NFT, agentId assigned on-chain).",
+      "humanReadableSummary": "Register 0x801e256F516a2fD3E0e06A871419E707695B82DF as an agent on arc-staging with URI \"specular://0x801e256F516a2fD3E0e06A871419E707695B82DF\". No USDC moves.",
+      "warnings": [
+        "This wallet is already registered; the transaction will revert."
+      ],
+      "call": {
+        "contract": "registry",
+        "contractAddress": "0x4712A978A0EADe68f0b485b981112Ae66aA622d9",
+        "function": "register",
+        "args": {
+          "agentURI": "specular://0x801e256F516a2fD3E0e06A871419E707695B82DF",
+          "metadataEntries": "0"
+        }
+      },
+      "prerequisite": null,
+      "simulation": {
+        "ok": false,
+        "gasEstimate": null,
+        "revertReason": "Agent already registered",
+        "plainLanguage": "This wallet is already registered; skip register_agent.",
+        "from": "0x801e256F516a2fD3E0e06A871419E707695B82DF"
+      },
+      "signingInstructions": "Sign {chainId,to,data,value:0} with YOUR OWN wallet (set nonce/gas from your provider; gasEstimate is a hint), then broadcast it yourself or pass the raw signed hex to broadcast_signed_transaction. If `prerequisite` is present, send and confirm it first. IF THE MAIN TRANSACTION THEN FAILS OR YOU ABANDON IT, send prepare_approve_usdc with amount \"0\" and broadcast that too: the prerequisite approval is still standing until you do, and the exact-approval model's resting state is zero. This server never sees your private key."
+    }
+  },
+  {
+    "label": "prepare with `from` missing",
+    "http": 400,
+    "ms": 56,
+    "message": "from must be a 0x-prefixed 20-byte hex address",
+    "field": "from",
+    "raw": {
+      "error": "from must be a 0x-prefixed 20-byte hex address",
+      "field": "from"
+    }
+  },
+  {
+    "label": "agentId as string \"66\"",
+    "http": 200,
+    "ms": 224,
+    "message": "{\"network\":\"arc-staging\",\"chainId\":5042002,\"realMoney\":false,\"action\":\"claim_interest\",\"from\":\"0x801e256F516a2fD3E0e06A871419E707695B82DF\",\"to\":\"0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18\",\"data\":\"0x2eb375ea0000000000000000000000000000000000000000000000000000000000000042\",\"value\":\"0\",\"gasEstimate\":\"",
+    "simOk": true,
+    "warnings": [],
+    "raw": {
+      "network": "arc-staging",
+      "chainId": 5042002,
+      "realMoney": false,
+      "action": "claim_interest",
+      "from": "0x801e256F516a2fD3E0e06A871419E707695B82DF",
+      "to": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+      "data": "0x2eb375ea0000000000000000000000000000000000000000000000000000000000000042",
+      "value": "0",
+      "gasEstimate": "73660",
+      "gasEstimateSource": "estimateGas",
+      "description": "Claim interest earned as a lender in an agent pool.",
+      "humanReadableSummary": "Claim accrued lender interest from agent #66's pool on arc-staging to 0x801e256F516a2fD3E0e06A871419E707695B82DF.",
+      "warnings": [],
+      "call": {
+        "contract": "marketplace",
+        "contractAddress": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+        "function": "claimInterest",
+        "args": {
+          "agentId": "66",
+          "claimableUsdc": "0.24411"
+        }
+      },
+      "prerequisite": null,
+      "simulation": {
+        "ok": true,
+        "gasEstimate": "61384",
+        "revertReason": null,
+        "plainLanguage": null,
+        "from": "0x801e256F516a2fD3E0e06A871419E707695B82DF"
+      },
+      "signingInstructions": "Sign {chainId,to,data,value:0} with YOUR OWN wallet (set nonce/gas from your provider; gasEstimate is a hint), then broadcast it yourself or pass the raw signed hex to broadcast_signed_transaction. If `prerequisite` is present, send and confirm it first. IF THE MAIN TRANSACTION THEN FAILS OR YOU ABANDON IT, send prepare_approve_usdc with amount \"0\" and broadcast that too: the prerequisite approval is still standing until you do, and the exact-approval model's resting state is zero. This server never sees your private key."
+    }
+  },
+  {
+    "label": "body is not JSON object",
+    "http": 400,
+    "ms": 59,
+    "message": "malformed JSON body",
+    "raw": {
+      "error": "malformed JSON body"
+    }
+  }
+]

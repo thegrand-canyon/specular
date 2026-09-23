@@ -1,0 +1,569 @@
+{
+  "storage": [
+    {
+      "astId": 7869,
+      "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+      "label": "_owner",
+      "offset": 0,
+      "slot": "0",
+      "type": "t_address"
+    },
+    {
+      "astId": 8017,
+      "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+      "label": "_pendingOwner",
+      "offset": 0,
+      "slot": "1",
+      "type": "t_address"
+    },
+    {
+      "astId": 10442,
+      "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+      "label": "_status",
+      "offset": 0,
+      "slot": "2",
+      "type": "t_uint256"
+    },
+    {
+      "astId": 10332,
+      "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+      "label": "_paused",
+      "offset": 0,
+      "slot": "3",
+      "type": "t_bool"
+    },
+    {
+      "astId": 99,
+      "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+      "label": "agentPools",
+      "offset": 0,
+      "slot": "4",
+      "type": "t_mapping(t_uint256,t_struct(AgentPool)48_storage)"
+    },
+    {
+      "astId": 106,
+      "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+      "label": "positions",
+      "offset": 0,
+      "slot": "5",
+      "type": "t_mapping(t_uint256,t_mapping(t_address,t_struct(LenderPosition)55_storage))"
+    },
+    {
+      "astId": 111,
+      "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+      "label": "poolLenders",
+      "offset": 0,
+      "slot": "6",
+      "type": "t_mapping(t_uint256,t_array(t_address)dyn_storage)"
+    },
+    {
+      "astId": 116,
+      "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+      "label": "loans",
+      "offset": 0,
+      "slot": "7",
+      "type": "t_mapping(t_uint256,t_struct(Loan)89_storage)"
+    },
+    {
+      "astId": 121,
+      "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+      "label": "agentLoans",
+      "offset": 0,
+      "slot": "8",
+      "type": "t_mapping(t_address,t_array(t_uint256)dyn_storage)"
+    },
+    {
+      "astId": 124,
+      "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+      "label": "nextLoanId",
+      "offset": 0,
+      "slot": "9",
+      "type": "t_uint256"
+    },
+    {
+      "astId": 127,
+      "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+      "label": "platformFeeRate",
+      "offset": 0,
+      "slot": "10",
+      "type": "t_uint256"
+    },
+    {
+      "astId": 129,
+      "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+      "label": "accumulatedFees",
+      "offset": 0,
+      "slot": "11",
+      "type": "t_uint256"
+    },
+    {
+      "astId": 131,
+      "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+      "label": "minHoldForReputationReward",
+      "offset": 0,
+      "slot": "12",
+      "type": "t_uint256"
+    },
+    {
+      "astId": 133,
+      "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+      "label": "bindBorrowToPoolCreator",
+      "offset": 0,
+      "slot": "13",
+      "type": "t_bool"
+    },
+    {
+      "astId": 135,
+      "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+      "label": "minSupplyAmount",
+      "offset": 0,
+      "slot": "14",
+      "type": "t_uint256"
+    },
+    {
+      "astId": 138,
+      "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+      "label": "agentPoolIds",
+      "offset": 0,
+      "slot": "15",
+      "type": "t_array(t_uint256)dyn_storage"
+    },
+    {
+      "astId": 142,
+      "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+      "label": "activeLoanCount",
+      "offset": 0,
+      "slot": "16",
+      "type": "t_mapping(t_uint256,t_uint256)"
+    },
+    {
+      "astId": 146,
+      "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+      "label": "outstandingPrincipal",
+      "offset": 0,
+      "slot": "17",
+      "type": "t_mapping(t_uint256,t_uint256)"
+    },
+    {
+      "astId": 152,
+      "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+      "label": "isInPoolLenders",
+      "offset": 0,
+      "slot": "18",
+      "type": "t_mapping(t_uint256,t_mapping(t_address,t_bool))"
+    },
+    {
+      "astId": 154,
+      "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+      "label": "migrationFinalized",
+      "offset": 0,
+      "slot": "19",
+      "type": "t_bool"
+    },
+    {
+      "astId": 161,
+      "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+      "label": "pendingTranche",
+      "offset": 0,
+      "slot": "20",
+      "type": "t_mapping(t_uint256,t_mapping(t_address,t_struct(PendingTranche)60_storage))"
+    },
+    {
+      "astId": 166,
+      "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+      "label": "activeLoanIds",
+      "offset": 0,
+      "slot": "21",
+      "type": "t_mapping(t_uint256,t_array(t_uint256)dyn_storage)"
+    },
+    {
+      "astId": 171,
+      "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+      "label": "repayments",
+      "offset": 0,
+      "slot": "22",
+      "type": "t_mapping(t_uint256,t_struct(RepaymentRecord)67_storage)"
+    },
+    {
+      "astId": 175,
+      "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+      "label": "lateRepayCount",
+      "offset": 0,
+      "slot": "23",
+      "type": "t_mapping(t_uint256,t_uint256)"
+    },
+    {
+      "astId": 179,
+      "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+      "label": "lateSecondsTotal",
+      "offset": 0,
+      "slot": "24",
+      "type": "t_mapping(t_uint256,t_uint256)"
+    }
+  ],
+  "types": {
+    "t_address": {
+      "encoding": "inplace",
+      "label": "address",
+      "numberOfBytes": "20"
+    },
+    "t_array(t_address)dyn_storage": {
+      "encoding": "dynamic_array",
+      "label": "address[]",
+      "numberOfBytes": "32",
+      "base": "t_address"
+    },
+    "t_array(t_uint256)dyn_storage": {
+      "encoding": "dynamic_array",
+      "label": "uint256[]",
+      "numberOfBytes": "32",
+      "base": "t_uint256"
+    },
+    "t_bool": {
+      "encoding": "inplace",
+      "label": "bool",
+      "numberOfBytes": "1"
+    },
+    "t_enum(LoanState)94": {
+      "encoding": "inplace",
+      "label": "enum AgentLiquidityMarketplaceV62.LoanState",
+      "numberOfBytes": "1"
+    },
+    "t_mapping(t_address,t_array(t_uint256)dyn_storage)": {
+      "encoding": "mapping",
+      "key": "t_address",
+      "label": "mapping(address => uint256[])",
+      "numberOfBytes": "32",
+      "value": "t_array(t_uint256)dyn_storage"
+    },
+    "t_mapping(t_address,t_bool)": {
+      "encoding": "mapping",
+      "key": "t_address",
+      "label": "mapping(address => bool)",
+      "numberOfBytes": "32",
+      "value": "t_bool"
+    },
+    "t_mapping(t_address,t_struct(LenderPosition)55_storage)": {
+      "encoding": "mapping",
+      "key": "t_address",
+      "label": "mapping(address => struct AgentLiquidityMarketplaceV62.LenderPosition)",
+      "numberOfBytes": "32",
+      "value": "t_struct(LenderPosition)55_storage"
+    },
+    "t_mapping(t_address,t_struct(PendingTranche)60_storage)": {
+      "encoding": "mapping",
+      "key": "t_address",
+      "label": "mapping(address => struct AgentLiquidityMarketplaceV62.PendingTranche)",
+      "numberOfBytes": "32",
+      "value": "t_struct(PendingTranche)60_storage"
+    },
+    "t_mapping(t_uint256,t_array(t_address)dyn_storage)": {
+      "encoding": "mapping",
+      "key": "t_uint256",
+      "label": "mapping(uint256 => address[])",
+      "numberOfBytes": "32",
+      "value": "t_array(t_address)dyn_storage"
+    },
+    "t_mapping(t_uint256,t_array(t_uint256)dyn_storage)": {
+      "encoding": "mapping",
+      "key": "t_uint256",
+      "label": "mapping(uint256 => uint256[])",
+      "numberOfBytes": "32",
+      "value": "t_array(t_uint256)dyn_storage"
+    },
+    "t_mapping(t_uint256,t_mapping(t_address,t_bool))": {
+      "encoding": "mapping",
+      "key": "t_uint256",
+      "label": "mapping(uint256 => mapping(address => bool))",
+      "numberOfBytes": "32",
+      "value": "t_mapping(t_address,t_bool)"
+    },
+    "t_mapping(t_uint256,t_mapping(t_address,t_struct(LenderPosition)55_storage))": {
+      "encoding": "mapping",
+      "key": "t_uint256",
+      "label": "mapping(uint256 => mapping(address => struct AgentLiquidityMarketplaceV62.LenderPosition))",
+      "numberOfBytes": "32",
+      "value": "t_mapping(t_address,t_struct(LenderPosition)55_storage)"
+    },
+    "t_mapping(t_uint256,t_mapping(t_address,t_struct(PendingTranche)60_storage))": {
+      "encoding": "mapping",
+      "key": "t_uint256",
+      "label": "mapping(uint256 => mapping(address => struct AgentLiquidityMarketplaceV62.PendingTranche))",
+      "numberOfBytes": "32",
+      "value": "t_mapping(t_address,t_struct(PendingTranche)60_storage)"
+    },
+    "t_mapping(t_uint256,t_struct(AgentPool)48_storage)": {
+      "encoding": "mapping",
+      "key": "t_uint256",
+      "label": "mapping(uint256 => struct AgentLiquidityMarketplaceV62.AgentPool)",
+      "numberOfBytes": "32",
+      "value": "t_struct(AgentPool)48_storage"
+    },
+    "t_mapping(t_uint256,t_struct(Loan)89_storage)": {
+      "encoding": "mapping",
+      "key": "t_uint256",
+      "label": "mapping(uint256 => struct AgentLiquidityMarketplaceV62.Loan)",
+      "numberOfBytes": "32",
+      "value": "t_struct(Loan)89_storage"
+    },
+    "t_mapping(t_uint256,t_struct(RepaymentRecord)67_storage)": {
+      "encoding": "mapping",
+      "key": "t_uint256",
+      "label": "mapping(uint256 => struct AgentLiquidityMarketplaceV62.RepaymentRecord)",
+      "numberOfBytes": "32",
+      "value": "t_struct(RepaymentRecord)67_storage"
+    },
+    "t_mapping(t_uint256,t_uint256)": {
+      "encoding": "mapping",
+      "key": "t_uint256",
+      "label": "mapping(uint256 => uint256)",
+      "numberOfBytes": "32",
+      "value": "t_uint256"
+    },
+    "t_struct(AgentPool)48_storage": {
+      "encoding": "inplace",
+      "label": "struct AgentLiquidityMarketplaceV62.AgentPool",
+      "numberOfBytes": "224",
+      "members": [
+        {
+          "astId": 35,
+          "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+          "label": "agentId",
+          "offset": 0,
+          "slot": "0",
+          "type": "t_uint256"
+        },
+        {
+          "astId": 37,
+          "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+          "label": "agentAddress",
+          "offset": 0,
+          "slot": "1",
+          "type": "t_address"
+        },
+        {
+          "astId": 39,
+          "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+          "label": "totalLiquidity",
+          "offset": 0,
+          "slot": "2",
+          "type": "t_uint256"
+        },
+        {
+          "astId": 41,
+          "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+          "label": "availableLiquidity",
+          "offset": 0,
+          "slot": "3",
+          "type": "t_uint256"
+        },
+        {
+          "astId": 43,
+          "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+          "label": "totalLoaned",
+          "offset": 0,
+          "slot": "4",
+          "type": "t_uint256"
+        },
+        {
+          "astId": 45,
+          "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+          "label": "totalEarned",
+          "offset": 0,
+          "slot": "5",
+          "type": "t_uint256"
+        },
+        {
+          "astId": 47,
+          "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+          "label": "isActive",
+          "offset": 0,
+          "slot": "6",
+          "type": "t_bool"
+        }
+      ]
+    },
+    "t_struct(LenderPosition)55_storage": {
+      "encoding": "inplace",
+      "label": "struct AgentLiquidityMarketplaceV62.LenderPosition",
+      "numberOfBytes": "96",
+      "members": [
+        {
+          "astId": 50,
+          "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+          "label": "amount",
+          "offset": 0,
+          "slot": "0",
+          "type": "t_uint256"
+        },
+        {
+          "astId": 52,
+          "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+          "label": "earnedInterest",
+          "offset": 0,
+          "slot": "1",
+          "type": "t_uint256"
+        },
+        {
+          "astId": 54,
+          "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+          "label": "depositTimestamp",
+          "offset": 0,
+          "slot": "2",
+          "type": "t_uint256"
+        }
+      ]
+    },
+    "t_struct(Loan)89_storage": {
+      "encoding": "inplace",
+      "label": "struct AgentLiquidityMarketplaceV62.Loan",
+      "numberOfBytes": "320",
+      "members": [
+        {
+          "astId": 69,
+          "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+          "label": "loanId",
+          "offset": 0,
+          "slot": "0",
+          "type": "t_uint256"
+        },
+        {
+          "astId": 71,
+          "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+          "label": "borrower",
+          "offset": 0,
+          "slot": "1",
+          "type": "t_address"
+        },
+        {
+          "astId": 73,
+          "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+          "label": "agentId",
+          "offset": 0,
+          "slot": "2",
+          "type": "t_uint256"
+        },
+        {
+          "astId": 75,
+          "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+          "label": "amount",
+          "offset": 0,
+          "slot": "3",
+          "type": "t_uint256"
+        },
+        {
+          "astId": 77,
+          "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+          "label": "collateralAmount",
+          "offset": 0,
+          "slot": "4",
+          "type": "t_uint256"
+        },
+        {
+          "astId": 79,
+          "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+          "label": "interestRate",
+          "offset": 0,
+          "slot": "5",
+          "type": "t_uint256"
+        },
+        {
+          "astId": 81,
+          "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+          "label": "startTime",
+          "offset": 0,
+          "slot": "6",
+          "type": "t_uint256"
+        },
+        {
+          "astId": 83,
+          "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+          "label": "endTime",
+          "offset": 0,
+          "slot": "7",
+          "type": "t_uint256"
+        },
+        {
+          "astId": 85,
+          "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+          "label": "duration",
+          "offset": 0,
+          "slot": "8",
+          "type": "t_uint256"
+        },
+        {
+          "astId": 88,
+          "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+          "label": "state",
+          "offset": 0,
+          "slot": "9",
+          "type": "t_enum(LoanState)94"
+        }
+      ]
+    },
+    "t_struct(PendingTranche)60_storage": {
+      "encoding": "inplace",
+      "label": "struct AgentLiquidityMarketplaceV62.PendingTranche",
+      "numberOfBytes": "32",
+      "members": [
+        {
+          "astId": 57,
+          "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+          "label": "amount",
+          "offset": 0,
+          "slot": "0",
+          "type": "t_uint128"
+        },
+        {
+          "astId": 59,
+          "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+          "label": "timestamp",
+          "offset": 16,
+          "slot": "0",
+          "type": "t_uint128"
+        }
+      ]
+    },
+    "t_struct(RepaymentRecord)67_storage": {
+      "encoding": "inplace",
+      "label": "struct AgentLiquidityMarketplaceV62.RepaymentRecord",
+      "numberOfBytes": "96",
+      "members": [
+        {
+          "astId": 62,
+          "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+          "label": "repaidAt",
+          "offset": 0,
+          "slot": "0",
+          "type": "t_uint256"
+        },
+        {
+          "astId": 64,
+          "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+          "label": "interestPaid",
+          "offset": 0,
+          "slot": "1",
+          "type": "t_uint256"
+        },
+        {
+          "astId": 66,
+          "contract": "contracts/core/AgentLiquidityMarketplaceV62.sol:AgentLiquidityMarketplaceV62",
+          "label": "lateSeconds",
+          "offset": 0,
+          "slot": "2",
+          "type": "t_uint256"
+        }
+      ]
+    },
+    "t_uint128": {
+      "encoding": "inplace",
+      "label": "uint128",
+      "numberOfBytes": "16"
+    },
+    "t_uint256": {
+      "encoding": "inplace",
+      "label": "uint256",
+      "numberOfBytes": "32"
+    }
+  }
+}

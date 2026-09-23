@@ -1,0 +1,932 @@
+{
+  "wallet": "0x801e256F516a2fD3E0e06A871419E707695B82DF",
+  "steps": [
+    {
+      "name": "discover_networks",
+      "tSinceStartMs": 199,
+      "networks": [
+        "arc-mainnet",
+        "arc-staging"
+      ],
+      "ms": 197
+    },
+    {
+      "name": "protocol_status",
+      "tSinceStartMs": 2098,
+      "ms": 1899,
+      "caps": {
+        "marketplaceVersion": "V6.2",
+        "reputationVersion": "V4",
+        "v61": true,
+        "v62": true,
+        "reputationV4": true
+      },
+      "tier0": {
+        "index": 0,
+        "name": "New",
+        "minScore": 0,
+        "creditLimitUsdc": "1000.0",
+        "collateralPercent": 100,
+        "interestRateBps": 1500,
+        "interestRateAprPercent": 15,
+        "unsecuredExposureUsdc": "0.0"
+      },
+      "params": {
+        "minSupplyUsdc": "10.0",
+        "minSupplyAppliesToPoolCreator": false,
+        "borrowRestrictedToPoolCreator": true,
+        "minHoldForReputationRewardSeconds": 86400,
+        "platformFeeBps": 100,
+        "maxActiveLoansPerAgent": 10,
+        "loanDurationDays": {
+          "min": 7,
+          "max": 365
+        }
+      }
+    },
+    {
+      "name": "credit_before_register",
+      "tSinceStartMs": 2258,
+      "ms": 160,
+      "registered": false,
+      "body": {
+        "network": "arc-staging",
+        "address": "0x801e256F516a2fD3E0e06A871419E707695B82DF",
+        "registered": false,
+        "wallet": {
+          "usdcBalance": "500.0",
+          "usdcAllowanceToMarketplace": "0.0"
+        },
+        "nextStep": "Use prepare_register_agent to get an unsigned registration transaction, sign it with this wallet, then prepare_create_pool.",
+        "rpc": {
+          "blockNumber": 63662257,
+          "blockTimestamp": 1790201755,
+          "ageSeconds": 1,
+          "stale": false
+        }
+      }
+    },
+    {
+      "name": "prepare_register_agent",
+      "tSinceStartMs": 2455,
+      "ms": 196,
+      "summary": "Register 0x801e256F516a2fD3E0e06A871419E707695B82DF as an agent on arc-staging with URI \"https://example.invalid/fresh-agent.json\". No USDC moves.",
+      "sim": {
+        "ok": true,
+        "gasEstimate": "353825",
+        "revertReason": null,
+        "plainLanguage": null,
+        "from": "0x801e256F516a2fD3E0e06A871419E707695B82DF"
+      },
+      "warnings": []
+    },
+    {
+      "name": "send_register",
+      "tSinceStartMs": 8679,
+      "hash": "0xdcc0ef3eb819fe92d47952f701236bfabfab5f507feb62cd6d6c6cdfd9368bc8",
+      "via": "relay"
+    },
+    {
+      "name": "verify_register_onchain",
+      "tSinceStartMs": 8993,
+      "agentId": "66"
+    },
+    {
+      "name": "prepare_create_pool",
+      "tSinceStartMs": 9426,
+      "ms": 432,
+      "summary": "Create the agent liquidity pool for 0x801e256F516a2fD3E0e06A871419E707695B82DF on arc-staging. No USDC moves.",
+      "sim": {
+        "ok": true,
+        "gasEstimate": "139875",
+        "revertReason": null,
+        "plainLanguage": null,
+        "from": "0x801e256F516a2fD3E0e06A871419E707695B82DF"
+      }
+    },
+    {
+      "name": "send_create_pool",
+      "tSinceStartMs": 15397,
+      "hash": "0x3930b54d924fdd79370eef7335c34306074b3cf0b7b9b3ea089547d836f4560d",
+      "via": "self-rpc"
+    },
+    {
+      "name": "verify_pool",
+      "tSinceStartMs": 15756,
+      "ms": 358,
+      "body": {
+        "network": "arc-staging",
+        "agentId": 66,
+        "agentAddress": "0x801e256F516a2fD3E0e06A871419E707695B82DF",
+        "totalLiquidityUsdc": "0.0",
+        "availableLiquidityUsdc": "0.0",
+        "totalLoanedUsdc": "0.0",
+        "totalEarnedUsdc": "0.0",
+        "utilizationPercent": 0,
+        "lenderCount": 0,
+        "isActive": true,
+        "activeLoans": 0,
+        "outstandingPrincipalUsdc": "0.0",
+        "borrower": {
+          "reputationScore": 0,
+          "tier": "New",
+          "interestRateAprPercent": 15,
+          "collateralPercent": 100
+        },
+        "lenderCapacity": {
+          "lenders": 0,
+          "max": 50,
+          "full": false
+        },
+        "minSupplyUsdc": "10.0",
+        "rpc": {
+          "blockNumber": 63662285,
+          "blockTimestamp": 1790201769,
+          "ageSeconds": 1,
+          "stale": false
+        }
+      }
+    },
+    {
+      "name": "prepare_supply_liquidity",
+      "tSinceStartMs": 16133,
+      "ms": 376,
+      "summary": "Supply 120.0 USDC from 0x801e256F516a2fD3E0e06A871419E707695B82DF into agent #66's pool on arc-staging. Requires a prior exact USDC approval of the same amount.",
+      "prerequisite": "Allow the Specular marketplace (0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18) to spend exactly 120.0 USDC from 0x801e256F516a2fD3E0e06A871419E707695B82DF on arc-staging.",
+      "sim": {
+        "ok": false,
+        "gasEstimate": null,
+        "revertReason": "ERC20InsufficientAllowance(0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18, 0, 120000000)",
+        "plainLanguage": "The marketplace is not approved to pull enough USDC from your wallet. Send the exact-amount approve_usdc transaction (see `prerequisite`) first. (A prerequisite approve is included in this response; simulate again after it is mined.)",
+        "from": "0x801e256F516a2fD3E0e06A871419E707695B82DF"
+      },
+      "warnings": [
+        "Marketplace allowance (0.0 USDC) is below the 120.0 USDC this call pulls. Send `prerequisite` (exact approve) first or the main transaction will revert."
+      ]
+    },
+    {
+      "name": "send_approve_for_supply",
+      "tSinceStartMs": 22076,
+      "hash": "0x0fc0f6c09bd44a6d937ba772cf33fe677d8458b5f88b2f875e6d028708bd775a",
+      "via": "relay"
+    },
+    {
+      "name": "send_supply",
+      "tSinceStartMs": 28004,
+      "hash": "0xa3eb0268f88f2b6af8821e41a79d3695eef9bcd21e53e1d2f065588a414f6c41",
+      "via": "self-rpc"
+    },
+    {
+      "name": "verify_supply",
+      "tSinceStartMs": 28622,
+      "poolAfter": {
+        "network": "arc-staging",
+        "agentId": 66,
+        "agentAddress": "0x801e256F516a2fD3E0e06A871419E707695B82DF",
+        "totalLiquidityUsdc": "120.0",
+        "availableLiquidityUsdc": "120.0",
+        "totalLoanedUsdc": "0.0",
+        "totalEarnedUsdc": "0.0",
+        "utilizationPercent": 0,
+        "lenderCount": 1,
+        "isActive": true,
+        "activeLoans": 0,
+        "outstandingPrincipalUsdc": "0.0",
+        "borrower": {
+          "reputationScore": 0,
+          "tier": "New",
+          "interestRateAprPercent": 15,
+          "collateralPercent": 100
+        },
+        "lenderCapacity": {
+          "lenders": 1,
+          "max": 50,
+          "full": false
+        },
+        "minSupplyUsdc": "10.0",
+        "rpc": {
+          "blockNumber": 63662310,
+          "blockTimestamp": 1790201782,
+          "ageSeconds": 0,
+          "stale": false
+        }
+      },
+      "allowanceLeft": "0"
+    },
+    {
+      "name": "get_self_stake",
+      "tSinceStartMs": 28983,
+      "ms": 360,
+      "body": {
+        "network": "arc-staging",
+        "marketplaceVersion": "V6.2",
+        "agentId": 66,
+        "agentAddress": "0x801e256F516a2fD3E0e06A871419E707695B82DF",
+        "selfStakeUsdc": "120.0",
+        "locked": false,
+        "outstandingPrincipalUsdc": "0.0",
+        "requiredForCurrentExposureUsdc": "0.0",
+        "shortfallUsdc": "0.0",
+        "withdrawableUsdc": "120.0",
+        "excessOverRequirementUsdc": "120.0",
+        "claimableInterestUsdc": "0.0",
+        "note": "Agent #66 has no outstanding principal, so this position is not locked and can be withdrawn like any lender position. It becomes locked again the moment the agent opens a loan.",
+        "rpc": {
+          "blockNumber": 63662310,
+          "blockTimestamp": 1790201782,
+          "ageSeconds": 1,
+          "stale": false
+        }
+      }
+    },
+    {
+      "name": "required_self_stake",
+      "tSinceStartMs": 29481,
+      "ms": 498,
+      "body": {
+        "network": "arc-staging",
+        "marketplaceVersion": "V6.2",
+        "agentId": 66,
+        "agentAddress": "0x801e256F516a2fD3E0e06A871419E707695B82DF",
+        "additionalAmountUsdc": "25.0",
+        "outstandingPrincipalUsdc": "0.0",
+        "collateralPercent": 100,
+        "creditMultiple": 2,
+        "requiredSelfStakeUsdc": "0.0",
+        "currentSelfStakeUsdc": "120.0",
+        "shortfallUsdc": "0.0",
+        "sufficient": true,
+        "note": "This agent is at a 100%-collateral tier, so none of its exposure is unsecured and no self-stake is required.",
+        "rpc": {
+          "blockNumber": 63662310,
+          "blockTimestamp": 1790201782,
+          "ageSeconds": 1,
+          "stale": false
+        }
+      }
+    },
+    {
+      "name": "credit_after_supply",
+      "tSinceStartMs": 29698,
+      "ms": 217,
+      "body": {
+        "network": "arc-staging",
+        "address": "0x801e256F516a2fD3E0e06A871419E707695B82DF",
+        "registered": true,
+        "agentId": 66,
+        "owner": "0x801e256F516a2fD3E0e06A871419E707695B82DF",
+        "agentWallet": "0x801e256F516a2fD3E0e06A871419E707695B82DF",
+        "agentURI": "https://example.invalid/fresh-agent.json",
+        "isActive": true,
+        "registrationTime": 1790201757,
+        "reputation": {
+          "score": 0,
+          "tier": "New",
+          "max": 1000
+        },
+        "credit": {
+          "creditLimitUsdc": "100.0",
+          "outstandingPrincipalUsdc": "0.0",
+          "remainingCreditUsdc": "100.0",
+          "collateralPercent": 100,
+          "interestRateBps": 1500,
+          "interestRateAprPercent": 15,
+          "activeLoans": 0,
+          "maxActiveLoans": 10,
+          "canBorrow": true,
+          "model": {
+            "reputationVersion": "V4",
+            "tierIndex": 0,
+            "tierLimitUsdc": "1000.0",
+            "ladderLimitUsdc": "100.0",
+            "maxRepaidPrincipalUsdc": "0.0",
+            "maxTierLimitUsdc": "10000.0",
+            "lockedOut": false,
+            "lockedUntil": 0,
+            "lockedUntilIso": null,
+            "explanation": "Credit limit = min(tier limit 1000.0, ladder limit 100.0) USDC. The ladder is creditMultiple x the largest single on-time-repaid loan (0.0 USDC) + growthStep, floored at the bootstrap limit. No tier may ever exceed 10000.0 USDC (MAX_TIER_LIMIT, an immutable constant)."
+          }
+        },
+        "selfStake": {
+          "marketplaceVersion": "V6.2",
+          "amountUsdc": "120.0",
+          "locked": false,
+          "requiredForCurrentExposureUsdc": "0.0",
+          "shortfallUsdc": "0.0",
+          "note": "The agent holds no outstanding principal, so its first-loss position is currently withdrawable."
+        },
+        "pool": {
+          "agentId": 66,
+          "totalLiquidityUsdc": "120.0",
+          "availableLiquidityUsdc": "120.0",
+          "totalLoanedUsdc": "0.0"
+        },
+        "wallet": {
+          "usdcBalance": "380.0",
+          "usdcAllowanceToMarketplace": "0.0"
+        },
+        "rpc": {
+          "blockNumber": 63662310,
+          "blockTimestamp": 1790201782,
+          "ageSeconds": 1,
+          "stale": false
+        }
+      }
+    },
+    {
+      "name": "prepare_request_loan",
+      "tSinceStartMs": 29949,
+      "ms": 249,
+      "status": 200,
+      "summary": "Borrow 25.0 USDC for 30 days as 0x801e256F516a2fD3E0e06A871419E707695B82DF on arc-staging. Interest is fixed for the full term at your reputation tier's APR. At your current tier: 15% APR, 100% collateral (25.0 USDC), projected repayment 25.308219 USDC.",
+      "prerequisite": "Allow the Specular marketplace (0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18) to spend exactly 25.0 USDC from 0x801e256F516a2fD3E0e06A871419E707695B82DF on arc-staging.",
+      "sim": {
+        "ok": false,
+        "gasEstimate": null,
+        "revertReason": "ERC20InsufficientAllowance(0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18, 0, 25000000)",
+        "plainLanguage": "The marketplace is not approved to pull enough USDC from your wallet. Send the exact-amount approve_usdc transaction (see `prerequisite`) first. (A prerequisite approve is included in this response; simulate again after it is mined.)",
+        "from": "0x801e256F516a2fD3E0e06A871419E707695B82DF"
+      },
+      "warnings": [
+        "Marketplace allowance (0.0 USDC) is below the 25.0 USDC this call pulls. Send `prerequisite` (exact approve) first or the main transaction will revert."
+      ]
+    },
+    {
+      "name": "send_approve_collateral",
+      "tSinceStartMs": 35904,
+      "hash": "0xe2fe55fefaf2d35742a1133592d8b86aeb83a0a565262723848196aeac343e41",
+      "via": "relay"
+    },
+    {
+      "name": "send_request_loan",
+      "tSinceStartMs": 42083,
+      "hash": "0xa609a6cb3f5c2a4db8baaabec252eb84bddc9e39494e88a678281b7d32bf57ad",
+      "via": "relay"
+    },
+    {
+      "name": "get_transaction_loan",
+      "tSinceStartMs": 42373,
+      "ms": 290,
+      "body": {
+        "network": "arc-staging",
+        "hash": "0xa609a6cb3f5c2a4db8baaabec252eb84bddc9e39494e88a678281b7d32bf57ad",
+        "found": true,
+        "status": "confirmed",
+        "blockNumber": 63662327,
+        "from": "0x801e256F516a2fD3E0e06A871419E707695B82DF",
+        "to": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+        "gasUsed": "576521",
+        "events": [
+          {
+            "name": "LoanRequested",
+            "args": {
+              "loanId": "115",
+              "agentId": "66",
+              "borrower": "0x801e256F516a2fD3E0e06A871419E707695B82DF",
+              "amount": "25000000"
+            }
+          },
+          {
+            "name": "LoanDisbursed",
+            "args": {
+              "loanId": "115",
+              "amount": "25000000"
+            }
+          }
+        ],
+        "explorer": "https://testnet.arcscan.app/tx/0xa609a6cb3f5c2a4db8baaabec252eb84bddc9e39494e88a678281b7d32bf57ad",
+        "rpc": {
+          "blockNumber": 63662337,
+          "blockTimestamp": 1790201796,
+          "ageSeconds": 0,
+          "stale": false
+        }
+      }
+    },
+    {
+      "name": "get_loan_status",
+      "tSinceStartMs": 42657,
+      "ms": 284,
+      "body": {
+        "network": "arc-staging",
+        "loanId": 115,
+        "borrower": "0x801e256F516a2fD3E0e06A871419E707695B82DF",
+        "agentId": 66,
+        "principalUsdc": "25.0",
+        "collateralUsdc": "25.0",
+        "interestRateBps": 1500,
+        "interestRateAprPercent": 15,
+        "durationDays": 30,
+        "startTime": 1790201791,
+        "endTime": 1792793791,
+        "dueDate": "2026-10-23T22:16:31.000Z",
+        "secondsUntilDue": 2591994,
+        "overdue": false,
+        "state": "ACTIVE",
+        "repayment": {
+          "principalUsdc": "25.0",
+          "interestUsdc": "0.308219",
+          "totalRepaymentUsdc": "25.308219",
+          "chargeableDays": 30,
+          "lateSeconds": 0,
+          "late": false,
+          "accruing": false,
+          "maxTotalRepaymentUsdc": "25.616438",
+          "source": "previewRepayment",
+          "note": "Interest is fixed for the full term when repaid on time. Approve exactly totalRepaymentUsdc to the marketplace before repayLoan."
+        },
+        "explorer": "https://testnet.arcscan.app/address/0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+        "rpc": {
+          "blockNumber": 63662337,
+          "blockTimestamp": 1790201796,
+          "ageSeconds": 0,
+          "stale": false
+        }
+      }
+    },
+    {
+      "name": "verify_loan_onchain",
+      "tSinceStartMs": 42793,
+      "raw": [
+        "115",
+        "731423102055548402334956341643482790796967248607",
+        "0x0000000000000000000000000000000000000042",
+        "25000000",
+        "25000000",
+        "1500",
+        "1790201791",
+        "1792793791",
+        "0"
+      ]
+    },
+    {
+      "name": "preview_repayment",
+      "tSinceStartMs": 43028,
+      "ms": 80,
+      "body": {
+        "network": "arc-staging",
+        "marketplaceVersion": "V6.2",
+        "loanId": 115,
+        "borrower": "0x801e256F516a2fD3E0e06A871419E707695B82DF",
+        "agentId": 66,
+        "endTime": 1792793791,
+        "dueDate": "2026-10-23T22:16:31.000Z",
+        "lateInterestCapDays": 30,
+        "principalUsdc": "25.0",
+        "interestUsdc": "0.308219",
+        "totalRepaymentUsdc": "25.308219",
+        "chargeableDays": 30,
+        "lateSeconds": 0,
+        "late": false,
+        "accruing": false,
+        "maxTotalRepaymentUsdc": "25.616438",
+        "source": "previewRepayment",
+        "note": "Interest is fixed for the full term when repaid on time. Approve exactly totalRepaymentUsdc to the marketplace before repayLoan.",
+        "rpc": {
+          "blockNumber": 63662337,
+          "blockTimestamp": 1790201796,
+          "ageSeconds": 1,
+          "stale": false
+        }
+      }
+    },
+    {
+      "name": "prepare_repay_loan",
+      "tSinceStartMs": 43198,
+      "ms": 170,
+      "status": 200,
+      "summary": "Repay loan #115 in full from 0x801e256F516a2fD3E0e06A871419E707695B82DF on arc-staging. Requires a prior exact USDC approval of the amount due (see previewRepayment / prerequisite). Total due: 25.308219 USDC (25.0 principal + 0.308219 interest).",
+      "prerequisite": "Allow the Specular marketplace (0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18) to spend exactly 25.308219 USDC from 0x801e256F516a2fD3E0e06A871419E707695B82DF on arc-staging.",
+      "sim": {
+        "ok": false,
+        "gasEstimate": null,
+        "revertReason": "ERC20InsufficientAllowance(0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18, 0, 25308219)",
+        "plainLanguage": "The marketplace is not approved to pull enough USDC from your wallet. Send the exact-amount approve_usdc transaction (see `prerequisite`) first. (A prerequisite approve is included in this response; simulate again after it is mined.)",
+        "from": "0x801e256F516a2fD3E0e06A871419E707695B82DF"
+      }
+    },
+    {
+      "name": "send_approve_repay",
+      "tSinceStartMs": 53411,
+      "hash": "0x143987f4cc69f8ea327abad0b1be64e281da8377813e1b79554709e4b2f30845",
+      "via": "relay"
+    },
+    {
+      "name": "send_repay",
+      "tSinceStartMs": 59431,
+      "hash": "0x50a45527e3e6ce8f0cee9fa03ed26d2937bd46e356495273ac5bb519b5abaae6",
+      "via": "relay"
+    },
+    {
+      "name": "verify_repaid",
+      "tSinceStartMs": 59690,
+      "ms": 258,
+      "status": "REPAID",
+      "body": {
+        "network": "arc-staging",
+        "loanId": 115,
+        "borrower": "0x801e256F516a2fD3E0e06A871419E707695B82DF",
+        "agentId": 66,
+        "principalUsdc": "25.0",
+        "collateralUsdc": "25.0",
+        "interestRateBps": 1500,
+        "interestRateAprPercent": 15,
+        "durationDays": 30,
+        "startTime": 1790201791,
+        "endTime": 1792793791,
+        "dueDate": "2026-10-23T22:16:31.000Z",
+        "secondsUntilDue": 2591977,
+        "overdue": false,
+        "state": "REPAID",
+        "repayment": null,
+        "explorer": "https://testnet.arcscan.app/address/0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+        "rpc": {
+          "blockNumber": 63662372,
+          "blockTimestamp": 1790201813,
+          "ageSeconds": 1,
+          "stale": false
+        }
+      }
+    },
+    {
+      "name": "credit_after_repay",
+      "tSinceStartMs": 60512,
+      "ms": 822,
+      "body": {
+        "network": "arc-staging",
+        "address": "0x801e256F516a2fD3E0e06A871419E707695B82DF",
+        "registered": true,
+        "agentId": 66,
+        "owner": "0x801e256F516a2fD3E0e06A871419E707695B82DF",
+        "agentWallet": "0x801e256F516a2fD3E0e06A871419E707695B82DF",
+        "agentURI": "https://example.invalid/fresh-agent.json",
+        "isActive": true,
+        "registrationTime": 1790201757,
+        "reputation": {
+          "score": 0,
+          "tier": "New",
+          "max": 1000
+        },
+        "credit": {
+          "creditLimitUsdc": "100.0",
+          "outstandingPrincipalUsdc": "0.0",
+          "remainingCreditUsdc": "100.0",
+          "collateralPercent": 100,
+          "interestRateBps": 1500,
+          "interestRateAprPercent": 15,
+          "activeLoans": 0,
+          "maxActiveLoans": 10,
+          "canBorrow": true,
+          "model": {
+            "reputationVersion": "V4",
+            "tierIndex": 0,
+            "tierLimitUsdc": "1000.0",
+            "ladderLimitUsdc": "100.0",
+            "maxRepaidPrincipalUsdc": "0.0",
+            "maxTierLimitUsdc": "10000.0",
+            "lockedOut": false,
+            "lockedUntil": 0,
+            "lockedUntilIso": null,
+            "explanation": "Credit limit = min(tier limit 1000.0, ladder limit 100.0) USDC. The ladder is creditMultiple x the largest single on-time-repaid loan (0.0 USDC) + growthStep, floored at the bootstrap limit. No tier may ever exceed 10000.0 USDC (MAX_TIER_LIMIT, an immutable constant)."
+          }
+        },
+        "selfStake": {
+          "marketplaceVersion": "V6.2",
+          "amountUsdc": "120.0",
+          "locked": false,
+          "requiredForCurrentExposureUsdc": "0.0",
+          "shortfallUsdc": "0.0",
+          "note": "The agent holds no outstanding principal, so its first-loss position is currently withdrawable."
+        },
+        "pool": {
+          "agentId": 66,
+          "totalLiquidityUsdc": "120.0",
+          "availableLiquidityUsdc": "120.305137",
+          "totalLoanedUsdc": "0.0"
+        },
+        "wallet": {
+          "usdcBalance": "379.691781",
+          "usdcAllowanceToMarketplace": "0.0"
+        },
+        "rpc": {
+          "blockNumber": 63662372,
+          "blockTimestamp": 1790201813,
+          "ageSeconds": 1,
+          "stale": false
+        }
+      }
+    },
+    {
+      "name": "get_lending_positions",
+      "tSinceStartMs": 60981,
+      "ms": 469,
+      "body": {
+        "network": "arc-staging",
+        "address": "0x801e256F516a2fD3E0e06A871419E707695B82DF",
+        "totalSuppliedUsdc": "120.0",
+        "totalClaimableInterestUsdc": "0.305137",
+        "positions": [
+          {
+            "agentId": 66,
+            "suppliedUsdc": "120.0",
+            "claimableInterestUsdc": "0.305137",
+            "depositTimestamp": 1790201777,
+            "shareOfPoolPercent": 100
+          }
+        ],
+        "rpc": {
+          "blockNumber": 63662372,
+          "blockTimestamp": 1790201813,
+          "ageSeconds": 2,
+          "stale": false
+        }
+      }
+    },
+    {
+      "name": "prepare_claim_interest",
+      "tSinceStartMs": 61222,
+      "ms": 241,
+      "status": 200,
+      "summary": "Claim accrued lender interest from agent #66's pool on arc-staging to 0x801e256F516a2fD3E0e06A871419E707695B82DF.",
+      "sim": {
+        "ok": true,
+        "gasEstimate": "61384",
+        "revertReason": null,
+        "plainLanguage": null,
+        "from": "0x801e256F516a2fD3E0e06A871419E707695B82DF"
+      }
+    },
+    {
+      "name": "send_claim_interest",
+      "tSinceStartMs": 67460,
+      "hash": "0x997fbf04949daebeaa02d74bab14d07d096e8f39ec48d106e003e461cd2ceb1d",
+      "via": "self-rpc",
+      "deltaUsdc": "0.305137"
+    },
+    {
+      "name": "prepare_withdraw_liquidity",
+      "tSinceStartMs": 67963,
+      "ms": 502,
+      "status": 200,
+      "summary": "Withdraw 50.0 USDC of supplied principal from agent #66's pool on arc-staging to 0x801e256F516a2fD3E0e06A871419E707695B82DF.",
+      "sim": {
+        "ok": true,
+        "gasEstimate": "72230",
+        "revertReason": null,
+        "plainLanguage": null,
+        "from": "0x801e256F516a2fD3E0e06A871419E707695B82DF"
+      }
+    },
+    {
+      "name": "send_withdraw",
+      "tSinceStartMs": 74347,
+      "hash": "0x5dd9a61b2d2466fa2a21142be496ac78c133dfde1d4590b605af557b6347d192",
+      "via": "relay",
+      "deltaUsdc": "50.0"
+    }
+  ],
+  "timeToRepaidLoanMs": 59690,
+  "totalMs": 74347,
+  "apiCalls": [
+    {
+      "step": "/v1/networks",
+      "method": "GET",
+      "status": 200,
+      "ms": 197
+    },
+    {
+      "step": "/v1/arc-staging/status",
+      "method": "GET",
+      "status": 200,
+      "ms": 1899
+    },
+    {
+      "step": "/v1/arc-staging/agents/0x801e256F516a2fD3E0e06A871419E707695B82DF/credit",
+      "method": "GET",
+      "status": 200,
+      "ms": 160
+    },
+    {
+      "step": "/v1/arc-staging/tx/prepare/register_agent",
+      "method": "POST",
+      "status": 200,
+      "ms": 196
+    },
+    {
+      "step": "/v1/arc-staging/tx/broadcast",
+      "method": "POST",
+      "status": 200,
+      "ms": 141
+    },
+    {
+      "step": "broadcast(relay)",
+      "hash": "0xdcc0ef3eb819fe92d47952f701236bfabfab5f507feb62cd6d6c6cdfd9368bc8",
+      "status": 1,
+      "ms": 4718,
+      "gasUsed": "349881"
+    },
+    {
+      "step": "/v1/arc-staging/tx/prepare/create_pool",
+      "method": "POST",
+      "status": 200,
+      "ms": 432
+    },
+    {
+      "step": "broadcast(self-rpc)",
+      "hash": "0x3930b54d924fdd79370eef7335c34306074b3cf0b7b9b3ea089547d836f4560d",
+      "status": 1,
+      "ms": 4753,
+      "gasUsed": "138742"
+    },
+    {
+      "step": "/v1/arc-staging/pools/66",
+      "method": "GET",
+      "status": 200,
+      "ms": 358
+    },
+    {
+      "step": "/v1/arc-staging/tx/prepare/supply_liquidity",
+      "method": "POST",
+      "status": 200,
+      "ms": 376
+    },
+    {
+      "step": "/v1/arc-staging/tx/broadcast",
+      "method": "POST",
+      "status": 200,
+      "ms": 159
+    },
+    {
+      "step": "broadcast(relay)",
+      "hash": "0x0fc0f6c09bd44a6d937ba772cf33fe677d8458b5f88b2f875e6d028708bd775a",
+      "status": 1,
+      "ms": 4696,
+      "gasUsed": "45927"
+    },
+    {
+      "step": "broadcast(self-rpc)",
+      "hash": "0xa3eb0268f88f2b6af8821e41a79d3695eef9bcd21e53e1d2f065588a414f6c41",
+      "status": 1,
+      "ms": 4725,
+      "gasUsed": "210885"
+    },
+    {
+      "step": "/v1/arc-staging/pools/66",
+      "method": "GET",
+      "status": 200,
+      "ms": 329
+    },
+    {
+      "step": "/v1/arc-staging/agents/66/self-stake",
+      "method": "GET",
+      "status": 200,
+      "ms": 360
+    },
+    {
+      "step": "/v1/arc-staging/agents/66/required-self-stake?additionalAmount=25",
+      "method": "GET",
+      "status": 200,
+      "ms": 498
+    },
+    {
+      "step": "/v1/arc-staging/agents/0x801e256F516a2fD3E0e06A871419E707695B82DF/credit",
+      "method": "GET",
+      "status": 200,
+      "ms": 217
+    },
+    {
+      "step": "/v1/arc-staging/tx/prepare/request_loan",
+      "method": "POST",
+      "status": 200,
+      "ms": 249
+    },
+    {
+      "step": "/v1/arc-staging/tx/broadcast",
+      "method": "POST",
+      "status": 200,
+      "ms": 121
+    },
+    {
+      "step": "broadcast(relay)",
+      "hash": "0xe2fe55fefaf2d35742a1133592d8b86aeb83a0a565262723848196aeac343e41",
+      "status": 1,
+      "ms": 4712,
+      "gasUsed": "45939"
+    },
+    {
+      "step": "/v1/arc-staging/tx/broadcast",
+      "method": "POST",
+      "status": 200,
+      "ms": 409
+    },
+    {
+      "step": "broadcast(relay)",
+      "hash": "0xa609a6cb3f5c2a4db8baaabec252eb84bddc9e39494e88a678281b7d32bf57ad",
+      "status": 1,
+      "ms": 4974,
+      "gasUsed": "576521"
+    },
+    {
+      "step": "/v1/arc-staging/tx/0xa609a6cb3f5c2a4db8baaabec252eb84bddc9e39494e88a678281b7d32bf57ad",
+      "method": "GET",
+      "status": 200,
+      "ms": 290
+    },
+    {
+      "step": "/v1/arc-staging/loans/115",
+      "method": "GET",
+      "status": 200,
+      "ms": 284
+    },
+    {
+      "step": "/v1/arc-staging/loans/115/repayment",
+      "method": "GET",
+      "status": 200,
+      "ms": 80
+    },
+    {
+      "step": "/v1/arc-staging/tx/prepare/repay_loan",
+      "method": "POST",
+      "status": 200,
+      "ms": 170
+    },
+    {
+      "step": "/v1/arc-staging/tx/broadcast",
+      "method": "POST",
+      "status": 200,
+      "ms": 161
+    },
+    {
+      "step": "broadcast(relay)",
+      "hash": "0x143987f4cc69f8ea327abad0b1be64e281da8377813e1b79554709e4b2f30845",
+      "status": 1,
+      "ms": 9025,
+      "gasUsed": "45939"
+    },
+    {
+      "step": "/v1/arc-staging/tx/broadcast",
+      "method": "POST",
+      "status": 200,
+      "ms": 269
+    },
+    {
+      "step": "broadcast(relay)",
+      "hash": "0x50a45527e3e6ce8f0cee9fa03ed26d2937bd46e356495273ac5bb519b5abaae6",
+      "status": 1,
+      "ms": 4807,
+      "gasUsed": "237052"
+    },
+    {
+      "step": "/v1/arc-staging/loans/115",
+      "method": "GET",
+      "status": 200,
+      "ms": 258
+    },
+    {
+      "step": "/v1/arc-staging/agents/0x801e256F516a2fD3E0e06A871419E707695B82DF/credit",
+      "method": "GET",
+      "status": 200,
+      "ms": 822
+    },
+    {
+      "step": "/v1/arc-staging/agents/0x801e256F516a2fD3E0e06A871419E707695B82DF/positions",
+      "method": "GET",
+      "status": 200,
+      "ms": 469
+    },
+    {
+      "step": "/v1/arc-staging/tx/prepare/claim_interest",
+      "method": "POST",
+      "status": 200,
+      "ms": 241
+    },
+    {
+      "step": "broadcast(self-rpc)",
+      "hash": "0x997fbf04949daebeaa02d74bab14d07d096e8f39ec48d106e003e461cd2ceb1d",
+      "status": 1,
+      "ms": 4744,
+      "gasUsed": "51195"
+    },
+    {
+      "step": "/v1/arc-staging/tx/prepare/withdraw_liquidity",
+      "method": "POST",
+      "status": 200,
+      "ms": 502
+    },
+    {
+      "step": "/v1/arc-staging/tx/broadcast",
+      "method": "POST",
+      "status": 200,
+      "ms": 124
+    },
+    {
+      "step": "broadcast(relay)",
+      "hash": "0x5dd9a61b2d2466fa2a21142be496ac78c133dfde1d4590b605af557b6347d192",
+      "status": 1,
+      "ms": 4736,
+      "gasUsed": "66771"
+    }
+  ],
+  "agentId": "66",
+  "loanId": "115"
+}

@@ -37,18 +37,31 @@ await agent.repayLoan(loan.id);
 
 ## Contract Addresses
 
-### Base Mainnet (Chain ID: 8453)
+`src/config/*.json` is the single source of truth for every deployment — the SDK,
+the agent server and the monitors all read those files. The addresses below are a
+convenience copy of them; if the two ever disagree, the JSON wins.
+
+### Base Mainnet (Chain ID: 8453) — `src/config/base-addresses.json`
 
 ```
-AgentRegistryV2:           0xbd8210061bF24917Ca2F8098A1F3A4f76adA31fb
-ReputationManagerV3:       0xe4D78A509daa8dc8bFB453cb76d61f1Cb1c4C3fF
-AgentLiquidityMarketplace: 0x77f8D49C706A566Eecc9a2C3DD6556D5be54CACE
-DepositRouter:             0x771c293167AeD146EC4f56479056645Be46a0275
-ValidationRegistry:        0x5194D976F2f1B59C0500cDe1e54A362d9BB9124B
+AgentRegistryV2:           0xb9996de05fD514A0cB2B81fa25448EECD4559Aaa
+ReputationManagerV3:       0xf19b1780A84668C8dfB6b4E84C08e457dB3B0527
+AgentLiquidityMarketplace: 0x0a4e3C745aB95aceb45B05C28D89fe4Db8815F9a   (V6, canonical since 2026-05-17)
+AgentCreditFaucet:         0x990f7495528bFC2ebcb8CbD6EeBd2Bc32B450164
 USDC:                      0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
 ```
 
-[View on BaseScan →](https://basescan.org/address/0x77f8D49C706A566Eecc9a2C3DD6556D5be54CACE)
+[View on BaseScan →](https://basescan.org/address/0x0a4e3C745aB95aceb45B05C28D89fe4Db8815F9a)
+
+### Arc Mainnet (Chain ID: 5042) — `src/config/arc-mainnet-addresses.json`
+
+```
+AgentRegistryV2:               0x6F1EbF50290f6D4A9947E9EB77f98a683684fBF5
+ReputationManagerV4:           0x12953e732e5D1aFdA640554125367d1CEC2ac4FB
+AgentLiquidityMarketplace V6.2: 0xCb23f2fb03Bfd4775Cc0e76E28f64c1e545071be
+AgentCreditFaucet:             0xD854F80031A8d0CB166587AafA0969Da8C3757bF
+USDC:                          0x3600000000000000000000000000000000000000
+```
 
 ---
 
@@ -73,21 +86,64 @@ USDC:                      0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
 
 ---
 
+## Prerequisites
+
+| Tool | Version | Needed for |
+|------|---------|-----------|
+| Node.js | 22 LTS | everything (`npm`, hardhat, the SDK, the agent server) |
+| Foundry (`forge`) | any recent | the Solidity invariant/gas/soak suites under `test/foundry/` — optional |
+| Python | ≥ 3.10 | the Python SDK under `python/` — optional |
+
+Nothing else is required. `lib/forge-std` is a git submodule but `forge` installs it
+on first run, so a plain `git clone` is enough. **Run `npm install` at the repo root
+before `forge test`** — `foundry.toml` remaps `@openzeppelin/` into `node_modules/`,
+so forge cannot compile without it.
+
 ## Local Development
 
 ```bash
-# Install dependencies
+# 1. Install dependencies (repo root)
 npm install
 
-# Run tests
-npx hardhat test
+# 2. Compile the contracts
+npx hardhat compile
 
-# Deploy locally
-npx hardhat run scripts/deploy-local.js
+# 3. Run the JS/TS test suite (~2 min)
+npm test
 
-# Start API server
+# 4. Optional: the Solidity suites (needs Foundry; run step 1 first)
+forge test
+
+# 5. Deploy the local dev stack
+npx hardhat node                                          # terminal 1
+npm run deploy:local                                      # terminal 2
+
+# 6. Start the API server
 npm run api:multi
 ```
+
+### Agent integration server (`mcp-server/`)
+
+Builds and tests independently of the contracts — the ABIs it needs are committed
+under `mcp-server/abi/`, so no `hardhat compile` is required:
+
+```bash
+cd mcp-server && npm install && npm run build && npm test
+```
+
+### Python SDK (`python/`)
+
+```bash
+cd python && pip install -r requirements.txt && pip install pytest && pytest tests/
+```
+
+### Environment
+
+Copy `.env.example` to `.env` and fill in what you need. The read-only monitors
+(`forensics/monitor/*.js`) run with no `.env` at all — they fall back to public RPC
+endpoints. Deploy scripts require `PRIVATE_KEY`; they are dry-run by default and only
+broadcast with `DEPLOY_CONFIRM=YES`, so an unfunded throwaway key is enough to
+rehearse a deployment.
 
 ---
 
@@ -109,13 +165,9 @@ See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for Railway/Vercel/Render deploym
 AI Agent → Register → Request Loan → Repay → Build Reputation → Better Terms
 ```
 
-**Reputation Benefits:**
-- Score 800+: 0% collateral, 5% APR
-- Score 600-799: 0% collateral, 7% APR
-- Score 500-699: 25% collateral, 10% APR
-- Score < 500: 50% collateral or rejected
-
-+10 points per on-time repayment | -50 points per default
+**Reputation Benefits:** the live tier table is on-chain and owner-settable
+(`ReputationManagerV4.tierLimits`); read it with the monitor or
+`getCreditLimit()` rather than trusting a copy in a README.
 
 ---
 
@@ -124,7 +176,9 @@ AI Agent → Register → Request Loan → Repay → Build Reputation → Better
 - ✅ Comprehensive testing (1,500+ loans across testnets)
 - ✅ Production proven on Base mainnet
 - ✅ Open source & auditable
-- ✅ No admin keys in core contracts
+- ⚠️  The contracts are **not** admin-key-free: the owner can pause, retune the
+  tier table and the economic levers, and sweep accumulated fees. See
+  `AUDIT_BUNDLE.md` and `forensics/output/` for the audit history.
 
 ---
 

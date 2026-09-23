@@ -1,0 +1,130 @@
+{
+  "steps": [
+    {
+      "name": "marketplace_version",
+      "v": "V6.2",
+      "ms": 791,
+      "tMs": 814
+    },
+    {
+      "name": "capabilities",
+      "c": {
+        "version": "V6.2",
+        "ordinal": 6.2,
+        "v61": true,
+        "v62": true,
+        "reputation_version": "V4",
+        "reputation_v4": true
+      },
+      "ms": 640,
+      "tMs": 1455
+    },
+    {
+      "name": "tier_table",
+      "n": 6,
+      "ms": 25231,
+      "tMs": 26686
+    },
+    {
+      "name": "onboard",
+      "ob": {
+        "agentId": 69,
+        "registerTx": "e06099ed523ef67d071a9ad28cf6979e20e2ffcd74fbc7214d15337b0ed68c5e",
+        "poolTx": "efe821fb7b2c46ea597dd11bef339e3c63072e6ccfe5ec1c2b98c971c93fb5cc",
+        "approveTx": null
+      },
+      "ms": 5571,
+      "tMs": 32258
+    },
+    {
+      "name": "supply",
+      "tx": "e84a2b31d86549c4d2b7db7401171bc1ca7bea45579c0012cd9cb06f319bbc16",
+      "ms": 5716,
+      "tMs": 37975
+    },
+    {
+      "name": "credit_info",
+      "ci": {
+        "score": 0,
+        "credit_limit_usdc": 100.0,
+        "collateral_pct": 100,
+        "interest_rate_apr": 15.0,
+        "marketplace_version": "V6.2",
+        "reputation_version": "V4",
+        "agent_id": 69,
+        "tier": 0,
+        "tier_limit_usdc": 1000.0,
+        "ladder_limit_usdc": 100.0,
+        "max_repaid_principal_usdc": 0.0,
+        "max_tier_limit_usdc": 10000.0,
+        "locked_out": false,
+        "locked_until": 0,
+        "limit_explanation": "Credit limit = min(tier limit 1000.0, ladder limit 100.0) USDC, where the ladder is creditMultiple x your largest on-time-repaid loan (0.0 USDC) + growthStep. No tier may ever exceed 10000.0 USDC (MAX_TIER_LIMIT, an immutable constant).",
+        "self_stake": "SelfStakeInfo(amount=120000000, amount_usdc=120.0, locked=False, required=0, required_usdc=0.0, shortfall=0, shortfall_usdc=0.0)"
+      },
+      "ms": 5631,
+      "tMs": 43606
+    },
+    {
+      "name": "borrow",
+      "bor": {
+        "loanId": 117,
+        "tx": "1081710890790dc20ab131ceba85c721bc6af8a8b70ed1ac3f882e038ac0b21e",
+        "explorerUrl": "https://testnet.arcscan.app/tx/1081710890790dc20ab131ceba85c721bc6af8a8b70ed1ac3f882e038ac0b21e"
+      },
+      "ms": 6619,
+      "tMs": 50226
+    },
+    {
+      "name": "preview_repayment",
+      "pv": {
+        "principal": 25000000,
+        "interest": 308219,
+        "total": 25308219,
+        "chargeable_seconds": 2592000,
+        "late_seconds": 0,
+        "duration_seconds": 2592000,
+        "interest_rate_bps": 1500,
+        "source": "previewRepayment"
+      },
+      "ms": 816,
+      "tMs": 51043
+    },
+    {
+      "name": "repay",
+      "tx": "dda1ff08646d6336582ba5ae9b690bb94bf081a3c6d76a4ea3056c94895d2e53",
+      "ms": 6501,
+      "tMs": 57544
+    },
+    {
+      "name": "VERIFY loans() on chain",
+      "raw": [
+        "117",
+        "0x01Db1568EE10b455490CDfD79ed0Dc6D3bfEbe48",
+        "69",
+        "25000000",
+        "25000000",
+        "1500",
+        "1790202208",
+        "1792794208",
+        "2592000",
+        "2"
+      ],
+      "tMs": 58058
+    },
+    {
+      "name": "claim",
+      "error": "'SpecularClient' object has no attribute 'claim'",
+      "tMs": 58058
+    },
+    {
+      "name": "withdraw",
+      "tx": "efc445fb80914e759e8735fa362986f12ed92c5c040b669431a20a970180d147",
+      "ms": 3708,
+      "tMs": 61767
+    }
+  ],
+  "wallet": "0x01Db1568EE10b455490CDfD79ed0Dc6D3bfEbe48",
+  "timeToRepaidLoanMs": 57544,
+  "totalMs": 61767
+}

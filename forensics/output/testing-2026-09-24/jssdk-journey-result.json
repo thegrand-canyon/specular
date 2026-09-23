@@ -1,0 +1,130 @@
+{
+  "steps": [
+    {
+      "name": "marketplaceVersion",
+      "tMs": 476,
+      "v": "V6.2",
+      "ms": 456
+    },
+    {
+      "name": "capabilities",
+      "tMs": 776,
+      "c": {
+        "version": "V6.2",
+        "ordinal": 6.2,
+        "v61": true,
+        "v62": true,
+        "reputationVersion": "V4",
+        "reputationV4": true
+      },
+      "ms": 300
+    },
+    {
+      "name": "tierTable",
+      "tMs": 1780,
+      "n": "object",
+      "ms": 1004
+    },
+    {
+      "name": "onboard",
+      "tMs": 2061,
+      "ob": {
+        "agentId": 68,
+        "registerTx": null,
+        "poolTx": null,
+        "approveTx": null
+      },
+      "ms": 281
+    },
+    {
+      "name": "supply(agentId,120)",
+      "tMs": 13453,
+      "sup": "0x5c45f0322e9a6e91f0c04020e2bfab8c57fa32579e53bbeb07dcd0fe81d3a963",
+      "ms": 11392
+    },
+    {
+      "name": "creditInfo",
+      "tMs": 13993,
+      "ci": {
+        "score": 0,
+        "creditLimit": "100.0",
+        "collateralPct": 100,
+        "interestRateBps": 1500,
+        "interestRateAPR": 15,
+        "marketplaceVersion": "V6.2",
+        "reputationVersion": "V4",
+        "agentId": 68,
+        "tier": 0,
+        "tierLimit": "1000.0",
+        "ladderLimit": "100.0",
+        "maxRepaidPrincipal": "0.0",
+        "maxTierLimit": "10000.0",
+        "lockedOut": false,
+        "lockedUntil": 0,
+        "limitExplanation": "Credit limit = min(tier limit 1000.0, ladder limit 100.0) USDC, where the ladder is creditMultiple x your largest on-time-repaid loan (0.0 USDC) + growthStep. No tier may ever exceed 10000.0 USDC (MAX_TIER_LIMIT, an immutable constant).",
+        "selfStake": {
+          "amount": "120000000",
+          "amountUsdc": "120.0",
+          "locked": false,
+          "required": "0",
+          "requiredUsdc": "0.0",
+          "shortfall": "0",
+          "shortfallUsdc": "0.0"
+        }
+      },
+      "ms": 540
+    },
+    {
+      "name": "borrow(25,30)",
+      "tMs": 27067,
+      "bor": {
+        "loanId": 116,
+        "tx": "0x50387b08f58170a372cd2a8a9d2324888b2e3474f88d938e886199f9cbe98165"
+      },
+      "ms": 13074
+    },
+    {
+      "name": "previewRepayment",
+      "tMs": 27321,
+      "pv": {
+        "principal": "25000000",
+        "interest": "308219",
+        "total": "25308219",
+        "chargeableSeconds": "2592000",
+        "lateSeconds": "0",
+        "durationSeconds": "2592000",
+        "interestRateBps": "1500",
+        "source": "previewRepayment"
+      },
+      "ms": 254
+    },
+    {
+      "name": "repay",
+      "tMs": 38718,
+      "rp": "0x8b1990f083799553d499dc64029c9b35142b652df48c2b15e517cb9945a4838e",
+      "ms": 11397
+    },
+    {
+      "name": "VERIFY loans(loanId) on chain",
+      "tMs": 38920,
+      "state": "2",
+      "amount": "25000000",
+      "borrower": "0x510496d63A690861BD0e49E2FEA315e011b0d13F"
+    },
+    {
+      "name": "claim",
+      "tMs": 44307,
+      "r": "0x596a5d354f351b02b0e521563c892fdd6b4534aa2aeacdc668885b265976052d",
+      "ms": 5387
+    },
+    {
+      "name": "withdraw(agentId,50)",
+      "tMs": 50232,
+      "r": "0x36c8dbe89a8b3330db51f5f7f8bb943a25c5d684d5b4b4841f94e654c57fca1e",
+      "ms": 5924
+    }
+  ],
+  "wallet": "0x510496d63A690861BD0e49E2FEA315e011b0d13F",
+  "timeToRepaidLoanMs": 38718,
+  "totalMs": 50232
+}
