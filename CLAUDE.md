@@ -66,6 +66,28 @@ Website: specular.financial | GitHub: thegrand-canyon/specular | Deploy: specula
 - Simple/Advanced mode toggle with separate UIs per mode
 - Color system: orange (#FF6A00) for brand/primary, green for money, red for danger
 
+### Owner key: single signer, accepted by the owner (2026-09-23)
+
+Specular's contracts are controlled by one EOA, `0x800e305A0caDdE6289dFDFEDF38218f45C06F72C`.
+**The owner has stated he is the signer of the contracts and is holding it that way** — this is
+a recorded decision, not an oversight. What it means operationally, from the 2026-09-23 incident
+drill (`forensics/output/testing-2026-09-23/INCIDENT_DRILL_REPORT.md`):
+
+- Of 34 enumerated owner actions on V6.2 + V4, **29 succeed and only 6 are visible to
+  monitoring**; a full hostile chain extracted 5,561 USDC in 35 txs while monitoring showed a
+  single WARN up to 30 minutes later.
+- `AgentLiquidityMarketplaceV62` and `ReputationManagerV4` override `renounceOwnership` to
+  revert. **`AgentRegistryV2` and `AgentCreditFaucet` do not** — they are plain `Ownable`.
+  The registry holds `deactivateAgent`, the per-agent kill switch the incident runbook
+  recommends over `pause()`.
+- The registry is deliberately never redeployed (it holds every agent NFT), so unlike F-04 this
+  **cannot be fixed by shipping new contracts**. One `renounceOwnership()` on the registry —
+  hostile or accidental — permanently destroys the kill switch with no recovery path.
+
+Containment with a single key is a 6-tx ownership rotation, and only while the key is still
+held. Hard bounds that survive a compromised key: `MAX_TIER_LIMIT` (10,000 USDC) is immutable,
+and `migrationFinalized` is latched, so the seed/drain path is permanently closed.
+
 ## ⚠️ Current risk posture (2026-09-22) — READ BEFORE ENABLING LENDING
 
 **Do NOT solicit third-party lender liquidity on any network, and do not hand the hosted
