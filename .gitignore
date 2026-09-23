@@ -47,3 +47,7 @@ __pycache__/
 *.pyc
 forensics/output/testing-2026-09-20/e2e-wallets.json
 scripts/sim/out/slither-v7.json
+
+forensics/monitor/rpc-health.jsonl
+forensics/monitor/*-stdout.log
+forensics/monitor/*-stderr.log

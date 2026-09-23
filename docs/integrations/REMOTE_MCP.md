@@ -1,5 +1,27 @@
 # Connecting to Specular over remote MCP
 
+## Authentication (required since 2026-09-23)
+
+Every `/mcp` and `/v1/*` request needs a bearer token:
+
+```
+Authorization: Bearer <token>
+```
+
+`/health` and `/openapi.json` stay open so a platform can probe the service before it has
+a credential.
+
+**Issue ONE token per connector**, not one shared token. The reason is not custody — the
+server is non-custodial and cannot move funds, and every adversarial signed transaction in
+the 2026-09-21 security round was refused. The reason is that **upstream RPC quota is the
+scarce resource**. Per-caller accounting only works if callers are distinguishable; with a
+shared token one busy connector degrades every other. Revoking a connector then means
+rotating only its token.
+
+Rotate by changing `SPECULAR_MCP_TOKEN` on the service. There is currently a single token,
+so rotating it revokes every connector at once — split into per-connector tokens before
+onboarding the second platform.
+
 Specular exposes a **Model Context Protocol** server over **Streamable HTTP** so any MCP-capable host
 (xAI Grok Bot, Claude, Cursor, OpenAI Agents SDK, LangGraph, custom agents, ...) can read protocol state and
 build transactions without running any Specular code locally.
