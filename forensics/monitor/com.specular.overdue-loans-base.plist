@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key><string>com.specular.overdue-loans-base</string>
+    <key>ProgramArguments</key>
+    <array>
+      <string>/bin/bash</string>
+      <string>/Users/peterschroeder/Specular/forensics/monitor/run-overdue-check.sh</string>
+      <string>base</string>
+    </array>
+    <key>EnvironmentVariables</key>
+    <dict>
+      <key>SPECULAR_REPO</key><string>/Users/peterschroeder/Specular</string>
+      <key>V6_EXPECTED_OWNER</key><string>0x800e305A0caDdE6289dFDFEDF38218f45C06F72C</string>
+      <key>SPECULAR_RPC_BASE</key><string>https://mainnet.base.org</string>
+    </dict>
+    <key>StartInterval</key><integer>3600</integer>
+    <key>RunAtLoad</key><true/>
+    <key>ProcessType</key><string>Background</string>
+    <key>LowPriorityIO</key><true/>
+    <key>WorkingDirectory</key><string>/Users/peterschroeder/Specular</string>
+    <key>StandardOutPath</key><string>/Users/peterschroeder/Specular/forensics/monitor/overdue-loans-base-stdout.log</string>
+    <key>StandardErrorPath</key><string>/Users/peterschroeder/Specular/forensics/monitor/overdue-loans-base-stderr.log</string>
+</dict>
+</plist>

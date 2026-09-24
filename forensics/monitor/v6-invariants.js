@@ -78,6 +78,11 @@ const NETWORKS = {
     'arc-mainnet': { addresses: 'src/config/arc-mainnet-addresses.json',    rpcEnv: 'ARC_MAINNET_RPC_URL', rpc: 'https://rpc.mainnet.arc.io',     log: 'v6-invariants-arc-mainnet.log' },
     // [2026-09-20] Local hardhat target — lets the monitor be exercised against
     // engineered violation states before it is trusted on mainnet. Same code path.
+    // [2026-09-24] Base mainnet — a LIVE REAL-MONEY network that had no monitor at all
+    // until now. It runs the OLDEST generation (V6 + ReputationManagerV3), so the V6.1+
+    // check families skip themselves; the accounting, solvency and control-plane checks
+    // all apply. Note the config key: Base predates the `_v6` suffix.
+    'base':        { addresses: 'src/config/base-addresses.json',           rpcEnv: 'SPECULAR_RPC_BASE',   rpc: 'https://mainnet.base.org',       log: 'v6-invariants-base.log', mpKey: 'agentLiquidityMarketplace' },
     'local':       { addresses: 'src/config/local-addresses.json',          rpcEnv: 'LOCAL_RPC_URL',       rpc: 'http://127.0.0.1:8545',          log: 'v6-invariants-local.log' },
 };
 const NETNAME = process.env.V6_MONITOR_NETWORK || 'arc-testnet';
@@ -106,7 +111,7 @@ const RPC = process.env[NET.rpcEnv] || NET.rpc;
 // pointer moved on — it can still hold lender funds and open loans. Example:
 //   V6_MONITOR_MARKETPLACE_KEY=agentLiquidityMarketplace_v61_legacy
 // or an explicit address via V6_MONITOR_MARKETPLACE.
-const MP_KEY = process.env.V6_MONITOR_MARKETPLACE_KEY || 'agentLiquidityMarketplace_v6';
+const MP_KEY = process.env.V6_MONITOR_MARKETPLACE_KEY || NET.mpKey || 'agentLiquidityMarketplace_v6';
 const V6 = process.env.V6_MONITOR_MARKETPLACE || ADDR[MP_KEY];
 if (!V6) { console.error(`No marketplace address: key "${MP_KEY}" absent from ${NET.addresses}`); process.exit(2); }
 const QUIET = process.argv.includes('--quiet');

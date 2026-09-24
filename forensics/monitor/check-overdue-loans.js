@@ -24,14 +24,17 @@ const NETS = {
     'arc-staging': { file: 'src/config/arc-testnet-v6-addresses.json', env: 'ARC_TESTNET_RPC_URL' },
     'arc-testnet': { file: 'src/config/arc-testnet-addresses.json', env: 'ARC_TESTNET_RPC_URL' },
     'local': { file: 'src/config/local-addresses.json', env: 'LOCAL_RPC_URL' },
+    // [2026-09-24] Base is a live real-money network. It predates the `_v6` config key
+    // and has no `rpcUrl` field, so both are named explicitly.
+    'base': { file: 'src/config/base-addresses.json', env: 'SPECULAR_RPC_BASE', mpKey: 'agentLiquidityMarketplace', rpc: 'https://mainnet.base.org' },
 };
 const NET = process.env.NET || process.env.V6_MONITOR_NETWORK || 'arc-mainnet';
 const cfg = NETS[NET];
 if (!cfg) { console.error(`unknown NET; expected one of ${Object.keys(NETS).join(', ')}`); process.exit(2); }
 
 const A = JSON.parse(fs.readFileSync(path.join(ROOT, cfg.file)));
-const RPC = process.env[cfg.env] || A.rpcUrl;
-const MP = process.env.V6_MONITOR_MARKETPLACE || A.agentLiquidityMarketplace_v6;
+const RPC = process.env[cfg.env] || A.rpcUrl || cfg.rpc;
+const MP = process.env.V6_MONITOR_MARKETPLACE || A[cfg.mpKey || 'agentLiquidityMarketplace_v6'];
 
 const ABI = [
     'function nextLoanId() view returns (uint256)',
