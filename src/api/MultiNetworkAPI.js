@@ -122,7 +122,7 @@ const NETWORKS = {
     arc: {
         name: 'Arc Testnet',
         chainId: 5042002,
-        rpcUrl: process.env.ARC_TESTNET_RPC_URL || 'https://arc-testnet.drpc.org',
+        rpcUrl: process.env.ARC_TESTNET_RPC_URL || 'https://rpc.testnet.arc.io',
         addresses: JSON.parse(fs.readFileSync(path.join(__dirname, '../config/arc-testnet-addresses.json'), 'utf8')),
         explorer: 'https://arc-testnet.explorer.com'
     },
@@ -139,8 +139,42 @@ const NETWORKS = {
         rpcUrl: process.env.ARBITRUM_RPC_URL || 'https://arb1.arbitrum.io/rpc',
         addresses: JSON.parse(fs.readFileSync(path.join(__dirname, '../config/arbitrum-addresses.json'), 'utf8')),
         explorer: 'https://arbiscan.io'
+    },
+    // [2026-09-25] Arc MAINNET was missing entirely. This API is advertised in
+    // DEVELOPER_ONBOARDING.md and the DeFi-aggregator submission, so third parties were
+    // being handed a network list with no way to reach the protocol's flagship live
+    // deployment. Runs the V7 stack (Marketplace V6.2 + ReputationManagerV4).
+    'arc-mainnet': {
+        name: 'Arc Mainnet',
+        chainId: 5042,
+        rpcUrl: process.env.ARC_MAINNET_RPC_URL || 'https://rpc.mainnet.arc.io',
+        addresses: JSON.parse(fs.readFileSync(path.join(__dirname, '../config/arc-mainnet-addresses.json'), 'utf8')),
+        explorer: 'https://explorer.arc.io'
+    },
+    // Arc testnet running the same V7 generation as mainnet. `arc` is kept pointing at the
+    // older v4 testnet stack for backward compatibility with anything already integrated.
+    'arc-staging': {
+        name: 'Arc Testnet (V7 staging)',
+        chainId: 5042002,
+        rpcUrl: process.env.ARC_TESTNET_RPC_URL || 'https://rpc.testnet.arc.io',
+        addresses: JSON.parse(fs.readFileSync(path.join(__dirname, '../config/arc-testnet-v6-addresses.json'), 'utf8')),
+        explorer: 'https://testnet.arcscan.app'
     }
 };
+
+// [2026-09-25] Config files disagree on the marketplace key: Base and the older Arc
+// testnet stack use `agentLiquidityMarketplace`, while the Arc V7 configs use
+// `agentLiquidityMarketplace_v6` (the canonical pointer the deploy scripts maintain).
+// Every consumer below reads the former, so a new Arc entry would silently resolve to
+// `undefined` and hand out a malformed transaction. Normalise once, here.
+for (const [key, net] of Object.entries(NETWORKS)) {
+    if (!net.addresses.agentLiquidityMarketplace && net.addresses.agentLiquidityMarketplace_v6) {
+        net.addresses.agentLiquidityMarketplace = net.addresses.agentLiquidityMarketplace_v6;
+    }
+    if (!net.addresses.agentLiquidityMarketplace) {
+        throw new Error(`network "${key}" has no marketplace address in its config`);
+    }
+}
 
 // Default network
 const DEFAULT_NETWORK = process.env.DEFAULT_NETWORK || 'arc';
