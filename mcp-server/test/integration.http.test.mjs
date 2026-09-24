@@ -8,6 +8,19 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ethers } from 'ethers';
+import net from 'node:net';
+/** Bind :0, read the assigned port, release it. The window between release and the child
+ *  binding is tiny and, unlike a random guess, never collides with a sibling test file. */
+async function freePort() {
+  return await new Promise((resolve, reject) => {
+    const srv = net.createServer();
+    srv.once('error', reject);
+    srv.listen(0, '127.0.0.1', () => {
+      const { port } = srv.address();
+      srv.close(() => resolve(port));
+    });
+  });
+}
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const ENTRY = path.join(here, '..', 'dist', 'http.js');
@@ -24,7 +37,15 @@ const STAGING_MARKETPLACE = ethers.getAddress(
 const servers = [];
 
 async function boot(env) {
-  const port = 3500 + Math.floor(Math.random() * 2000);
+  // [2026-09-25] Ask the OS for a free port instead of guessing one.
+  //
+  // The old code picked a random port and then polled `GET /` until something answered.
+  // `npm test` runs every file in PARALLEL, so two files could choose the same port — and
+  // when that happened the readiness poll was satisfied by the OTHER file's server, which
+  // this test then talked to for its whole body. That is how a test asserting "a dead RPC
+  // must 502" got a 200 carrying a real chain block: it was querying a healthy server.
+  // Silent cross-talk, not a server bug.
+  const port = await freePort();
   const child = spawn(process.execPath, [ENTRY], {
     env: { ...process.env, PORT: String(port), HOST: '127.0.0.1', SPECULAR_ENABLED_NETWORKS: NET, LOG_LEVEL: 'warn', ...env },
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -64,7 +85,15 @@ after(() => {
 });
 
 test('refuses to start the remote server with a private key in env', async () => {
-  const port = 3500 + Math.floor(Math.random() * 2000);
+  // [2026-09-25] Ask the OS for a free port instead of guessing one.
+  //
+  // The old code picked a random port and then polled `GET /` until something answered.
+  // `npm test` runs every file in PARALLEL, so two files could choose the same port — and
+  // when that happened the readiness poll was satisfied by the OTHER file's server, which
+  // this test then talked to for its whole body. That is how a test asserting "a dead RPC
+  // must 502" got a 200 carrying a real chain block: it was querying a healthy server.
+  // Silent cross-talk, not a server bug.
+  const port = await freePort();
   const child = spawn(process.execPath, [ENTRY], {
     env: { ...process.env, PORT: String(port), SPECULAR_ENABLED_NETWORKS: NET, SPECULAR_PRIVATE_KEY: '0x' + '11'.repeat(32) },
     stdio: ['ignore', 'pipe', 'pipe'],

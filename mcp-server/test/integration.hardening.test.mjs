@@ -16,6 +16,18 @@ import net from 'node:net';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ethers } from 'ethers';
+/** Bind :0, read the assigned port, release it. The window between release and the child
+ *  binding is tiny and, unlike a random guess, never collides with a sibling test file. */
+async function freePort() {
+  return await new Promise((resolve, reject) => {
+    const srv = net.createServer();
+    srv.once('error', reject);
+    srv.listen(0, '127.0.0.1', () => {
+      const { port } = srv.address();
+      srv.close(() => resolve(port));
+    });
+  });
+}
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const ENTRY = path.join(here, '..', 'dist', 'http.js');
@@ -25,7 +37,15 @@ const MCP_H = { 'content-type': 'application/json', accept: 'application/json, t
 
 const servers = [];
 async function boot(env) {
-  const port = 3500 + Math.floor(Math.random() * 2000);
+  // [2026-09-25] Ask the OS for a free port instead of guessing one.
+  //
+  // The old code picked a random port and then polled `GET /` until something answered.
+  // `npm test` runs every file in PARALLEL, so two files could choose the same port — and
+  // when that happened the readiness poll was satisfied by the OTHER file's server, which
+  // this test then talked to for its whole body. That is how a test asserting "a dead RPC
+  // must 502" got a 200 carrying a real chain block: it was querying a healthy server.
+  // Silent cross-talk, not a server bug.
+  const port = await freePort();
   const child = spawn(process.execPath, [ENTRY], {
     env: { ...process.env, PORT: String(port), HOST: '127.0.0.1', SPECULAR_ENABLED_NETWORKS: NET, LOG_LEVEL: 'info', ...env },
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -213,7 +233,12 @@ test('H-12: a dead/hung RPC is a 502, never a fabricated "transaction would reve
     body: JSON.stringify({ from: AGENT, to: marketplace, data }),
   });
   assert.equal(sim.status, 502, sim.text);
-  assert.match(sim.body.error, /unreachable or timed out/);
+  // Two legitimate shapes for a transport failure: the per-call timeout, and the circuit
+  // breaker refusing once every configured endpoint is cold (added with RPC failover). The
+  // security property is unchanged and is what these assertions defend: NEVER a fabricated
+  // "would revert", and never the upstream endpoint in the body.
+  const TRANSPORT_FAILURE = /unreachable or timed out|every configured RPC endpoint is cold/;
+  assert.match(sim.body.error, TRANSPORT_FAILURE);
   assert.doesNotMatch(sim.text, /ECONNREFUSED|127\.0\.0\.1|revertReason|would revert/, sim.text);
 
   // and via MCP the same failure is a tool error, not a false "ok:false" simulation,
@@ -221,7 +246,7 @@ test('H-12: a dead/hung RPC is a 502, never a fabricated "transaction would reve
   const mcp = await post(`${S.base}/mcp`, { jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'simulate_transaction', arguments: { network: NET, from: AGENT, to: marketplace, data } } });
   assert.equal(mcp.body.result?.isError, true, mcp.text);
   assert.doesNotMatch(mcp.text, /ECONNREFUSED|127\.0\.0\.1:1|version=/, mcp.text);
-  assert.match(mcp.text, /unreachable or timed out/, mcp.text);
+  assert.match(mcp.text, TRANSPORT_FAILURE, mcp.text);
 }, { timeout: 30_000 });
 
 test('H-11: REST/MCP error bodies never carry ethers internals', async () => {

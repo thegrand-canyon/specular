@@ -86,6 +86,8 @@ const PREPARED_TX_SCHEMA = {
             revertReason: { type: ['string', 'null'] },
             plainLanguage: { type: ['string', 'null'] },
             from: { type: 'string' },
+            simulatedAtBlock: { type: ['integer', 'null'], description: 'Block this simulation was evaluated against. Your transaction executes later; another wallet can change the outcome in between.' },
+            raceClass: { type: ['string', 'null'], enum: ['retryable', 'actionable', 'terminal', null], description: "What to do about a refusal: 'retryable' = another wallet got there first, re-send the identical call; 'actionable' = change something first; 'terminal' = never retry." },
           },
         },
       ],

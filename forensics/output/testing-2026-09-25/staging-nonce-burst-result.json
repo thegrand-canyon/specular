@@ -1,0 +1,136 @@
+{
+  "chainId": 5042002,
+  "rpc": "https://arc-testnet-rpc.publicnode.com",
+  "wallet": "0x650C0C78978a9694F590c4010894Bb7CD1A96CfB",
+  "agentId": "70",
+  "burst": 6,
+  "phases": [
+    {
+      "phase": "7.1d naive Promise.all burst, unthrottled provider",
+      "attempted": 6,
+      "broadcast": 6,
+      "mined": 6,
+      "distinctNoncesAllocated": 1,
+      "noncesAllocated": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "nonceBefore": 4,
+      "nonceAfter": 5,
+      "positionDelta": "10000000",
+      "expectedIfAllLanded": "60000000",
+      "sendErrors": [],
+      "blocks": [
+        63830009
+      ],
+      "maxInOneBlock": 6,
+      "rows": [
+        {
+          "i": 0,
+          "broadcast": true,
+          "nonce": 4,
+          "sendError": null,
+          "mined": true,
+          "status": 1,
+          "block": 63830009
+        },
+        {
+          "i": 1,
+          "broadcast": true,
+          "nonce": 4,
+          "sendError": null,
+          "mined": true,
+          "status": 1,
+          "block": 63830009
+        },
+        {
+          "i": 2,
+          "broadcast": true,
+          "nonce": 4,
+          "sendError": null,
+          "mined": true,
+          "status": 1,
+          "block": 63830009
+        },
+        {
+          "i": 3,
+          "broadcast": true,
+          "nonce": 4,
+          "sendError": null,
+          "mined": true,
+          "status": 1,
+          "block": 63830009
+        },
+        {
+          "i": 4,
+          "broadcast": true,
+          "nonce": 4,
+          "sendError": null,
+          "mined": true,
+          "status": 1,
+          "block": 63830009
+        },
+        {
+          "i": 5,
+          "broadcast": true,
+          "nonce": 4,
+          "sendError": null,
+          "mined": true,
+          "status": 1,
+          "block": 63830009
+        }
+      ]
+    },
+    {
+      "phase": "7.1e nonce-gap heal",
+      "gapFound": false,
+      "healed": []
+    },
+    {
+      "phase": "7.1f same burst with an explicit NonceCounter",
+      "attempted": 6,
+      "broadcast": 6,
+      "mined": 6,
+      "distinctNoncesAllocated": 6,
+      "positionDelta": "60000000",
+      "expectedIfAllLanded": "60000000",
+      "blocks": [
+        63830016
+      ],
+      "maxInOneBlock": 6,
+      "sendErrors": []
+    },
+    {
+      "phase": "7.2b UNTHROTTLED multi-wallet contention on one pool",
+      "wallets": 10,
+      "landed": 10,
+      "seconds": 2.585,
+      "txPerSec": 3.868,
+      "blocks": [
+        63830022
+      ],
+      "maxInOneBlock": 10,
+      "totalLiquidityDelta": "145000000",
+      "sumOfSuccessfulSupplies": "145000000",
+      "exact": true,
+      "lenderCount": 10,
+      "gasUsed": [
+        "144184",
+        "144184",
+        "79057",
+        "144184",
+        "144184",
+        "144184",
+        "144172",
+        "144196",
+        "79081",
+        "79081"
+      ],
+      "sendErrors": []
+    }
+  ]
+}

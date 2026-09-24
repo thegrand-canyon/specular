@@ -11,6 +11,11 @@
 const { ethers } = require('ethers');
 const { assertDurationDays } = require('./duration');
 const { waitForReceiptResilient } = require('./receipt');
+// [concurrency round 2026-09-25] Turn an on-chain revert into something an agent can act
+// on: the reason string, whether re-sending the identical call is the right response
+// (it is, for every contended race outcome), and whether the failure was positional.
+// See src/sdk/revert.js and forensics/output/testing-2026-09-25/CONCURRENCY_REPORT.md.
+const { failedTxError } = require('./revert');
 
 // ERC-20 approve(address,uint256) selector — the one token call the API is
 // allowed to ask us to sign (onboarding approval). transfer/transferFrom to an
@@ -77,6 +82,16 @@ class SpecularSDK {
             throw new Error(`SpecularSDK: refusing plaintext http:// API for non-localhost host "${host}" — use https://`);
         }
 
+        // [concurrency round 2026-09-25] Serialised send path. Measured on Arc staging:
+        // six IDENTICAL `supplyLiquidity` calls fired with `Promise.all` from one wallet
+        // were all allocated nonce 4 by ethers, produced ONE signed transaction (identical
+        // payload ⇒ identical hash), were all accepted by the RPC with no error, and all
+        // six reported `status: 1` — while the position moved by 10 USDC instead of 60.
+        // A client that checks receipts is told six times that a transaction it never made
+        // succeeded. Serialising the sends and pinning the nonce makes the six distinct.
+        this._sendQueue = Promise.resolve();
+        this._nonceCursor = null;
+
         const trusted = loadTrustedAddresses();
         // Callers may extend the target allowlist (e.g. a freshly deployed test
         // contract) but never the token/spender rules.
@@ -86,6 +101,51 @@ class SpecularSDK {
             }
         }
         this._trusted = trusted;
+    }
+
+    /**
+     * Broadcast a transaction through this SDK instance's SERIALISED queue.
+     *
+     * Two calls on the same instance can never share a nonce, even when the caller
+     * fires them with `Promise.all`. The nonce is taken as
+     * `max(chain pending nonce, local cursor)`, so the queue also survives an RPC whose
+     * pending view lags, and the cursor is dropped on any failure so the next call
+     * re-anchors to the chain rather than compounding a gap. (A nonce GAP is the one
+     * genuinely dangerous outcome here: if nonce n never reaches the mempool but n+1…n+k
+     * do, none of them can ever be mined until something occupies n.)
+     *
+     * Wallets without `getNonce` (test doubles, some custom signers) fall back to the
+     * plain path, still serialised.
+     *
+     * @param {{to: string, data: string, value?: bigint}} req
+     * @returns {Promise<import('ethers').TransactionResponse>}
+     */
+    async sendTransactionSerialized(req) {
+        const run = async () => {
+            if (typeof this.wallet.getNonce !== 'function') {
+                return this.wallet.sendTransaction(req);
+            }
+            let nonce;
+            try {
+                const chainNonce = await this.wallet.getNonce('pending');
+                nonce = (this._nonceCursor === null || chainNonce > this._nonceCursor)
+                    ? chainNonce
+                    : this._nonceCursor;
+            } catch (_) {
+                this._nonceCursor = null;
+                return this.wallet.sendTransaction(req);
+            }
+            this._nonceCursor = nonce + 1;
+            try {
+                return await this.wallet.sendTransaction({ ...req, nonce });
+            } catch (e) {
+                this._nonceCursor = null; // re-anchor on the next call
+                throw e;
+            }
+        };
+        // `.then(run, run)` so one failed send does not wedge the queue for every later one.
+        this._sendQueue = this._sendQueue.then(run, run);
+        return this._sendQueue;
     }
 
     /**
@@ -209,7 +269,7 @@ class SpecularSDK {
         this._assertSafeTx(txData, 'register');
 
         // Sign and send transaction
-        const tx = await this.wallet.sendTransaction({
+        const tx = await this.sendTransactionSerialized({
             to: txData.to,
             data: txData.data
         });
@@ -217,7 +277,7 @@ class SpecularSDK {
         console.log(`Registration transaction sent: ${tx.hash}`);
         const { receipt } = await waitForReceiptResilient(this.provider, tx.hash);
         if (receipt.status !== 1) {
-            throw new Error(`Registration tx ${tx.hash.slice(0,12)} reverted on-chain`);
+            throw await failedTxError(this.provider, tx.hash, 'Registration');
         }
         console.log(`Registration confirmed in block ${receipt.blockNumber}`);
 
@@ -253,7 +313,7 @@ class SpecularSDK {
         this._assertSafeTx(txData, 'requestLoan');
 
         // Sign and send transaction
-        const tx = await this.wallet.sendTransaction({
+        const tx = await this.sendTransactionSerialized({
             to: txData.to,
             data: txData.data
         });
@@ -261,7 +321,7 @@ class SpecularSDK {
         console.log(`Loan request sent: ${tx.hash}`);
         const { receipt } = await waitForReceiptResilient(this.provider, tx.hash);
         if (receipt.status !== 1) {
-            throw new Error(`Loan request tx ${tx.hash.slice(0,12)} reverted on-chain`);
+            throw await failedTxError(this.provider, tx.hash, 'Loan request');
         }
         console.log(`Loan request confirmed in block ${receipt.blockNumber}`);
 
@@ -291,7 +351,7 @@ class SpecularSDK {
         this._assertSafeTx(txData, 'repayLoan');
 
         // Sign and send transaction
-        const tx = await this.wallet.sendTransaction({
+        const tx = await this.sendTransactionSerialized({
             to: txData.to,
             data: txData.data
         });
@@ -299,7 +359,7 @@ class SpecularSDK {
         console.log(`Loan repayment sent: ${tx.hash}`);
         const { receipt } = await waitForReceiptResilient(this.provider, tx.hash);
         if (receipt.status !== 1) {
-            throw new Error(`Loan repayment tx ${tx.hash.slice(0,12)} reverted on-chain`);
+            throw await failedTxError(this.provider, tx.hash, 'Loan repayment');
         }
         console.log(`Loan repaid in block ${receipt.blockNumber}`);
 

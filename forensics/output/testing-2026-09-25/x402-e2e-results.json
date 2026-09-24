@@ -1,0 +1,230 @@
+[
+  {
+    "section": "flow",
+    "name": "GET /health",
+    "verdict": "PASS",
+    "detail": "status=200"
+  },
+  {
+    "section": "failpath",
+    "name": "invalid agent address → 400",
+    "verdict": "PASS",
+    "detail": "status=400"
+  },
+  {
+    "section": "failpath",
+    "name": "unknown route → 404",
+    "verdict": "PASS",
+    "detail": "status=404"
+  },
+  {
+    "section": "failpath",
+    "name": "unpaid request → 402 + requirements",
+    "verdict": "PASS",
+    "detail": "status=402 amount=1000000 desc=\"Specular Credit Assessment Fee (1 USDC)\""
+  },
+  {
+    "section": "failpath",
+    "name": "quote description reflects the configured fee",
+    "verdict": "PASS",
+    "detail": "Specular Credit Assessment Fee (1 USDC)"
+  },
+  {
+    "section": "failpath",
+    "name": "malformed header (not base64 JSON) → 402",
+    "verdict": "PASS",
+    "detail": "status=402 reason=\"Malformed X-PAYMENT header (expected base64 JSON)\""
+  },
+  {
+    "section": "failpath",
+    "name": "malformed header (base64 of non-JSON) → 402",
+    "verdict": "PASS",
+    "detail": "status=402 reason=\"Malformed X-PAYMENT header (expected base64 JSON)\""
+  },
+  {
+    "section": "failpath",
+    "name": "malformed header (empty string) → 402",
+    "verdict": "PASS",
+    "detail": "status=402 reason=\"Payment Required\""
+  },
+  {
+    "section": "failpath",
+    "name": "malformed header (base64 JSON array) → 402",
+    "verdict": "PASS",
+    "detail": "status=402 reason=\"Unsupported scheme: undefined\""
+  },
+  {
+    "section": "failpath",
+    "name": "wrong scheme → 402",
+    "verdict": "PASS",
+    "detail": "Unsupported scheme: exact"
+  },
+  {
+    "section": "failpath",
+    "name": "wrong network → 402",
+    "verdict": "PASS",
+    "detail": "Wrong network: expected arc-testnet, got base"
+  },
+  {
+    "section": "failpath",
+    "name": "missing EIP-3009 fields → 402",
+    "verdict": "PASS",
+    "detail": "Missing EIP-3009 payload fields"
+  },
+  {
+    "section": "failpath",
+    "name": "payment to wrong recipient → 402",
+    "verdict": "PASS",
+    "detail": "Payment must go to fee recipient 0x09599535446796C95c9dB825ed41401faf1BFA38"
+  },
+  {
+    "section": "failpath",
+    "name": "underpaid (0.999999 USDC) → 402",
+    "verdict": "PASS",
+    "detail": "Insufficient payment: need 1000000, got 999999"
+  },
+  {
+    "section": "failpath",
+    "name": "zero-value payment → 402",
+    "verdict": "PASS",
+    "detail": "Insufficient payment: need 1000000, got 0"
+  },
+  {
+    "section": "failpath",
+    "name": "expired authorization → 402",
+    "verdict": "PASS",
+    "detail": "Payment authorization expired"
+  },
+  {
+    "section": "failpath",
+    "name": "not-yet-valid authorization → 402",
+    "verdict": "PASS",
+    "detail": "Payment not yet valid"
+  },
+  {
+    "section": "failpath",
+    "name": "tampered value (sig mismatch) → 402",
+    "verdict": "PASS",
+    "detail": "EIP-3009 signature invalid"
+  },
+  {
+    "section": "failpath",
+    "name": "garbage signature → 402",
+    "verdict": "PASS",
+    "detail": "EIP-3009 signature invalid"
+  },
+  {
+    "section": "failpath",
+    "name": "signature from wrong signer → 402",
+    "verdict": "PASS",
+    "detail": "EIP-3009 signature invalid"
+  },
+  {
+    "section": "failpath",
+    "name": "signed against wrong token → 402",
+    "verdict": "PASS",
+    "detail": "EIP-3009 signature invalid"
+  },
+  {
+    "section": "failpath",
+    "name": "signed against wrong chainId → 402",
+    "verdict": "PASS",
+    "detail": "EIP-3009 signature invalid"
+  },
+  {
+    "section": "flow",
+    "name": "valid payment → 200 assessment",
+    "verdict": "PASS",
+    "detail": "status=200 score=1000 limit=50,000 USDC rate=5.00% APR coll=0%"
+  },
+  {
+    "section": "failpath",
+    "name": "replayed payment (same nonce) → 402",
+    "verdict": "PASS",
+    "detail": "Payment nonce already used (replay)"
+  },
+  {
+    "section": "failpath",
+    "name": "replay across server restart → 402",
+    "verdict": "PASS",
+    "detail": "Payment nonce already used (replay)"
+  },
+  {
+    "section": "failpath",
+    "name": "overpay 50x quote → server accepts (no upper bound)",
+    "verdict": "NOTE",
+    "detail": "status=200 — server only checks value >= fee"
+  },
+  {
+    "section": "bug",
+    "name": "unfunded payer (0 USDC) served for free",
+    "verdict": "NOTE",
+    "detail": "payer balance=0 status=200 — no settlement, signature-only"
+  },
+  {
+    "section": "bug",
+    "name": "client picks a 1-year validBefore (quote said 300s)",
+    "verdict": "NOTE",
+    "detail": "status=200 — maxTimeoutSeconds not enforced against the payload"
+  },
+  {
+    "section": "flow",
+    "name": "x402Client.get() full 402→sign→retry→200",
+    "verdict": "PASS",
+    "detail": "score=1000 spent=n/a"
+  },
+  {
+    "section": "2026-07",
+    "name": "F1 default 10 USDC per-payment cap still enforced",
+    "verdict": "PASS",
+    "detail": "[x402] payment 11 USDC exceeds maxPayment 10 USDC — raise maxPayment to authorize"
+  },
+  {
+    "section": "2026-07",
+    "name": "F1 verifyingContract pin blocks token substitution",
+    "verdict": "PASS",
+    "detail": "[x402] refusing to sign — verifyingContract 0x456a8dc238724D7ddB777935ba108CAC0Ae34c19 is not the known USDC for arc-testnet (0xf2807051e292"
+  },
+  {
+    "section": "v7",
+    "name": "assessment matches V7 chain reads exactly",
+    "verdict": "PASS",
+    "detail": "score 0/0, limitRaw 100000000/100000000, bps 1500/1500"
+  },
+  {
+    "section": "v7",
+    "name": "dataSource string",
+    "verdict": "PASS",
+    "detail": "\"on-chain (reputation manager 0x12953e732e5D1aFdA640554125367d1CEC2ac4FB)\" while actually reading ReputationManagerV4"
+  },
+  {
+    "section": "v7",
+    "name": "protocol version string",
+    "verdict": "PASS",
+    "detail": "\"Specular Protocol\""
+  },
+  {
+    "section": "v7",
+    "name": "autoApproveMaxUsdc no longer a hardcoded 50000",
+    "verdict": "NOTE",
+    "detail": "50000 (configurable via CREDIT_AUTO_APPROVE_MAX_USDC; V7 MAX_TIER_LIMIT is 10,000)"
+  },
+  {
+    "section": "v7",
+    "name": "tier labels vs on-chain 6-tier table",
+    "verdict": "NOTE",
+    "detail": "server uses 800/600/400/200 buckets; V7 TIER_MIN_SCORE = 0/200/400/500/600/800 (no 500 bucket)"
+  },
+  {
+    "section": "v7",
+    "name": "loanTerms.minDurationDays hardcoded 7 / max 365",
+    "verdict": "NOTE",
+    "detail": "not read from chain"
+  },
+  {
+    "section": "2026-09",
+    "name": "quoted EIP-712 domain matches token DOMAIN_SEPARATOR (Arc mainnet USDC)",
+    "verdict": "PASS",
+    "detail": "quoted \"USDC\"/\"2\" → 0x940506929bba vs on-chain 0x940506929bba"
+  }
+]

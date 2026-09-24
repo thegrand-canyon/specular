@@ -1,0 +1,356 @@
+{
+  "startedAt": "2026-09-24T22:02:25.436Z",
+  "chainId": 5042002,
+  "marketplace": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+  "phases": [
+    {
+      "phase": "7.1 nonce storm from ONE wallet",
+      "runs": [
+        {
+          "mode": "ethers default nonce allocation",
+          "attempted": 6,
+          "broadcast": 6,
+          "mined": 6,
+          "distinctNonces": 1,
+          "blocks": [
+            63829013
+          ],
+          "maxInOneBlock": 6,
+          "positionDelta": "20000000",
+          "expectedIfAllLanded": "60000000",
+          "sendErrors": [],
+          "revertReasons": [],
+          "stuckWithoutReceipt": 0,
+          "nonceGapHealed": []
+        },
+        {
+          "mode": "ethers default nonce allocation",
+          "attempted": 6,
+          "broadcast": 6,
+          "mined": 6,
+          "distinctNonces": 1,
+          "blocks": [
+            63829027
+          ],
+          "maxInOneBlock": 6,
+          "positionDelta": "10000000",
+          "expectedIfAllLanded": "60000000",
+          "sendErrors": [],
+          "revertReasons": [],
+          "stuckWithoutReceipt": 0,
+          "nonceGapHealed": []
+        },
+        {
+          "mode": "ethers default nonce allocation",
+          "attempted": 6,
+          "broadcast": 6,
+          "mined": 6,
+          "distinctNonces": 1,
+          "blocks": [
+            63829040
+          ],
+          "maxInOneBlock": 6,
+          "positionDelta": "10000000",
+          "expectedIfAllLanded": "60000000",
+          "sendErrors": [],
+          "revertReasons": [],
+          "stuckWithoutReceipt": 0,
+          "nonceGapHealed": []
+        },
+        {
+          "mode": "explicit NonceCounter (src/sdk/nonce.js)",
+          "attempted": 6,
+          "broadcast": 6,
+          "mined": 6,
+          "blocks": [
+            63829054,
+            63829055,
+            63829056,
+            63829057,
+            63829058
+          ],
+          "maxInOneBlock": 2,
+          "positionDelta": "60000000",
+          "expectedIfAllLanded": "60000000",
+          "sendErrors": [],
+          "stuckWithoutReceipt": 0,
+          "nonceGapHealed": []
+        },
+        {
+          "mode": "explicit NonceCounter (src/sdk/nonce.js)",
+          "attempted": 6,
+          "broadcast": 6,
+          "mined": 6,
+          "blocks": [
+            63829070,
+            63829072,
+            63829073,
+            63829074
+          ],
+          "maxInOneBlock": 2,
+          "positionDelta": "60000000",
+          "expectedIfAllLanded": "60000000",
+          "sendErrors": [],
+          "stuckWithoutReceipt": 0,
+          "nonceGapHealed": []
+        },
+        {
+          "mode": "same nonce, 50 % fee bump",
+          "rows": [
+            {
+              "label": "orig",
+              "broadcast": true,
+              "hash": "0x0bdea07bd63e28a20ab25885aba4c1848be40074ccb5e03cdf4e63289acbc9a6",
+              "ok": true,
+              "block": 63829086,
+              "index": 9,
+              "gasUsed": "79069",
+              "nonce": 30
+            },
+            {
+              "label": "replacement+50%",
+              "broadcast": false,
+              "ok": false,
+              "reason": "nonce has already been used"
+            }
+          ],
+          "nonceGapHealed": []
+        }
+      ],
+      "invariants": []
+    },
+    {
+      "phase": "7.2 N wallets supplying one pool simultaneously",
+      "runs": [
+        {
+          "run": 0,
+          "wallets": 10,
+          "landed": 10,
+          "blocks": [
+            63829141,
+            63829147,
+            63829142,
+            63829143,
+            63829144,
+            63829145,
+            63829146
+          ],
+          "maxInOneBlock": 2,
+          "totalLiquidityDelta": "255000000",
+          "sumOfSuccessfulSupplies": "255000000",
+          "exact": true,
+          "lenderCount": 10,
+          "invariantViolations": 0,
+          "failures": [],
+          "gas": [
+            "79069",
+            "161296",
+            "161284",
+            "161296",
+            "161296",
+            "161296",
+            "161272",
+            "161296",
+            "161296",
+            "161296"
+          ]
+        },
+        {
+          "run": 1,
+          "wallets": 10,
+          "landed": 10,
+          "blocks": [
+            63829227,
+            63829230,
+            63829231,
+            63829237,
+            63829238,
+            63829239,
+            63829240,
+            63829232,
+            63829236,
+            63829233
+          ],
+          "maxInOneBlock": 1,
+          "totalLiquidityDelta": "285000000",
+          "sumOfSuccessfulSupplies": "285000000",
+          "exact": true,
+          "lenderCount": 10,
+          "invariantViolations": 0,
+          "failures": [],
+          "gas": [
+            "79069",
+            "79069",
+            "79081",
+            "79081",
+            "79081",
+            "79069",
+            "79069",
+            "79081",
+            "79081",
+            "79069"
+          ]
+        },
+        {
+          "run": 2,
+          "wallets": 10,
+          "landed": 10,
+          "blocks": [
+            63829319,
+            63829320,
+            63829321,
+            63829325,
+            63829326,
+            63829327,
+            63829328
+          ],
+          "maxInOneBlock": 2,
+          "totalLiquidityDelta": "275000000",
+          "sumOfSuccessfulSupplies": "275000000",
+          "exact": true,
+          "lenderCount": 10,
+          "invariantViolations": 0,
+          "failures": [],
+          "gas": [
+            "79057",
+            "79081",
+            "79081",
+            "79081",
+            "79069",
+            "79069",
+            "79081",
+            "79081",
+            "79069",
+            "79081"
+          ]
+        }
+      ],
+      "preHeal": []
+    },
+    {
+      "phase": "7.3 borrow vs withdraw, real ordering",
+      "runs": [
+        {
+          "run": 0,
+          "skipped": "lender 0 has no position"
+        },
+        {
+          "run": 1,
+          "skipped": "lender 0 has no position"
+        },
+        {
+          "run": 2,
+          "skipped": "lender 0 has no position"
+        },
+        {
+          "run": 3,
+          "skipped": "lender 0 has no position"
+        }
+      ],
+      "creditLimit": "100000000",
+      "collateralPercent": "100"
+    },
+    {
+      "phase": "7.4 concurrent double-fire of the same settlement",
+      "runs": [
+        {
+          "run": 0,
+          "loanId": "119",
+          "settledTimes": 2,
+          "finalState": 2,
+          "blocks": [
+            63829531
+          ],
+          "sameBlock": true,
+          "failures": [],
+          "invariantViolations": 0
+        },
+        {
+          "run": 1,
+          "loanId": "120",
+          "settledTimes": 2,
+          "finalState": 2,
+          "blocks": [
+            63829568
+          ],
+          "sameBlock": true,
+          "failures": [],
+          "invariantViolations": 0
+        }
+      ]
+    },
+    {
+      "phase": "7.5 throughput, concurrent vs sequential",
+      "concurrent": {
+        "attempted": 8,
+        "landed": 8,
+        "seconds": 8.015,
+        "txPerSec": 0.998,
+        "blocks": [
+          63829593,
+          63829595,
+          63829596,
+          63829597,
+          63829598
+        ],
+        "maxInOneBlock": 2,
+        "avgGas": 85808
+      },
+      "sequential": {
+        "attempted": 8,
+        "landed": 8,
+        "seconds": 33.33,
+        "txPerSec": 0.24,
+        "avgGas": 79069
+      },
+      "speedup": 4.16
+    }
+  ],
+  "spend": {
+    "deployerNativeStart": "59.512372177116209267",
+    "deployerNativeEnd": "59.512372177116209267",
+    "deployerNativeSpent": "0.0",
+    "capNative": "25.0"
+  },
+  "violations": [
+    "7.4 run 0: loan 119 settled 2 times",
+    "7.4 run 1: loan 120 settled 2 times"
+  ],
+  "notes": [],
+  "rpc": "https://arc-testnet-rpc.publicnode.com",
+  "deployer": "0x800e305A0caDdE6289dFDFEDF38218f45C06F72C",
+  "deployerNativeStart": "59.512372177116209267",
+  "solvencyBefore": {
+    "label": "before",
+    "pools": 19,
+    "loans": 118,
+    "balance": "10126271389",
+    "rhs": "10126271389",
+    "delta": "0",
+    "ok": true
+  },
+  "agent": "0x2be92ad43A45a17f798561ea5Af688b17f6d5f06",
+  "lenders": [
+    "0x13CbE3758513bf325f67A68EB6b1E23907390cBF",
+    "0x4b8C6e7895644f6a13A35309c188a8B1CB47fe96",
+    "0x02B5dB1AC5Cd3c046a1557670b630517C30F1B53",
+    "0x9bCAA5215b81F39294452F3395B298b0665e383d",
+    "0x5FC0913a0317c7fa1333CF56d02275347729B9D5",
+    "0x3A069D4180Be91dc015049A740C926474E8F9216",
+    "0xbBDCffF8805d9e28f073617f18776f560F7326CB",
+    "0x1c9e1A72bB5a06d651Adf55C4Bec0F6c94e19C74",
+    "0x2c2F1E94623d8C91E0BfC0837558597E8D77CD4B",
+    "0x650C0C78978a9694F590c4010894Bb7CD1A96CfB"
+  ],
+  "agentId": "70",
+  "solvencyAfter": {
+    "label": "after",
+    "pools": 19,
+    "loans": 120,
+    "balance": "10306559059",
+    "rhs": "10306559059",
+    "delta": "0",
+    "ok": true
+  },
+  "finishedAt": "2026-09-24T22:12:03.220Z"
+}

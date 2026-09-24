@@ -1,0 +1,5108 @@
+{
+  "races": [
+    {
+      "race": "1.1 N-way same-block supply",
+      "runs": 20,
+      "rows": [
+        {
+          "N": 2,
+          "run": 0,
+          "sameBlock": true,
+          "landed": 2,
+          "violations": 0,
+          "totalGas": "390980"
+        },
+        {
+          "N": 2,
+          "run": 1,
+          "sameBlock": true,
+          "landed": 2,
+          "violations": 0,
+          "totalGas": "390968"
+        },
+        {
+          "N": 2,
+          "run": 2,
+          "sameBlock": true,
+          "landed": 2,
+          "violations": 0,
+          "totalGas": "390968"
+        },
+        {
+          "N": 2,
+          "run": 3,
+          "sameBlock": true,
+          "landed": 2,
+          "violations": 0,
+          "totalGas": "390992"
+        },
+        {
+          "N": 5,
+          "run": 0,
+          "sameBlock": true,
+          "landed": 5,
+          "violations": 0,
+          "totalGas": "874856"
+        },
+        {
+          "N": 5,
+          "run": 1,
+          "sameBlock": true,
+          "landed": 5,
+          "violations": 0,
+          "totalGas": "874856"
+        },
+        {
+          "N": 5,
+          "run": 2,
+          "sameBlock": true,
+          "landed": 5,
+          "violations": 0,
+          "totalGas": "874844"
+        },
+        {
+          "N": 5,
+          "run": 3,
+          "sameBlock": true,
+          "landed": 5,
+          "violations": 0,
+          "totalGas": "874868"
+        },
+        {
+          "N": 10,
+          "run": 0,
+          "sameBlock": true,
+          "landed": 10,
+          "violations": 0,
+          "totalGas": "1681324"
+        },
+        {
+          "N": 10,
+          "run": 1,
+          "sameBlock": true,
+          "landed": 10,
+          "violations": 0,
+          "totalGas": "1681312"
+        },
+        {
+          "N": 10,
+          "run": 2,
+          "sameBlock": true,
+          "landed": 10,
+          "violations": 0,
+          "totalGas": "1681312"
+        },
+        {
+          "N": 10,
+          "run": 3,
+          "sameBlock": true,
+          "landed": 10,
+          "violations": 0,
+          "totalGas": "1681336"
+        },
+        {
+          "N": 25,
+          "run": 0,
+          "sameBlock": true,
+          "landed": 25,
+          "violations": 0,
+          "totalGas": "4100704"
+        },
+        {
+          "N": 25,
+          "run": 1,
+          "sameBlock": true,
+          "landed": 25,
+          "violations": 0,
+          "totalGas": "4100704"
+        },
+        {
+          "N": 25,
+          "run": 2,
+          "sameBlock": true,
+          "landed": 25,
+          "violations": 0,
+          "totalGas": "4100704"
+        },
+        {
+          "N": 25,
+          "run": 3,
+          "sameBlock": true,
+          "landed": 25,
+          "violations": 0,
+          "totalGas": "4100716"
+        },
+        {
+          "N": 49,
+          "run": 0,
+          "sameBlock": true,
+          "landed": 49,
+          "violations": 0,
+          "totalGas": "7971700"
+        },
+        {
+          "N": 49,
+          "run": 1,
+          "sameBlock": true,
+          "landed": 49,
+          "violations": 0,
+          "totalGas": "7971712"
+        },
+        {
+          "N": 49,
+          "run": 2,
+          "sameBlock": true,
+          "landed": 49,
+          "violations": 0,
+          "totalGas": "7971712"
+        },
+        {
+          "N": 49,
+          "run": 3,
+          "sameBlock": true,
+          "landed": 49,
+          "violations": 0,
+          "totalGas": "7971736"
+        }
+      ]
+    },
+    {
+      "race": "1.2 reserved-slot race, creator out",
+      "runs": 25,
+      "rows": [
+        {
+          "k": 2,
+          "order": "0>1",
+          "winners": 0,
+          "lenderCount": 49,
+          "violations": 0
+        },
+        {
+          "k": 2,
+          "order": "1>0",
+          "winners": 0,
+          "lenderCount": 49,
+          "violations": 0
+        },
+        {
+          "k": 3,
+          "order": "0>1>2",
+          "winners": 0,
+          "lenderCount": 49,
+          "violations": 0
+        },
+        {
+          "k": 3,
+          "order": "0>2>1",
+          "winners": 0,
+          "lenderCount": 49,
+          "violations": 0
+        },
+        {
+          "k": 3,
+          "order": "1>0>2",
+          "winners": 0,
+          "lenderCount": 49,
+          "violations": 0
+        },
+        {
+          "k": 3,
+          "order": "1>2>0",
+          "winners": 0,
+          "lenderCount": 49,
+          "violations": 0
+        },
+        {
+          "k": 3,
+          "order": "2>0>1",
+          "winners": 0,
+          "lenderCount": 49,
+          "violations": 0
+        },
+        {
+          "k": 3,
+          "order": "2>1>0",
+          "winners": 0,
+          "lenderCount": 49,
+          "violations": 0
+        },
+        {
+          "k": 5,
+          "order": "0>1>2>3>4",
+          "winners": 0,
+          "lenderCount": 49,
+          "violations": 0
+        },
+        {
+          "k": 5,
+          "order": "1>2>3>4>0",
+          "winners": 0,
+          "lenderCount": 49,
+          "violations": 0
+        },
+        {
+          "k": 5,
+          "order": "2>3>4>0>1",
+          "winners": 0,
+          "lenderCount": 49,
+          "violations": 0
+        },
+        {
+          "k": 5,
+          "order": "3>4>0>1>2",
+          "winners": 0,
+          "lenderCount": 49,
+          "violations": 0
+        },
+        {
+          "k": 5,
+          "order": "4>0>1>2>3",
+          "winners": 0,
+          "lenderCount": 49,
+          "violations": 0
+        },
+        {
+          "k": 5,
+          "order": "4>3>2>1>0",
+          "winners": 0,
+          "lenderCount": 49,
+          "violations": 0
+        },
+        {
+          "k": 10,
+          "order": "0>1>2>3>4>5>6>7>8>9",
+          "winners": 0,
+          "lenderCount": 49,
+          "violations": 0
+        },
+        {
+          "k": 10,
+          "order": "1>2>3>4>5>6>7>8>9>0",
+          "winners": 0,
+          "lenderCount": 49,
+          "violations": 0
+        },
+        {
+          "k": 10,
+          "order": "2>3>4>5>6>7>8>9>0>1",
+          "winners": 0,
+          "lenderCount": 49,
+          "violations": 0
+        },
+        {
+          "k": 10,
+          "order": "3>4>5>6>7>8>9>0>1>2",
+          "winners": 0,
+          "lenderCount": 49,
+          "violations": 0
+        },
+        {
+          "k": 10,
+          "order": "4>5>6>7>8>9>0>1>2>3",
+          "winners": 0,
+          "lenderCount": 49,
+          "violations": 0
+        },
+        {
+          "k": 10,
+          "order": "5>6>7>8>9>0>1>2>3>4",
+          "winners": 0,
+          "lenderCount": 49,
+          "violations": 0
+        },
+        {
+          "k": 10,
+          "order": "6>7>8>9>0>1>2>3>4>5",
+          "winners": 0,
+          "lenderCount": 49,
+          "violations": 0
+        },
+        {
+          "k": 10,
+          "order": "7>8>9>0>1>2>3>4>5>6",
+          "winners": 0,
+          "lenderCount": 49,
+          "violations": 0
+        },
+        {
+          "k": 10,
+          "order": "8>9>0>1>2>3>4>5>6>7",
+          "winners": 0,
+          "lenderCount": 49,
+          "violations": 0
+        },
+        {
+          "k": 10,
+          "order": "9>0>1>2>3>4>5>6>7>8",
+          "winners": 0,
+          "lenderCount": 49,
+          "violations": 0
+        },
+        {
+          "k": 10,
+          "order": "9>8>7>6>5>4>3>2>1>0",
+          "winners": 0,
+          "lenderCount": 49,
+          "violations": 0
+        }
+      ]
+    },
+    {
+      "race": "1.3 creator vs third parties, last slot",
+      "runs": 43,
+      "rows": [
+        {
+          "k": 1,
+          "order": "X0>CREATOR",
+          "creatorWon": true,
+          "thirdPartyWinners": 1,
+          "finalLenderCount": 50,
+          "violations": 0,
+          "losersReason": []
+        },
+        {
+          "k": 1,
+          "order": "CREATOR>X0",
+          "creatorWon": true,
+          "thirdPartyWinners": 1,
+          "finalLenderCount": 50,
+          "violations": 0,
+          "losersReason": []
+        },
+        {
+          "k": 2,
+          "order": "X0>X1>CREATOR",
+          "creatorWon": true,
+          "thirdPartyWinners": 1,
+          "finalLenderCount": 50,
+          "violations": 0,
+          "losersReason": [
+            "Last slot reserved for agent self-stake"
+          ]
+        },
+        {
+          "k": 2,
+          "order": "X0>CREATOR>X1",
+          "creatorWon": true,
+          "thirdPartyWinners": 1,
+          "finalLenderCount": 50,
+          "violations": 0,
+          "losersReason": [
+            "Pool lender capacity reached"
+          ]
+        },
+        {
+          "k": 2,
+          "order": "X1>X0>CREATOR",
+          "creatorWon": true,
+          "thirdPartyWinners": 1,
+          "finalLenderCount": 50,
+          "violations": 0,
+          "losersReason": [
+            "Last slot reserved for agent self-stake"
+          ]
+        },
+        {
+          "k": 2,
+          "order": "X1>CREATOR>X0",
+          "creatorWon": true,
+          "thirdPartyWinners": 1,
+          "finalLenderCount": 50,
+          "violations": 0,
+          "losersReason": [
+            "Pool lender capacity reached"
+          ]
+        },
+        {
+          "k": 2,
+          "order": "CREATOR>X0>X1",
+          "creatorWon": true,
+          "thirdPartyWinners": 1,
+          "finalLenderCount": 50,
+          "violations": 0,
+          "losersReason": [
+            "Pool lender capacity reached"
+          ]
+        },
+        {
+          "k": 2,
+          "order": "CREATOR>X1>X0",
+          "creatorWon": true,
+          "thirdPartyWinners": 1,
+          "finalLenderCount": 50,
+          "violations": 0,
+          "losersReason": [
+            "Pool lender capacity reached"
+          ]
+        },
+        {
+          "k": 3,
+          "order": "X0>X1>X2>CREATOR",
+          "creatorWon": true,
+          "thirdPartyWinners": 1,
+          "finalLenderCount": 50,
+          "violations": 0,
+          "losersReason": [
+            "Last slot reserved for agent self-stake"
+          ]
+        },
+        {
+          "k": 3,
+          "order": "X0>X1>CREATOR>X2",
+          "creatorWon": true,
+          "thirdPartyWinners": 1,
+          "finalLenderCount": 50,
+          "violations": 0,
+          "losersReason": [
+            "Last slot reserved for agent self-stake",
+            "Pool lender capacity reached"
+          ]
+        },
+        {
+          "k": 3,
+          "order": "X0>X2>X1>CREATOR",
+          "creatorWon": true,
+          "thirdPartyWinners": 1,
+          "finalLenderCount": 50,
+          "violations": 0,
+          "losersReason": [
+            "Last slot reserved for agent self-stake"
+          ]
+        },
+        {
+          "k": 3,
+          "order": "X0>X2>CREATOR>X1",
+          "creatorWon": true,
+          "thirdPartyWinners": 1,
+          "finalLenderCount": 50,
+          "violations": 0,
+          "losersReason": [
+            "Last slot reserved for agent self-stake",
+            "Pool lender capacity reached"
+          ]
+        },
+        {
+          "k": 3,
+          "order": "X0>CREATOR>X1>X2",
+          "creatorWon": true,
+          "thirdPartyWinners": 1,
+          "finalLenderCount": 50,
+          "violations": 0,
+          "losersReason": [
+            "Pool lender capacity reached"
+          ]
+        },
+        {
+          "k": 3,
+          "order": "X0>CREATOR>X2>X1",
+          "creatorWon": true,
+          "thirdPartyWinners": 1,
+          "finalLenderCount": 50,
+          "violations": 0,
+          "losersReason": [
+            "Pool lender capacity reached"
+          ]
+        },
+        {
+          "k": 3,
+          "order": "X1>X0>X2>CREATOR",
+          "creatorWon": true,
+          "thirdPartyWinners": 1,
+          "finalLenderCount": 50,
+          "violations": 0,
+          "losersReason": [
+            "Last slot reserved for agent self-stake"
+          ]
+        },
+        {
+          "k": 3,
+          "order": "X1>X0>CREATOR>X2",
+          "creatorWon": true,
+          "thirdPartyWinners": 1,
+          "finalLenderCount": 50,
+          "violations": 0,
+          "losersReason": [
+            "Last slot reserved for agent self-stake",
+            "Pool lender capacity reached"
+          ]
+        },
+        {
+          "k": 3,
+          "order": "X1>X2>X0>CREATOR",
+          "creatorWon": true,
+          "thirdPartyWinners": 1,
+          "finalLenderCount": 50,
+          "violations": 0,
+          "losersReason": [
+            "Last slot reserved for agent self-stake"
+          ]
+        },
+        {
+          "k": 3,
+          "order": "X1>X2>CREATOR>X0",
+          "creatorWon": true,
+          "thirdPartyWinners": 1,
+          "finalLenderCount": 50,
+          "violations": 0,
+          "losersReason": [
+            "Last slot reserved for agent self-stake",
+            "Pool lender capacity reached"
+          ]
+        },
+        {
+          "k": 3,
+          "order": "X1>CREATOR>X0>X2",
+          "creatorWon": true,
+          "thirdPartyWinners": 1,
+          "finalLenderCount": 50,
+          "violations": 0,
+          "losersReason": [
+            "Pool lender capacity reached"
+          ]
+        },
+        {
+          "k": 3,
+          "order": "X1>CREATOR>X2>X0",
+          "creatorWon": true,
+          "thirdPartyWinners": 1,
+          "finalLenderCount": 50,
+          "violations": 0,
+          "losersReason": [
+            "Pool lender capacity reached"
+          ]
+        },
+        {
+          "k": 3,
+          "order": "X2>X0>X1>CREATOR",
+          "creatorWon": true,
+          "thirdPartyWinners": 1,
+          "finalLenderCount": 50,
+          "violations": 0,
+          "losersReason": [
+            "Last slot reserved for agent self-stake"
+          ]
+        },
+        {
+          "k": 3,
+          "order": "X2>X0>CREATOR>X1",
+          "creatorWon": true,
+          "thirdPartyWinners": 1,
+          "finalLenderCount": 50,
+          "violations": 0,
+          "losersReason": [
+            "Last slot reserved for agent self-stake",
+            "Pool lender capacity reached"
+          ]
+        },
+        {
+          "k": 3,
+          "order": "X2>X1>X0>CREATOR",
+          "creatorWon": true,
+          "thirdPartyWinners": 1,
+          "finalLenderCount": 50,
+          "violations": 0,
+          "losersReason": [
+            "Last slot reserved for agent self-stake"
+          ]
+        },
+        {
+          "k": 3,
+          "order": "X2>X1>CREATOR>X0",
+          "creatorWon": true,
+          "thirdPartyWinners": 1,
+          "finalLenderCount": 50,
+          "violations": 0,
+          "losersReason": [
+            "Last slot reserved for agent self-stake",
+            "Pool lender capacity reached"
+          ]
+        },
+        {
+          "k": 3,
+          "order": "X2>CREATOR>X0>X1",
+          "creatorWon": true,
+          "thirdPartyWinners": 1,
+          "finalLenderCount": 50,
+          "violations": 0,
+          "losersReason": [
+            "Pool lender capacity reached"
+          ]
+        },
+        {
+          "k": 3,
+          "order": "X2>CREATOR>X1>X0",
+          "creatorWon": true,
+          "thirdPartyWinners": 1,
+          "finalLenderCount": 50,
+          "violations": 0,
+          "losersReason": [
+            "Pool lender capacity reached"
+          ]
+        },
+        {
+          "k": 3,
+          "order": "CREATOR>X0>X1>X2",
+          "creatorWon": true,
+          "thirdPartyWinners": 1,
+          "finalLenderCount": 50,
+          "violations": 0,
+          "losersReason": [
+            "Pool lender capacity reached"
+          ]
+        },
+        {
+          "k": 3,
+          "order": "CREATOR>X0>X2>X1",
+          "creatorWon": true,
+          "thirdPartyWinners": 1,
+          "finalLenderCount": 50,
+          "violations": 0,
+          "losersReason": [
+            "Pool lender capacity reached"
+          ]
+        },
+        {
+          "k": 3,
+          "order": "CREATOR>X1>X0>X2",
+          "creatorWon": true,
+          "thirdPartyWinners": 1,
+          "finalLenderCount": 50,
+          "violations": 0,
+          "losersReason": [
+            "Pool lender capacity reached"
+          ]
+        },
+        {
+          "k": 3,
+          "order": "CREATOR>X1>X2>X0",
+          "creatorWon": true,
+          "thirdPartyWinners": 1,
+          "finalLenderCount": 50,
+          "violations": 0,
+          "losersReason": [
+            "Pool lender capacity reached"
+          ]
+        },
+        {
+          "k": 3,
+          "order": "CREATOR>X2>X0>X1",
+          "creatorWon": true,
+          "thirdPartyWinners": 1,
+          "finalLenderCount": 50,
+          "violations": 0,
+          "losersReason": [
+            "Pool lender capacity reached"
+          ]
+        },
+        {
+          "k": 3,
+          "order": "CREATOR>X2>X1>X0",
+          "creatorWon": true,
+          "thirdPartyWinners": 1,
+          "finalLenderCount": 50,
+          "violations": 0,
+          "losersReason": [
+            "Pool lender capacity reached"
+          ]
+        },
+        {
+          "k": 9,
+          "order": "X0>X1>X2>X3>X4>X5>X6>X7>X8>CREATOR",
+          "creatorWon": true,
+          "thirdPartyWinners": 1,
+          "finalLenderCount": 50,
+          "violations": 0,
+          "losersReason": [
+            "Last slot reserved for agent self-stake"
+          ]
+        },
+        {
+          "k": 9,
+          "order": "X1>X2>X3>X4>X5>X6>X7>X8>CREATOR>X0",
+          "creatorWon": true,
+          "thirdPartyWinners": 1,
+          "finalLenderCount": 50,
+          "violations": 0,
+          "losersReason": [
+            "Last slot reserved for agent self-stake",
+            "Pool lender capacity reached"
+          ]
+        },
+        {
+          "k": 9,
+          "order": "X2>X3>X4>X5>X6>X7>X8>CREATOR>X0>X1",
+          "creatorWon": true,
+          "thirdPartyWinners": 1,
+          "finalLenderCount": 50,
+          "violations": 0,
+          "losersReason": [
+            "Last slot reserved for agent self-stake",
+            "Pool lender capacity reached"
+          ]
+        },
+        {
+          "k": 9,
+          "order": "X3>X4>X5>X6>X7>X8>CREATOR>X0>X1>X2",
+          "creatorWon": true,
+          "thirdPartyWinners": 1,
+          "finalLenderCount": 50,
+          "violations": 0,
+          "losersReason": [
+            "Last slot reserved for agent self-stake",
+            "Pool lender capacity reached"
+          ]
+        },
+        {
+          "k": 9,
+          "order": "X4>X5>X6>X7>X8>CREATOR>X0>X1>X2>X3",
+          "creatorWon": true,
+          "thirdPartyWinners": 1,
+          "finalLenderCount": 50,
+          "violations": 0,
+          "losersReason": [
+            "Last slot reserved for agent self-stake",
+            "Pool lender capacity reached"
+          ]
+        },
+        {
+          "k": 9,
+          "order": "X5>X6>X7>X8>CREATOR>X0>X1>X2>X3>X4",
+          "creatorWon": true,
+          "thirdPartyWinners": 1,
+          "finalLenderCount": 50,
+          "violations": 0,
+          "losersReason": [
+            "Last slot reserved for agent self-stake",
+            "Pool lender capacity reached"
+          ]
+        },
+        {
+          "k": 9,
+          "order": "X6>X7>X8>CREATOR>X0>X1>X2>X3>X4>X5",
+          "creatorWon": true,
+          "thirdPartyWinners": 1,
+          "finalLenderCount": 50,
+          "violations": 0,
+          "losersReason": [
+            "Last slot reserved for agent self-stake",
+            "Pool lender capacity reached"
+          ]
+        },
+        {
+          "k": 9,
+          "order": "X7>X8>CREATOR>X0>X1>X2>X3>X4>X5>X6",
+          "creatorWon": true,
+          "thirdPartyWinners": 1,
+          "finalLenderCount": 50,
+          "violations": 0,
+          "losersReason": [
+            "Last slot reserved for agent self-stake",
+            "Pool lender capacity reached"
+          ]
+        },
+        {
+          "k": 9,
+          "order": "X8>CREATOR>X0>X1>X2>X3>X4>X5>X6>X7",
+          "creatorWon": true,
+          "thirdPartyWinners": 1,
+          "finalLenderCount": 50,
+          "violations": 0,
+          "losersReason": [
+            "Pool lender capacity reached"
+          ]
+        },
+        {
+          "k": 9,
+          "order": "CREATOR>X0>X1>X2>X3>X4>X5>X6>X7>X8",
+          "creatorWon": true,
+          "thirdPartyWinners": 1,
+          "finalLenderCount": 50,
+          "violations": 0,
+          "losersReason": [
+            "Pool lender capacity reached"
+          ]
+        },
+        {
+          "k": 9,
+          "order": "CREATOR>X8>X7>X6>X5>X4>X3>X2>X1>X0",
+          "creatorWon": true,
+          "thirdPartyWinners": 1,
+          "finalLenderCount": 50,
+          "violations": 0,
+          "losersReason": [
+            "Pool lender capacity reached"
+          ]
+        }
+      ]
+    },
+    {
+      "race": "1.4 hard 50 cap under contention",
+      "runs": 15,
+      "rows": [
+        {
+          "k": 2,
+          "order": "0>1",
+          "winners": 0,
+          "finalLenderCount": 50,
+          "violations": 0
+        },
+        {
+          "k": 2,
+          "order": "1>0",
+          "winners": 0,
+          "finalLenderCount": 50,
+          "violations": 0
+        },
+        {
+          "k": 3,
+          "order": "0>1>2",
+          "winners": 0,
+          "finalLenderCount": 50,
+          "violations": 0
+        },
+        {
+          "k": 3,
+          "order": "0>2>1",
+          "winners": 0,
+          "finalLenderCount": 50,
+          "violations": 0
+        },
+        {
+          "k": 3,
+          "order": "1>0>2",
+          "winners": 0,
+          "finalLenderCount": 50,
+          "violations": 0
+        },
+        {
+          "k": 3,
+          "order": "1>2>0",
+          "winners": 0,
+          "finalLenderCount": 50,
+          "violations": 0
+        },
+        {
+          "k": 3,
+          "order": "2>0>1",
+          "winners": 0,
+          "finalLenderCount": 50,
+          "violations": 0
+        },
+        {
+          "k": 3,
+          "order": "2>1>0",
+          "winners": 0,
+          "finalLenderCount": 50,
+          "violations": 0
+        },
+        {
+          "k": 6,
+          "order": "0>1>2>3>4>5",
+          "winners": 0,
+          "finalLenderCount": 50,
+          "violations": 0
+        },
+        {
+          "k": 6,
+          "order": "1>2>3>4>5>0",
+          "winners": 0,
+          "finalLenderCount": 50,
+          "violations": 0
+        },
+        {
+          "k": 6,
+          "order": "2>3>4>5>0>1",
+          "winners": 0,
+          "finalLenderCount": 50,
+          "violations": 0
+        },
+        {
+          "k": 6,
+          "order": "3>4>5>0>1>2",
+          "winners": 0,
+          "finalLenderCount": 50,
+          "violations": 0
+        },
+        {
+          "k": 6,
+          "order": "4>5>0>1>2>3",
+          "winners": 0,
+          "finalLenderCount": 50,
+          "violations": 0
+        },
+        {
+          "k": 6,
+          "order": "5>0>1>2>3>4",
+          "winners": 0,
+          "finalLenderCount": 50,
+          "violations": 0
+        },
+        {
+          "k": 6,
+          "order": "5>4>3>2>1>0",
+          "winners": 0,
+          "finalLenderCount": 50,
+          "violations": 0
+        }
+      ]
+    },
+    {
+      "race": "1.5 freed-slot churn race",
+      "runs": 16,
+      "rows": [
+        {
+          "k": 2,
+          "exitFirst": true,
+          "order": "0>1",
+          "admitted": 1,
+          "finalLenderCount": 50,
+          "loserOrderingDependent": false,
+          "violations": 0
+        },
+        {
+          "k": 2,
+          "exitFirst": true,
+          "order": "1>0",
+          "admitted": 1,
+          "finalLenderCount": 50,
+          "loserOrderingDependent": false,
+          "violations": 0
+        },
+        {
+          "k": 2,
+          "exitFirst": false,
+          "order": "0>1",
+          "admitted": 0,
+          "finalLenderCount": 49,
+          "loserOrderingDependent": true,
+          "violations": 0
+        },
+        {
+          "k": 2,
+          "exitFirst": false,
+          "order": "1>0",
+          "admitted": 0,
+          "finalLenderCount": 49,
+          "loserOrderingDependent": true,
+          "violations": 0
+        },
+        {
+          "k": 3,
+          "exitFirst": true,
+          "order": "0>1>2",
+          "admitted": 1,
+          "finalLenderCount": 50,
+          "loserOrderingDependent": false,
+          "violations": 0
+        },
+        {
+          "k": 3,
+          "exitFirst": true,
+          "order": "0>2>1",
+          "admitted": 1,
+          "finalLenderCount": 50,
+          "loserOrderingDependent": false,
+          "violations": 0
+        },
+        {
+          "k": 3,
+          "exitFirst": true,
+          "order": "1>0>2",
+          "admitted": 1,
+          "finalLenderCount": 50,
+          "loserOrderingDependent": false,
+          "violations": 0
+        },
+        {
+          "k": 3,
+          "exitFirst": true,
+          "order": "1>2>0",
+          "admitted": 1,
+          "finalLenderCount": 50,
+          "loserOrderingDependent": false,
+          "violations": 0
+        },
+        {
+          "k": 3,
+          "exitFirst": true,
+          "order": "2>0>1",
+          "admitted": 1,
+          "finalLenderCount": 50,
+          "loserOrderingDependent": false,
+          "violations": 0
+        },
+        {
+          "k": 3,
+          "exitFirst": true,
+          "order": "2>1>0",
+          "admitted": 1,
+          "finalLenderCount": 50,
+          "loserOrderingDependent": false,
+          "violations": 0
+        },
+        {
+          "k": 3,
+          "exitFirst": false,
+          "order": "0>1>2",
+          "admitted": 0,
+          "finalLenderCount": 49,
+          "loserOrderingDependent": true,
+          "violations": 0
+        },
+        {
+          "k": 3,
+          "exitFirst": false,
+          "order": "0>2>1",
+          "admitted": 0,
+          "finalLenderCount": 49,
+          "loserOrderingDependent": true,
+          "violations": 0
+        },
+        {
+          "k": 3,
+          "exitFirst": false,
+          "order": "1>0>2",
+          "admitted": 0,
+          "finalLenderCount": 49,
+          "loserOrderingDependent": true,
+          "violations": 0
+        },
+        {
+          "k": 3,
+          "exitFirst": false,
+          "order": "1>2>0",
+          "admitted": 0,
+          "finalLenderCount": 49,
+          "loserOrderingDependent": true,
+          "violations": 0
+        },
+        {
+          "k": 3,
+          "exitFirst": false,
+          "order": "2>0>1",
+          "admitted": 0,
+          "finalLenderCount": 49,
+          "loserOrderingDependent": true,
+          "violations": 0
+        },
+        {
+          "k": 3,
+          "exitFirst": false,
+          "order": "2>1>0",
+          "admitted": 0,
+          "finalLenderCount": 49,
+          "loserOrderingDependent": true,
+          "violations": 0
+        }
+      ]
+    },
+    {
+      "race": "1.6 minSupplyAmount under contention",
+      "runs": 12,
+      "rows": [
+        {
+          "run": 0,
+          "reversed": false,
+          "subMinimumLanded": false,
+          "aFinalPrincipal": "10000001",
+          "violations": 0
+        },
+        {
+          "run": 1,
+          "reversed": true,
+          "subMinimumLanded": false,
+          "aFinalPrincipal": "10000000",
+          "violations": 0
+        },
+        {
+          "run": 2,
+          "reversed": false,
+          "subMinimumLanded": false,
+          "aFinalPrincipal": "10000001",
+          "violations": 0
+        },
+        {
+          "run": 3,
+          "reversed": true,
+          "subMinimumLanded": false,
+          "aFinalPrincipal": "10000000",
+          "violations": 0
+        },
+        {
+          "run": 4,
+          "reversed": false,
+          "subMinimumLanded": false,
+          "aFinalPrincipal": "10000001",
+          "violations": 0
+        },
+        {
+          "run": 5,
+          "reversed": true,
+          "subMinimumLanded": false,
+          "aFinalPrincipal": "10000000",
+          "violations": 0
+        },
+        {
+          "run": 6,
+          "reversed": false,
+          "subMinimumLanded": false,
+          "aFinalPrincipal": "10000001",
+          "violations": 0
+        },
+        {
+          "run": 7,
+          "reversed": true,
+          "subMinimumLanded": false,
+          "aFinalPrincipal": "10000000",
+          "violations": 0
+        },
+        {
+          "run": 8,
+          "reversed": false,
+          "subMinimumLanded": false,
+          "aFinalPrincipal": "10000001",
+          "violations": 0
+        },
+        {
+          "run": 9,
+          "reversed": true,
+          "subMinimumLanded": false,
+          "aFinalPrincipal": "10000000",
+          "violations": 0
+        },
+        {
+          "run": 10,
+          "reversed": false,
+          "subMinimumLanded": false,
+          "aFinalPrincipal": "10000001",
+          "violations": 0
+        },
+        {
+          "run": 11,
+          "reversed": true,
+          "subMinimumLanded": false,
+          "aFinalPrincipal": "10000000",
+          "violations": 0
+        }
+      ]
+    },
+    {
+      "race": "2.1 withdraw vs borrow, contended",
+      "runs": 14,
+      "rows": [
+        {
+          "lenderSupply": "100000000",
+          "withdraw": "100000000",
+          "borrow": "1050000000",
+          "borrowFirst": true,
+          "winner": "BORROW",
+          "loserReason": "Insufficient pool liquidity",
+          "loserNote": "front-run: would-succeed-if-placed-earlier",
+          "availBefore": "1100000000",
+          "availAfter": "50000000",
+          "violations": 0
+        },
+        {
+          "lenderSupply": "100000000",
+          "withdraw": "100000000",
+          "borrow": "1050000000",
+          "borrowFirst": false,
+          "winner": "WITHDRAW",
+          "loserReason": "Insufficient pool liquidity",
+          "loserNote": "front-run: would-succeed-if-placed-earlier",
+          "availBefore": "1100000000",
+          "availAfter": "1000000000",
+          "violations": 0
+        },
+        {
+          "lenderSupply": "100000000",
+          "withdraw": "60000000",
+          "borrow": "1050000000",
+          "borrowFirst": true,
+          "winner": "BORROW",
+          "loserReason": "Insufficient pool liquidity",
+          "loserNote": "front-run: would-succeed-if-placed-earlier",
+          "availBefore": "1100000000",
+          "availAfter": "50000000",
+          "violations": 0
+        },
+        {
+          "lenderSupply": "100000000",
+          "withdraw": "60000000",
+          "borrow": "1050000000",
+          "borrowFirst": false,
+          "winner": "WITHDRAW",
+          "loserReason": "Insufficient pool liquidity",
+          "loserNote": "front-run: would-succeed-if-placed-earlier",
+          "availBefore": "1100000000",
+          "availAfter": "1040000000",
+          "violations": 0
+        },
+        {
+          "lenderSupply": "200000000",
+          "withdraw": "200000000",
+          "borrow": "1100000000",
+          "borrowFirst": true,
+          "winner": "BORROW",
+          "loserReason": "Insufficient pool liquidity",
+          "loserNote": "front-run: would-succeed-if-placed-earlier",
+          "availBefore": "1200000000",
+          "availAfter": "100000000",
+          "violations": 0
+        },
+        {
+          "lenderSupply": "200000000",
+          "withdraw": "200000000",
+          "borrow": "1100000000",
+          "borrowFirst": false,
+          "winner": "WITHDRAW",
+          "loserReason": "Insufficient pool liquidity",
+          "loserNote": "front-run: would-succeed-if-placed-earlier",
+          "availBefore": "1200000000",
+          "availAfter": "1000000000",
+          "violations": 0
+        },
+        {
+          "lenderSupply": "200000000",
+          "withdraw": "199000000",
+          "borrow": "1200000000",
+          "borrowFirst": true,
+          "winner": "BORROW",
+          "loserReason": "Insufficient pool liquidity",
+          "loserNote": "unconditional-in-this-block",
+          "availBefore": "1200000000",
+          "availAfter": "0",
+          "violations": 0
+        },
+        {
+          "lenderSupply": "200000000",
+          "withdraw": "199000000",
+          "borrow": "1200000000",
+          "borrowFirst": false,
+          "winner": "BORROW",
+          "loserReason": "Remaining below minimum supply",
+          "loserNote": "unconditional-in-this-block",
+          "availBefore": "1200000000",
+          "availAfter": "0",
+          "violations": 0
+        },
+        {
+          "lenderSupply": "500000000",
+          "withdraw": "500000000",
+          "borrow": "1500000000",
+          "borrowFirst": true,
+          "winner": "BORROW",
+          "loserReason": "Insufficient pool liquidity",
+          "loserNote": "front-run: would-succeed-if-placed-earlier",
+          "availBefore": "1500000000",
+          "availAfter": "0",
+          "violations": 0
+        },
+        {
+          "lenderSupply": "500000000",
+          "withdraw": "500000000",
+          "borrow": "1500000000",
+          "borrowFirst": false,
+          "winner": "WITHDRAW",
+          "loserReason": "Insufficient pool liquidity",
+          "loserNote": "front-run: would-succeed-if-placed-earlier",
+          "availBefore": "1500000000",
+          "availAfter": "1000000000",
+          "violations": 0
+        },
+        {
+          "lenderSupply": "500000000",
+          "withdraw": "1000000",
+          "borrow": "1500000000",
+          "borrowFirst": true,
+          "winner": "BORROW",
+          "loserReason": "Insufficient pool liquidity",
+          "loserNote": "front-run: would-succeed-if-placed-earlier",
+          "availBefore": "1500000000",
+          "availAfter": "0",
+          "violations": 0
+        },
+        {
+          "lenderSupply": "500000000",
+          "withdraw": "1000000",
+          "borrow": "1500000000",
+          "borrowFirst": false,
+          "winner": "WITHDRAW",
+          "loserReason": "Insufficient pool liquidity",
+          "loserNote": "front-run: would-succeed-if-placed-earlier",
+          "availBefore": "1500000000",
+          "availAfter": "1499000000",
+          "violations": 0
+        },
+        {
+          "lenderSupply": "50000000",
+          "withdraw": "50000000",
+          "borrow": "1050000000",
+          "borrowFirst": true,
+          "winner": "BORROW",
+          "loserReason": "Insufficient pool liquidity",
+          "loserNote": "front-run: would-succeed-if-placed-earlier",
+          "availBefore": "1050000000",
+          "availAfter": "0",
+          "violations": 0
+        },
+        {
+          "lenderSupply": "50000000",
+          "withdraw": "50000000",
+          "borrow": "1050000000",
+          "borrowFirst": false,
+          "winner": "WITHDRAW",
+          "loserReason": "Insufficient pool liquidity",
+          "loserNote": "front-run: would-succeed-if-placed-earlier",
+          "availBefore": "1050000000",
+          "availAfter": "1000000000",
+          "violations": 0
+        }
+      ]
+    },
+    {
+      "race": "2.2 withdraw + borrow, uncontended",
+      "runs": 8,
+      "rows": [
+        {
+          "lenderSupply": "1000000000",
+          "withdraw": "100000000",
+          "borrow": "1200000000",
+          "borrowFirst": true,
+          "bothSucceeded": true,
+          "violations": 0,
+          "gas": {
+            "BORROW": "517569",
+            "WITHDRAW": "66839"
+          }
+        },
+        {
+          "lenderSupply": "1000000000",
+          "withdraw": "100000000",
+          "borrow": "1200000000",
+          "borrowFirst": false,
+          "bothSucceeded": true,
+          "violations": 0,
+          "gas": {
+            "WITHDRAW": "66839",
+            "BORROW": "517569"
+          }
+        },
+        {
+          "lenderSupply": "1000000000",
+          "withdraw": "500000000",
+          "borrow": "1000000000",
+          "borrowFirst": true,
+          "bothSucceeded": true,
+          "violations": 0,
+          "gas": {
+            "BORROW": "517569",
+            "WITHDRAW": "66839"
+          }
+        },
+        {
+          "lenderSupply": "1000000000",
+          "withdraw": "500000000",
+          "borrow": "1000000000",
+          "borrowFirst": false,
+          "bothSucceeded": true,
+          "violations": 0,
+          "gas": {
+            "WITHDRAW": "66839",
+            "BORROW": "517569"
+          }
+        },
+        {
+          "lenderSupply": "2000000000",
+          "withdraw": "1000000000",
+          "borrow": "1500000000",
+          "borrowFirst": true,
+          "bothSucceeded": true,
+          "violations": 0,
+          "gas": {
+            "BORROW": "517569",
+            "WITHDRAW": "66839"
+          }
+        },
+        {
+          "lenderSupply": "2000000000",
+          "withdraw": "1000000000",
+          "borrow": "1500000000",
+          "borrowFirst": false,
+          "bothSucceeded": true,
+          "violations": 0,
+          "gas": {
+            "WITHDRAW": "66839",
+            "BORROW": "517569"
+          }
+        },
+        {
+          "lenderSupply": "600000000",
+          "withdraw": "300000000",
+          "borrow": "1100000000",
+          "borrowFirst": true,
+          "bothSucceeded": true,
+          "violations": 0,
+          "gas": {
+            "BORROW": "517569",
+            "WITHDRAW": "66839"
+          }
+        },
+        {
+          "lenderSupply": "600000000",
+          "withdraw": "300000000",
+          "borrow": "1100000000",
+          "borrowFirst": false,
+          "bothSucceeded": true,
+          "violations": 0,
+          "gas": {
+            "WITHDRAW": "66839",
+            "BORROW": "517569"
+          }
+        }
+      ]
+    },
+    {
+      "race": "2.3 3 withdraws vs 1 borrow",
+      "runs": 24,
+      "rows": [
+        {
+          "order": "W0>W1>W2>BORROW",
+          "succeeded": "W0,W1,W2",
+          "moved": "1200000000",
+          "availBefore": "2200000000",
+          "violations": 0
+        },
+        {
+          "order": "W0>W1>BORROW>W2",
+          "succeeded": "W0,W1,W2",
+          "moved": "1200000000",
+          "availBefore": "2200000000",
+          "violations": 0
+        },
+        {
+          "order": "W0>W2>W1>BORROW",
+          "succeeded": "W0,W2,W1",
+          "moved": "1200000000",
+          "availBefore": "2200000000",
+          "violations": 0
+        },
+        {
+          "order": "W0>W2>BORROW>W1",
+          "succeeded": "W0,W2,W1",
+          "moved": "1200000000",
+          "availBefore": "2200000000",
+          "violations": 0
+        },
+        {
+          "order": "W0>BORROW>W1>W2",
+          "succeeded": "W0,BORROW",
+          "moved": "2000000000",
+          "availBefore": "2200000000",
+          "violations": 0
+        },
+        {
+          "order": "W0>BORROW>W2>W1",
+          "succeeded": "W0,BORROW",
+          "moved": "2000000000",
+          "availBefore": "2200000000",
+          "violations": 0
+        },
+        {
+          "order": "W1>W0>W2>BORROW",
+          "succeeded": "W1,W0,W2",
+          "moved": "1200000000",
+          "availBefore": "2200000000",
+          "violations": 0
+        },
+        {
+          "order": "W1>W0>BORROW>W2",
+          "succeeded": "W1,W0,W2",
+          "moved": "1200000000",
+          "availBefore": "2200000000",
+          "violations": 0
+        },
+        {
+          "order": "W1>W2>W0>BORROW",
+          "succeeded": "W1,W2,W0",
+          "moved": "1200000000",
+          "availBefore": "2200000000",
+          "violations": 0
+        },
+        {
+          "order": "W1>W2>BORROW>W0",
+          "succeeded": "W1,W2,W0",
+          "moved": "1200000000",
+          "availBefore": "2200000000",
+          "violations": 0
+        },
+        {
+          "order": "W1>BORROW>W0>W2",
+          "succeeded": "W1,BORROW",
+          "moved": "2000000000",
+          "availBefore": "2200000000",
+          "violations": 0
+        },
+        {
+          "order": "W1>BORROW>W2>W0",
+          "succeeded": "W1,BORROW",
+          "moved": "2000000000",
+          "availBefore": "2200000000",
+          "violations": 0
+        },
+        {
+          "order": "W2>W0>W1>BORROW",
+          "succeeded": "W2,W0,W1",
+          "moved": "1200000000",
+          "availBefore": "2200000000",
+          "violations": 0
+        },
+        {
+          "order": "W2>W0>BORROW>W1",
+          "succeeded": "W2,W0,W1",
+          "moved": "1200000000",
+          "availBefore": "2200000000",
+          "violations": 0
+        },
+        {
+          "order": "W2>W1>W0>BORROW",
+          "succeeded": "W2,W1,W0",
+          "moved": "1200000000",
+          "availBefore": "2200000000",
+          "violations": 0
+        },
+        {
+          "order": "W2>W1>BORROW>W0",
+          "succeeded": "W2,W1,W0",
+          "moved": "1200000000",
+          "availBefore": "2200000000",
+          "violations": 0
+        },
+        {
+          "order": "W2>BORROW>W0>W1",
+          "succeeded": "W2,BORROW",
+          "moved": "2000000000",
+          "availBefore": "2200000000",
+          "violations": 0
+        },
+        {
+          "order": "W2>BORROW>W1>W0",
+          "succeeded": "W2,BORROW",
+          "moved": "2000000000",
+          "availBefore": "2200000000",
+          "violations": 0
+        },
+        {
+          "order": "BORROW>W0>W1>W2",
+          "succeeded": "BORROW,W0",
+          "moved": "2000000000",
+          "availBefore": "2200000000",
+          "violations": 0
+        },
+        {
+          "order": "BORROW>W0>W2>W1",
+          "succeeded": "BORROW,W0",
+          "moved": "2000000000",
+          "availBefore": "2200000000",
+          "violations": 0
+        },
+        {
+          "order": "BORROW>W1>W0>W2",
+          "succeeded": "BORROW,W1",
+          "moved": "2000000000",
+          "availBefore": "2200000000",
+          "violations": 0
+        },
+        {
+          "order": "BORROW>W1>W2>W0",
+          "succeeded": "BORROW,W1",
+          "moved": "2000000000",
+          "availBefore": "2200000000",
+          "violations": 0
+        },
+        {
+          "order": "BORROW>W2>W0>W1",
+          "succeeded": "BORROW,W2",
+          "moved": "2000000000",
+          "availBefore": "2200000000",
+          "violations": 0
+        },
+        {
+          "order": "BORROW>W2>W1>W0",
+          "succeeded": "BORROW,W2",
+          "moved": "2000000000",
+          "availBefore": "2200000000",
+          "violations": 0
+        }
+      ]
+    },
+    {
+      "race": "2.4 TOCTOU borrow sized from a stale read",
+      "runs": 10,
+      "rows": [
+        {
+          "run": 0,
+          "readAvailable": "1300000000",
+          "borrowRequested": "1300000000",
+          "borrowSucceeded": false,
+          "reason": "Insufficient pool liquidity",
+          "violations": 0
+        },
+        {
+          "run": 1,
+          "readAvailable": "1300000000",
+          "borrowRequested": "1300000000",
+          "borrowSucceeded": false,
+          "reason": "Insufficient pool liquidity",
+          "violations": 0
+        },
+        {
+          "run": 2,
+          "readAvailable": "1300000000",
+          "borrowRequested": "1300000000",
+          "borrowSucceeded": false,
+          "reason": "Insufficient pool liquidity",
+          "violations": 0
+        },
+        {
+          "run": 3,
+          "readAvailable": "1300000000",
+          "borrowRequested": "1300000000",
+          "borrowSucceeded": false,
+          "reason": "Insufficient pool liquidity",
+          "violations": 0
+        },
+        {
+          "run": 4,
+          "readAvailable": "1300000000",
+          "borrowRequested": "1300000000",
+          "borrowSucceeded": false,
+          "reason": "Insufficient pool liquidity",
+          "violations": 0
+        },
+        {
+          "run": 5,
+          "readAvailable": "1300000000",
+          "borrowRequested": "1300000000",
+          "borrowSucceeded": false,
+          "reason": "Insufficient pool liquidity",
+          "violations": 0
+        },
+        {
+          "run": 6,
+          "readAvailable": "1300000000",
+          "borrowRequested": "1300000000",
+          "borrowSucceeded": false,
+          "reason": "Insufficient pool liquidity",
+          "violations": 0
+        },
+        {
+          "run": 7,
+          "readAvailable": "1300000000",
+          "borrowRequested": "1300000000",
+          "borrowSucceeded": false,
+          "reason": "Insufficient pool liquidity",
+          "violations": 0
+        },
+        {
+          "run": 8,
+          "readAvailable": "1300000000",
+          "borrowRequested": "1300000000",
+          "borrowSucceeded": false,
+          "reason": "Insufficient pool liquidity",
+          "violations": 0
+        },
+        {
+          "run": 9,
+          "readAvailable": "1300000000",
+          "borrowRequested": "1300000000",
+          "borrowSucceeded": false,
+          "reason": "Insufficient pool liquidity",
+          "violations": 0
+        }
+      ]
+    },
+    {
+      "race": "2.5 withdraw vs repay",
+      "runs": 6,
+      "rows": [
+        {
+          "run": 0,
+          "repayFirst": true,
+          "withdrawSucceeded": true,
+          "reason": null,
+          "orderingDependent": null,
+          "orderingNote": null,
+          "violations": 0
+        },
+        {
+          "run": 0,
+          "repayFirst": false,
+          "withdrawSucceeded": false,
+          "reason": "Insufficient pool liquidity",
+          "orderingDependent": true,
+          "orderingNote": "would-succeed-if-placed-later",
+          "violations": 0
+        },
+        {
+          "run": 1,
+          "repayFirst": true,
+          "withdrawSucceeded": true,
+          "reason": null,
+          "orderingDependent": null,
+          "orderingNote": null,
+          "violations": 0
+        },
+        {
+          "run": 1,
+          "repayFirst": false,
+          "withdrawSucceeded": false,
+          "reason": "Insufficient pool liquidity",
+          "orderingDependent": true,
+          "orderingNote": "would-succeed-if-placed-later",
+          "violations": 0
+        },
+        {
+          "run": 2,
+          "repayFirst": true,
+          "withdrawSucceeded": true,
+          "reason": null,
+          "orderingDependent": null,
+          "orderingNote": null,
+          "violations": 0
+        },
+        {
+          "run": 2,
+          "repayFirst": false,
+          "withdrawSucceeded": false,
+          "reason": "Insufficient pool liquidity",
+          "orderingDependent": true,
+          "orderingNote": "would-succeed-if-placed-later",
+          "violations": 0
+        }
+      ]
+    },
+    {
+      "race": "3.1 creator withdraw vs own borrow, same block",
+      "runs": 16,
+      "rows": [
+        {
+          "stake": "600000000",
+          "withdraw": "200000000",
+          "borrow": "1000000000",
+          "borrowFirst": true,
+          "withdrawOk": false,
+          "borrowOk": true,
+          "withdrawReason": "Self-stake locked while borrowing",
+          "borrowReason": null,
+          "finalStake": "600000000",
+          "outstanding": "1000000000",
+          "violations": 0
+        },
+        {
+          "stake": "600000000",
+          "withdraw": "200000000",
+          "borrow": "1000000000",
+          "borrowFirst": false,
+          "withdrawOk": true,
+          "borrowOk": false,
+          "withdrawReason": null,
+          "borrowReason": "Insufficient self-stake",
+          "finalStake": "400000000",
+          "outstanding": "0",
+          "violations": 0
+        },
+        {
+          "stake": "600000000",
+          "withdraw": "100000000",
+          "borrow": "1000000000",
+          "borrowFirst": true,
+          "withdrawOk": false,
+          "borrowOk": true,
+          "withdrawReason": "Self-stake locked while borrowing",
+          "borrowReason": null,
+          "finalStake": "600000000",
+          "outstanding": "1000000000",
+          "violations": 0
+        },
+        {
+          "stake": "600000000",
+          "withdraw": "100000000",
+          "borrow": "1000000000",
+          "borrowFirst": false,
+          "withdrawOk": true,
+          "borrowOk": true,
+          "withdrawReason": null,
+          "borrowReason": null,
+          "finalStake": "500000000",
+          "outstanding": "1000000000",
+          "violations": 0
+        },
+        {
+          "stake": "600000000",
+          "withdraw": "101000000",
+          "borrow": "1000000000",
+          "borrowFirst": true,
+          "withdrawOk": false,
+          "borrowOk": true,
+          "withdrawReason": "Self-stake locked while borrowing",
+          "borrowReason": null,
+          "finalStake": "600000000",
+          "outstanding": "1000000000",
+          "violations": 0
+        },
+        {
+          "stake": "600000000",
+          "withdraw": "101000000",
+          "borrow": "1000000000",
+          "borrowFirst": false,
+          "withdrawOk": true,
+          "borrowOk": false,
+          "withdrawReason": null,
+          "borrowReason": "Insufficient self-stake",
+          "finalStake": "499000000",
+          "outstanding": "0",
+          "violations": 0
+        },
+        {
+          "stake": "1200000000",
+          "withdraw": "200000000",
+          "borrow": "1000000000",
+          "borrowFirst": true,
+          "withdrawOk": false,
+          "borrowOk": true,
+          "withdrawReason": "Self-stake locked while borrowing",
+          "borrowReason": null,
+          "finalStake": "1200000000",
+          "outstanding": "1000000000",
+          "violations": 0
+        },
+        {
+          "stake": "1200000000",
+          "withdraw": "200000000",
+          "borrow": "1000000000",
+          "borrowFirst": false,
+          "withdrawOk": true,
+          "borrowOk": true,
+          "withdrawReason": null,
+          "borrowReason": null,
+          "finalStake": "1000000000",
+          "outstanding": "1000000000",
+          "violations": 0
+        },
+        {
+          "stake": "600000000",
+          "withdraw": "600000000",
+          "borrow": "1000000000",
+          "borrowFirst": true,
+          "withdrawOk": false,
+          "borrowOk": true,
+          "withdrawReason": "Self-stake locked while borrowing",
+          "borrowReason": null,
+          "finalStake": "600000000",
+          "outstanding": "1000000000",
+          "violations": 0
+        },
+        {
+          "stake": "600000000",
+          "withdraw": "600000000",
+          "borrow": "1000000000",
+          "borrowFirst": false,
+          "withdrawOk": true,
+          "borrowOk": false,
+          "withdrawReason": null,
+          "borrowReason": "Insufficient self-stake",
+          "finalStake": "0",
+          "outstanding": "0",
+          "violations": 0
+        },
+        {
+          "stake": "600000000",
+          "withdraw": "599000000",
+          "borrow": "200000000",
+          "borrowFirst": true,
+          "withdrawOk": false,
+          "borrowOk": true,
+          "withdrawReason": "Self-stake locked while borrowing",
+          "borrowReason": null,
+          "finalStake": "600000000",
+          "outstanding": "200000000",
+          "violations": 0
+        },
+        {
+          "stake": "600000000",
+          "withdraw": "599000000",
+          "borrow": "200000000",
+          "borrowFirst": false,
+          "withdrawOk": true,
+          "borrowOk": false,
+          "withdrawReason": null,
+          "borrowReason": "Insufficient self-stake",
+          "finalStake": "1000000",
+          "outstanding": "0",
+          "violations": 0
+        },
+        {
+          "stake": "500000000",
+          "withdraw": "1000000",
+          "borrow": "1000000000",
+          "borrowFirst": true,
+          "withdrawOk": false,
+          "borrowOk": true,
+          "withdrawReason": "Self-stake locked while borrowing",
+          "borrowReason": null,
+          "finalStake": "500000000",
+          "outstanding": "1000000000",
+          "violations": 0
+        },
+        {
+          "stake": "500000000",
+          "withdraw": "1000000",
+          "borrow": "1000000000",
+          "borrowFirst": false,
+          "withdrawOk": true,
+          "borrowOk": false,
+          "withdrawReason": null,
+          "borrowReason": "Insufficient self-stake",
+          "finalStake": "499000000",
+          "outstanding": "0",
+          "violations": 0
+        },
+        {
+          "stake": "1000000000",
+          "withdraw": "500000000",
+          "borrow": "1000000000",
+          "borrowFirst": true,
+          "withdrawOk": false,
+          "borrowOk": true,
+          "withdrawReason": "Self-stake locked while borrowing",
+          "borrowReason": null,
+          "finalStake": "1000000000",
+          "outstanding": "1000000000",
+          "violations": 0
+        },
+        {
+          "stake": "1000000000",
+          "withdraw": "500000000",
+          "borrow": "1000000000",
+          "borrowFirst": false,
+          "withdrawOk": true,
+          "borrowOk": true,
+          "withdrawReason": null,
+          "borrowReason": null,
+          "finalStake": "500000000",
+          "outstanding": "1000000000",
+          "violations": 0
+        }
+      ]
+    },
+    {
+      "race": "3.2 lock window sweep",
+      "runs": 12,
+      "rows": [
+        {
+          "run": 0,
+          "withdrawBeforeBorrow": true,
+          "probes": [
+            {
+              "tag": "t0 (no loan)",
+              "outstanding": "0",
+              "creatorCanWithdraw": true
+            },
+            {
+              "tag": "after withdraw, before borrow",
+              "outstanding": "0",
+              "creatorCanWithdraw": true
+            },
+            {
+              "tag": "after borrow",
+              "outstanding": "1000000000",
+              "creatorCanWithdraw": false
+            }
+          ],
+          "violations": 0
+        },
+        {
+          "run": 0,
+          "withdrawBeforeBorrow": false,
+          "probes": [
+            {
+              "tag": "t0 (no loan)",
+              "outstanding": "0",
+              "creatorCanWithdraw": true
+            },
+            {
+              "tag": "immediately after borrow",
+              "outstanding": "1000000000",
+              "creatorCanWithdraw": false
+            },
+            {
+              "tag": "+1 block",
+              "outstanding": "1000000000",
+              "creatorCanWithdraw": false
+            },
+            {
+              "tag": "+3 days",
+              "outstanding": "1000000000",
+              "creatorCanWithdraw": false
+            },
+            {
+              "tag": "after repay",
+              "outstanding": "0",
+              "creatorCanWithdraw": true
+            }
+          ],
+          "violations": 0
+        },
+        {
+          "run": 1,
+          "withdrawBeforeBorrow": true,
+          "probes": [
+            {
+              "tag": "t0 (no loan)",
+              "outstanding": "0",
+              "creatorCanWithdraw": true
+            },
+            {
+              "tag": "after withdraw, before borrow",
+              "outstanding": "0",
+              "creatorCanWithdraw": true
+            },
+            {
+              "tag": "after borrow",
+              "outstanding": "1000000000",
+              "creatorCanWithdraw": false
+            }
+          ],
+          "violations": 0
+        },
+        {
+          "run": 1,
+          "withdrawBeforeBorrow": false,
+          "probes": [
+            {
+              "tag": "t0 (no loan)",
+              "outstanding": "0",
+              "creatorCanWithdraw": true
+            },
+            {
+              "tag": "immediately after borrow",
+              "outstanding": "1000000000",
+              "creatorCanWithdraw": false
+            },
+            {
+              "tag": "+1 block",
+              "outstanding": "1000000000",
+              "creatorCanWithdraw": false
+            },
+            {
+              "tag": "+3 days",
+              "outstanding": "1000000000",
+              "creatorCanWithdraw": false
+            },
+            {
+              "tag": "after repay",
+              "outstanding": "0",
+              "creatorCanWithdraw": true
+            }
+          ],
+          "violations": 0
+        },
+        {
+          "run": 2,
+          "withdrawBeforeBorrow": true,
+          "probes": [
+            {
+              "tag": "t0 (no loan)",
+              "outstanding": "0",
+              "creatorCanWithdraw": true
+            },
+            {
+              "tag": "after withdraw, before borrow",
+              "outstanding": "0",
+              "creatorCanWithdraw": true
+            },
+            {
+              "tag": "after borrow",
+              "outstanding": "1000000000",
+              "creatorCanWithdraw": false
+            }
+          ],
+          "violations": 0
+        },
+        {
+          "run": 2,
+          "withdrawBeforeBorrow": false,
+          "probes": [
+            {
+              "tag": "t0 (no loan)",
+              "outstanding": "0",
+              "creatorCanWithdraw": true
+            },
+            {
+              "tag": "immediately after borrow",
+              "outstanding": "1000000000",
+              "creatorCanWithdraw": false
+            },
+            {
+              "tag": "+1 block",
+              "outstanding": "1000000000",
+              "creatorCanWithdraw": false
+            },
+            {
+              "tag": "+3 days",
+              "outstanding": "1000000000",
+              "creatorCanWithdraw": false
+            },
+            {
+              "tag": "after repay",
+              "outstanding": "0",
+              "creatorCanWithdraw": true
+            }
+          ],
+          "violations": 0
+        },
+        {
+          "run": 3,
+          "withdrawBeforeBorrow": true,
+          "probes": [
+            {
+              "tag": "t0 (no loan)",
+              "outstanding": "0",
+              "creatorCanWithdraw": true
+            },
+            {
+              "tag": "after withdraw, before borrow",
+              "outstanding": "0",
+              "creatorCanWithdraw": true
+            },
+            {
+              "tag": "after borrow",
+              "outstanding": "1000000000",
+              "creatorCanWithdraw": false
+            }
+          ],
+          "violations": 0
+        },
+        {
+          "run": 3,
+          "withdrawBeforeBorrow": false,
+          "probes": [
+            {
+              "tag": "t0 (no loan)",
+              "outstanding": "0",
+              "creatorCanWithdraw": true
+            },
+            {
+              "tag": "immediately after borrow",
+              "outstanding": "1000000000",
+              "creatorCanWithdraw": false
+            },
+            {
+              "tag": "+1 block",
+              "outstanding": "1000000000",
+              "creatorCanWithdraw": false
+            },
+            {
+              "tag": "+3 days",
+              "outstanding": "1000000000",
+              "creatorCanWithdraw": false
+            },
+            {
+              "tag": "after repay",
+              "outstanding": "0",
+              "creatorCanWithdraw": true
+            }
+          ],
+          "violations": 0
+        },
+        {
+          "run": 4,
+          "withdrawBeforeBorrow": true,
+          "probes": [
+            {
+              "tag": "t0 (no loan)",
+              "outstanding": "0",
+              "creatorCanWithdraw": true
+            },
+            {
+              "tag": "after withdraw, before borrow",
+              "outstanding": "0",
+              "creatorCanWithdraw": true
+            },
+            {
+              "tag": "after borrow",
+              "outstanding": "1000000000",
+              "creatorCanWithdraw": false
+            }
+          ],
+          "violations": 0
+        },
+        {
+          "run": 4,
+          "withdrawBeforeBorrow": false,
+          "probes": [
+            {
+              "tag": "t0 (no loan)",
+              "outstanding": "0",
+              "creatorCanWithdraw": true
+            },
+            {
+              "tag": "immediately after borrow",
+              "outstanding": "1000000000",
+              "creatorCanWithdraw": false
+            },
+            {
+              "tag": "+1 block",
+              "outstanding": "1000000000",
+              "creatorCanWithdraw": false
+            },
+            {
+              "tag": "+3 days",
+              "outstanding": "1000000000",
+              "creatorCanWithdraw": false
+            },
+            {
+              "tag": "after repay",
+              "outstanding": "0",
+              "creatorCanWithdraw": true
+            }
+          ],
+          "violations": 0
+        },
+        {
+          "run": 5,
+          "withdrawBeforeBorrow": true,
+          "probes": [
+            {
+              "tag": "t0 (no loan)",
+              "outstanding": "0",
+              "creatorCanWithdraw": true
+            },
+            {
+              "tag": "after withdraw, before borrow",
+              "outstanding": "0",
+              "creatorCanWithdraw": true
+            },
+            {
+              "tag": "after borrow",
+              "outstanding": "1000000000",
+              "creatorCanWithdraw": false
+            }
+          ],
+          "violations": 0
+        },
+        {
+          "run": 5,
+          "withdrawBeforeBorrow": false,
+          "probes": [
+            {
+              "tag": "t0 (no loan)",
+              "outstanding": "0",
+              "creatorCanWithdraw": true
+            },
+            {
+              "tag": "immediately after borrow",
+              "outstanding": "1000000000",
+              "creatorCanWithdraw": false
+            },
+            {
+              "tag": "+1 block",
+              "outstanding": "1000000000",
+              "creatorCanWithdraw": false
+            },
+            {
+              "tag": "+3 days",
+              "outstanding": "1000000000",
+              "creatorCanWithdraw": false
+            },
+            {
+              "tag": "after repay",
+              "outstanding": "0",
+              "creatorCanWithdraw": true
+            }
+          ],
+          "violations": 0
+        }
+      ]
+    },
+    {
+      "race": "3.3 repay/withdraw/re-borrow permutations",
+      "runs": 18,
+      "rows": [
+        {
+          "stake": "600000000",
+          "order": "REPAY>WITHDRAW>BORROW2",
+          "outcomes": {
+            "REPAY": "ok",
+            "WITHDRAW": "ok",
+            "BORROW2": "Insufficient self-stake"
+          },
+          "finalOutstanding": "0",
+          "finalStake": "100000000",
+          "violations": 0
+        },
+        {
+          "stake": "600000000",
+          "order": "REPAY>BORROW2>WITHDRAW",
+          "outcomes": {
+            "REPAY": "ok",
+            "BORROW2": "ok",
+            "WITHDRAW": "Self-stake locked while borrowing"
+          },
+          "finalOutstanding": "800000000",
+          "finalStake": "600000000",
+          "violations": 0
+        },
+        {
+          "stake": "600000000",
+          "order": "WITHDRAW>REPAY>BORROW2",
+          "outcomes": {
+            "WITHDRAW": "Self-stake locked while borrowing",
+            "REPAY": "ok",
+            "BORROW2": "ok"
+          },
+          "finalOutstanding": "800000000",
+          "finalStake": "600000000",
+          "violations": 0
+        },
+        {
+          "stake": "600000000",
+          "order": "WITHDRAW>BORROW2>REPAY",
+          "outcomes": {
+            "WITHDRAW": "Self-stake locked while borrowing",
+            "BORROW2": "Insufficient self-stake",
+            "REPAY": "ok"
+          },
+          "finalOutstanding": "0",
+          "finalStake": "600000000",
+          "violations": 0
+        },
+        {
+          "stake": "600000000",
+          "order": "BORROW2>REPAY>WITHDRAW",
+          "outcomes": {
+            "BORROW2": "Insufficient self-stake",
+            "REPAY": "ok",
+            "WITHDRAW": "ok"
+          },
+          "finalOutstanding": "0",
+          "finalStake": "100000000",
+          "violations": 0
+        },
+        {
+          "stake": "600000000",
+          "order": "BORROW2>WITHDRAW>REPAY",
+          "outcomes": {
+            "BORROW2": "Insufficient self-stake",
+            "WITHDRAW": "Self-stake locked while borrowing",
+            "REPAY": "ok"
+          },
+          "finalOutstanding": "0",
+          "finalStake": "600000000",
+          "violations": 0
+        },
+        {
+          "stake": "1000000000",
+          "order": "REPAY>WITHDRAW>BORROW2",
+          "outcomes": {
+            "REPAY": "ok",
+            "WITHDRAW": "ok",
+            "BORROW2": "ok"
+          },
+          "finalOutstanding": "800000000",
+          "finalStake": "500000000",
+          "violations": 0
+        },
+        {
+          "stake": "1000000000",
+          "order": "REPAY>BORROW2>WITHDRAW",
+          "outcomes": {
+            "REPAY": "ok",
+            "BORROW2": "ok",
+            "WITHDRAW": "Self-stake locked while borrowing"
+          },
+          "finalOutstanding": "800000000",
+          "finalStake": "1000000000",
+          "violations": 0
+        },
+        {
+          "stake": "1000000000",
+          "order": "WITHDRAW>REPAY>BORROW2",
+          "outcomes": {
+            "WITHDRAW": "Self-stake locked while borrowing",
+            "REPAY": "ok",
+            "BORROW2": "ok"
+          },
+          "finalOutstanding": "800000000",
+          "finalStake": "1000000000",
+          "violations": 0
+        },
+        {
+          "stake": "1000000000",
+          "order": "WITHDRAW>BORROW2>REPAY",
+          "outcomes": {
+            "WITHDRAW": "Self-stake locked while borrowing",
+            "BORROW2": "ok",
+            "REPAY": "ok"
+          },
+          "finalOutstanding": "800000000",
+          "finalStake": "1000000000",
+          "violations": 0
+        },
+        {
+          "stake": "1000000000",
+          "order": "BORROW2>REPAY>WITHDRAW",
+          "outcomes": {
+            "BORROW2": "ok",
+            "REPAY": "ok",
+            "WITHDRAW": "Self-stake locked while borrowing"
+          },
+          "finalOutstanding": "800000000",
+          "finalStake": "1000000000",
+          "violations": 0
+        },
+        {
+          "stake": "1000000000",
+          "order": "BORROW2>WITHDRAW>REPAY",
+          "outcomes": {
+            "BORROW2": "ok",
+            "WITHDRAW": "Self-stake locked while borrowing",
+            "REPAY": "ok"
+          },
+          "finalOutstanding": "800000000",
+          "finalStake": "1000000000",
+          "violations": 0
+        },
+        {
+          "stake": "1500000000",
+          "order": "REPAY>WITHDRAW>BORROW2",
+          "outcomes": {
+            "REPAY": "ok",
+            "WITHDRAW": "ok",
+            "BORROW2": "ok"
+          },
+          "finalOutstanding": "800000000",
+          "finalStake": "1000000000",
+          "violations": 0
+        },
+        {
+          "stake": "1500000000",
+          "order": "REPAY>BORROW2>WITHDRAW",
+          "outcomes": {
+            "REPAY": "ok",
+            "BORROW2": "ok",
+            "WITHDRAW": "Self-stake locked while borrowing"
+          },
+          "finalOutstanding": "800000000",
+          "finalStake": "1500000000",
+          "violations": 0
+        },
+        {
+          "stake": "1500000000",
+          "order": "WITHDRAW>REPAY>BORROW2",
+          "outcomes": {
+            "WITHDRAW": "Self-stake locked while borrowing",
+            "REPAY": "ok",
+            "BORROW2": "ok"
+          },
+          "finalOutstanding": "800000000",
+          "finalStake": "1500000000",
+          "violations": 0
+        },
+        {
+          "stake": "1500000000",
+          "order": "WITHDRAW>BORROW2>REPAY",
+          "outcomes": {
+            "WITHDRAW": "Self-stake locked while borrowing",
+            "BORROW2": "ok",
+            "REPAY": "ok"
+          },
+          "finalOutstanding": "800000000",
+          "finalStake": "1500000000",
+          "violations": 0
+        },
+        {
+          "stake": "1500000000",
+          "order": "BORROW2>REPAY>WITHDRAW",
+          "outcomes": {
+            "BORROW2": "ok",
+            "REPAY": "ok",
+            "WITHDRAW": "Self-stake locked while borrowing"
+          },
+          "finalOutstanding": "800000000",
+          "finalStake": "1500000000",
+          "violations": 0
+        },
+        {
+          "stake": "1500000000",
+          "order": "BORROW2>WITHDRAW>REPAY",
+          "outcomes": {
+            "BORROW2": "ok",
+            "WITHDRAW": "Self-stake locked while borrowing",
+            "REPAY": "ok"
+          },
+          "finalOutstanding": "800000000",
+          "finalStake": "1500000000",
+          "violations": 0
+        }
+      ]
+    },
+    {
+      "race": "3.4 partial repay must not unlock the stake",
+      "runs": 6,
+      "rows": [
+        {
+          "run": 0,
+          "repayFirst": true,
+          "withdrawOk": false,
+          "reason": "Self-stake locked while borrowing",
+          "remainingOutstanding": "700000000",
+          "violations": 0
+        },
+        {
+          "run": 0,
+          "repayFirst": false,
+          "withdrawOk": false,
+          "reason": "Self-stake locked while borrowing",
+          "remainingOutstanding": "700000000",
+          "violations": 0
+        },
+        {
+          "run": 1,
+          "repayFirst": true,
+          "withdrawOk": false,
+          "reason": "Self-stake locked while borrowing",
+          "remainingOutstanding": "700000000",
+          "violations": 0
+        },
+        {
+          "run": 1,
+          "repayFirst": false,
+          "withdrawOk": false,
+          "reason": "Self-stake locked while borrowing",
+          "remainingOutstanding": "700000000",
+          "violations": 0
+        },
+        {
+          "run": 2,
+          "repayFirst": true,
+          "withdrawOk": false,
+          "reason": "Self-stake locked while borrowing",
+          "remainingOutstanding": "700000000",
+          "violations": 0
+        },
+        {
+          "run": 2,
+          "repayFirst": false,
+          "withdrawOk": false,
+          "reason": "Self-stake locked while borrowing",
+          "remainingOutstanding": "700000000",
+          "violations": 0
+        }
+      ]
+    },
+    {
+      "race": "3.5 randomised lock sweep",
+      "runs": 1,
+      "rows": [
+        {
+          "runs": 40,
+          "opsPerRun": 12,
+          "probes": 480,
+          "violations": 0
+        }
+      ]
+    },
+    {
+      "race": "4.1 repay vs liquidate, unsecured",
+      "runs": 16,
+      "rows": [
+        {
+          "amount": "100000000",
+          "lateDays": 1,
+          "repayFirst": true,
+          "winner": "REPAY",
+          "loserReason": "Loan not active",
+          "finalState": 2,
+          "poolLoanedBefore": "100000000",
+          "violations": 0
+        },
+        {
+          "amount": "100000000",
+          "lateDays": 1,
+          "repayFirst": false,
+          "winner": "LIQUIDATE",
+          "loserReason": "Loan not active",
+          "finalState": 3,
+          "poolLoanedBefore": "100000000",
+          "violations": 0
+        },
+        {
+          "amount": "100000000",
+          "lateDays": 40,
+          "repayFirst": true,
+          "winner": "REPAY",
+          "loserReason": "Loan not active",
+          "finalState": 2,
+          "poolLoanedBefore": "100000000",
+          "violations": 0
+        },
+        {
+          "amount": "100000000",
+          "lateDays": 40,
+          "repayFirst": false,
+          "winner": "LIQUIDATE",
+          "loserReason": "Loan not active",
+          "finalState": 3,
+          "poolLoanedBefore": "100000000",
+          "violations": 0
+        },
+        {
+          "amount": "500000000",
+          "lateDays": 1,
+          "repayFirst": true,
+          "winner": "REPAY",
+          "loserReason": "Loan not active",
+          "finalState": 2,
+          "poolLoanedBefore": "500000000",
+          "violations": 0
+        },
+        {
+          "amount": "500000000",
+          "lateDays": 1,
+          "repayFirst": false,
+          "winner": "LIQUIDATE",
+          "loserReason": "Loan not active",
+          "finalState": 3,
+          "poolLoanedBefore": "500000000",
+          "violations": 0
+        },
+        {
+          "amount": "500000000",
+          "lateDays": 40,
+          "repayFirst": true,
+          "winner": "REPAY",
+          "loserReason": "Loan not active",
+          "finalState": 2,
+          "poolLoanedBefore": "500000000",
+          "violations": 0
+        },
+        {
+          "amount": "500000000",
+          "lateDays": 40,
+          "repayFirst": false,
+          "winner": "LIQUIDATE",
+          "loserReason": "Loan not active",
+          "finalState": 3,
+          "poolLoanedBefore": "500000000",
+          "violations": 0
+        },
+        {
+          "amount": "1000000000",
+          "lateDays": 1,
+          "repayFirst": true,
+          "winner": "REPAY",
+          "loserReason": "Loan not active",
+          "finalState": 2,
+          "poolLoanedBefore": "1000000000",
+          "violations": 0
+        },
+        {
+          "amount": "1000000000",
+          "lateDays": 1,
+          "repayFirst": false,
+          "winner": "LIQUIDATE",
+          "loserReason": "Loan not active",
+          "finalState": 3,
+          "poolLoanedBefore": "1000000000",
+          "violations": 0
+        },
+        {
+          "amount": "1000000000",
+          "lateDays": 40,
+          "repayFirst": true,
+          "winner": "REPAY",
+          "loserReason": "Loan not active",
+          "finalState": 2,
+          "poolLoanedBefore": "1000000000",
+          "violations": 0
+        },
+        {
+          "amount": "1000000000",
+          "lateDays": 40,
+          "repayFirst": false,
+          "winner": "LIQUIDATE",
+          "loserReason": "Loan not active",
+          "finalState": 3,
+          "poolLoanedBefore": "1000000000",
+          "violations": 0
+        },
+        {
+          "amount": "1900000000",
+          "lateDays": 1,
+          "repayFirst": true,
+          "winner": "REPAY",
+          "loserReason": "Loan not active",
+          "finalState": 2,
+          "poolLoanedBefore": "1900000000",
+          "violations": 0
+        },
+        {
+          "amount": "1900000000",
+          "lateDays": 1,
+          "repayFirst": false,
+          "winner": "LIQUIDATE",
+          "loserReason": "Loan not active",
+          "finalState": 3,
+          "poolLoanedBefore": "1900000000",
+          "violations": 0
+        },
+        {
+          "amount": "1900000000",
+          "lateDays": 40,
+          "repayFirst": true,
+          "winner": "REPAY",
+          "loserReason": "Loan not active",
+          "finalState": 2,
+          "poolLoanedBefore": "1900000000",
+          "violations": 0
+        },
+        {
+          "amount": "1900000000",
+          "lateDays": 40,
+          "repayFirst": false,
+          "winner": "LIQUIDATE",
+          "loserReason": "Loan not active",
+          "finalState": 3,
+          "poolLoanedBefore": "1900000000",
+          "violations": 0
+        }
+      ]
+    },
+    {
+      "race": "4.2 repay vs liquidate, collateralised",
+      "runs": 6,
+      "rows": [
+        {
+          "amount": "50000000",
+          "repayFirst": true,
+          "winner": "REPAY",
+          "collateralRefunded": true,
+          "collateralSeized": false,
+          "violations": 0
+        },
+        {
+          "amount": "50000000",
+          "repayFirst": false,
+          "winner": "LIQUIDATE",
+          "collateralRefunded": false,
+          "collateralSeized": true,
+          "violations": 0
+        },
+        {
+          "amount": "200000000",
+          "repayFirst": true,
+          "winner": "REPAY",
+          "collateralRefunded": true,
+          "collateralSeized": false,
+          "violations": 0
+        },
+        {
+          "amount": "200000000",
+          "repayFirst": false,
+          "winner": "LIQUIDATE",
+          "collateralRefunded": false,
+          "collateralSeized": true,
+          "violations": 0
+        },
+        {
+          "amount": "900000000",
+          "repayFirst": true,
+          "winner": "REPAY",
+          "collateralRefunded": true,
+          "collateralSeized": false,
+          "violations": 0
+        },
+        {
+          "amount": "900000000",
+          "repayFirst": false,
+          "winner": "LIQUIDATE",
+          "collateralRefunded": false,
+          "collateralSeized": true,
+          "violations": 0
+        }
+      ]
+    },
+    {
+      "race": "4.3 cron double-fire",
+      "runs": 6,
+      "rows": [
+        {
+          "run": 0,
+          "k": 2,
+          "settled": 1,
+          "violations": 0
+        },
+        {
+          "run": 0,
+          "k": 3,
+          "settled": 1,
+          "violations": 0
+        },
+        {
+          "run": 1,
+          "k": 2,
+          "settled": 1,
+          "violations": 0
+        },
+        {
+          "run": 1,
+          "k": 3,
+          "settled": 1,
+          "violations": 0
+        },
+        {
+          "run": 2,
+          "k": 2,
+          "settled": 1,
+          "violations": 0
+        },
+        {
+          "run": 2,
+          "k": 3,
+          "settled": 1,
+          "violations": 0
+        }
+      ]
+    },
+    {
+      "race": "4.4 four-way settle race",
+      "runs": 24,
+      "rows": [
+        {
+          "order": "REPAY1>LIQ1>LIQ2>BORROW3",
+          "outcomes": {
+            "REPAY1": "ok",
+            "LIQ1": "Loan not active",
+            "LIQ2": "ok",
+            "BORROW3": "Exceeds credit limit"
+          },
+          "loan1State": 2,
+          "loan2State": 3,
+          "violations": 0
+        },
+        {
+          "order": "REPAY1>LIQ1>BORROW3>LIQ2",
+          "outcomes": {
+            "REPAY1": "ok",
+            "LIQ1": "Loan not active",
+            "BORROW3": "ok",
+            "LIQ2": "ok"
+          },
+          "loan1State": 2,
+          "loan2State": 3,
+          "violations": 0
+        },
+        {
+          "order": "REPAY1>LIQ2>LIQ1>BORROW3",
+          "outcomes": {
+            "REPAY1": "ok",
+            "LIQ2": "ok",
+            "LIQ1": "Loan not active",
+            "BORROW3": "Exceeds credit limit"
+          },
+          "loan1State": 2,
+          "loan2State": 3,
+          "violations": 0
+        },
+        {
+          "order": "REPAY1>LIQ2>BORROW3>LIQ1",
+          "outcomes": {
+            "REPAY1": "ok",
+            "LIQ2": "ok",
+            "BORROW3": "Exceeds credit limit",
+            "LIQ1": "Loan not active"
+          },
+          "loan1State": 2,
+          "loan2State": 3,
+          "violations": 0
+        },
+        {
+          "order": "REPAY1>BORROW3>LIQ1>LIQ2",
+          "outcomes": {
+            "REPAY1": "ok",
+            "BORROW3": "ok",
+            "LIQ1": "Loan not active",
+            "LIQ2": "ok"
+          },
+          "loan1State": 2,
+          "loan2State": 3,
+          "violations": 0
+        },
+        {
+          "order": "REPAY1>BORROW3>LIQ2>LIQ1",
+          "outcomes": {
+            "REPAY1": "ok",
+            "BORROW3": "ok",
+            "LIQ2": "ok",
+            "LIQ1": "Loan not active"
+          },
+          "loan1State": 2,
+          "loan2State": 3,
+          "violations": 0
+        },
+        {
+          "order": "LIQ1>REPAY1>LIQ2>BORROW3",
+          "outcomes": {
+            "LIQ1": "ok",
+            "REPAY1": "Loan not active",
+            "LIQ2": "ok",
+            "BORROW3": "Exceeds credit limit"
+          },
+          "loan1State": 3,
+          "loan2State": 3,
+          "violations": 0
+        },
+        {
+          "order": "LIQ1>REPAY1>BORROW3>LIQ2",
+          "outcomes": {
+            "LIQ1": "ok",
+            "REPAY1": "Loan not active",
+            "BORROW3": "Exceeds credit limit",
+            "LIQ2": "ok"
+          },
+          "loan1State": 3,
+          "loan2State": 3,
+          "violations": 0
+        },
+        {
+          "order": "LIQ1>LIQ2>REPAY1>BORROW3",
+          "outcomes": {
+            "LIQ1": "ok",
+            "LIQ2": "ok",
+            "REPAY1": "Loan not active",
+            "BORROW3": "Exceeds credit limit"
+          },
+          "loan1State": 3,
+          "loan2State": 3,
+          "violations": 0
+        },
+        {
+          "order": "LIQ1>LIQ2>BORROW3>REPAY1",
+          "outcomes": {
+            "LIQ1": "ok",
+            "LIQ2": "ok",
+            "BORROW3": "Exceeds credit limit",
+            "REPAY1": "Loan not active"
+          },
+          "loan1State": 3,
+          "loan2State": 3,
+          "violations": 0
+        },
+        {
+          "order": "LIQ1>BORROW3>REPAY1>LIQ2",
+          "outcomes": {
+            "LIQ1": "ok",
+            "BORROW3": "Exceeds credit limit",
+            "REPAY1": "Loan not active",
+            "LIQ2": "ok"
+          },
+          "loan1State": 3,
+          "loan2State": 3,
+          "violations": 0
+        },
+        {
+          "order": "LIQ1>BORROW3>LIQ2>REPAY1",
+          "outcomes": {
+            "LIQ1": "ok",
+            "BORROW3": "Exceeds credit limit",
+            "LIQ2": "ok",
+            "REPAY1": "Loan not active"
+          },
+          "loan1State": 3,
+          "loan2State": 3,
+          "violations": 0
+        },
+        {
+          "order": "LIQ2>REPAY1>LIQ1>BORROW3",
+          "outcomes": {
+            "LIQ2": "ok",
+            "REPAY1": "ok",
+            "LIQ1": "Loan not active",
+            "BORROW3": "Exceeds credit limit"
+          },
+          "loan1State": 2,
+          "loan2State": 3,
+          "violations": 0
+        },
+        {
+          "order": "LIQ2>REPAY1>BORROW3>LIQ1",
+          "outcomes": {
+            "LIQ2": "ok",
+            "REPAY1": "ok",
+            "BORROW3": "Exceeds credit limit",
+            "LIQ1": "Loan not active"
+          },
+          "loan1State": 2,
+          "loan2State": 3,
+          "violations": 0
+        },
+        {
+          "order": "LIQ2>LIQ1>REPAY1>BORROW3",
+          "outcomes": {
+            "LIQ2": "ok",
+            "LIQ1": "ok",
+            "REPAY1": "Loan not active",
+            "BORROW3": "Exceeds credit limit"
+          },
+          "loan1State": 3,
+          "loan2State": 3,
+          "violations": 0
+        },
+        {
+          "order": "LIQ2>LIQ1>BORROW3>REPAY1",
+          "outcomes": {
+            "LIQ2": "ok",
+            "LIQ1": "ok",
+            "BORROW3": "Exceeds credit limit",
+            "REPAY1": "Loan not active"
+          },
+          "loan1State": 3,
+          "loan2State": 3,
+          "violations": 0
+        },
+        {
+          "order": "LIQ2>BORROW3>REPAY1>LIQ1",
+          "outcomes": {
+            "LIQ2": "ok",
+            "BORROW3": "Exceeds credit limit",
+            "REPAY1": "ok",
+            "LIQ1": "Loan not active"
+          },
+          "loan1State": 2,
+          "loan2State": 3,
+          "violations": 0
+        },
+        {
+          "order": "LIQ2>BORROW3>LIQ1>REPAY1",
+          "outcomes": {
+            "LIQ2": "ok",
+            "BORROW3": "Exceeds credit limit",
+            "LIQ1": "ok",
+            "REPAY1": "Loan not active"
+          },
+          "loan1State": 3,
+          "loan2State": 3,
+          "violations": 0
+        },
+        {
+          "order": "BORROW3>REPAY1>LIQ1>LIQ2",
+          "outcomes": {
+            "BORROW3": "ok",
+            "REPAY1": "ok",
+            "LIQ1": "Loan not active",
+            "LIQ2": "ok"
+          },
+          "loan1State": 2,
+          "loan2State": 3,
+          "violations": 0
+        },
+        {
+          "order": "BORROW3>REPAY1>LIQ2>LIQ1",
+          "outcomes": {
+            "BORROW3": "ok",
+            "REPAY1": "ok",
+            "LIQ2": "ok",
+            "LIQ1": "Loan not active"
+          },
+          "loan1State": 2,
+          "loan2State": 3,
+          "violations": 0
+        },
+        {
+          "order": "BORROW3>LIQ1>REPAY1>LIQ2",
+          "outcomes": {
+            "BORROW3": "ok",
+            "LIQ1": "ok",
+            "REPAY1": "Loan not active",
+            "LIQ2": "ok"
+          },
+          "loan1State": 3,
+          "loan2State": 3,
+          "violations": 0
+        },
+        {
+          "order": "BORROW3>LIQ1>LIQ2>REPAY1",
+          "outcomes": {
+            "BORROW3": "ok",
+            "LIQ1": "ok",
+            "LIQ2": "ok",
+            "REPAY1": "Loan not active"
+          },
+          "loan1State": 3,
+          "loan2State": 3,
+          "violations": 0
+        },
+        {
+          "order": "BORROW3>LIQ2>REPAY1>LIQ1",
+          "outcomes": {
+            "BORROW3": "ok",
+            "LIQ2": "ok",
+            "REPAY1": "ok",
+            "LIQ1": "Loan not active"
+          },
+          "loan1State": 2,
+          "loan2State": 3,
+          "violations": 0
+        },
+        {
+          "order": "BORROW3>LIQ2>LIQ1>REPAY1",
+          "outcomes": {
+            "BORROW3": "ok",
+            "LIQ2": "ok",
+            "LIQ1": "ok",
+            "REPAY1": "Loan not active"
+          },
+          "loan1State": 3,
+          "loan2State": 3,
+          "violations": 0
+        }
+      ]
+    },
+    {
+      "race": "5.1 exact shares, uncontended",
+      "runs": 6,
+      "rows": [
+        {
+          "shape": [
+            "100000000",
+            "300000000",
+            "600000000"
+          ],
+          "interest": "671232",
+          "fee": "6712",
+          "qualifiedTotal": "1600000000",
+          "shares": {
+            "0x709979": "498390",
+            "0xBcd404": "41532",
+            "0x71bE63": "124597"
+          },
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "shape": [
+            "1000000",
+            "1000000",
+            "1000000"
+          ],
+          "interest": "671232",
+          "fee": "6712",
+          "qualifiedTotal": "1220000000",
+          "shares": {
+            "0x709979": "653626",
+            "0xBcd404": "5446",
+            "0x71bE63": "5446"
+          },
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "shape": [
+            "333000000",
+            "333000000",
+            "334000000"
+          ],
+          "interest": "671232",
+          "fee": "6712",
+          "qualifiedTotal": "1866000000",
+          "shares": {
+            "0x709979": "427344",
+            "0xBcd404": "118587",
+            "0x71bE63": "118587"
+          },
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "shape": [
+            "7000000",
+            "11000000",
+            "13000000"
+          ],
+          "interest": "671232",
+          "fee": "6712",
+          "qualifiedTotal": "1221000000",
+          "shares": {
+            "0x709979": "653090",
+            "0xBcd404": "5442",
+            "0x71bE63": "5986"
+          },
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "shape": [
+            "1000000000",
+            "1000000",
+            "1000000"
+          ],
+          "interest": "671232",
+          "fee": "6712",
+          "qualifiedTotal": "2210000000",
+          "shares": {
+            "0x709979": "360825",
+            "0xBcd404": "300687",
+            "0x71bE63": "3006"
+          },
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "shape": [
+            "17000000",
+            "101000000",
+            "5000000000"
+          ],
+          "interest": "671232",
+          "fee": "6712",
+          "qualifiedTotal": "1318000000",
+          "shares": {
+            "0x709979": "605025",
+            "0xBcd404": "8571",
+            "0x71bE63": "50923"
+          },
+          "exact": true,
+          "violations": 0
+        }
+      ]
+    },
+    {
+      "race": "5.2 exact shares under same-block contention",
+      "runs": 48,
+      "rows": [
+        {
+          "seed": 0,
+          "order": "TOPUP_C>WITHDRAW_A>REPAY>CLAIM_B",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 0,
+          "order": "TOPUP_C>WITHDRAW_A>CLAIM_B>REPAY",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 0,
+          "order": "TOPUP_C>REPAY>WITHDRAW_A>CLAIM_B",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 0,
+          "order": "TOPUP_C>REPAY>CLAIM_B>WITHDRAW_A",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 0,
+          "order": "TOPUP_C>CLAIM_B>WITHDRAW_A>REPAY",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 0,
+          "order": "TOPUP_C>CLAIM_B>REPAY>WITHDRAW_A",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 0,
+          "order": "WITHDRAW_A>TOPUP_C>REPAY>CLAIM_B",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 0,
+          "order": "WITHDRAW_A>TOPUP_C>CLAIM_B>REPAY",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 0,
+          "order": "WITHDRAW_A>REPAY>TOPUP_C>CLAIM_B",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 0,
+          "order": "WITHDRAW_A>REPAY>CLAIM_B>TOPUP_C",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 0,
+          "order": "WITHDRAW_A>CLAIM_B>TOPUP_C>REPAY",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 0,
+          "order": "WITHDRAW_A>CLAIM_B>REPAY>TOPUP_C",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 0,
+          "order": "REPAY>TOPUP_C>WITHDRAW_A>CLAIM_B",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 0,
+          "order": "REPAY>TOPUP_C>CLAIM_B>WITHDRAW_A",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 0,
+          "order": "REPAY>WITHDRAW_A>TOPUP_C>CLAIM_B",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 0,
+          "order": "REPAY>WITHDRAW_A>CLAIM_B>TOPUP_C",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 0,
+          "order": "REPAY>CLAIM_B>TOPUP_C>WITHDRAW_A",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 0,
+          "order": "REPAY>CLAIM_B>WITHDRAW_A>TOPUP_C",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 0,
+          "order": "CLAIM_B>TOPUP_C>WITHDRAW_A>REPAY",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 0,
+          "order": "CLAIM_B>TOPUP_C>REPAY>WITHDRAW_A",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 0,
+          "order": "CLAIM_B>WITHDRAW_A>TOPUP_C>REPAY",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 0,
+          "order": "CLAIM_B>WITHDRAW_A>REPAY>TOPUP_C",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 0,
+          "order": "CLAIM_B>REPAY>TOPUP_C>WITHDRAW_A",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 0,
+          "order": "CLAIM_B>REPAY>WITHDRAW_A>TOPUP_C",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 1,
+          "order": "TOPUP_C>WITHDRAW_A>REPAY>CLAIM_B",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 1,
+          "order": "TOPUP_C>WITHDRAW_A>CLAIM_B>REPAY",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 1,
+          "order": "TOPUP_C>REPAY>WITHDRAW_A>CLAIM_B",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 1,
+          "order": "TOPUP_C>REPAY>CLAIM_B>WITHDRAW_A",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 1,
+          "order": "TOPUP_C>CLAIM_B>WITHDRAW_A>REPAY",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 1,
+          "order": "TOPUP_C>CLAIM_B>REPAY>WITHDRAW_A",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 1,
+          "order": "WITHDRAW_A>TOPUP_C>REPAY>CLAIM_B",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 1,
+          "order": "WITHDRAW_A>TOPUP_C>CLAIM_B>REPAY",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 1,
+          "order": "WITHDRAW_A>REPAY>TOPUP_C>CLAIM_B",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 1,
+          "order": "WITHDRAW_A>REPAY>CLAIM_B>TOPUP_C",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 1,
+          "order": "WITHDRAW_A>CLAIM_B>TOPUP_C>REPAY",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 1,
+          "order": "WITHDRAW_A>CLAIM_B>REPAY>TOPUP_C",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 1,
+          "order": "REPAY>TOPUP_C>WITHDRAW_A>CLAIM_B",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 1,
+          "order": "REPAY>TOPUP_C>CLAIM_B>WITHDRAW_A",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 1,
+          "order": "REPAY>WITHDRAW_A>TOPUP_C>CLAIM_B",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 1,
+          "order": "REPAY>WITHDRAW_A>CLAIM_B>TOPUP_C",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 1,
+          "order": "REPAY>CLAIM_B>TOPUP_C>WITHDRAW_A",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 1,
+          "order": "REPAY>CLAIM_B>WITHDRAW_A>TOPUP_C",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 1,
+          "order": "CLAIM_B>TOPUP_C>WITHDRAW_A>REPAY",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 1,
+          "order": "CLAIM_B>TOPUP_C>REPAY>WITHDRAW_A",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 1,
+          "order": "CLAIM_B>WITHDRAW_A>TOPUP_C>REPAY",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 1,
+          "order": "CLAIM_B>WITHDRAW_A>REPAY>TOPUP_C",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 1,
+          "order": "CLAIM_B>REPAY>TOPUP_C>WITHDRAW_A",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "seed": 1,
+          "order": "CLAIM_B>REPAY>WITHDRAW_A>TOPUP_C",
+          "allOpsPredicted": true,
+          "exact": true,
+          "violations": 0
+        }
+      ]
+    },
+    {
+      "race": "5.3 same-block back-run of requestLoan",
+      "runs": 4,
+      "rows": [
+        {
+          "chase": "500000000",
+          "backrunQualifiedAmount": "500000000",
+          "nextBlockQualifiedAmount": "0",
+          "shareBackrunner": "246118",
+          "shareHonestPreLoan": "492237",
+          "shareNextBlock": "0",
+          "dilutionPct": 33.33,
+          "violations": 0
+        },
+        {
+          "chase": "1000000000",
+          "backrunQualifiedAmount": "1000000000",
+          "nextBlockQualifiedAmount": "0",
+          "shareBackrunner": "415325",
+          "shareHonestPreLoan": "415325",
+          "shareNextBlock": "0",
+          "dilutionPct": 50,
+          "violations": 0
+        },
+        {
+          "chase": "2000000000",
+          "backrunQualifiedAmount": "2000000000",
+          "nextBlockQualifiedAmount": "0",
+          "shareBackrunner": "632876",
+          "shareHonestPreLoan": "316438",
+          "shareNextBlock": "0",
+          "dilutionPct": 66.66,
+          "violations": 0
+        },
+        {
+          "chase": "5000000000",
+          "backrunQualifiedAmount": "5000000000",
+          "nextBlockQualifiedAmount": "0",
+          "shareBackrunner": "922945",
+          "shareHonestPreLoan": "184589",
+          "shareNextBlock": "0",
+          "dilutionPct": 83.33,
+          "violations": 0
+        }
+      ]
+    },
+    {
+      "race": "5.3b back-run capital must stay until repayment",
+      "runs": 3,
+      "rows": [
+        {
+          "chase": "500000000",
+          "exitedBeforeRepay": true,
+          "shareEarned": "0",
+          "violations": 0
+        },
+        {
+          "chase": "2000000000",
+          "exitedBeforeRepay": true,
+          "shareEarned": "0",
+          "violations": 0
+        },
+        {
+          "chase": "5000000000",
+          "exitedBeforeRepay": true,
+          "shareEarned": "0",
+          "violations": 0
+        }
+      ]
+    },
+    {
+      "race": "5.4 two loans, overlapping lenders, one block",
+      "runs": 6,
+      "rows": [
+        {
+          "seed": 0,
+          "olderFirst": true,
+          "exact": true,
+          "qualifiedTotals": [
+            "1700000000",
+            "2400000000"
+          ],
+          "lcEarned": "0",
+          "violations": 0
+        },
+        {
+          "seed": 0,
+          "olderFirst": false,
+          "exact": true,
+          "qualifiedTotals": [
+            "2400000000",
+            "1700000000"
+          ],
+          "lcEarned": "0",
+          "violations": 0
+        },
+        {
+          "seed": 1,
+          "olderFirst": true,
+          "exact": true,
+          "qualifiedTotals": [
+            "1731000000",
+            "2448000000"
+          ],
+          "lcEarned": "0",
+          "violations": 0
+        },
+        {
+          "seed": 1,
+          "olderFirst": false,
+          "exact": true,
+          "qualifiedTotals": [
+            "2448000000",
+            "1731000000"
+          ],
+          "lcEarned": "0",
+          "violations": 0
+        },
+        {
+          "seed": 2,
+          "olderFirst": true,
+          "exact": true,
+          "qualifiedTotals": [
+            "1762000000",
+            "2496000000"
+          ],
+          "lcEarned": "0",
+          "violations": 0
+        },
+        {
+          "seed": 2,
+          "olderFirst": false,
+          "exact": true,
+          "qualifiedTotals": [
+            "2496000000",
+            "1762000000"
+          ],
+          "lcEarned": "0",
+          "violations": 0
+        }
+      ]
+    },
+    {
+      "race": "5.5 49-lender contended repay",
+      "runs": 4,
+      "rows": [
+        {
+          "run": 0,
+          "lenders": 49,
+          "interest": "1342465",
+          "lenderInterest": "1329041",
+          "distributed": "1329019",
+          "dust": "22",
+          "fee": "13424",
+          "repayGas": "1837397",
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "run": 1,
+          "lenders": 49,
+          "interest": "1343808",
+          "lenderInterest": "1330370",
+          "distributed": "1330342",
+          "dust": "28",
+          "fee": "13438",
+          "repayGas": "1837416",
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "run": 2,
+          "lenders": 49,
+          "interest": "1345150",
+          "lenderInterest": "1331699",
+          "distributed": "1331670",
+          "dust": "29",
+          "fee": "13451",
+          "repayGas": "1837416",
+          "exact": true,
+          "violations": 0
+        },
+        {
+          "run": 3,
+          "lenders": 49,
+          "interest": "1346495",
+          "lenderInterest": "1333031",
+          "distributed": "1333002",
+          "dust": "29",
+          "fee": "13464",
+          "repayGas": "1911534",
+          "exact": true,
+          "violations": 0
+        }
+      ]
+    },
+    {
+      "race": "6.1 N same-block repayments vs rate limit",
+      "runs": 9,
+      "rows": [
+        {
+          "N": 2,
+          "run": 0,
+          "scoreBefore": "605",
+          "scoreAfter": "610",
+          "gain": "5",
+          "windowHeadroom": "5",
+          "windowRolled": true,
+          "violations": 0
+        },
+        {
+          "N": 2,
+          "run": 1,
+          "scoreBefore": "605",
+          "scoreAfter": "610",
+          "gain": "5",
+          "windowHeadroom": "5",
+          "windowRolled": true,
+          "violations": 0
+        },
+        {
+          "N": 2,
+          "run": 2,
+          "scoreBefore": "605",
+          "scoreAfter": "610",
+          "gain": "5",
+          "windowHeadroom": "5",
+          "windowRolled": true,
+          "violations": 0
+        },
+        {
+          "N": 5,
+          "run": 0,
+          "scoreBefore": "605",
+          "scoreAfter": "610",
+          "gain": "5",
+          "windowHeadroom": "5",
+          "windowRolled": true,
+          "violations": 0
+        },
+        {
+          "N": 5,
+          "run": 1,
+          "scoreBefore": "605",
+          "scoreAfter": "610",
+          "gain": "5",
+          "windowHeadroom": "5",
+          "windowRolled": true,
+          "violations": 0
+        },
+        {
+          "N": 5,
+          "run": 2,
+          "scoreBefore": "605",
+          "scoreAfter": "610",
+          "gain": "5",
+          "windowHeadroom": "5",
+          "windowRolled": true,
+          "violations": 0
+        },
+        {
+          "N": 10,
+          "run": 0,
+          "scoreBefore": "605",
+          "scoreAfter": "610",
+          "gain": "5",
+          "windowHeadroom": "5",
+          "windowRolled": true,
+          "violations": 0
+        },
+        {
+          "N": 10,
+          "run": 1,
+          "scoreBefore": "605",
+          "scoreAfter": "610",
+          "gain": "5",
+          "windowHeadroom": "5",
+          "windowRolled": true,
+          "violations": 0
+        },
+        {
+          "N": 10,
+          "run": 2,
+          "scoreBefore": "605",
+          "scoreAfter": "610",
+          "gain": "5",
+          "windowHeadroom": "5",
+          "windowRolled": true,
+          "violations": 0
+        }
+      ]
+    },
+    {
+      "race": "6.2 window-boundary burst",
+      "runs": 6,
+      "rows": [
+        {
+          "run": 0,
+          "gainInsideSaturatedWindow": "0",
+          "gainAtBoundary": "5",
+          "burstAcrossBoundary": "5",
+          "limitPerWindow": "5",
+          "violations": 0
+        },
+        {
+          "run": 1,
+          "gainInsideSaturatedWindow": "0",
+          "gainAtBoundary": "5",
+          "burstAcrossBoundary": "5",
+          "limitPerWindow": "5",
+          "violations": 0
+        },
+        {
+          "run": 2,
+          "gainInsideSaturatedWindow": "0",
+          "gainAtBoundary": "5",
+          "burstAcrossBoundary": "5",
+          "limitPerWindow": "5",
+          "violations": 0
+        },
+        {
+          "run": 3,
+          "gainInsideSaturatedWindow": "0",
+          "gainAtBoundary": "5",
+          "burstAcrossBoundary": "5",
+          "limitPerWindow": "5",
+          "violations": 0
+        },
+        {
+          "run": 4,
+          "gainInsideSaturatedWindow": "0",
+          "gainAtBoundary": "5",
+          "burstAcrossBoundary": "5",
+          "limitPerWindow": "5",
+          "violations": 0
+        },
+        {
+          "run": 5,
+          "gainInsideSaturatedWindow": "0",
+          "gainAtBoundary": "5",
+          "burstAcrossBoundary": "5",
+          "limitPerWindow": "5",
+          "violations": 0
+        }
+      ]
+    },
+    {
+      "race": "6.3 ladder advance from a same-block batch",
+      "runs": 4,
+      "rows": [
+        {
+          "run": 0,
+          "reversed": false,
+          "capBefore": "1200000000",
+          "capAfter": "1200000000",
+          "largestRepayment": "310000000",
+          "sumOfRepayments": "1470000000",
+          "violations": 0
+        },
+        {
+          "run": 1,
+          "reversed": true,
+          "capBefore": "1200000000",
+          "capAfter": "1200000000",
+          "largestRepayment": "310000000",
+          "sumOfRepayments": "1470000000",
+          "violations": 0
+        },
+        {
+          "run": 2,
+          "reversed": false,
+          "capBefore": "1200000000",
+          "capAfter": "1200000000",
+          "largestRepayment": "310000000",
+          "sumOfRepayments": "1470000000",
+          "violations": 0
+        },
+        {
+          "run": 3,
+          "reversed": true,
+          "capBefore": "1200000000",
+          "capAfter": "1200000000",
+          "largestRepayment": "310000000",
+          "sumOfRepayments": "1470000000",
+          "violations": 0
+        }
+      ]
+    },
+    {
+      "race": "6.4 12 concurrent borrows",
+      "runs": 5,
+      "rows": [
+        {
+          "run": 0,
+          "each": "240000000",
+          "landed": 10,
+          "creditLimit": "2500000000",
+          "outstanding": "2400000000",
+          "activeLoanCount": 10,
+          "refusals": [
+            "Exceeds credit limit"
+          ],
+          "violations": 0
+        },
+        {
+          "run": 1,
+          "each": "245000000",
+          "landed": 10,
+          "creditLimit": "2500000000",
+          "outstanding": "2450000000",
+          "activeLoanCount": 10,
+          "refusals": [
+            "Exceeds credit limit"
+          ],
+          "violations": 0
+        },
+        {
+          "run": 2,
+          "each": "250000000",
+          "landed": 10,
+          "creditLimit": "2500000000",
+          "outstanding": "2500000000",
+          "activeLoanCount": 10,
+          "refusals": [
+            "Exceeds credit limit"
+          ],
+          "violations": 0
+        },
+        {
+          "run": 3,
+          "each": "255000000",
+          "landed": 9,
+          "creditLimit": "2500000000",
+          "outstanding": "2295000000",
+          "activeLoanCount": 9,
+          "refusals": [
+            "Exceeds credit limit"
+          ],
+          "violations": 0
+        },
+        {
+          "run": 4,
+          "each": "260000000",
+          "landed": 9,
+          "creditLimit": "2500000000",
+          "outstanding": "2340000000",
+          "activeLoanCount": 9,
+          "refusals": [
+            "Exceeds credit limit"
+          ],
+          "violations": 0
+        }
+      ]
+    },
+    {
+      "race": "6.5 ladder advance + larger borrow, same block",
+      "runs": 6,
+      "rows": [
+        {
+          "run": 0,
+          "repayFirst": true,
+          "capBefore": "1200000000",
+          "capAfter": "2000000000",
+          "limitBefore": "2500000000",
+          "limitAfter": "2500000000",
+          "borrowOk": true,
+          "borrowReason": null,
+          "outstanding": "2500000000",
+          "violations": 0
+        },
+        {
+          "run": 0,
+          "repayFirst": false,
+          "capBefore": "1200000000",
+          "capAfter": "2000000000",
+          "limitBefore": "2500000000",
+          "limitAfter": "2500000000",
+          "borrowOk": false,
+          "borrowReason": "Exceeds credit limit",
+          "outstanding": "0",
+          "violations": 0
+        },
+        {
+          "run": 1,
+          "repayFirst": true,
+          "capBefore": "1200000000",
+          "capAfter": "2000000000",
+          "limitBefore": "2500000000",
+          "limitAfter": "2500000000",
+          "borrowOk": true,
+          "borrowReason": null,
+          "outstanding": "2500000000",
+          "violations": 0
+        },
+        {
+          "run": 1,
+          "repayFirst": false,
+          "capBefore": "1200000000",
+          "capAfter": "2000000000",
+          "limitBefore": "2500000000",
+          "limitAfter": "2500000000",
+          "borrowOk": false,
+          "borrowReason": "Exceeds credit limit",
+          "outstanding": "0",
+          "violations": 0
+        },
+        {
+          "run": 2,
+          "repayFirst": true,
+          "capBefore": "1200000000",
+          "capAfter": "2000000000",
+          "limitBefore": "2500000000",
+          "limitAfter": "2500000000",
+          "borrowOk": true,
+          "borrowReason": null,
+          "outstanding": "2500000000",
+          "violations": 0
+        },
+        {
+          "run": 2,
+          "repayFirst": false,
+          "capBefore": "1200000000",
+          "capAfter": "2000000000",
+          "limitBefore": "2500000000",
+          "limitAfter": "2500000000",
+          "borrowOk": false,
+          "borrowReason": "Exceeds credit limit",
+          "outstanding": "0",
+          "violations": 0
+        }
+      ]
+    },
+    {
+      "race": "6.6 lockout vs borrow, same block",
+      "runs": 6,
+      "rows": [
+        {
+          "run": 0,
+          "liquidateFirst": true,
+          "borrowOk": false,
+          "borrowReason": "Exceeds credit limit",
+          "lockedOut": true,
+          "creditLimitAfter": "0",
+          "laterBorrowBlocked": true,
+          "violations": 0
+        },
+        {
+          "run": 0,
+          "liquidateFirst": false,
+          "borrowOk": true,
+          "borrowReason": null,
+          "lockedOut": true,
+          "creditLimitAfter": "0",
+          "laterBorrowBlocked": true,
+          "violations": 0
+        },
+        {
+          "run": 1,
+          "liquidateFirst": true,
+          "borrowOk": false,
+          "borrowReason": "Exceeds credit limit",
+          "lockedOut": true,
+          "creditLimitAfter": "0",
+          "laterBorrowBlocked": true,
+          "violations": 0
+        },
+        {
+          "run": 1,
+          "liquidateFirst": false,
+          "borrowOk": true,
+          "borrowReason": null,
+          "lockedOut": true,
+          "creditLimitAfter": "0",
+          "laterBorrowBlocked": true,
+          "violations": 0
+        },
+        {
+          "run": 2,
+          "liquidateFirst": true,
+          "borrowOk": false,
+          "borrowReason": "Exceeds credit limit",
+          "lockedOut": true,
+          "creditLimitAfter": "0",
+          "laterBorrowBlocked": true,
+          "violations": 0
+        },
+        {
+          "run": 2,
+          "liquidateFirst": false,
+          "borrowOk": true,
+          "borrowReason": null,
+          "lockedOut": true,
+          "creditLimitAfter": "0",
+          "laterBorrowBlocked": true,
+          "violations": 0
+        }
+      ]
+    },
+    {
+      "race": "6.7 F-04 control: batched vs sequential ladder growth",
+      "runs": 1,
+      "rows": [
+        {
+          "batched": {
+            "rounds": 12,
+            "late": 0,
+            "score": "1000",
+            "maxRepaid": "1200000000",
+            "creditLimit": "2500000000"
+          },
+          "sequential": {
+            "rounds": 12,
+            "late": 0,
+            "score": "713",
+            "maxRepaid": "2500000000",
+            "creditLimit": "2500000000"
+          },
+          "racingAdvantage": "0",
+          "violations": 0
+        }
+      ]
+    },
+    {
+      "race": "7.1 gas under block occupancy",
+      "runs": 1,
+      "rows": [
+        {
+          "measurements": 14,
+          "rows": [
+            {
+              "op": "supplyLiquidity (fresh slot)",
+              "N": 1,
+              "first": "229696",
+              "last": "229696",
+              "min": "229696",
+              "max": "229696",
+              "total": "229696"
+            },
+            {
+              "op": "supplyLiquidity (fresh slot)",
+              "N": 2,
+              "first": "229696",
+              "last": "161296",
+              "min": "161296",
+              "max": "229696",
+              "total": "390992"
+            },
+            {
+              "op": "supplyLiquidity (fresh slot)",
+              "N": 10,
+              "first": "229696",
+              "last": "161296",
+              "min": "161296",
+              "max": "229696",
+              "total": "1681360"
+            },
+            {
+              "op": "supplyLiquidity (fresh slot)",
+              "N": 25,
+              "first": "229696",
+              "last": "161296",
+              "min": "161296",
+              "max": "229696",
+              "total": "4100800"
+            },
+            {
+              "op": "supplyLiquidity (fresh slot)",
+              "N": 49,
+              "first": "229696",
+              "last": "161296",
+              "min": "161296",
+              "max": "229696",
+              "total": "7971904"
+            },
+            {
+              "op": "requestLoan",
+              "N": 1,
+              "first": "517573",
+              "last": "517573",
+              "min": "517573",
+              "max": "517573",
+              "total": "517573"
+            },
+            {
+              "op": "requestLoan",
+              "N": 5,
+              "first": "517573",
+              "last": "432073",
+              "min": "432073",
+              "max": "517573",
+              "total": "2245865"
+            },
+            {
+              "op": "requestLoan",
+              "N": 10,
+              "first": "517573",
+              "last": "432073",
+              "min": "432073",
+              "max": "517573",
+              "total": "4406230"
+            },
+            {
+              "op": "repayLoan (49-lender pool)",
+              "N": 1,
+              "first": "1870091",
+              "last": "1870091",
+              "min": "1870091",
+              "max": "1870091",
+              "total": "1870091"
+            },
+            {
+              "op": "repayLoan (49-lender pool)",
+              "N": 5,
+              "first": "1894091",
+              "last": "969392",
+              "min": "969392",
+              "max": "1894091",
+              "total": "5843871"
+            },
+            {
+              "op": "repayLoan (49-lender pool)",
+              "N": 10,
+              "first": "1894091",
+              "last": "969392",
+              "min": "969392",
+              "max": "1894091",
+              "total": "10840479"
+            },
+            {
+              "op": "withdrawLiquidity (full exit)",
+              "N": 1,
+              "first": "69337",
+              "last": "69337",
+              "min": "69337",
+              "max": "69337",
+              "total": "69337"
+            },
+            {
+              "op": "withdrawLiquidity (full exit)",
+              "N": 5,
+              "first": "74337",
+              "last": "69337",
+              "min": "69337",
+              "max": "76906",
+              "total": "367361"
+            },
+            {
+              "op": "withdrawLiquidity (full exit)",
+              "N": 25,
+              "first": "74337",
+              "last": "69337",
+              "min": "69337",
+              "max": "102596",
+              "total": "2165761"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "race": "7.2 block saturation",
+      "runs": 1,
+      "rows": [
+        {
+          "rows": [
+            {
+              "op": "supplyLiquidity (fresh slot, distinct pools not needed)",
+              "attempted": 49,
+              "minedInBlock": 49,
+              "succeeded": 49,
+              "blockGasUsed": "7971904",
+              "avgGasPerOp": "162691",
+              "opsPerArcBlock": 184
+            },
+            {
+              "op": "requestLoan",
+              "attempted": 10,
+              "minedInBlock": 10,
+              "succeeded": 10,
+              "blockGasUsed": "4406230",
+              "avgGasPerOp": "440623",
+              "opsPerArcBlock": 68
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "race": "7.3 linearity of block gas in occupancy",
+      "runs": 1,
+      "rows": [
+        {
+          "points": [
+            {
+              "N": 1,
+              "total": "229696",
+              "perTx": "229696"
+            },
+            {
+              "N": 2,
+              "total": "390992",
+              "perTx": "195496"
+            },
+            {
+              "N": 5,
+              "total": "874880",
+              "perTx": "174976"
+            },
+            {
+              "N": 10,
+              "total": "1681360",
+              "perTx": "168136"
+            },
+            {
+              "N": 20,
+              "total": "3294320",
+              "perTx": "164716"
+            },
+            {
+              "N": 30,
+              "total": "4907280",
+              "perTx": "163576"
+            },
+            {
+              "N": 40,
+              "total": "6520240",
+              "perTx": "163006"
+            },
+            {
+              "N": 49,
+              "total": "7971904",
+              "perTx": "162691"
+            }
+          ],
+          "marginalGrowthRatio": 1,
+          "violations": 0
+        }
+      ]
+    },
+    {
+      "race": "8.1 claimInterest vs lossy liquidation",
+      "runs": 6,
+      "rows": [
+        {
+          "run": "partially drawn (claim still payable)",
+          "claimFirst": true,
+          "claimOk": true,
+          "claimReason": null,
+          "principalBeforeLoss": "500000000",
+          "loanAmount": "520000000",
+          "availableAfterDraw": "49300000",
+          "interestBefore": "27720000",
+          "receivedByA": "27720000",
+          "leftToA": "0",
+          "bEarnedBefore": "27720000",
+          "bEarnedAfter": "14386667",
+          "bLostToSocialisation": "13333333",
+          "violations": 0
+        },
+        {
+          "run": "partially drawn (claim still payable)",
+          "claimFirst": false,
+          "claimOk": true,
+          "claimReason": null,
+          "principalBeforeLoss": "500000000",
+          "loanAmount": "520000000",
+          "availableAfterDraw": "49300000",
+          "interestBefore": "27720000",
+          "receivedByA": "19720000",
+          "leftToA": "0",
+          "bEarnedBefore": "27720000",
+          "bEarnedAfter": "19720000",
+          "bLostToSocialisation": "8000000",
+          "violations": 0
+        },
+        {
+          "run": "partially drawn, larger overrun",
+          "claimFirst": true,
+          "claimOk": true,
+          "claimReason": null,
+          "principalBeforeLoss": "500000000",
+          "loanAmount": "535000000",
+          "availableAfterDraw": "34300000",
+          "interestBefore": "27720000",
+          "receivedByA": "27720000",
+          "leftToA": "0",
+          "bEarnedBefore": "27720000",
+          "bEarnedAfter": "4386667",
+          "bLostToSocialisation": "23333333",
+          "violations": 0
+        },
+        {
+          "run": "partially drawn, larger overrun",
+          "claimFirst": false,
+          "claimOk": true,
+          "claimReason": null,
+          "principalBeforeLoss": "500000000",
+          "loanAmount": "535000000",
+          "availableAfterDraw": "34300000",
+          "interestBefore": "27720000",
+          "receivedByA": "13720000",
+          "leftToA": "0",
+          "bEarnedBefore": "27720000",
+          "bEarnedAfter": "13720000",
+          "bLostToSocialisation": "14000000",
+          "violations": 0
+        },
+        {
+          "run": "fully drawn to the floor",
+          "claimFirst": true,
+          "claimOk": false,
+          "claimReason": "Drain underflow",
+          "principalBeforeLoss": "500000000",
+          "loanAmount": "569299999",
+          "availableAfterDraw": "1",
+          "interestBefore": "27720000",
+          "receivedByA": "0",
+          "leftToA": "0",
+          "bEarnedBefore": "27720000",
+          "bEarnedAfter": "1",
+          "bLostToSocialisation": "27719999",
+          "violations": 0
+        },
+        {
+          "run": "fully drawn to the floor",
+          "claimFirst": false,
+          "claimOk": false,
+          "claimReason": "No interest to claim",
+          "principalBeforeLoss": "500000000",
+          "loanAmount": "569299999",
+          "availableAfterDraw": "1",
+          "interestBefore": "27720000",
+          "receivedByA": "0",
+          "leftToA": "0",
+          "bEarnedBefore": "27720000",
+          "bEarnedAfter": "1",
+          "bLostToSocialisation": "27719999",
+          "violations": 0
+        }
+      ]
+    },
+    {
+      "race": "8.1 ordering comparison",
+      "runs": 3,
+      "rows": [
+        {
+          "regime": "partially drawn (claim still payable)",
+          "claimPayableBeforeLiquidation": true,
+          "claimedFirstReceived": "27720000",
+          "claimedAfterReceived": "19720000",
+          "advantageOfClaimingFirst": "8000000",
+          "otherLenderLossWhenClaimFirst": "13333333",
+          "otherLenderLossWhenLiquidateFirst": "8000000"
+        },
+        {
+          "regime": "partially drawn, larger overrun",
+          "claimPayableBeforeLiquidation": true,
+          "claimedFirstReceived": "27720000",
+          "claimedAfterReceived": "13720000",
+          "advantageOfClaimingFirst": "14000000",
+          "otherLenderLossWhenClaimFirst": "23333333",
+          "otherLenderLossWhenLiquidateFirst": "14000000"
+        },
+        {
+          "regime": "fully drawn to the floor",
+          "claimPayableBeforeLiquidation": false,
+          "claimedFirstReceived": "0",
+          "claimedAfterReceived": "0",
+          "advantageOfClaimingFirst": "0",
+          "otherLenderLossWhenClaimFirst": "27719999",
+          "otherLenderLossWhenLiquidateFirst": "27719999"
+        }
+      ]
+    }
+  ],
+  "violations": [
+    {
+      "severity": "MEDIUM",
+      "race": "5.3",
+      "text": "a supply placed BEHIND requestLoan in the SAME block earns interest on that loan: back-runner staked 500000000 and took 246118 of the interest, diluting the pre-existing lender from its uncontested share down to 492237. The same supply one block later earns 0. Cause: qualification is `depositTimestamp <= loan.startTime` and both are block.timestamp, so a same-block back-run compares EQUAL and qualifies.",
+      "repro": "npx hardhat --config hardhat.concurrency.config.js test test/concurrency/C5-interest-exact-shares.test.js -g '5.3'"
+    },
+    {
+      "severity": "MEDIUM",
+      "race": "5.3",
+      "text": "a supply placed BEHIND requestLoan in the SAME block earns interest on that loan: back-runner staked 1000000000 and took 415325 of the interest, diluting the pre-existing lender from its uncontested share down to 415325. The same supply one block later earns 0. Cause: qualification is `depositTimestamp <= loan.startTime` and both are block.timestamp, so a same-block back-run compares EQUAL and qualifies.",
+      "repro": "npx hardhat --config hardhat.concurrency.config.js test test/concurrency/C5-interest-exact-shares.test.js -g '5.3'"
+    },
+    {
+      "severity": "MEDIUM",
+      "race": "5.3",
+      "text": "a supply placed BEHIND requestLoan in the SAME block earns interest on that loan: back-runner staked 2000000000 and took 632876 of the interest, diluting the pre-existing lender from its uncontested share down to 316438. The same supply one block later earns 0. Cause: qualification is `depositTimestamp <= loan.startTime` and both are block.timestamp, so a same-block back-run compares EQUAL and qualifies.",
+      "repro": "npx hardhat --config hardhat.concurrency.config.js test test/concurrency/C5-interest-exact-shares.test.js -g '5.3'"
+    },
+    {
+      "severity": "MEDIUM",
+      "race": "5.3",
+      "text": "a supply placed BEHIND requestLoan in the SAME block earns interest on that loan: back-runner staked 5000000000 and took 922945 of the interest, diluting the pre-existing lender from its uncontested share down to 184589. The same supply one block later earns 0. Cause: qualification is `depositTimestamp <= loan.startTime` and both are block.timestamp, so a same-block back-run compares EQUAL and qualifies.",
+      "repro": "npx hardhat --config hardhat.concurrency.config.js test test/concurrency/C5-interest-exact-shares.test.js -g '5.3'"
+    },
+    {
+      "severity": "LOW",
+      "race": "8.1",
+      "text": "claiming AHEAD of a lossy liquidation in the same block let the lender keep 8000000 more base units of interest than claiming behind it (27720000 vs 19720000); the difference is borne by the lenders who had not claimed. D4 removed this first-come-first-served asymmetry for PRINCIPAL; it survives for UNCLAIMED INTEREST because a claim is a separate transaction.",
+      "repro": "npx hardhat --config hardhat.concurrency.config.js test forensics/output/testing-2026-09-25/harness/C8-claim-vs-liquidation.test.js"
+    },
+    {
+      "severity": "LOW",
+      "race": "8.1",
+      "text": "claiming AHEAD of a lossy liquidation in the same block let the lender keep 14000000 more base units of interest than claiming behind it (27720000 vs 13720000); the difference is borne by the lenders who had not claimed. D4 removed this first-come-first-served asymmetry for PRINCIPAL; it survives for UNCLAIMED INTEREST because a claim is a separate transaction.",
+      "repro": "npx hardhat --config hardhat.concurrency.config.js test forensics/output/testing-2026-09-25/harness/C8-claim-vs-liquidation.test.js"
+    }
+  ],
+  "gas": [
+    {
+      "race": "1.1",
+      "scenario": "supplyLiquidity, fresh slot, all in one block",
+      "N": 2,
+      "totalGas": "390980",
+      "perTx": "195490"
+    },
+    {
+      "race": "1.1",
+      "scenario": "supplyLiquidity, fresh slot, all in one block",
+      "N": 2,
+      "totalGas": "390968",
+      "perTx": "195484"
+    },
+    {
+      "race": "1.1",
+      "scenario": "supplyLiquidity, fresh slot, all in one block",
+      "N": 2,
+      "totalGas": "390968",
+      "perTx": "195484"
+    },
+    {
+      "race": "1.1",
+      "scenario": "supplyLiquidity, fresh slot, all in one block",
+      "N": 2,
+      "totalGas": "390992",
+      "perTx": "195496"
+    },
+    {
+      "race": "1.1",
+      "scenario": "supplyLiquidity, fresh slot, all in one block",
+      "N": 5,
+      "totalGas": "874856",
+      "perTx": "174971"
+    },
+    {
+      "race": "1.1",
+      "scenario": "supplyLiquidity, fresh slot, all in one block",
+      "N": 5,
+      "totalGas": "874856",
+      "perTx": "174971"
+    },
+    {
+      "race": "1.1",
+      "scenario": "supplyLiquidity, fresh slot, all in one block",
+      "N": 5,
+      "totalGas": "874844",
+      "perTx": "174968"
+    },
+    {
+      "race": "1.1",
+      "scenario": "supplyLiquidity, fresh slot, all in one block",
+      "N": 5,
+      "totalGas": "874868",
+      "perTx": "174973"
+    },
+    {
+      "race": "1.1",
+      "scenario": "supplyLiquidity, fresh slot, all in one block",
+      "N": 10,
+      "totalGas": "1681324",
+      "perTx": "168132"
+    },
+    {
+      "race": "1.1",
+      "scenario": "supplyLiquidity, fresh slot, all in one block",
+      "N": 10,
+      "totalGas": "1681312",
+      "perTx": "168131"
+    },
+    {
+      "race": "1.1",
+      "scenario": "supplyLiquidity, fresh slot, all in one block",
+      "N": 10,
+      "totalGas": "1681312",
+      "perTx": "168131"
+    },
+    {
+      "race": "1.1",
+      "scenario": "supplyLiquidity, fresh slot, all in one block",
+      "N": 10,
+      "totalGas": "1681336",
+      "perTx": "168133"
+    },
+    {
+      "race": "1.1",
+      "scenario": "supplyLiquidity, fresh slot, all in one block",
+      "N": 25,
+      "totalGas": "4100704",
+      "perTx": "164028"
+    },
+    {
+      "race": "1.1",
+      "scenario": "supplyLiquidity, fresh slot, all in one block",
+      "N": 25,
+      "totalGas": "4100704",
+      "perTx": "164028"
+    },
+    {
+      "race": "1.1",
+      "scenario": "supplyLiquidity, fresh slot, all in one block",
+      "N": 25,
+      "totalGas": "4100704",
+      "perTx": "164028"
+    },
+    {
+      "race": "1.1",
+      "scenario": "supplyLiquidity, fresh slot, all in one block",
+      "N": 25,
+      "totalGas": "4100716",
+      "perTx": "164028"
+    },
+    {
+      "race": "1.1",
+      "scenario": "supplyLiquidity, fresh slot, all in one block",
+      "N": 49,
+      "totalGas": "7971700",
+      "perTx": "162687"
+    },
+    {
+      "race": "1.1",
+      "scenario": "supplyLiquidity, fresh slot, all in one block",
+      "N": 49,
+      "totalGas": "7971712",
+      "perTx": "162688"
+    },
+    {
+      "race": "1.1",
+      "scenario": "supplyLiquidity, fresh slot, all in one block",
+      "N": 49,
+      "totalGas": "7971712",
+      "perTx": "162688"
+    },
+    {
+      "race": "1.1",
+      "scenario": "supplyLiquidity, fresh slot, all in one block",
+      "N": 49,
+      "totalGas": "7971736",
+      "perTx": "162688"
+    },
+    {
+      "race": "2.2",
+      "scenario": "requestLoan + withdrawLiquidity same block (borrowFirst=true)",
+      "N": 2,
+      "perTx": null,
+      "detail": {
+        "BORROW": "517569",
+        "WITHDRAW": "66839"
+      }
+    },
+    {
+      "race": "2.2",
+      "scenario": "requestLoan + withdrawLiquidity same block (borrowFirst=false)",
+      "N": 2,
+      "perTx": null,
+      "detail": {
+        "WITHDRAW": "66839",
+        "BORROW": "517569"
+      }
+    },
+    {
+      "race": "2.2",
+      "scenario": "requestLoan + withdrawLiquidity same block (borrowFirst=true)",
+      "N": 2,
+      "perTx": null,
+      "detail": {
+        "BORROW": "517569",
+        "WITHDRAW": "66839"
+      }
+    },
+    {
+      "race": "2.2",
+      "scenario": "requestLoan + withdrawLiquidity same block (borrowFirst=false)",
+      "N": 2,
+      "perTx": null,
+      "detail": {
+        "WITHDRAW": "66839",
+        "BORROW": "517569"
+      }
+    },
+    {
+      "race": "2.2",
+      "scenario": "requestLoan + withdrawLiquidity same block (borrowFirst=true)",
+      "N": 2,
+      "perTx": null,
+      "detail": {
+        "BORROW": "517569",
+        "WITHDRAW": "66839"
+      }
+    },
+    {
+      "race": "2.2",
+      "scenario": "requestLoan + withdrawLiquidity same block (borrowFirst=false)",
+      "N": 2,
+      "perTx": null,
+      "detail": {
+        "WITHDRAW": "66839",
+        "BORROW": "517569"
+      }
+    },
+    {
+      "race": "2.2",
+      "scenario": "requestLoan + withdrawLiquidity same block (borrowFirst=true)",
+      "N": 2,
+      "perTx": null,
+      "detail": {
+        "BORROW": "517569",
+        "WITHDRAW": "66839"
+      }
+    },
+    {
+      "race": "2.2",
+      "scenario": "requestLoan + withdrawLiquidity same block (borrowFirst=false)",
+      "N": 2,
+      "perTx": null,
+      "detail": {
+        "WITHDRAW": "66839",
+        "BORROW": "517569"
+      }
+    },
+    {
+      "race": "7.1",
+      "scenario": "supplyLiquidity (fresh slot)",
+      "N": 1,
+      "firstTxGas": "229696",
+      "lastTxGas": "229696",
+      "minTxGas": "229696",
+      "maxTxGas": "229696",
+      "spreadWithinBlock": "0",
+      "totalBlockGas": "229696"
+    },
+    {
+      "race": "7.1",
+      "scenario": "supplyLiquidity (fresh slot)",
+      "N": 2,
+      "firstTxGas": "229696",
+      "lastTxGas": "161296",
+      "minTxGas": "161296",
+      "maxTxGas": "229696",
+      "spreadWithinBlock": "68400",
+      "totalBlockGas": "390992"
+    },
+    {
+      "race": "7.1",
+      "scenario": "supplyLiquidity (fresh slot)",
+      "N": 10,
+      "firstTxGas": "229696",
+      "lastTxGas": "161296",
+      "minTxGas": "161296",
+      "maxTxGas": "229696",
+      "spreadWithinBlock": "68400",
+      "totalBlockGas": "1681360"
+    },
+    {
+      "race": "7.1",
+      "scenario": "supplyLiquidity (fresh slot)",
+      "N": 25,
+      "firstTxGas": "229696",
+      "lastTxGas": "161296",
+      "minTxGas": "161296",
+      "maxTxGas": "229696",
+      "spreadWithinBlock": "68400",
+      "totalBlockGas": "4100800"
+    },
+    {
+      "race": "7.1",
+      "scenario": "supplyLiquidity (fresh slot)",
+      "N": 49,
+      "firstTxGas": "229696",
+      "lastTxGas": "161296",
+      "minTxGas": "161296",
+      "maxTxGas": "229696",
+      "spreadWithinBlock": "68400",
+      "totalBlockGas": "7971904"
+    },
+    {
+      "race": "7.1",
+      "scenario": "requestLoan",
+      "N": 1,
+      "firstTxGas": "517573",
+      "lastTxGas": "517573",
+      "minTxGas": "517573",
+      "maxTxGas": "517573",
+      "spreadWithinBlock": "0",
+      "totalBlockGas": "517573"
+    },
+    {
+      "race": "7.1",
+      "scenario": "requestLoan",
+      "N": 5,
+      "firstTxGas": "517573",
+      "lastTxGas": "432073",
+      "minTxGas": "432073",
+      "maxTxGas": "517573",
+      "spreadWithinBlock": "85500",
+      "totalBlockGas": "2245865"
+    },
+    {
+      "race": "7.1",
+      "scenario": "requestLoan",
+      "N": 10,
+      "firstTxGas": "517573",
+      "lastTxGas": "432073",
+      "minTxGas": "432073",
+      "maxTxGas": "517573",
+      "spreadWithinBlock": "85500",
+      "totalBlockGas": "4406230"
+    },
+    {
+      "race": "7.1",
+      "scenario": "repayLoan (49-lender pool)",
+      "N": 1,
+      "firstTxGas": "1870091",
+      "lastTxGas": "1870091",
+      "minTxGas": "1870091",
+      "maxTxGas": "1870091",
+      "spreadWithinBlock": "0",
+      "totalBlockGas": "1870091"
+    },
+    {
+      "race": "7.1",
+      "scenario": "repayLoan (49-lender pool)",
+      "N": 5,
+      "firstTxGas": "1894091",
+      "lastTxGas": "969392",
+      "minTxGas": "969392",
+      "maxTxGas": "1894091",
+      "spreadWithinBlock": "924699",
+      "totalBlockGas": "5843871"
+    },
+    {
+      "race": "7.1",
+      "scenario": "repayLoan (49-lender pool)",
+      "N": 10,
+      "firstTxGas": "1894091",
+      "lastTxGas": "969392",
+      "minTxGas": "969392",
+      "maxTxGas": "1894091",
+      "spreadWithinBlock": "924699",
+      "totalBlockGas": "10840479"
+    },
+    {
+      "race": "7.1",
+      "scenario": "withdrawLiquidity (full exit)",
+      "N": 1,
+      "firstTxGas": "69337",
+      "lastTxGas": "69337",
+      "minTxGas": "69337",
+      "maxTxGas": "69337",
+      "spreadWithinBlock": "0",
+      "totalBlockGas": "69337"
+    },
+    {
+      "race": "7.1",
+      "scenario": "withdrawLiquidity (full exit)",
+      "N": 5,
+      "firstTxGas": "74337",
+      "lastTxGas": "69337",
+      "minTxGas": "69337",
+      "maxTxGas": "76906",
+      "spreadWithinBlock": "7569",
+      "totalBlockGas": "367361"
+    },
+    {
+      "race": "7.1",
+      "scenario": "withdrawLiquidity (full exit)",
+      "N": 25,
+      "firstTxGas": "74337",
+      "lastTxGas": "69337",
+      "minTxGas": "69337",
+      "maxTxGas": "102596",
+      "spreadWithinBlock": "33259",
+      "totalBlockGas": "2165761"
+    },
+    {
+      "race": "7.1-control",
+      "scenario": "identical supplyLiquidity: alone in a block vs 40-way block",
+      "aloneGas": "161296",
+      "inBlockGas": "161296",
+      "spreadWithin40WayBlock": "0"
+    },
+    {
+      "race": "7.2",
+      "op": "supplyLiquidity (fresh slot, distinct pools not needed)",
+      "attempted": 49,
+      "minedInBlock": 49,
+      "succeeded": 49,
+      "blockGasUsed": "7971904",
+      "avgGasPerOp": "162691",
+      "opsPerArcBlock": 184
+    },
+    {
+      "race": "7.2",
+      "op": "requestLoan",
+      "attempted": 10,
+      "minedInBlock": 10,
+      "succeeded": 10,
+      "blockGasUsed": "4406230",
+      "avgGasPerOp": "440623",
+      "opsPerArcBlock": 68
+    },
+    {
+      "race": "7.3",
+      "scenario": "supplyLiquidity, total block gas vs occupancy",
+      "points": [
+        {
+          "N": 1,
+          "total": "229696",
+          "perTx": "229696"
+        },
+        {
+          "N": 2,
+          "total": "390992",
+          "perTx": "195496"
+        },
+        {
+          "N": 5,
+          "total": "874880",
+          "perTx": "174976"
+        },
+        {
+          "N": 10,
+          "total": "1681360",
+          "perTx": "168136"
+        },
+        {
+          "N": 20,
+          "total": "3294320",
+          "perTx": "164716"
+        },
+        {
+          "N": 30,
+          "total": "4907280",
+          "perTx": "163576"
+        },
+        {
+          "N": 40,
+          "total": "6520240",
+          "perTx": "163006"
+        },
+        {
+          "N": 49,
+          "total": "7971904",
+          "perTx": "162691"
+        }
+      ],
+      "marginalFirst": "161296",
+      "marginalLast": "161296",
+      "marginalGrowthRatio": 1
+    }
+  ],
+  "notes": [
+    "1.3: WHICH third party gets slot 50 is order-dependent (R1) — but the creator's slot is never at risk, and the cap never exceeds 50 in any ordering tested.",
+    "1.5: with exit-last, the newcomers' refusals REPLAY SUCCESSFULLY at end-of-block state — proof the revert was purely positional (R1). A client that retries on 'Pool lender capacity reached' recovers; one that treats it as terminal gives up on a slot that is now free.",
+    "1.6: a sender's OWN sub-minimum top-up is order-dependent — legal behind their qualifying supply, refused in front of it. Correct per F-C, but a client that fires both in one batch gets a different result per ordering and must not assume both land.",
+    "2.1: the loser is always the SECOND transaction and always reverts with 'Insufficient pool liquidity'. Nothing partial happens, so a client can simply re-read and retry. But note the asymmetry: a LENDER's withdrawal can be denied by the agent's borrow landing first — the lender's capital is not lost, only illiquid until the loan closes.",
+    "2.4: an agent that sizes a loan from `availableLiquidity` read one block earlier is refused 10/10 times when any lender exits in between. This is the single most likely client-side race in normal operation and the SDK must size with a margin or retry on 'Insufficient pool liquidity'.",
+    "2.5: a withdrawal placed AHEAD of the repayment that funds it reverts, and the replay proves it would have succeeded one slot later. Pure positional failure — safe on-chain, but it is exactly the case a client must retry rather than surface as 'insufficient liquidity'.",
+    "3.1: the lock and the coverage gate read the SAME two storage slots the two calls write, so they cannot get out of step — withdraw-first simply makes the borrow fail the M2-c check, borrow-first makes the withdraw fail the M2-a lock. There is no ordering in which both land while coverage is short.",
+    "3.5: 480 lock probes across 40 randomised runs, every one after a real transaction. The creator's withdraw was permitted only while outstandingPrincipal was exactly 0.",
+    "4.2: I-a3 (contract USDC balance == Σ availableLiquidity + fees + Σ ACTIVE-loan collateral) is the stranded-collateral detector, and it held in every ordering. Collateral is either refunded or seized — never duplicated, never orphaned.",
+    "4.4: the fresh borrow in the same block is order-dependent — it succeeds only where the earlier settlements have already freed enough credit/liquidity and self-stake coverage. No ordering produced a double settlement or an unbacked balance.",
+    "5.2: across all 48 contended orderings the independent model predicted BOTH which calls succeed and every lender's resulting principal, pending tranche and earnedInterest to the base unit. A top-up that lands before the repayment in the same block does NOT dilute the qualified set, because its pending tranche is stamped with the block timestamp and the loan started strictly earlier.",
+    "5.3b: the same-block back-run is NOT a free ride — the capital has to sit in the pool, exposed to socialised default loss, until the loan is repaid. Exiting first forfeits the whole share. That bounds 5.3 to 'jumping the queue by one block', not theft.",
+    "6.2: the window is a RESET-ON-FIRST-GAIN rolling window, so the worst instantaneous burst is `maxGain` at the end of one window plus `maxGain` at the start of the next — bounded at 2× and not improvable by racing, because both gains are still charged to their own window. Sustained rate stays at the configured 5 points/day.",
+    "6.7: with every repayment ON TIME, splitting each round into four concurrent loans reached maxRepaidPrincipal 1200000000 / credit limit 2500000000, where one-at-a-time reached 2500000000 / 2500000000. Batching is never better and is usually WORSE, because the ladder keys on the largest SINGLE on-time repayment and splitting shrinks it. (Racing late is worse again: the M1-5 penalty is charged per repayment, so four concurrent late loans cost four penalties.)",
+    "7.1: EIP-2929 access lists are per-TRANSACTION, so a call costs the same whether it is alone in a block or the 49th of 49. All variation observed is state-dependent (cold pool slots on the first-ever supply, poolLenders length for repay), never occupancy-dependent.",
+    "7.2: with 30 M per block, the measured ceiling is supplyLiquidity ≈ 184/block, requestLoan ≈ 68/block. The protocol's own per-agent caps (10 active loans, 50 lender slots) bind long before the block does.",
+    "7.3: marginal gas per additional same-block transaction went from 161296 at the start of the block to 161296 at 49 — ratio 1. Flat. Nothing degrades non-linearly with block occupancy.",
+    "8.1: solvency, per-pool conservation and the F-05 'every remaining claim stays backed' property hold in BOTH orderings and BOTH regimes — the protocol is never left short. The distributional answer depends on how far the pool was drawn down: when it is drawn to the floor, `claimInterest` reverts 'Drain underflow' whichever way the block is ordered, so no lender can get out ahead of the loss; when the pool is only partially drawn, a lender who claims AHEAD of the liquidation keeps its whole balance and the shortfall falls on the lenders who did not. That is the first-come-first-served shape D4 removed for principal, surviving for unclaimed interest because a claim is a separate transaction."
+  ]
+}

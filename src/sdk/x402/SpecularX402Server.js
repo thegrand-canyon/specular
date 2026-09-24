@@ -39,18 +39,27 @@ const fs = require('fs');
 const { createWalletClient, createPublicClient, http: viemHttp, publicActions } = require('viem');
 const { privateKeyToAccount } = require('viem/accounts');
 const { base, baseSepolia } = require('viem/chains');
+const path = require('path');
 
 const VIEM_CHAINS = { base, 'base-sepolia': baseSepolia };
 
+// [M1] Resolve address configs relative to THIS module, never the process CWD.
+// The 2026-07 audit fixed this in SpecularQuickstart but not here: this server
+// holds a hot key and auto-supplies real USDC, so a CWD-relative
+// './src/config/*.json' let any untrusted working directory shadow the config
+// with attacker-chosen marketplace/USDC addresses. Verified before the fix: a
+// poisoned ./src/config/base-addresses.json was loaded verbatim.
+const REPO_ROOT = path.resolve(__dirname, '..', '..', '..');
+
 const NETWORKS = {
     base: {
-        addresses: './src/config/base-addresses.json',
+        addresses: path.join(REPO_ROOT, 'src/config/base-addresses.json'),
         defaultRpc: 'https://mainnet.base.org',
         x402Network: 'base',
         defaultFacilitator: 'https://x402.org/facilitator',
     },
     arc: {
-        addresses: './src/config/arc-testnet-addresses.json',
+        addresses: path.join(REPO_ROOT, 'src/config/arc-testnet-addresses.json'),
         defaultRpc: 'https://arc-testnet.drpc.org',
         x402Network: 'base',  // Arc isn't an x402 native chain; demos use stub
         defaultFacilitator: null,  // no facilitator on Arc — stub only
@@ -58,7 +67,7 @@ const NETWORKS = {
     // Arc testnet V6-STAGING — the 2026-08 self-audited/fixed stack. Auto-supply
     // routes through SpecularQuickstart('arc-staging') → the fixed marketplace.
     'arc-staging': {
-        addresses: './src/config/arc-testnet-v6-addresses.json',
+        addresses: path.join(REPO_ROOT, 'src/config/arc-testnet-v6-addresses.json'),
         defaultRpc: 'https://arc-testnet.drpc.org',
         x402Network: 'base',
         defaultFacilitator: null,  // stub only
@@ -67,15 +76,41 @@ const NETWORKS = {
 
 class SpecularX402Server {
     constructor(opts = {}) {
-        const netCfg = NETWORKS[opts.network || 'base'];
+        // [2026-09-25] Two real-money footguns removed.
+        //
+        // 1. `network` defaulted to 'base' — a REAL-MONEY mainnet. Constructing the server
+        //    with no network silently pointed a paywall at live funds. There is no safe
+        //    default for that choice, so it is now required.
+        // 2. The key fell back to `process.env.PRIVATE_KEY`, which in this repo is the
+        //    OWNER key controlling the marketplace, reputation, registry and faucet on
+        //    every network. A payment server should never be able to pick that up by
+        //    accident. Only an explicit `privateKey` or the dedicated `SELLER_KEY` is
+        //    accepted; set SPECULAR_X402_ALLOW_OWNER_KEY=1 to deliberately override.
+        if (!opts.network) {
+            throw new Error(
+                'SpecularX402Server: `network` is required (no default). ' +
+                `Choose one of: ${Object.keys(NETWORKS).join(', ')}. ` +
+                'Real-money networks move live USDC.',
+            );
+        }
+        const netCfg = NETWORKS[opts.network];
         if (!netCfg) throw new Error('Unknown network: ' + opts.network);
 
         const addr = JSON.parse(fs.readFileSync(netCfg.addresses, 'utf8'));
-        const pk = opts.privateKey || process.env.SELLER_KEY || process.env.PRIVATE_KEY;
-        if (!pk) throw new Error('SpecularX402Server: no privateKey provided');
+        let pk = opts.privateKey || process.env.SELLER_KEY;
+        if (!pk && process.env.PRIVATE_KEY && process.env.SPECULAR_X402_ALLOW_OWNER_KEY === '1') {
+            pk = process.env.PRIVATE_KEY;
+        }
+        if (!pk) {
+            throw new Error(
+                'SpecularX402Server: no seller key. Pass `privateKey` or set SELLER_KEY. ' +
+                'PRIVATE_KEY is deliberately NOT used as a fallback because it is the ' +
+                'protocol owner key; set SPECULAR_X402_ALLOW_OWNER_KEY=1 to override.',
+            );
+        }
         const pkPrefixed = pk.startsWith('0x') ? pk : '0x' + pk;
 
-        this.network = opts.network || 'base';
+        this.network = opts.network;
         this.netCfg = netCfg;
         this.addresses = addr;
         this.usdcAddr = addr.usdc;

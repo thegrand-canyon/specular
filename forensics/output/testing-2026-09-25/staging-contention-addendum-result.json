@@ -1,0 +1,180 @@
+{
+  "startedAt": "2026-09-24T22:19:10.766Z",
+  "chainId": 5042002,
+  "rpc": "https://arc-testnet-rpc.publicnode.com",
+  "marketplace": "0x7E4D144AbEB3C695Ec2DdF00Fc710aABC04bDd18",
+  "phases": [
+    {
+      "phase": "7.3' borrow vs withdraw on a pool sized so only one fits",
+      "runs": [
+        {
+          "run": 0,
+          "borrowFirst": false,
+          "contended": true,
+          "borrow": "100000000",
+          "withdraw": "100000000",
+          "availBefore": "150000000",
+          "availAfter": "50000000",
+          "winners": [
+            "WITHDRAW"
+          ],
+          "sameBlock": true,
+          "blocks": [
+            63830835
+          ],
+          "availDelta": "100000000",
+          "claimedByWinners": "100000000",
+          "exact": true,
+          "loserReason": [
+            "BORROW: Insufficient pool liquidity"
+          ],
+          "lenderUnchangedWhenLost": null,
+          "agentUnchangedWhenLost": true,
+          "invariantViolations": 0
+        },
+        {
+          "run": 1,
+          "borrowFirst": true,
+          "contended": true,
+          "borrow": "100000000",
+          "withdraw": "100000000",
+          "availBefore": "150000000",
+          "availAfter": "50000000",
+          "winners": [
+            "BORROW"
+          ],
+          "sameBlock": true,
+          "blocks": [
+            63830856
+          ],
+          "availDelta": "100000000",
+          "claimedByWinners": "100000000",
+          "exact": true,
+          "loserReason": [
+            "WITHDRAW: Insufficient pool liquidity"
+          ],
+          "lenderUnchangedWhenLost": true,
+          "agentUnchangedWhenLost": null,
+          "invariantViolations": 0
+        },
+        {
+          "run": 2,
+          "borrowFirst": false,
+          "contended": true,
+          "borrow": "100000000",
+          "withdraw": "100000000",
+          "availBefore": "150000000",
+          "availAfter": "50000000",
+          "winners": [
+            "WITHDRAW"
+          ],
+          "sameBlock": true,
+          "blocks": [
+            63830888
+          ],
+          "availDelta": "100000000",
+          "claimedByWinners": "100000000",
+          "exact": true,
+          "loserReason": [
+            "BORROW: Insufficient pool liquidity"
+          ],
+          "lenderUnchangedWhenLost": null,
+          "agentUnchangedWhenLost": true,
+          "invariantViolations": 0
+        },
+        {
+          "run": 3,
+          "borrowFirst": true,
+          "contended": true,
+          "borrow": "100000000",
+          "withdraw": "100000000",
+          "availBefore": "150000000",
+          "availAfter": "50000000",
+          "winners": [
+            "BORROW"
+          ],
+          "sameBlock": true,
+          "blocks": [
+            63830909
+          ],
+          "availDelta": "100000000",
+          "claimedByWinners": "100000000",
+          "exact": true,
+          "loserReason": [
+            "WITHDRAW: Insufficient pool liquidity"
+          ],
+          "lenderUnchangedWhenLost": true,
+          "agentUnchangedWhenLost": null,
+          "invariantViolations": 0
+        }
+      ]
+    },
+    {
+      "phase": "7.4' double-fire of the same settlement, as two DISTINCT transactions",
+      "runs": [
+        {
+          "run": 0,
+          "loanId": "123",
+          "distinctTransactions": 1,
+          "distinctSuccesses": 1,
+          "finalState": 2,
+          "sameBlock": true,
+          "blocks": [
+            63830940
+          ],
+          "loserReason": [
+            "repayB: replacement fee too low"
+          ],
+          "totalLoanedDelta": "100000000",
+          "invariantViolations": 0
+        },
+        {
+          "run": 1,
+          "loanId": "124",
+          "distinctTransactions": 1,
+          "distinctSuccesses": 1,
+          "finalState": 2,
+          "sameBlock": true,
+          "blocks": [
+            63830959
+          ],
+          "loserReason": [
+            "repayB: replacement fee too low"
+          ],
+          "totalLoanedDelta": "100000000",
+          "invariantViolations": 0
+        }
+      ]
+    }
+  ],
+  "violations": [],
+  "solvencyBefore": {
+    "label": "before",
+    "pools": 19,
+    "loans": 120,
+    "balance": "10521559059",
+    "rhs": "10521559059",
+    "delta": "0",
+    "ok": true
+  },
+  "agentId": "71",
+  "agent": "0xC9391c11Ba8C44233Dd704ca95bCbc7F94fa85d1",
+  "lender": "0x13CbE3758513bf325f67A68EB6b1E23907390cBF",
+  "creditLimit": "100000000",
+  "collateralPercent": "100",
+  "solvencyAfter": {
+    "label": "after",
+    "pools": 20,
+    "loans": 124,
+    "balance": "10672424948",
+    "rhs": "10672424948",
+    "delta": "0",
+    "ok": true
+  },
+  "spend": {
+    "deployerNativeStart": "59.512372177116209267",
+    "deployerNativeEnd": "59.110502502116209267",
+    "deployerNativeSpent": "0.401869675"
+  },
+  "finishedAt": "2026-09-24T22:21:42.306Z"
+}

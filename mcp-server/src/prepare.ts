@@ -112,7 +112,27 @@ export interface Simulation {
   revertReason: string | null;
   plainLanguage: string | null;
   from: string;
+  /**
+   * [concurrency round 2026-09-25] The block this simulation was evaluated against. A
+   * simulation is a point-in-time read; the caller signs and broadcasts afterwards, so
+   * anything another actor does in between can change the outcome. Without this the
+   * client cannot even tell how stale the answer is.
+   */
+  simulatedAtBlock: number | null;
+  /**
+   * [concurrency round 2026-09-25] What the caller should DO about a refusal:
+   *   'retryable'  — somebody else's transaction is the obstacle; re-send the identical
+   *                  call (every contended race outcome lands here);
+   *   'actionable' — the caller must change something first (amount, allowance, its own
+   *                  outstanding loans);
+   *   'terminal'   — re-sending will never work.
+   * null when the simulation succeeded.
+   */
+  raceClass: RaceClass | null;
 }
+
+/** See `Simulation.raceClass`. */
+export type RaceClass = 'retryable' | 'actionable' | 'terminal';
 
 export interface PreparedTx {
   network: string;
@@ -340,7 +360,7 @@ const REASON_MAP: Array<[RegExp, string]> = [
   [/No pool for agent/i, 'This agent has no liquidity pool yet. Send create_pool first.'],
   [/Pool already exists/i, 'This agent already has a pool; nothing to do.'],
   [/Agent already registered/i, 'This wallet is already registered; skip register_agent.'],
-  [/Insufficient pool liquidity/i, 'The pool does not hold enough available USDC for this amount. Lower the amount, or supply/attract liquidity first.'],
+  [/Insufficient pool liquidity/i, 'The pool does not hold enough available USDC for this amount RIGHT NOW. This is the single most common CONTENTION outcome: a lender withdrawal or another borrow landed in front of you, and nothing of yours moved. Re-read availableLiquidity and retry (or retry smaller) before concluding the pool is short — it also refills the moment an outstanding loan is repaid.'],
   [/Borrow restricted to pool creator/i, 'Borrowing on this network is restricted to the wallet that created the pool.'],
   [/Invalid duration/i, 'durationDays must be between 7 and 365 (pass days, not seconds).'],
   [/Exceeds credit limit/i, 'Outstanding principal plus this amount exceeds your reputation-based credit limit. Repay existing loans or borrow less. On the V7 credit model the limit is min(tier limit, credit ladder) — and it is exactly 0 while an agent is LOCKED OUT after a default, so check check_credit_score.credit.model.lockedOut before assuming this is about the amount.'],
@@ -359,14 +379,14 @@ const REASON_MAP: Array<[RegExp, string]> = [
   [/Insufficient self-stake/i, 'This deployment runs the V7 credit model: any exposure your collateral does not cover must already be backed by YOUR OWN first-loss capital supplied into YOUR OWN pool, at creditMultiple leverage. Call required_self_stake (or read prepare_request_loan\'s requiredSelfStakeUsdc) to get the figure, supply the shortfall into your own pool with prepare_supply_liquidity, then request the loan. That capital is locked until every loan is repaid and is seized before any third-party lender on a default.'],
   // [V7 / M2-a] The first-loss withdrawal lock.
   [/Self-stake locked while borrowing/i, 'You are the creator of this pool, so your position is the agent\'s first-loss self-stake and is locked for as long as the agent carries outstanding principal. Repay the agent\'s active loans (get_active_loan_ids, then prepare_repay_loan) and the position unlocks. Ordinary lenders in the same pool are NOT locked, and claim_interest works while locked.'],
-  [/Pool lender capacity reached|Lender cap/i, 'This pool already has the maximum number of lenders (50). Choose another pool.'],
+  [/Pool lender capacity reached|Lender cap/i, 'This pool held the maximum 50 lenders at the instant your supply executed. A slot frees whenever any lender exits in full, and under churn that can happen in the very next block — retry once before giving up, and only then choose another pool.'],
   [/Insufficient balance/i, 'You are withdrawing more than you supplied to this pool.'],
   [/Not the borrower/i, 'Only the wallet that borrowed this loan (or, on V6.1, the current holder of the agent NFT) can repay it.'],
   [/Agent deactivated/i, 'This agent has been deactivated in the registry, so it cannot borrow or create a pool. Existing loans can still be repaid and lenders can still withdraw/claim. Contact the protocol owner to reactivate the agent.'],
   [/Top-up would forfeit in-flight interest/i, 'Adding to your existing position in this pool right now would forfeit interest already accruing on it, so the contract refuses the top-up. can_top_up(agentId, lender) is advisory (the deployed view is off by one block and can say yes to a top-up the tx then refuses); wait until the pool\'s older active loans close and try again, or open a fresh position from another address (a first supply is never refused).'],
-  [/Loan not active/i, 'This loan is not ACTIVE (already repaid or defaulted).'],
+  [/Loan not active/i, 'This loan is no longer ACTIVE. Do NOT retry the repayment: repayLoan and liquidateLoan race on every overdue loan and exactly one wins, so this can mean the loan was LIQUIDATED out from under you rather than repaid. Read loans(loanId).state (2 = REPAID, 3 = DEFAULTED) — a 3 carries the reputation penalty and the 180-day lockout.'],
   [/No interest to claim/i, 'There is no claimable interest for this wallet in this pool.'],
-  [/Drain underflow/i, 'Pool accounting cannot cover this claim right now; contact the protocol owner.'],
+  [/Drain underflow/i, 'The pool cannot pay this interest claim at this instant because its liquidity is out on loan (claimInterest requires availableLiquidity >= your earned interest). This is normally TRANSIENT: retry after the pool\'s next repayment, or claim a pool whose loans have closed. Only if it persists with no active loans is it an accounting problem worth raising with the protocol owner.'],
   [/Amount must be > 0/i, 'Amount must be greater than zero.'],
   [/EnforcedPause|Pausable: paused|paused/i, 'The contract is paused by the owner; try later.'],
   [/ERC20InsufficientAllowance|insufficient allowance|exceeds allowance/i, 'The marketplace is not approved to pull enough USDC from your wallet. Send the exact-amount approve_usdc transaction (see `prerequisite`) first.'],
@@ -392,7 +412,40 @@ const CUSTOM_ERRORS = new ethers.Interface([
   'error ERC721NonexistentToken(uint256 tokenId)',
 ]);
 
-export function explainRevert(e: unknown): { reason: string; plain: string } {
+/**
+ * [concurrency round 2026-09-25] Which refusals are race outcomes and which are the
+ * caller's own problem. Derived from the race-by-race results in
+ * `forensics/output/testing-2026-09-25/CONCURRENCY_REPORT.md`: every contended race in
+ * that round ended with the loser reverting, and for three of those reasons the correct
+ * client response is simply to re-send the identical call.
+ *
+ * Order matters — first match wins, so the narrower withdraw-side patterns precede the
+ * supply-side ones exactly as in REASON_MAP.
+ */
+const RACE_CLASS: Array<[RegExp, RaceClass]> = [
+  [/Insufficient pool liquidity/i, 'retryable'],
+  [/Pool lender capacity reached|Lender cap/i, 'retryable'],
+  [/Last slot reserved for agent self-stake/i, 'retryable'],
+  [/Top-up would forfeit in-flight interest/i, 'retryable'],
+  [/Drain underflow/i, 'retryable'],
+  [/EnforcedPause|Pausable: paused|^paused$/i, 'retryable'],
+  [/Exceeds credit limit/i, 'actionable'],
+  [/Too many active loans/i, 'actionable'],
+  [/Insufficient self-stake/i, 'actionable'],
+  [/Self-stake locked while borrowing/i, 'actionable'],
+  [/Remaining below minimum supply/i, 'actionable'],
+  [/Below minimum supply/i, 'actionable'],
+  [/Insufficient balance/i, 'actionable'],
+  [/ERC20InsufficientAllowance|insufficient allowance|exceeds allowance/i, 'actionable'],
+  [/ERC20InsufficientBalance|exceeds balance|insufficient balance for transfer/i, 'actionable'],
+];
+
+/** See `Simulation.raceClass`. Anything unmatched is 'terminal': never retry blindly. */
+export function classifyRace(reason: string): RaceClass {
+  return RACE_CLASS.find(([re]) => re.test(reason))?.[1] ?? 'terminal';
+}
+
+export function explainRevert(e: unknown): { reason: string; plain: string; raceClass: RaceClass } {
   let reason = '';
   const err = e as { reason?: string; data?: string; shortMessage?: string; message?: string; info?: { error?: { data?: string; message?: string } } };
   if (typeof err?.reason === 'string' && err.reason) reason = err.reason;
@@ -419,7 +472,7 @@ export function explainRevert(e: unknown): { reason: string; plain: string } {
   if (!reason) reason = cleanErrorText(err?.shortMessage || err?.info?.error?.message || err?.message || 'execution reverted', 200) || 'execution reverted';
   reason = reason.replace(/^execution reverted:?\s*/i, '').trim() || 'execution reverted (no reason given)';
   const plain = REASON_MAP.find(([re]) => re.test(reason))?.[1] ?? `The transaction would revert: ${reason}`;
-  return { reason: reason.length > 200 ? reason.slice(0, 200) + '…' : reason, plain };
+  return { reason: reason.length > 200 ? reason.slice(0, 200) + '…' : reason, plain, raceClass: classifyRace(reason) };
 }
 
 // ---------------------------------------------------------------------------
@@ -446,6 +499,11 @@ function isExecutionRevert(e: unknown): boolean {
 
 export async function simulateCall(cfg: NetworkConfig, from: string, to: string, data: string): Promise<Simulation> {
   const { provider } = getContracts(cfg);
+  // [concurrency round 2026-09-25] Record WHICH block the answer belongs to. The caller
+  // signs and broadcasts after this returns, so the simulation is a statement about the
+  // past; without the block number it cannot tell a fresh answer from a stale one.
+  let simulatedAtBlock: number | null = null;
+  try { simulatedAtBlock = await provider.getBlockNumber(); } catch { simulatedAtBlock = null; }
   try {
     await provider.call({ from, to, data, value: 0n });
     let gas: bigint | null = null;
@@ -454,19 +512,43 @@ export async function simulateCall(cfg: NetworkConfig, from: string, to: string,
     } catch {
       gas = null;
     }
-    return { ok: true, gasEstimate: gas === null ? null : gas.toString(), revertReason: null, plainLanguage: null, from };
+    return { ok: true, gasEstimate: gas === null ? null : gas.toString(), revertReason: null, plainLanguage: null, from, simulatedAtBlock, raceClass: null };
   } catch (e) {
     // Transport failures are not simulation results: rethrow so the caller maps them
     // to a 502 with describeRpcError() instead of a fabricated "would revert".
     if (!isExecutionRevert(e)) throw e;
-    const { reason, plain } = explainRevert(e);
-    return { ok: false, gasEstimate: null, revertReason: reason, plainLanguage: plain, from };
+    const { reason, plain, raceClass } = explainRevert(e);
+    return { ok: false, gasEstimate: null, revertReason: reason, plainLanguage: plain, from, simulatedAtBlock, raceClass };
   }
 }
+
+/**
+ * [concurrency round 2026-09-25] Actions whose success depends on state OTHER WALLETS can
+ * move between the simulation and the broadcast: pool liquidity, the 50 lender slots, and
+ * whether a loan is still ACTIVE. For these, a green simulation is not a guarantee, and
+ * the client must be told so explicitly rather than inferring it.
+ */
+const CONTENDED_ACTIONS: ReadonlySet<string> = new Set([
+  'supply_liquidity', 'withdraw_liquidity', 'request_loan', 'repay_loan', 'claim_interest',
+]);
 
 function toPrepared(cfg: NetworkConfig, from: string, enc: EncodedAction, extraWarnings: string[], prerequisite: PreparedTx | null, sim: Simulation | null): PreparedTx {
   const gasFromSim = sim?.ok && sim.gasEstimate ? BigInt(sim.gasEstimate) : null;
   const gasEstimate = gasFromSim !== null ? (gasFromSim + gasFromSim / 5n).toString() : enc.defaultGas.toString();
+  const raceWarnings: string[] = [];
+  if (sim && CONTENDED_ACTIONS.has(enc.action)) {
+    if (sim.ok) {
+      raceWarnings.push(
+        `Simulated against block ${sim.simulatedAtBlock ?? 'unknown'}; your transaction executes LATER. ` +
+        'Another wallet acting on the same pool in between can still make it revert — most often "Insufficient pool liquidity" ' +
+        '(a withdrawal or another borrow landed first) or "Pool lender capacity reached" (the 50th slot was taken). ' +
+        'Both are retryable and move none of your funds: re-read the pool and re-send rather than treating them as terminal.');
+    } else if (sim.raceClass === 'retryable') {
+      raceWarnings.push(
+        `This refusal is RETRYABLE (raceClass=retryable, simulated at block ${sim.simulatedAtBlock ?? 'unknown'}): the obstacle is another wallet's transaction, ` +
+        'not anything about yours. Re-read the pool state and send the identical call again.');
+    }
+  }
   return {
     network: cfg.name,
     chainId: cfg.chainId,
@@ -480,7 +562,7 @@ function toPrepared(cfg: NetworkConfig, from: string, enc: EncodedAction, extraW
     gasEstimateSource: gasFromSim !== null ? 'estimateGas' : 'default',
     description: enc.description,
     humanReadableSummary: enc.humanReadableSummary,
-    warnings: [...enc.warnings, ...extraWarnings],
+    warnings: [...enc.warnings, ...extraWarnings, ...raceWarnings],
     call: { contract: enc.target, contractAddress: enc.to, function: enc.functionName, args: enc.args },
     prerequisite,
     simulation: sim,
