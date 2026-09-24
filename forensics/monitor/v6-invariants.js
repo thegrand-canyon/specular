@@ -146,7 +146,14 @@ const LOG_KEEP = 5;
 // Hard wall-clock budget. launchd will not start the next scheduled run while the
 // previous one is alive, so a monitor that blocks on a slow endpoint silently turns
 // "checked every 30 minutes" into "checked once, hours ago". Give up loudly instead.
-const MAX_RUNTIME_SEC = Number(process.env.V6_MAX_RUNTIME_SEC || 300);
+// Wall time here is dominated by PER-CALL RPC LATENCY, not by any one loop: measured
+// 2026-09-24, Base takes ~3 min for 4 pools / 14 loans and caching every terminal loan
+// changed it by nothing. A public endpoint answers in 100-400ms and the monitor makes
+// hundreds of calls. The real fixes are a dedicated RPC provider or multicall batching;
+// until then the budget has to fit the slowest supported target. 300s was enough for
+// mainnet (1 pool) but aborted Arc staging after testing left it ~120 loans, and an
+// aborted monitor reports UNMONITORED, which is worse than a slow one.
+const MAX_RUNTIME_SEC = Number(process.env.V6_MAX_RUNTIME_SEC || 900);
 
 const alerts = NO_ALERT ? null : require('./alert.js');
 
@@ -212,10 +219,38 @@ async function snapshot(mp, reg, usdc) {
     const paused = await withRetry(() => mp.paused(), 'paused');
     const cap = Number(await withRetry(() => mp.MAX_ACTIVE_LOANS_PER_AGENT(), 'cap'));
 
-    // Loans (nextLoanId is monotonic and small on every live deployment; this is a
-    // full walk on purpose — the totalLoaned/activeLoanIds checks need ground truth).
+    // Loans. The full walk is deliberate — the totalLoaned / activeLoanIds checks need
+    // ground truth, not a sample — but doing it ONE loan at a time does not scale. Arc
+    // staging reached ~120 loans during the 2026-09 testing rounds and the sequential walk
+    // blew the 300s watchdog, so the monitor aborted and reported "UNMONITORED" three
+    // times. Mainnet has one loan today and will hit the same wall as it grows.
+    //
+    // Fetch in bounded-concurrency batches instead: same reads, same ground truth, roughly
+    // an order of magnitude less wall time. Keep the batch modest — public RPCs reject
+    // large bursts, which is why batchMaxCount is already 1.
+    // Closed loans are IMMUTABLE: once a loan reaches REPAID (2) or DEFAULTED (3) its
+    // tuple and repayment record can never change again. Re-reading them every 30 minutes
+    // is pure waste, and it is what pushed Arc staging past the watchdog once testing left
+    // it ~120 loans — the walk is O(all loans) when it only needs to be O(open loans).
+    // Cache terminal loans on disk, keyed by marketplace so a redeploy starts clean.
+    // Public RPCs also rate-limit bursts, so concurrency stays modest.
+    const LOAN_CONCURRENCY = Number(process.env.V6_LOAN_CONCURRENCY || 4);
+    const LOANCACHE = path.join(__dirname, `loancache-${INSTANCE}.json`);
+    let loanCache = {};
+    try {
+        const c = JSON.parse(fs.readFileSync(LOANCACHE, 'utf8'));
+        if ((c.marketplace || '').toLowerCase() === V6.toLowerCase()) loanCache = c.loans || {};
+    } catch { /* first run, or a different marketplace */ }
+    const revive = (o) => ({
+        ...o,
+        agentId: BigInt(o.agentId), amount: BigInt(o.amount), collateral: BigInt(o.collateral),
+        startTime: BigInt(o.startTime), endTime: BigInt(o.endTime), duration: BigInt(o.duration),
+        repaidAt: BigInt(o.repaidAt), interestPaid: BigInt(o.interestPaid), lateSeconds: BigInt(o.lateSeconds),
+    });
     const loans = [];
-    for (let id = 1; id < nextLoanId; id++) {
+    const fetchLoan = async (id) => {
+        const hit = loanCache[id];
+        if (hit) return revive(hit);
         const l = await withRetry(() => mp.loans(id), `loans[${id}]`);
         // `repayments` is V6.1+. The oldest live deployment (Arc testnet v4/V6.0) has no
         // such selector, and an unguarded call aborted the WHOLE run with "missing revert
@@ -223,14 +258,32 @@ async function snapshot(mp, reg, usdc) {
         // minutes. A noisy monitor is a monitor people learn to ignore.
         let rec = null;
         try { rec = await withRetry(() => mp.repayments(id), `repayments[${id}]`); } catch {}
-        loans.push({
+        return {
             id, borrower: l.borrower, agentId: l.agentId, amount: l.amount,
             collateral: l.collateralAmount, startTime: l.startTime, endTime: l.endTime,
             duration: l.duration, state: Number(l.state),
             repaidAt: rec ? rec.repaidAt : 0n, interestPaid: rec ? rec.interestPaid : 0n,
             lateSeconds: rec ? rec.lateSeconds : 0n, hasRepaymentRecord: rec !== null,
-        });
+        };
+    };
+    for (let start = 1; start < nextLoanId; start += LOAN_CONCURRENCY) {
+        const ids = [];
+        for (let id = start; id < Math.min(start + LOAN_CONCURRENCY, nextLoanId); id++) ids.push(id);
+        const batch = await Promise.all(ids.map(fetchLoan));
+        for (const row of batch) loans.push(row);
     }
+    loans.sort((a, b) => a.id - b.id);
+    // Persist only TERMINAL loans — an ACTIVE one still changes.
+    try {
+        const keep = {};
+        for (const l of loans) {
+            if (l.state !== 2 && l.state !== 3) continue;
+            keep[l.id] = { ...l, agentId: String(l.agentId), amount: String(l.amount), collateral: String(l.collateral),
+                startTime: String(l.startTime), endTime: String(l.endTime), duration: String(l.duration),
+                repaidAt: String(l.repaidAt), interestPaid: String(l.interestPaid), lateSeconds: String(l.lateSeconds) };
+        }
+        fs.writeFileSync(LOANCACHE, JSON.stringify({ marketplace: V6, loans: keep }, null, 0));
+    } catch { /* cache is an optimisation, never a correctness dependency */ }
 
     const pools = [];
     for (let i = 0; i < totalPools; i++) {

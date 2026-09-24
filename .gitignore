@@ -71,3 +71,9 @@ forensics/output/testing-2026-09-24/*.secret.json
 # Foundry build output (repo root only - an unanchored `out/` also swallowed
 # scripts/sim/out/, the simulation results the V7 design report cites).
 /out/
+
+# x402 replay-protection nonce store: per-deployment runtime state, not source.
+.x402-nonces.json
+
+forensics/monitor/loancache-*.json
+forensics/monitor/lender-harm-*.state.json

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key><string>com.specular.lender-harm-arc-mainnet</string>
+    <key>ProgramArguments</key>
+    <array>
+      <string>/bin/bash</string>
+      <string>/Users/peterschroeder/Specular/forensics/monitor/run-lender-harm-check.sh</string>
+      <string>arc-mainnet</string>
+    </array>
+    <key>EnvironmentVariables</key>
+    <dict>
+      <key>SPECULAR_REPO</key><string>/Users/peterschroeder/Specular</string>
+      <key>SPECULAR_RPC_BASE</key><string>https://mainnet.base.org</string>
+      <key>ARC_MAINNET_RPC_URL</key><string>https://rpc.mainnet.arc.io</string>
+    </dict>
+    <key>StartInterval</key><integer>1800</integer>
+    <key>RunAtLoad</key><true/>
+    <key>ProcessType</key><string>Background</string>
+    <key>LowPriorityIO</key><true/>
+    <key>WorkingDirectory</key><string>/Users/peterschroeder/Specular</string>
+    <key>StandardOutPath</key><string>/Users/peterschroeder/Specular/forensics/monitor/lender-harm-arc-mainnet-stdout.log</string>
+    <key>StandardErrorPath</key><string>/Users/peterschroeder/Specular/forensics/monitor/lender-harm-arc-mainnet-stderr.log</string>
+</dict>
+</plist>
